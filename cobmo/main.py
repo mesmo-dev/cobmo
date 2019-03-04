@@ -9,10 +9,11 @@ import cobmo.utils
 
 
 def connect_database(
-        data_path=os.path.join(os.path.dirname(os.path.normpath(__file__)), '..', 'data')
+        data_path=os.path.join(os.path.dirname(os.path.normpath(__file__)), '..', 'data'),
+        overwrite_database=True
 ):
     # Create database, if none
-    if not os.path.isfile(os.path.join(data_path, 'data.sqlite')):
+    if overwrite_database or not os.path.isfile(os.path.join(data_path, 'data.sqlite')):
         cobmo.utils.create_database(
             sqlite_path=os.path.join(data_path, 'data.sqlite'),
             sql_path=os.path.join(data_path, 'data.sqlite.schema.sql'),

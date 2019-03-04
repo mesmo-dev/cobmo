@@ -20,13 +20,19 @@ def create_database(
     """
     Create SQLITE database from SQL (schema) file and CSV files
     """
-    # Remove old SQLITE database file, if any
-    if os.path.isfile(sqlite_path):
-        os.remove(sqlite_path)
-
-    # Create SQLITE database (schema) from SQL file
+    # Connect SQLITE database (creates file, if none)
     conn = sqlite3.connect(sqlite_path)
     cursor = conn.cursor()
+
+    # Remove old data, if any
+    cursor.executescript("""
+        PRAGMA writable_schema = 1;
+        DELETE FROM sqlite_master WHERE type IN ('table', 'index', 'trigger');
+        PRAGMA writable_schema = 0;
+        VACUUM;
+        """)
+
+    # Recreate SQLITE database (schema) from SQL file
     cursor.executescript(open(sql_path, 'r').read())
     conn.commit()
 
