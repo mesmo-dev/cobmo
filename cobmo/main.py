@@ -2,25 +2,32 @@
 Building model main function definitions
 """
 
-from building_model.building import Building
-from building_model.utils import *
+import os
+import sqlite3
+import cobmo.building
+import cobmo.utils
 
 
-def connect_database(data_path="../data/"):
+def connect_database(
+        data_path=os.path.join(os.path.dirname(os.path.normpath(__file__)), '..', 'data')
+):
     # Create database, if none
-    if not os.path.isfile(data_path + "data.sqlite"):
-        create_database(
-            sqlite_path=data_path + "data.sqlite",
-            sql_path=data_path + "data.sqlite.schema.sql",
+    if not os.path.isfile(os.path.join(data_path, 'data.sqlite')):
+        cobmo.utils.create_database(
+            sqlite_path=os.path.join(data_path, 'data.sqlite'),
+            sql_path=os.path.join(data_path, 'data.sqlite.schema.sql'),
             csv_path=data_path
         )
 
-    conn = sqlite3.connect(data_path + "data.sqlite")
+    conn = sqlite3.connect(os.path.join(data_path, 'data.sqlite'))
     return conn
 
 
-def get_building_model(scenario_name="scenario_default", conn=connect_database()):
-    building = Building(conn, scenario_name)
+def get_building_model(
+        scenario_name='scenario_default',
+        conn=connect_database()
+):
+    building = cobmo.building.Building(conn, scenario_name)
     return building
 
 

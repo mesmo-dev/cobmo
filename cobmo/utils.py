@@ -2,16 +2,21 @@
 Building model utility function definitions
 """
 
+import os
 import sqlite3
 import csv
-import os
 import glob
 import pandas as pd
 import pvlib
 # Using CoolProp for calculating humid air properties: http://www.coolprop.org/fluid_properties/HumidAir.html
 from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
 
-def create_database(sqlite_path, sql_path, csv_path):
+
+def create_database(
+        sqlite_path,
+        sql_path,
+        csv_path
+):
     """
     Create SQLITE database from SQL (schema) file and CSV files
     """
@@ -22,22 +27,22 @@ def create_database(sqlite_path, sql_path, csv_path):
     # Create SQLITE database (schema) from SQL file
     conn = sqlite3.connect(sqlite_path)
     cursor = conn.cursor()
-    cursor.executescript(open(sql_path, "r").read())
+    cursor.executescript(open(sql_path, 'r').read())
     conn.commit()
 
     # Import CSV files into SQLITE database
     conn.text_factory = str  # allows utf-8 data to be stored
     cursor = conn.cursor()
-    for file in glob.glob(os.path.join(csv_path, "*.csv")):
+    for file in glob.glob(os.path.join(csv_path, '*.csv')):
         table_name = os.path.splitext(os.path.basename(file))[0]
 
-        with open(file, "r") as file:
+        with open(file, 'r') as file:
             first_row = True
             for row in csv.reader(file):
                 if first_row:
                     cursor.execute("delete from {}".format(table_name))
                     insert_sql_query = \
-                        "insert into {} VALUES ({})".format(table_name, ", ".join(["?" for column in row]))
+                        "insert into {} VALUES ({})".format(table_name, ', '.join(['?' for column in row]))
 
                     first_row = False
                 else:
@@ -47,7 +52,11 @@ def create_database(sqlite_path, sql_path, csv_path):
     conn.close()
 
 
-def calculate_irradiation_surfaces(conn, weather_type='singapore_nus', irradiation_model='dirint'):
+def calculate_irradiation_surfaces(
+        conn,
+        weather_type='singapore_nus',
+        irradiation_model='dirint'
+):
     """
     - Calculates irradiation for surfaces oriented towards east, south, west & north
     - Operates on the database: Updates according columns in weather_timeseries
