@@ -1,0 +1,16 @@
+
+\.idea/
+
+\.vscode/
+
+cobmo\.egg-info/
+
+*/__pycache__/
+
+*.sqlite
+
+*.sqlite-journal
+
+*.pyc
+
+*.DS_Store
