@@ -1108,27 +1108,33 @@ class Building(object):
             interior_surface_area_total = sum(
                 self.parse_parameter(row_interior['surface_area'])
                 * (1 - self.parse_parameter(row_interior['window_wall_ratio']))
-                for index_interior, row_interior in pd.concat([
-                    self.building_surfaces_interior[:][
-                        self.building_surfaces_interior['zone_name'] == row_exterior['zone_name']],
-                    self.building_surfaces_interior[:][
-                        self.building_surfaces_interior['zone_adjacent_name'] == row_exterior['zone_name']],
-                    self.building_surfaces_adiabatic[:][
-                        self.building_surfaces_adiabatic['zone_name'] == row_exterior['zone_name']]
-                ]).iterrows()  # For all surfaces adjacent to the zone that belongs to each exterior surface
+                for index_interior, row_interior in pd.concat(
+                    [
+                        self.building_surfaces_interior[:][
+                            self.building_surfaces_interior['zone_name'] == row_exterior['zone_name']],
+                        self.building_surfaces_interior[:][
+                            self.building_surfaces_interior['zone_adjacent_name'] == row_exterior['zone_name']],
+                        self.building_surfaces_adiabatic[:][
+                            self.building_surfaces_adiabatic['zone_name'] == row_exterior['zone_name']]
+                    ],
+                    sort=True  # TODO: Check if this is behaves correctly
+                ).iterrows()  # For all surfaces adjacent to the zone that belongs to each exterior surface
             )
-            for index_interior, row_interior in pd.concat([
-                # For all surfaces adjacent to the zone that belongs to each exterior surface
-                self.building_surfaces_interior[:][
-                    self.building_surfaces_interior['zone_name'] == row_exterior['zone_name']
-                ],
-                self.building_surfaces_interior[:][
-                    self.building_surfaces_interior['zone_adjacent_name'] == row_exterior['zone_name']
-                ],
-                self.building_surfaces_adiabatic[:][
-                    self.building_surfaces_adiabatic['zone_name'] == row_exterior['zone_name']
-                ]
-            ]).iterrows():
+            # For all surfaces adjacent to the zone that belongs to each exterior surface
+            for index_interior, row_interior in pd.concat(
+                    [
+                        self.building_surfaces_interior[:][
+                            self.building_surfaces_interior['zone_name'] == row_exterior['zone_name']
+                        ],
+                        self.building_surfaces_interior[:][
+                            self.building_surfaces_interior['zone_adjacent_name'] == row_exterior['zone_name']
+                        ],
+                        self.building_surfaces_adiabatic[:][
+                            self.building_surfaces_adiabatic['zone_name'] == row_exterior['zone_name']
+                        ]
+                    ],
+                    sort=True  # TODO: Check if this is behaves correctly
+            ).iterrows():
                 if self.parse_parameter(row_interior['heat_capacity']) != 0:
                     # Received by the wall
                     self.disturbance_matrix.at[
