@@ -4,6 +4,8 @@ Building model main function definitions
 
 import os
 import sqlite3
+import numpy as np
+import pandas as pd
 import cobmo.building
 import cobmo.utils
 
@@ -36,26 +38,67 @@ def example():
     """
     Example script
     """
+
     building = get_building_model()
 
+    # Define initial state and control timeseries
+    state_initial = pd.Series(
+        np.concatenate([
+            26.0  # in °C
+            * np.ones(sum(building.index_states.str.contains('temperature'))),
+            100.0  # in ppm
+            * np.ones(sum(building.index_states.str.contains('co2_concentration'))),
+            0.013  # in kg(water)/kg(air)
+            * np.ones(sum(building.index_states.str.contains('absolute_humidity')))
+        ]),
+        building.index_states
+    )
+    control_timeseries = pd.DataFrame(
+        np.random.rand(len(building.index_time), len(building.index_controls)),
+        building.index_time,
+        building.index_controls
+    )
+
+    # Run simulation
+    (
+        state_timeseries,
+        output_timeseries
+    ) = building.simulate(
+        state_initial=state_initial,
+        control_timeseries=control_timeseries
+    )
+
+    # Outputs for debugging
     print("-----------------------------------------------------------------------------------------------------------")
-    print('building.state_matrix=')
+    print("building.state_matrix=")
     print(building.state_matrix)
     print("-----------------------------------------------------------------------------------------------------------")
-    print('building.control_matrix=')
+    print("building.control_matrix=")
     print(building.control_matrix)
     print("-----------------------------------------------------------------------------------------------------------")
-    print('building.disturbance_matrix=')
+    print("building.disturbance_matrix=")
     print(building.disturbance_matrix)
     print("-----------------------------------------------------------------------------------------------------------")
-    print('building.state_output_matrix=')
+    print("building.state_output_matrix=")
     print(building.state_output_matrix)
     print("-----------------------------------------------------------------------------------------------------------")
-    print('building.control_output_matrix=')
+    print("building.control_output_matrix=")
     print(building.control_output_matrix)
     print("-----------------------------------------------------------------------------------------------------------")
-    print('building.disturbance_output_matrix=')
+    print("building.disturbance_output_matrix=")
     print(building.disturbance_output_matrix)
+    print("-----------------------------------------------------------------------------------------------------------")
+    print("control_timeseries=")
+    print(control_timeseries)
+    print("-----------------------------------------------------------------------------------------------------------")
+    print("disturbance_timeseries=")
+    print(building.disturbance_timeseries)
+    print("-----------------------------------------------------------------------------------------------------------")
+    print("state_timeseries=")
+    print(state_timeseries)
+    print("-----------------------------------------------------------------------------------------------------------")
+    print("output_timeseries=")
+    print(output_timeseries)
     print("-----------------------------------------------------------------------------------------------------------")
 
 

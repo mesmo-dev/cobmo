@@ -2497,9 +2497,6 @@ class Building(object):
                 axis='columns'
             )
 
-        # Transpose to get correct orientation for matrix multiplication with disturbance_matrix
-        self.disturbance_timeseries = self.disturbance_timeseries.transpose()
-
     def define_output_constraint_timeseries(self, conn):
         """
         - Generate minimum/maximum constraint timeseries based on `building_zone_constraint_profiles`
@@ -2758,4 +2755,48 @@ class Building(object):
             data=disturbance_matrix_discrete,
             index=self.disturbance_matrix.index,
             columns=self.disturbance_matrix.columns
+        )
+
+    def simulate(
+            self,
+            state_initial,
+            control_timeseries
+    ):
+        """Simulate building model with given initial state and control timeseries.
+
+        - Time horizon is derived from scenario definition in database.
+        - Disturbance timeseries is derived from database.
+        - TODO: Automatically create initial state from database.
+        """
+
+        # Initialize state and output timeseries
+        state_timeseries = pd.DataFrame(
+            0.0,
+            self.index_time,
+            self.index_states
+        )
+        state_timeseries.iloc[0, :] = state_initial
+        output_timeseries = pd.DataFrame(
+            0.0,
+            self.index_time,
+            self.index_outputs
+        )
+
+        # Iterative simulation of state space equations
+        for index in range(len(self.index_time) - 1):
+            state_timeseries.iloc[index + 1, :] = (
+                    np.inner(self.state_matrix, state_timeseries.iloc[index, :])
+                    + np.inner(self.control_matrix, control_timeseries.iloc[index, :])
+                    + np.inner(self.disturbance_matrix, self.disturbance_timeseries.iloc[index, :])
+            )
+        for index in range(len(self.index_time)):
+            output_timeseries.iloc[index, :] = (
+                    np.inner(self.state_output_matrix, state_timeseries.iloc[index, :])
+                    + np.inner(self.control_output_matrix, control_timeseries.iloc[index, :])
+                    + np.inner(self.disturbance_output_matrix, self.disturbance_timeseries.iloc[index, :])
+            )
+
+        return (
+            state_timeseries,
+            output_timeseries
         )
