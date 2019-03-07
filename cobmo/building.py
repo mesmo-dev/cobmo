@@ -2463,6 +2463,7 @@ class Building(object):
         building_internal_gain_timeseries.index = pd.to_datetime(building_internal_gain_timeseries.index)
 
         # Reindex and construct full disturbance timeseries
+        # TODO: Initialize disturbance_timeseries in _init_
         self.disturbance_timeseries = pd.concat(
             [
                 weather_timeseries[[
@@ -2478,24 +2479,17 @@ class Building(object):
                 ),
                 building_internal_gain_timeseries.reindex(
                     index=self.time_vector, method='nearest'
+                ),
+                (
+                    pd.DataFrame(
+                        1.0,
+                        self.index_time,
+                        ['constant']
+                    ) if self.define_constant else pd.DataFrame([])  # Append constant only when needed
                 )
             ],
             axis='columns'
         )
-
-        # Append constant (only when it should be considered)
-        if self.define_constant:
-            self.disturbance_timeseries = pd.concat(
-                [
-                    self.disturbance_timeseries,
-                    pd.Series(
-                        1.0,
-                        self.time_vector,
-                        name='constant'
-                    )
-                ],
-                axis='columns'
-            )
 
     def define_output_constraint_timeseries(self, conn):
         """
@@ -2621,7 +2615,7 @@ class Building(object):
                                         ]
                                     )
                                     * (
-                                            self.disturbance_timeseries.transpose()[
+                                            self.disturbance_timeseries[
                                                 self.building_zones["internal_gain_type"].loc[index_zone] + "_occupancy"
                                             ].loc[row_time] * self.parse_parameter(row_zone['zone_area'])
                                             + self.parse_parameter(
