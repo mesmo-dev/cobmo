@@ -102,10 +102,12 @@ def example():
     print(output_timeseries)
     print("-----------------------------------------------------------------------------------------------------------")
 
+    # Test Controller class
     controller = cobmo.controller.Controller(
         conn=connect_database(),
         building=building
     )
+    result = controller.solve()
 
 
 if __name__ == "__main__":
