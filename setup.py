@@ -9,9 +9,10 @@ setup(
     version='0.1',
     py_modules=find_packages(),
     install_requires=[
+        'CoolProp',
         'numpy',
         'pandas',
-        'CoolProp',
-        'scipy',
-        'pvlib'
+        'pvlib',
+        'pyomo',
+        'scipy'
     ])

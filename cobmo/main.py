@@ -7,6 +7,7 @@ import sqlite3
 import numpy as np
 import pandas as pd
 import cobmo.building
+import cobmo.controller
 import cobmo.utils
 
 
@@ -100,6 +101,11 @@ def example():
     print("output_timeseries=")
     print(output_timeseries)
     print("-----------------------------------------------------------------------------------------------------------")
+
+    controller = cobmo.controller.Controller(
+        conn=connect_database(),
+        building=building
+    )
 
 
 if __name__ == "__main__":
