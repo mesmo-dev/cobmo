@@ -45,18 +45,18 @@ def example():
     state_initial = pd.Series(
         np.concatenate([
             26.0  # in °C
-            * np.ones(sum(building.index_states.str.contains('temperature'))),
+            * np.ones(sum(building.set_states.str.contains('temperature'))),
             100.0  # in ppm
-            * np.ones(sum(building.index_states.str.contains('co2_concentration'))),
+            * np.ones(sum(building.set_states.str.contains('co2_concentration'))),
             0.013  # in kg(water)/kg(air)
-            * np.ones(sum(building.index_states.str.contains('absolute_humidity')))
+            * np.ones(sum(building.set_states.str.contains('absolute_humidity')))
         ]),
-        building.index_states
+        building.set_states
     )
     control_timeseries = pd.DataFrame(
-        np.random.rand(len(building.index_time), len(building.index_controls)),
-        building.index_time,
-        building.index_controls
+        np.random.rand(len(building.set_timesteps), len(building.set_controls)),
+        building.set_timesteps,
+        building.set_controls
     )
 
     # Run simulation

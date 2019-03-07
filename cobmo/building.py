@@ -92,8 +92,8 @@ class Building(object):
                 | (self.building_zones['window_type'] != '').any()
         )
 
-        # Define index vectors
-        self.index_states = pd.Index(
+        # Define sets
+        self.set_states = pd.Index(
             pd.concat([
                 self.building_zones['zone_name'] + '_temperature',
                 self.building_surfaces_adiabatic['surface_name'][
@@ -115,7 +115,7 @@ class Building(object):
                     ] + '_absolute_humidity'
             ])
         )
-        self.index_controls = pd.Index(
+        self.set_controls = pd.Index(
             pd.concat([
                 self.building_zones['zone_name'][
                     self.building_zones['hvac_generic_type'] != ''
@@ -140,7 +140,7 @@ class Building(object):
                 ] + '_window_air_flow'
             ])
         )
-        self.index_disturbances = pd.Index(
+        self.set_disturbances = pd.Index(
             pd.concat([
                 pd.Series([
                     'ambient_air_temperature',
@@ -156,7 +156,7 @@ class Building(object):
                 (pd.Series(['constant']) if self.define_constant else pd.Series([]))
             ])
         )
-        self.index_outputs = pd.Index(
+        self.set_outputs = pd.Index(
             pd.concat([
                 self.building_zones['zone_name'] + '_temperature',
                 self.building_zones['zone_name'][
@@ -197,43 +197,50 @@ class Building(object):
                     ] + '_tu_cool_electric_power'
             ])
         )
+        self.set_timesteps = pd.Index(
+            pd.date_range(
+                start=pd.to_datetime(self.building_scenarios['time_start'][0]),
+                end=pd.to_datetime(self.building_scenarios['time_end'][0]),
+                freq=pd.to_timedelta(self.building_scenarios['time_step'][0])
+            )
+        )
 
         # Define model matrices
         self.state_matrix = pd.DataFrame(
             0.0,
-            self.index_states,
-            self.index_states
+            self.set_states,
+            self.set_states
         )
         self.control_matrix = pd.DataFrame(
             0.0,
-            self.index_states,
-            self.index_controls
+            self.set_states,
+            self.set_controls
         )
         self.disturbance_matrix = pd.DataFrame(
             0.0,
-            self.index_states,
-            self.index_disturbances
+            self.set_states,
+            self.set_disturbances
         )
         self.state_output_matrix = pd.DataFrame(
             0.0,
-            self.index_outputs,
-            self.index_states
+            self.set_outputs,
+            self.set_states
         )
         self.control_output_matrix = pd.DataFrame(
             0.0,
-            self.index_outputs,
-            self.index_controls
+            self.set_outputs,
+            self.set_controls
         )
         self.disturbance_output_matrix = pd.DataFrame(
             0.0,
-            self.index_outputs,
-            self.index_disturbances
+            self.set_outputs,
+            self.set_disturbances
         )
 
         # Define heat capacity vector
         self.heat_capacity_vector = pd.Series(
             0.0,
-            self.index_states
+            self.set_states
         )
         for index, row in self.building_zones.iterrows():
             self.heat_capacity_vector.at[index] = (
@@ -286,20 +293,8 @@ class Building(object):
         self.define_output_window_fresh_air_flow()
         self.define_output_ahu_fresh_air_flow()
 
-        # Define timeseries variables
-        self.time_vector = pd.date_range(
-            start=pd.to_datetime(self.building_scenarios['time_start'][0]),
-            end=pd.to_datetime(self.building_scenarios['time_end'][0]),
-            freq=pd.to_timedelta(self.building_scenarios['time_step'][0])
-        )
-        self.index_time = pd.Index(
-            self.time_vector
-        )
-
-        # Load disturbance timeseries
+        # Define timeseries
         self.load_disturbance_timeseries(conn)
-
-        # Define output constraint timeseries
         self.define_output_constraint_timeseries(conn)
 
         # Convert to time discrete model
@@ -2475,15 +2470,15 @@ class Building(object):
                     'irradiation_west',
                     'irradiation_north'
                 ]].reindex(
-                    index=self.time_vector, method='nearest'
+                    index=self.set_timesteps, method='nearest'
                 ),
                 building_internal_gain_timeseries.reindex(
-                    index=self.time_vector, method='nearest'
+                    index=self.set_timesteps, method='nearest'
                 ),
                 (
                     pd.DataFrame(
                         1.0,
-                        self.index_time,
+                        self.set_timesteps,
                         ['constant']
                     ) if self.define_constant else pd.DataFrame([])  # Append constant only when needed
                 )
@@ -2499,8 +2494,8 @@ class Building(object):
         # Initialise constraint timeseries as +/- infinity
         self.output_constraint_timeseries_maximum = pd.DataFrame(
             1.0 * np.infty,
-            self.index_time,
-            self.index_outputs
+            self.set_timesteps,
+            self.set_outputs
         )
         self.output_constraint_timeseries_minimum = -self.output_constraint_timeseries_maximum
 
@@ -2545,7 +2540,7 @@ class Building(object):
                 kind='zero',
                 fill_value='extrapolate'
             )
-            for row_time in self.time_vector:
+            for row_time in self.set_timesteps:
                 # Create index function for `from_time` (mapping `row_time.timestamp` to `from_time`)
                 constraint_profile_index_time = interp1d(
                     pd.to_datetime(
@@ -2766,28 +2761,28 @@ class Building(object):
         # Initialize state and output timeseries
         state_timeseries = pd.DataFrame(
             0.0,
-            self.index_time,
-            self.index_states
+            self.set_timesteps,
+            self.set_states
         )
         state_timeseries.iloc[0, :] = state_initial
         output_timeseries = pd.DataFrame(
             0.0,
-            self.index_time,
-            self.index_outputs
+            self.set_timesteps,
+            self.set_outputs
         )
 
         # Iterative simulation of state space equations
-        for index in range(len(self.index_time) - 1):
-            state_timeseries.iloc[index + 1, :] = (
-                    np.inner(self.state_matrix, state_timeseries.iloc[index, :])
-                    + np.inner(self.control_matrix, control_timeseries.iloc[index, :])
-                    + np.inner(self.disturbance_matrix, self.disturbance_timeseries.iloc[index, :])
+        for timestep in range(len(self.set_timesteps) - 1):
+            state_timeseries.iloc[timestep + 1, :] = (
+                    np.inner(self.state_matrix, state_timeseries.iloc[timestep, :])
+                    + np.inner(self.control_matrix, control_timeseries.iloc[timestep, :])
+                    + np.inner(self.disturbance_matrix, self.disturbance_timeseries.iloc[timestep, :])
             )
-        for index in range(len(self.index_time)):
-            output_timeseries.iloc[index, :] = (
-                    np.inner(self.state_output_matrix, state_timeseries.iloc[index, :])
-                    + np.inner(self.control_output_matrix, control_timeseries.iloc[index, :])
-                    + np.inner(self.disturbance_output_matrix, self.disturbance_timeseries.iloc[index, :])
+        for timestep in range(len(self.set_timesteps)):
+            output_timeseries.iloc[timestep, :] = (
+                    np.inner(self.state_output_matrix, state_timeseries.iloc[timestep, :])
+                    + np.inner(self.control_output_matrix, control_timeseries.iloc[timestep, :])
+                    + np.inner(self.disturbance_output_matrix, self.disturbance_timeseries.iloc[timestep, :])
             )
 
         return (
