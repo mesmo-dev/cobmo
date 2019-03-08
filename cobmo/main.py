@@ -53,7 +53,7 @@ def example():
             * np.ones(sum(building.set_states.str.contains('absolute_humidity')))
         ]),
         building.set_states
-    )
+    )  # TODO: Move intial state defintion to building model
     control_timeseries = pd.DataFrame(
         np.random.rand(len(building.set_timesteps), len(building.set_controls)),
         building.set_timesteps,
@@ -92,7 +92,7 @@ def example():
     print("control_timeseries=")
     print(control_timeseries)
     print("-----------------------------------------------------------------------------------------------------------")
-    print("disturbance_timeseries=")
+    print("building.disturbance_timeseries=")
     print(building.disturbance_timeseries)
     print("-----------------------------------------------------------------------------------------------------------")
     print("state_timeseries=")
@@ -102,13 +102,28 @@ def example():
     print(output_timeseries)
     print("-----------------------------------------------------------------------------------------------------------")
 
-    # Test Controller class
+    # Run controller
     controller = cobmo.controller.Controller(
         conn=connect_database(),
         building=building
     )
-    result = controller.solve()
+    (
+        control_timeseries,
+        state_timeseries,
+        output_timeseries
+    ) = controller.solve()
 
+    # Outputs for debugging
+    print("-----------------------------------------------------------------------------------------------------------")
+    print("control_timeseries=")
+    print(control_timeseries)
+    print("-----------------------------------------------------------------------------------------------------------")
+    print("state_timeseries=")
+    print(state_timeseries)
+    print("-----------------------------------------------------------------------------------------------------------")
+    print("output_timeseries=")
+    print(output_timeseries)
+    print("-----------------------------------------------------------------------------------------------------------")
 
 if __name__ == "__main__":
     example()

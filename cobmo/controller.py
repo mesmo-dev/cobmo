@@ -20,86 +20,91 @@ class Controller(object):
         - Creates Pyomo problem.
         """
         time_start = time.clock()
+        self.building = building
         self.problem = pyo.ConcreteModel()
         self.solver = pyo.SolverFactory('gurobi')
+        self.result = None
 
         # Define sets
         self.problem.set_states = pyo.Set(
-            initialize=building.set_states
+            initialize=self.building.set_states
         )
         self.problem.set_controls = pyo.Set(
-            initialize=building.set_controls
+            initialize=self.building.set_controls
         )
         self.problem.set_disturbances = pyo.Set(
-            initialize=building.set_disturbances
+            initialize=self.building.set_disturbances
         )
         self.problem.set_outputs = pyo.Set(
-            initialize=building.set_outputs
+            initialize=self.building.set_outputs
         )
-        self.problem.set_outputs_electric = pyo.Set(
-            initialize=building.set_outputs[building.set_outputs.str.contains('electric_power')]
+        self.problem.set_outputs_power = pyo.Set(
+            initialize=self.building.set_outputs[self.building.set_outputs.str.contains('power')]
+        )
+        self.problem.set_outputs_temperature = pyo.Set(
+            initialize=self.building.set_outputs[self.building.set_outputs.str.contains('temperature')]
         )
         self.problem.set_timesteps = pyo.Set(
-            initialize=building.set_timesteps
+            initialize=self.building.set_timesteps
         )
         self.problem.set_timestep_first = pyo.Set(
-            initialize=building.set_timesteps[0:1]
+            initialize=self.building.set_timesteps[0:1]
         )
         self.problem.set_timesteps_without_first = pyo.Set(
-            initialize=building.set_timesteps[1:]
+            initialize=self.building.set_timesteps[1:]
         )
         self.problem.set_timesteps_without_last = pyo.Set(
-            initialize=building.set_timesteps[:-1]
+            initialize=self.building.set_timesteps[:-1]
         )
 
         # Store timestep
-        self.problem.timestep_delta = building.set_timesteps[1] - building.set_timesteps[0]
+        self.problem.timestep_delta = self.building.set_timesteps[1] - self.building.set_timesteps[0]
 
         # Define parameters
         self.problem.parameter_state_matrix = pyo.Param(
             self.problem.set_states,
             self.problem.set_states,
-            initialize=building.state_matrix.stack().to_dict()
+            initialize=self.building.state_matrix.stack().to_dict()
         )
         self.problem.parameter_state_output_matrix = pyo.Param(
             self.problem.set_outputs,
             self.problem.set_states,
-            initialize=building.state_output_matrix.stack().to_dict()
+            initialize=self.building.state_output_matrix.stack().to_dict()
         )
         self.problem.parameter_control_matrix = pyo.Param(
             self.problem.set_states,
             self.problem.set_controls,
-            initialize=building.control_matrix.stack().to_dict()
+            initialize=self.building.control_matrix.stack().to_dict()
         )
         self.problem.parameter_control_output_matrix = pyo.Param(
             self.problem.set_outputs,
             self.problem.set_controls,
-            initialize=building.control_output_matrix.stack().to_dict()
+            initialize=self.building.control_output_matrix.stack().to_dict()
         )
         self.problem.parameter_disturbance_matrix = pyo.Param(
             self.problem.set_states,
             self.problem.set_disturbances,
-            initialize=building.disturbance_matrix.stack().to_dict()
+            initialize=self.building.disturbance_matrix.stack().to_dict()
         )
         self.problem.parameter_disturbance_output_matrix = pyo.Param(
             self.problem.set_outputs,
             self.problem.set_disturbances,
-            initialize=building.disturbance_output_matrix.stack().to_dict()
+            initialize=self.building.disturbance_output_matrix.stack().to_dict()
         )
         self.problem.parameter_disturbance_timeseries = pyo.Param(
             self.problem.set_timesteps,
             self.problem.set_disturbances,
-            initialize=building.disturbance_timeseries.stack().to_dict()
+            initialize=self.building.disturbance_timeseries.stack().to_dict()
         )
         self.problem.parameter_output_timeseries_minimum = pyo.Param(
             self.problem.set_timesteps,
             self.problem.set_outputs,
-            initialize=building.output_constraint_timeseries_minimum.transpose().stack().to_dict()
+            initialize=self.building.output_constraint_timeseries_minimum.transpose().stack().to_dict()
         )  # TODO: Transpose output_constraint_timeseries_minimum.
         self.problem.parameter_output_timeseries_maximum = pyo.Param(
             self.problem.set_timesteps,
             self.problem.set_outputs,
-            initialize=building.output_constraint_timeseries_maximum.transpose().stack().to_dict()
+            initialize=self.building.output_constraint_timeseries_maximum.transpose().stack().to_dict()
         )  # TODO: Transpose output_constraint_timeseries_maximum.
 
         # Define initial state
@@ -108,28 +113,43 @@ class Controller(object):
             initialize=pd.Series(
                 np.concatenate([
                     26.0  # in °C
-                    * np.ones(sum(building.set_states.str.contains('temperature'))),
+                    * np.ones(sum(self.building.set_states.str.contains('temperature'))),
                     100.0  # in ppm
-                    * np.ones(sum(building.set_states.str.contains('co2_concentration'))),
+                    * np.ones(sum(self.building.set_states.str.contains('co2_concentration'))),
                     0.013  # in kg(water)/kg(air)
-                    * np.ones(sum(building.set_states.str.contains('absolute_humidity')))
+                    * np.ones(sum(self.building.set_states.str.contains('absolute_humidity')))
                 ]),
-                building.set_states
+                self.building.set_states
             ).to_dict()
-        )
+        )  # TODO: Move intial state defintion to building model
+
+        # Define variable bound rules
+        def rule_output_bounds(
+                problem,
+                timestep,
+                output
+        ):
+            return (
+                problem.parameter_output_timeseries_minimum[timestep, output],
+                problem.parameter_output_timeseries_maximum[timestep, output]
+            )
 
         # Define variables
         self.problem.variable_state_timeseries = pyo.Var(
             self.problem.set_timesteps,
-            self.problem.set_states
+            self.problem.set_states,
+            domain=pyo.Reals
         )
         self.problem.variable_control_timeseries = pyo.Var(
             self.problem.set_timesteps,
-            self.problem.set_controls
+            self.problem.set_controls,
+            domain=pyo.Reals
         )
         self.problem.variable_output_timeseries = pyo.Var(
             self.problem.set_timesteps,
             self.problem.set_outputs,
+            domain=pyo.Reals,
+            bounds=rule_output_bounds
         )
 
         # Define constraint rules
@@ -195,17 +215,6 @@ class Controller(object):
             # Equality constraint
             return problem.variable_output_timeseries[timestep, output] == output_value
 
-        def rule_output_bounds(
-                problem,
-                timestep,
-                output
-        ):
-            return (
-                problem.parameter_output_timeseries_minimum[timestep, output],
-                problem.variable_output_timeseries[timestep, output],
-                problem.parameter_output_timeseries_maximum[timestep, output]
-            )
-
         # Define constraints
         self.problem.constraint_state_initial = pyo.Constraint(
             self.problem.set_timestep_first,
@@ -222,18 +231,13 @@ class Controller(object):
             self.problem.set_outputs,
             rule=rule_output_equation
         )
-        self.problem.constraint_output_bounds = pyo.Constraint(
-            self.problem.set_timesteps_without_first,
-            self.problem.set_outputs,
-            rule=rule_output_bounds
-        )
 
         # Define objective rule
         def objective_rule(problem):
             objective_value = 0.0
             for timestep in problem.set_timesteps:
-                for output in problem.set_outputs_electric:
-                    objective_value += problem.variable_output_timeseries[timestep, output]
+                for output_power in problem.set_outputs_power:  # TODO: Differentiate between thermal and electric.
+                    objective_value += problem.variable_output_timeseries[timestep, output_power]
             return objective_value
 
         # Define objective
@@ -247,7 +251,49 @@ class Controller(object):
 
     def solve(self):
         """Invoke solver on Pyomo problem."""
+
+        # Solve problem
         time_start = time.clock()
-        result = self.solver.solve(self.problem)
+        self.result = self.solver.solve(
+            self.problem,
+            tee=True  # Verbose solver outputs
+        )
         print("Controller solve time: {:.2f} seconds".format(time.clock() - time_start))
-        return result
+
+        # Retrieve results
+        time_start = time.clock()
+        control_timeseries = pd.DataFrame(
+            0.0,
+            self.building.set_timesteps,
+            self.building.set_controls
+        )
+        state_timeseries = pd.DataFrame(
+            0.0,
+            self.building.set_timesteps,
+            self.building.set_states
+        )
+        output_timeseries = pd.DataFrame(
+            0.0,
+            self.building.set_timesteps,
+            self.building.set_outputs
+        )
+        for timestep in self.building.set_timesteps:
+            for control in self.building.set_controls:
+                control_timeseries.at[timestep, control] = (
+                    self.problem.variable_control_timeseries[timestep, control].value
+                )
+            for state in self.building.set_states:
+                state_timeseries.at[timestep, state] = (
+                    self.problem.variable_state_timeseries[timestep, state].value
+                )
+            for output in self.building.set_outputs:
+                output_timeseries.at[timestep, output] = (
+                    self.problem.variable_output_timeseries[timestep, output].value
+                )
+        print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
+
+        return (
+            control_timeseries,
+            state_timeseries,
+            output_timeseries
+        )
