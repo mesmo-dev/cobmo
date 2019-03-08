@@ -1,5 +1,7 @@
 """Controller class definition."""
 
+import numpy as np
+import pandas as pd
 import pyomo.environ as pyo
 import time as time
 
@@ -39,6 +41,9 @@ class Controller(object):
         )
         self.problem.set_timesteps = pyo.Set(
             initialize=building.set_timesteps
+        )
+        self.problem.set_timestep_first = pyo.Set(
+            initialize=building.set_timesteps[0:1]
         )
         self.problem.set_timesteps_without_first = pyo.Set(
             initialize=building.set_timesteps[1:]
@@ -97,6 +102,22 @@ class Controller(object):
             initialize=building.output_constraint_timeseries_maximum.transpose().stack().to_dict()
         )  # TODO: Transpose output_constraint_timeseries_maximum.
 
+        # Define initial state
+        self.problem.parameter_state_initial = pyo.Param(
+            self.problem.set_states,
+            initialize=pd.Series(
+                np.concatenate([
+                    26.0  # in °C
+                    * np.ones(sum(building.set_states.str.contains('temperature'))),
+                    100.0  # in ppm
+                    * np.ones(sum(building.set_states.str.contains('co2_concentration'))),
+                    0.013  # in kg(water)/kg(air)
+                    * np.ones(sum(building.set_states.str.contains('absolute_humidity')))
+                ]),
+                building.set_states
+            ).to_dict()
+        )
+
         # Define variables
         self.problem.variable_state_timeseries = pyo.Var(
             self.problem.set_timesteps,
@@ -112,6 +133,16 @@ class Controller(object):
         )
 
         # Define constraint rules
+        def rule_state_initial(
+                problem,
+                timestep_first,
+                state
+        ):
+            # Equality constraint
+            return problem.variable_state_timeseries[timestep_first, state] == (
+                problem.parameter_state_initial[state]
+            )
+
         def rule_state_equation(
                 problem,
                 timestep,
@@ -176,6 +207,11 @@ class Controller(object):
             )
 
         # Define constraints
+        self.problem.constraint_state_initial = pyo.Constraint(
+            self.problem.set_timestep_first,
+            self.problem.set_states,
+            rule=rule_state_initial
+        )
         self.problem.constraint_state_equation = pyo.Constraint(
             self.problem.set_timesteps_without_last,
             self.problem.set_states,
