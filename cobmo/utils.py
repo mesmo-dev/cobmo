@@ -202,3 +202,30 @@ def calculate_sky_temperature(conn, weather_type='singapore_nus'):
     )
 
     weather_timeseries.to_sql('weather_timeseries', conn, if_exists='append', index=False)
+
+
+def calculate_error(
+        expected_timeseries=pd.DataFrame(),
+        predicted_timeseries=pd.DataFrame()
+):
+    """Computes the error between expected and predicted timeseries dataframes.
+
+    - Note: This function doesn't check if the data format is valid.
+    """
+    error_timeseries = pd.DataFrame(
+        0.0,
+        expected_timeseries.index,
+        expected_timeseries.columns
+    )
+    for index, row in expected_timeseries.iterrows():
+        error_timeseries.loc[index, :] = (
+            predicted_timeseries.loc[index, :]
+            - expected_timeseries.loc[index, :]
+        ).abs()
+
+    error_mean = error_timeseries.mean()
+
+    return (
+        error_mean,
+        error_timeseries
+    )

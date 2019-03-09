@@ -54,7 +54,7 @@ def example():
         ]),
         building.set_states
     )  # TODO: Move intial state defintion to building model
-    control_timeseries = pd.DataFrame(
+    control_timeseries_simulation = pd.DataFrame(
         np.random.rand(len(building.set_timesteps), len(building.set_controls)),
         building.set_timesteps,
         building.set_controls
@@ -62,11 +62,11 @@ def example():
 
     # Run simulation
     (
-        state_timeseries,
-        output_timeseries
+        state_timeseries_simulation,
+        output_timeseries_simulation
     ) = building.simulate(
         state_initial=state_initial,
-        control_timeseries=control_timeseries
+        control_timeseries=control_timeseries_simulation
     )
 
     # Outputs for debugging
@@ -89,17 +89,17 @@ def example():
     print("building.disturbance_output_matrix=")
     print(building.disturbance_output_matrix)
     print("-----------------------------------------------------------------------------------------------------------")
-    print("control_timeseries=")
-    print(control_timeseries)
+    print("control_timeseries_simulation=")
+    print(control_timeseries_simulation)
     print("-----------------------------------------------------------------------------------------------------------")
     print("building.disturbance_timeseries=")
     print(building.disturbance_timeseries)
     print("-----------------------------------------------------------------------------------------------------------")
-    print("state_timeseries=")
-    print(state_timeseries)
+    print("state_timeseries_simulation=")
+    print(state_timeseries_simulation)
     print("-----------------------------------------------------------------------------------------------------------")
-    print("output_timeseries=")
-    print(output_timeseries)
+    print("output_timeseries_simulation=")
+    print(output_timeseries_simulation)
     print("-----------------------------------------------------------------------------------------------------------")
 
     # Run controller
@@ -108,21 +108,39 @@ def example():
         building=building
     )
     (
-        control_timeseries,
-        state_timeseries,
-        output_timeseries
+        control_timeseries_controller,
+        state_timeseries_controller,
+        output_timeseries_controller
     ) = controller.solve()
 
     # Outputs for debugging
     print("-----------------------------------------------------------------------------------------------------------")
-    print("control_timeseries=")
-    print(control_timeseries)
+    print("control_timeseries_controller=")
+    print(control_timeseries_controller)
     print("-----------------------------------------------------------------------------------------------------------")
-    print("state_timeseries=")
-    print(state_timeseries)
+    print("state_timeseries_controller=")
+    print(state_timeseries_controller)
     print("-----------------------------------------------------------------------------------------------------------")
-    print("output_timeseries=")
-    print(output_timeseries)
+    print("output_timeseries_controller=")
+    print(output_timeseries_controller)
+    print("-----------------------------------------------------------------------------------------------------------")
+
+    # Run error calculation function
+    (
+        error_mean,
+        error_timeseries
+    ) = cobmo.utils.calculate_error(
+        output_timeseries_simulation.loc[:, output_timeseries_controller.columns.str.contains('temperature')],
+        output_timeseries_controller.loc[:, output_timeseries_controller.columns.str.contains('temperature')]
+    )  # Note: These are exemplary inputs.
+
+    # Outputs for debugging
+    print("-----------------------------------------------------------------------------------------------------------")
+    print("error_timeseries=")
+    print(error_timeseries)
+    print("-----------------------------------------------------------------------------------------------------------")
+    print("error_mean=")
+    print(error_mean)
     print("-----------------------------------------------------------------------------------------------------------")
 
 if __name__ == "__main__":
