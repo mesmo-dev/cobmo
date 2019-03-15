@@ -85,7 +85,7 @@ class Building(object):
         )
         self.building_zones.index = self.building_zones['zone_name']
 
-        # Add constant row in disturbance vector, if any CO2 model or HVAC or window
+        # Add constant timeseries in disturbance vector, if any CO2 model or HVAC or window
         self.define_constant = (
                 (self.building_scenarios['co2_model_type'][0] != '')
                 | (self.building_zones['hvac_ahu_type'] != '').any()
