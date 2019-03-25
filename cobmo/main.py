@@ -10,7 +10,7 @@ import cobmo.building
 import cobmo.controller
 import cobmo.utils
 
-
+# try 1
 def connect_database(
         data_path=os.path.join(os.path.dirname(os.path.normpath(__file__)), '..', 'data'),
         overwrite_database=True
