@@ -6,6 +6,7 @@ import os
 import sqlite3
 import numpy as np
 import pandas as pd
+import time
 import cobmo.building
 import cobmo.controller
 import cobmo.utils
@@ -28,7 +29,7 @@ def connect_database(
 
 
 def get_building_model(
-        scenario_name='scenario_default',
+        scenario_name='example_1_zone',
         conn=connect_database()
 ):
     building = cobmo.building.Building(conn, scenario_name)
@@ -40,7 +41,9 @@ def example():
     Example script
     """
 
+    time_start = time.clock()
     building = get_building_model()
+    print("Building model setup time: {:.2f} seconds".format(time.clock() - time_start))
 
     # Define initial state and control timeseries
     state_initial = pd.Series(
@@ -54,13 +57,20 @@ def example():
         ]),
         building.set_states
     )  # TODO: Move intial state defintion to building model
+    # control_timeseries_simulation = pd.DataFrame(
+    #     np.random.rand(len(building.set_timesteps), len(building.set_controls)),
+    #     building.set_timesteps,
+    #     building.set_controls
+    # )
     control_timeseries_simulation = pd.DataFrame(
-        np.random.rand(len(building.set_timesteps), len(building.set_controls)),
+        0,
         building.set_timesteps,
         building.set_controls
     )
+    control_timeseries_simulation.loc[:]['zone_1_generic_cool_thermal_power'] = 200
 
     # Run simulation
+    time_start = time.clock()
     (
         state_timeseries_simulation,
         output_timeseries_simulation
@@ -68,6 +78,7 @@ def example():
         state_initial=state_initial,
         control_timeseries=control_timeseries_simulation
     )
+    print("Simulation solve time: {:.2f} seconds".format(time.clock() - time_start))
 
     # Outputs for debugging
     print("-----------------------------------------------------------------------------------------------------------")
@@ -102,46 +113,46 @@ def example():
     print(output_timeseries_simulation)
     print("-----------------------------------------------------------------------------------------------------------")
 
-    # Run controller
-    controller = cobmo.controller.Controller(
-        conn=connect_database(),
-        building=building
-    )
-    (
-        control_timeseries_controller,
-        state_timeseries_controller,
-        output_timeseries_controller
-    ) = controller.solve()
-
-    # Outputs for debugging
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("control_timeseries_controller=")
-    print(control_timeseries_controller)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("state_timeseries_controller=")
-    print(state_timeseries_controller)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("output_timeseries_controller=")
-    print(output_timeseries_controller)
-    print("-----------------------------------------------------------------------------------------------------------")
-
-    # Run error calculation function
-    (
-        error_mean,
-        error_timeseries
-    ) = cobmo.utils.calculate_error(
-        output_timeseries_simulation.loc[:, output_timeseries_controller.columns.str.contains('temperature')],
-        output_timeseries_controller.loc[:, output_timeseries_controller.columns.str.contains('temperature')]
-    )  # Note: These are exemplary inputs.
-
-    # Outputs for debugging
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("error_timeseries=")
-    print(error_timeseries)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("error_mean=")
-    print(error_mean)
-    print("-----------------------------------------------------------------------------------------------------------")
+    # # Run controller
+    # controller = cobmo.controller.Controller(
+    #     conn=connect_database(),
+    #     building=building
+    # )
+    # (
+    #     control_timeseries_controller,
+    #     state_timeseries_controller,
+    #     output_timeseries_controller
+    # ) = controller.solve()
+    #
+    # # Outputs for debugging
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("control_timeseries_controller=")
+    # print(control_timeseries_controller)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("state_timeseries_controller=")
+    # print(state_timeseries_controller)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("output_timeseries_controller=")
+    # print(output_timeseries_controller)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    #
+    # # Run error calculation function
+    # (
+    #     error_mean,
+    #     error_timeseries
+    # ) = cobmo.utils.calculate_error(
+    #     output_timeseries_simulation.loc[:, output_timeseries_controller.columns.str.contains('temperature')],
+    #     output_timeseries_controller.loc[:, output_timeseries_controller.columns.str.contains('temperature')]
+    # )  # Note: These are exemplary inputs.
+    #
+    # # Outputs for debugging
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("error_timeseries=")
+    # print(error_timeseries)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("error_mean=")
+    # print(error_mean)
+    # print("-----------------------------------------------------------------------------------------------------------")
 
 if __name__ == "__main__":
     example()
