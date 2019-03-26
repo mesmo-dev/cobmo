@@ -235,3 +235,7 @@ create_level_8_14a,zone11,east,surface_exterior_13,exterior_wall_curtain,12.0,4
 create_level_8_14a,zone11,south,surface_exterior_14,exterior_wall_curtain,21.87,7.29
 create_level_8_14a,zone13,south,surface_exterior_15,exterior_wall_curtain,4.704,0.98
 create_level_8_14a,zone13,west,surface_exterior_16,exterior_wall_curtain,9.408,1.96
+example_1_zone,zone_1,east,surface_exterior_1,exterior_wall_curtain,20,
+example_1_zone,zone_1,south,surface_exterior_2,exterior_wall_curtain,20,
+example_1_zone,zone_1,west,surface_exterior_3,exterior_wall_curtain,20,
+example_1_zone,zone_1,north,surface_exterior_4,exterior_wall_curtain,20,

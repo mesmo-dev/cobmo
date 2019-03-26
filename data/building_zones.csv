@@ -164,4 +164,4 @@ create_level_8_14a,zone11,group_office_zone,3.0,29.16,4*7.29
 create_level_8_14a,zone12,open_space_zone,4.8,52.0,52
 create_level_8_14a,zone13,open_space_zone,4.8,28.0,28
 create_level_8_14a,zone14,open_space_zone,4.8,64.2712,9.98*6.44
-,,,,,
+example_1_zone,zone_1,empty_zone,4,25,
