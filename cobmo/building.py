@@ -295,7 +295,7 @@ class Building(object):
 
         # Define timeseries
         self.load_disturbance_timeseries(conn)
-        self.define_output_constraint_timeseries(conn)
+        # self.define_output_constraint_timeseries(conn)
 
         # Convert to time discrete model
         self.discretize_model()
