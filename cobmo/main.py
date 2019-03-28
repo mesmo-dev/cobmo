@@ -135,24 +135,34 @@ def example():
     # print("output_timeseries_controller=")
     # print(output_timeseries_controller)
     # print("-----------------------------------------------------------------------------------------------------------")
-    #
-    # # Run error calculation function
-    # (
-    #     error_mean,
-    #     error_timeseries
-    # ) = cobmo.utils.calculate_error(
-    #     output_timeseries_simulation.loc[:, output_timeseries_controller.columns.str.contains('temperature')],
-    #     output_timeseries_controller.loc[:, output_timeseries_controller.columns.str.contains('temperature')]
-    # )  # Note: These are exemplary inputs.
-    #
-    # # Outputs for debugging
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("error_timeseries=")
-    # print(error_timeseries)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("error_mean=")
-    # print(error_mean)
-    # print("-----------------------------------------------------------------------------------------------------------")
+
+    # Load validation data
+    output_timeseries_validation = pd.read_csv(
+        os.path.join(os.path.dirname(os.path.normpath(__file__)), '..', 'data', 'temp', 'validation_timeseries.csv'),
+        index_col='time',
+        parse_dates=True
+    ).pivot(
+        columns='output_name',
+        values='output_value'
+    )
+
+    # Run error calculation function
+    (
+        error_mean,
+        error_timeseries
+    ) = cobmo.utils.calculate_error(
+        output_timeseries_validation,
+        output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains('temperature')],
+    )
+
+    # Outputs for debugging
+    print("-----------------------------------------------------------------------------------------------------------")
+    print("error_timeseries=")
+    print(error_timeseries)
+    print("-----------------------------------------------------------------------------------------------------------")
+    print("error_mean=")
+    print(error_mean)
+    print("-----------------------------------------------------------------------------------------------------------")
 
 if __name__ == "__main__":
     example()
