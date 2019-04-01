@@ -63,13 +63,14 @@ def calculate_irradiation_surfaces(
         weather_type='singapore_nus',
         irradiation_model='dirint'
 ):
-    """
-    - Calculates irradiation for surfaces oriented towards east, south, west & north
+    """ Calculates irradiation for surfaces oriented towards east, south, west & north.
+
     - Operates on the database: Updates according columns in weather_timeseries
     - Takes irradition_horizontal as measured global horizontal irradiation (ghi)
     - Based on pvlib-python toolbox: https://github.com/pvlib/pvlib-python
     """
-    # Load weather data
+
+    # Load weather data from database
     weather_types = pd.read_sql(
         """
         select * from weather_types 
@@ -84,10 +85,13 @@ def calculate_irradiation_surfaces(
         """.format(weather_type),
         conn
     )
-    weather_timeseries.index = pd.to_datetime(weather_timeseries['time'])
 
-    # Set time zone (for solarposition calculation)
+    # Set time zone (required for pvlib solar position calculations)
+    weather_timeseries.index = pd.to_datetime(weather_timeseries['time'])
     weather_timeseries.index = weather_timeseries.index.tz_localize(weather_types['time_zone'][0])
+
+    # Extract global horizontal irradiation (ghi) from weather data
+    irradiation_ghi = weather_timeseries['irradiation_horizontal']
 
     # Calculate solarposition (zenith, azimuth)
     solarposition = pvlib.solarposition.get_solarposition(
@@ -96,26 +100,29 @@ def calculate_irradiation_surfaces(
         longitude=weather_types['longitude'][0]
     )
 
-    # Calculate direct normal irradiation (dni) from global horizontal irr. (ghi)
+    # Calculate direct normal irradiation (dni) from global horizontal irradiation (ghi)
+    irradiation_dni = pd.Series(index=weather_timeseries.index)
     if irradiation_model == 'disc':
         # ... via DISC model
-        irradiation_dni_dhi = pvlib.irradiance.disc(
-            ghi=weather_timeseries['irradiation_horizontal'],
-            zenith=solarposition['zenith'],
+        irradiation_disc = pvlib.irradiance.disc(
+            ghi=irradiation_ghi,
+            solar_zenith=solarposition['zenith'],
             datetime_or_doy=weather_timeseries.index
         )
+        irradiation_dni = irradiation_disc['dni']
     elif irradiation_model == 'erbs':
         # ... via ERBS model
-        irradiation_dni_dhi = pvlib.irradiance.erbs(
-            ghi=weather_timeseries['irradiation_horizontal'],
+        irradiation_erbs = pvlib.irradiance.erbs(
+            ghi=irradiation_ghi,
             zenith=solarposition['zenith'],
             doy=weather_timeseries.index
         )
+        irradiation_dni = irradiation_erbs['dni']
     elif irradiation_model == 'dirint':
         # ... via DIRINT model
-        irradiation_dni_dhi = pd.DataFrame(pvlib.irradiance.dirint(
-            ghi=weather_timeseries['irradiation_horizontal'],
-            zenith=solarposition['zenith'],
+        irradiation_dirint = pvlib.irradiance.dirint(
+            ghi=irradiation_ghi,
+            solar_zenith=solarposition['zenith'],
             times=weather_timeseries.index,
             temp_dew=humid_air_properties(
                 'D',
@@ -123,33 +130,36 @@ def calculate_irradiation_surfaces(
                 'W', weather_timeseries['ambient_air_humidity_ratio'].values,
                 'P', 101325
             ) - 273.15  # Use CoolProps toolbox to calculate dew point temperature
-        ), index=weather_timeseries.index, columns=['dni'])
-        irradiation_dni_dhi.loc[irradiation_dni_dhi['dni'].isna(), 'dni'] = 0  # NaN means no irradiation
+        )
+        irradiation_dni = irradiation_dirint
+
+    # Replace NaNs (NaN means no irradiation)
+    irradiation_dni.loc[irradiation_dni.isna()] = 0.0
 
     # Calculate diffuse horizontal irradiation (dhi)
-    irradiation_dni_dhi['dhi'] = (
-            weather_timeseries['irradiation_horizontal']
-            - irradiation_dni_dhi['dni']
-            * pvlib.tools.cosd(solarposition['zenith'])
+    irradiation_dhi = pd.Series(
+            irradiation_ghi
+            - irradiation_dni
+            * pvlib.tools.cosd(solarposition['zenith']),
     )
 
     # Define surface orientations
     surface_orientations = pd.DataFrame(
-        data=[0, 90, 180, 270],
+        data=[0.0, 90.0, 180.0, 270.0],
         index=['north', 'east', 'south', 'west'],
         columns=['surface_azimuth']
     )
 
     # Calculate irradiation onto each surface
     for index, row in surface_orientations.iterrows():
-        irradiation_surface = pvlib.irradiance.total_irrad(
-            surface_tilt=90,
+        irradiation_surface = pvlib.irradiance.get_total_irradiance(
+            surface_tilt=90.0,
             surface_azimuth=row['surface_azimuth'],
-            apparent_zenith=solarposition['apparent_zenith'],
-            azimuth=solarposition['azimuth'],
-            dni=irradiation_dni_dhi['dni'],
-            ghi=weather_timeseries['irradiation_horizontal'],
-            dhi=irradiation_dni_dhi['dhi'],
+            solar_zenith=solarposition['zenith'],
+            solar_azimuth=solarposition['azimuth'],
+            dni=irradiation_dni,
+            ghi=irradiation_ghi,
+            dhi=irradiation_dhi,
             surface_type='urban',
             model='isotropic'
         )
@@ -162,7 +172,12 @@ def calculate_irradiation_surfaces(
         where weather_type='{}'
         """.format(weather_type),
     )
-    weather_timeseries.to_sql('weather_timeseries', conn, if_exists='append', index=False)
+    weather_timeseries.to_sql(
+        'weather_timeseries',
+        conn,
+        if_exists='append',
+        index=False
+    )
 
 def calculate_sky_temperature(conn, weather_type='singapore_nus'):
     """
