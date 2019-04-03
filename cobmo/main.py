@@ -10,7 +10,7 @@ import cobmo.building
 import cobmo.controller
 import cobmo.utils
 
-# try 1
+
 def connect_database(
         data_path=os.path.join(os.path.dirname(os.path.normpath(__file__)), '..', 'data'),
         overwrite_database=True
@@ -102,6 +102,16 @@ def example():
     print(output_timeseries_simulation)
     print("-----------------------------------------------------------------------------------------------------------")
 
+    # file_output_text = open("my_file_out.txt", "w")
+    # file_output_text.write(building.state_matrix)
+
+    building.state_matrix.to_csv('building___state_matrix.csv')
+    building.control_matrix.to_csv('building___control_matrix.csv')
+    building.disturbance_matrix.to_csv('building___disturbance_matrix.csv')
+    building.state_output_matrix.to_csv('building___state_output_matrix.csv')
+
+
+
     # Run controller
     controller = cobmo.controller.Controller(
         conn=connect_database(),
@@ -143,5 +153,11 @@ def example():
     print(error_mean)
     print("-----------------------------------------------------------------------------------------------------------")
 
+    np.savetxt(r'my_file_output_state_matrix.txt', building.state_matrix.values) # , fmt='%d'
+    state_timeseries_simulation.to_csv('state_timeseries_simulation.csv')
+    state_timeseries_controller.to_csv('state_timeseries_controller.csv')
+
 if __name__ == "__main__":
     example()
+
+

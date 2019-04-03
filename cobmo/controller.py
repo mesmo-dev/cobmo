@@ -134,7 +134,7 @@ class Controller(object):
                 problem.parameter_output_timeseries_maximum[timestep, output]
             )
 
-        # Define variables
+        # Define variables - they are defined as matrixes
         self.problem.variable_state_timeseries = pyo.Var(
             self.problem.set_timesteps,
             self.problem.set_states,
@@ -151,6 +151,8 @@ class Controller(object):
             domain=pyo.Reals,
             bounds=rule_output_bounds
         )
+
+# =================================================================================================
 
         # Define constraint rules
         def rule_state_initial(
@@ -170,7 +172,7 @@ class Controller(object):
         ):
             # State equation
             state_value = 0.0
-            for state_other in problem.set_states:
+            for state_other in problem.set_states:  # @contraint@temperature@zone
                 state_value += (
                         problem.parameter_state_matrix[state, state_other]
                         * problem.variable_state_timeseries[timestep, state_other]
@@ -214,7 +216,10 @@ class Controller(object):
 
             # Equality constraint
             return problem.variable_output_timeseries[timestep, output] == output_value
+# =================================================================================================
 
+
+# =================================================================================================
         # Define constraints
         self.problem.constraint_state_initial = pyo.Constraint(
             self.problem.set_timestep_first,
@@ -231,7 +236,7 @@ class Controller(object):
             self.problem.set_outputs,
             rule=rule_output_equation
         )
-
+# =================================================================================================
         # Define objective rule
         def objective_rule(problem):
             objective_value = 0.0
@@ -240,12 +245,19 @@ class Controller(object):
                     objective_value += problem.variable_output_timeseries[timestep, output_power]
             return objective_value
 
+# =================================================================================================
+
+# =================================================================================================
         # Define objective
         self.problem.objective = pyo.Objective(
             rule=objective_rule,
             sense=1  # Minimize
         )
+# =================================================================================================
 
+
+
+# =================================================================================================
         # Print setup time for debugging
         print("Controller setup time: {:.2f} seconds".format(time.clock() - time_start))
 
@@ -260,6 +272,9 @@ class Controller(object):
         )
         print("Controller solve time: {:.2f} seconds".format(time.clock() - time_start))
 
+
+
+# =================================================================================================
         # Retrieve results
         time_start = time.clock()
         control_timeseries = pd.DataFrame(

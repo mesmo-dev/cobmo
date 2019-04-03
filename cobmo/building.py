@@ -70,7 +70,7 @@ class Building(object):
             conn
         )
         self.building_surfaces_interior.index = self.building_surfaces_interior['surface_name']
-        self.building_zones = pd.read_sql(
+        self.building_zones = pd.read_sql( #add1.1: last line added to include storage
             """
             select * from building_zones 
             join building_zone_types using (zone_type) 
@@ -78,7 +78,8 @@ class Building(object):
             left join building_blind_types using (blind_type) 
             left join building_hvac_generic_types using (hvac_generic_type) 
             left join building_hvac_ahu_types using (hvac_ahu_type) 
-            left join building_hvac_tu_types using (hvac_tu_type) 
+            left join building_hvac_tu_types using (hvac_tu_type)
+            left join building_thermal_sensible_storage_types using (thermal_sensible_storage_type) 
             where building_name='{}'
             """.format(self.building_scenarios['building_name'][0]),
             conn
@@ -90,9 +91,10 @@ class Building(object):
                 (self.building_scenarios['co2_model_type'][0] != '')
                 | (self.building_zones['hvac_ahu_type'] != '').any()
                 | (self.building_zones['window_type'] != '').any()
+                | (self.building_zones['thermal_sensible_storage_type'] != '').any()    # @add2_constant.2: here we need to add a line that says that we can add a constant when storage is present   - weather_timeseries
         )
 
-        # Define sets
+        # Define sets -> defining the name of each line
         self.set_states = pd.Index(
             pd.concat([
                 self.building_zones['zone_name'] + '_temperature',
@@ -112,7 +114,11 @@ class Building(object):
                 self.building_zones['zone_name'][
                     (self.building_zones['hvac_ahu_type'] != '')
                     & (self.building_scenarios['humidity_model_type'][0] != '')
-                    ] + '_absolute_humidity'
+                    ] + '_absolute_humidity',
+                self.building_zones['zone_name'][  #@add1.2: sensible storage temperature index
+                    (self.building_zones['thermal_sensible_storage_type'] != '')
+                    & (self.building_scenarios['thermal_sensible_storage_model_type'][0] != '')
+                    ] + 'temperature'   # previously storage_temperature
             ])
         )
         self.set_controls = pd.Index(
@@ -137,22 +143,27 @@ class Building(object):
                     ] + '_tu_cool_air_flow',
                 self.building_zones['zone_name'][
                     (self.building_zones['window_type'] != '')
-                ] + '_window_air_flow'
+                ] + '_window_air_flow',
+                self.building_zones['zone_name'][           # @add3
+                    (self.building_zones['thermal_sensible_storage_type'] != '')
+                ] + '_storage_to_zone_heat_power'
             ])
         )
-        self.set_disturbances = pd.Index(
-            pd.concat([
-                pd.Series([
+        self.set_disturbances = pd.Index(  # creating an array of indexes
+            pd.concat([  # concatenates objects along the (default) rows axes. Concatenates only 1 object
+                pd.Series([  # 1-D array
                     'ambient_air_temperature',
                     'sky_temperature',
                     'irradiation_horizontal',
                     'irradiation_east',
                     'irradiation_south',
                     'irradiation_west',
-                    'irradiation_north'
+                    'irradiation_north',
+                    'storage_ambient_air_temperature'  # @add2
+
                 ]),
-                pd.Series(self.building_zones['internal_gain_type'].unique() + '_occupancy'),
-                pd.Series(self.building_zones['internal_gain_type'].unique() + '_appliances'),
+                pd.Series(self.building_zones['internal_gain_type'].unique() + '_occupancy'),   # part of pd.concat
+                pd.Series(self.building_zones['internal_gain_type'].unique() + '_appliances'),  # part of pd.concat
                 (pd.Series(['constant']) if self.define_constant else pd.Series([]))
             ])
         )
@@ -1672,7 +1683,7 @@ class Building(object):
                         / self.heat_capacity_vector[row_exterior['zone_name']]
                 )
 
-    def define_co2_transfer_hvac_ahu(self):
+    def define_co2_transfer_hvac_ahu(self):  # @add4: take inspiration from this for implementation of differential equations
         if self.building_scenarios['co2_model_type'][0] != '':
             for index, row in self.building_zones.iterrows():
                 if (row['hvac_ahu_type'] != '') | (row['window_type'] != ''):
@@ -1906,7 +1917,7 @@ class Building(object):
                                     / self.parse_parameter(row['zone_height'])
                             )
                     )
-
+                # @add2: here need to add the definition of ambient temperature for the storage
     def define_output_zone_temperature(self):
         for index, row in self.building_zones.iterrows():
             self.state_output_matrix.at[
@@ -2468,7 +2479,8 @@ class Building(object):
                     'irradiation_east',
                     'irradiation_south',
                     'irradiation_west',
-                    'irradiation_north'
+                    'irradiation_north',
+                    'storage_ambient_air_temperature'  # @add2
                 ]].reindex(
                     index=self.set_timesteps, method='nearest'
                 ),
@@ -2480,7 +2492,7 @@ class Building(object):
                         1.0,
                         self.set_timesteps,
                         ['constant']
-                    ) if self.define_constant else pd.DataFrame([])  # Append constant only when needed
+                    ) if self.define_constant else pd.DataFrame([])  # Append constant only when needed  @add2_constant.1: need to define a constant for the storage ambient temperature
                 )
             ],
             axis='columns'
@@ -2488,18 +2500,18 @@ class Building(object):
 
     def define_output_constraint_timeseries(self, conn):
         """
-        - Generate minimum/maximum constraint timeseries based on `building_zone_constraint_profiles`
+        - Generate minimum/maximum constraint timeseries based on `building_zone_constraint_profiles`  # @8constraint@23@degree@temperature
         - TODO: Make construction / interpolation simpler and more efficient
         """
         # Initialise constraint timeseries as +/- infinity
         self.output_constraint_timeseries_maximum = pd.DataFrame(
-            1.0 * np.infty,
-            self.set_timesteps,
-            self.set_outputs
+            1.0 * np.infty,     # data
+            self.set_timesteps, # index
+            self.set_outputs    # column
         )
         self.output_constraint_timeseries_minimum = -self.output_constraint_timeseries_maximum
 
-        # Outputs that are some kind of power can only be positive (greater than zero)
+        # Outputs that are some kind of power can only be positive (greater than zero). DONE BY MAKING THE MINIMUM CONSTRAINT EQUAL TO ZERO
         self.output_constraint_timeseries_minimum.loc[
             :,
             [column for column in self.output_constraint_timeseries_minimum.columns if '_power' in column]
@@ -2511,11 +2523,11 @@ class Building(object):
             [column for column in self.output_constraint_timeseries_minimum.columns if '_flow' in column]
         ] = 0
 
-        # If a heating/cooling session is defined, the heating/cooling air flow is forced to 0
+        # If a heating/cooling session is defined, the cooling/heating air flow is forced to 0
         # Comment: The cooling or heating coil may still be working, because of the dehumidification,
         # however it would not appear explicitly in the output.
         if self.building_scenarios['heating_cooling_session'][0] == 'heating':
-            self.output_constraint_timeseries_maximum.loc[
+            self.output_constraint_timeseries_maximum.loc[          # HERE THE UPPER CONSTRAINT IS TO 0 ==> THE VALUE IS FORCED TO 0
                 :, [column for column in self.output_constraint_timeseries_minimum.columns if '_cool' in column]
             ] = 0
         if self.building_scenarios['heating_cooling_session'][0] == 'cooling':
@@ -2540,7 +2552,7 @@ class Building(object):
                 kind='zero',
                 fill_value='extrapolate'
             )
-            for row_time in self.set_timesteps:
+            for row_time in self.set_timesteps:  # @working_checkpoint_28/03
                 # Create index function for `from_time` (mapping `row_time.timestamp` to `from_time`)
                 constraint_profile_index_time = interp1d(
                     pd.to_datetime(
@@ -2789,3 +2801,4 @@ class Building(object):
             state_timeseries,
             output_timeseries
         )
+
