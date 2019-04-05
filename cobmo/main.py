@@ -6,6 +6,8 @@ import os
 import sqlite3
 import numpy as np
 import pandas as pd
+import hvplot.pandas
+import hvplot
 import time
 import cobmo.building
 import cobmo.controller
@@ -48,7 +50,7 @@ def example():
     # Define initial state and control timeseries
     state_initial = pd.Series(
         np.concatenate([
-            26.0  # in °C
+            22.5  # in °C
             * np.ones(sum(building.set_states.str.contains('temperature'))),
             100.0  # in ppm
             * np.ones(sum(building.set_states.str.contains('co2_concentration'))),
@@ -154,6 +156,41 @@ def example():
         output_timeseries_validation,
         output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains('temperature')],
     )
+
+    # Plots for debugging
+    output_comparison = pd.concat(
+        [
+            output_timeseries_validation,
+            output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains('temperature')],
+            error_timeseries,
+        ],
+        keys=[
+            'expected',
+            'simulated',
+            'error',
+        ],
+        names=[
+            'type',
+            'output_name'
+        ],
+        axis=1
+    )
+    output_comparison.columns = ['_'.join(col).strip() for col in output_comparison.columns.values]
+
+    control_plot = (
+        control_timeseries_simulation
+    ).hvplot.step(width=1500, height=200)
+    expected_plot = (
+        output_comparison.loc[:, output_comparison.columns.str.contains('expected')]
+    ).hvplot.line(width=1500, height=300)
+    simulated_plot = (
+        output_comparison.loc[:, output_comparison.columns.str.contains('simulated')]
+    ).hvplot.line(width=1500, height=300)
+    error_plot = (
+        output_comparison.loc[:, output_comparison.columns.str.contains('error')]
+    ).hvplot(width=1500, height=200)
+
+    hvplot.show((control_plot + expected_plot * simulated_plot + error_plot).cols(1))
 
     # Outputs for debugging
     print("-----------------------------------------------------------------------------------------------------------")

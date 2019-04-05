@@ -14,5 +14,6 @@ setup(
         'pandas',
         'pvlib',
         'pyomo',
-        'scipy'
+        'scipy',
+        'hvplot'
     ])
