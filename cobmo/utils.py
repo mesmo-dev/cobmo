@@ -236,9 +236,9 @@ def calculate_error(
         error_timeseries.loc[index, :] = (
             predicted_timeseries.loc[index, :]
             - expected_timeseries.loc[index, :]
-        ).abs()
+        )
 
-    error_mean = error_timeseries.mean()
+    error_mean = error_timeseries.abs().mean()
 
     return (
         error_mean,
