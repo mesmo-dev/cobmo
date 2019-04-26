@@ -36,3 +36,5 @@ constants,heat_capacity_air,1211.025,J/(m3*K),
 constants,stefan_boltzmann_constant,5.67e-08,W/(m2*K4),
 constants,heat_transfer_coefficient_surface_to_ambient,25.0,W/(m2*K),
 constants,heat_transfer_coefficient_surface_to_zone,7.69,W/(m2*K),TODO: differentiate between vertical/horizontal
+constants,heat_transfer_coefficient_exterior_convection,25.0,W/(m2*K),ISO 6946
+constants,heat_transfer_coefficient_interior_convection,7.69,W/(m2*K),"ISO 6946, TODO: differentiate between vertical/horizontal"
