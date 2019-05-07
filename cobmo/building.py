@@ -3791,15 +3791,16 @@ class Building(object):
         # Iterative simulation of state space equations
         for timestep in range(len(self.set_timesteps) - 1):
             state_timeseries.iloc[timestep + 1, :] = (
-                    np.inner(self.state_matrix, state_timeseries.iloc[timestep, :])
-                    + np.inner(self.control_matrix, control_timeseries.iloc[timestep, :])
-                    + np.inner(self.disturbance_matrix, self.disturbance_timeseries.iloc[timestep, :])
+                    np.dot(self.state_matrix.values, state_timeseries.iloc[timestep, :].values)
+                    # np.dot(self.state_matrix.values, np.transpose([state_timeseries.iloc[timestep,:].values]))[0]
+                    + np.dot(self.control_matrix.values, control_timeseries.iloc[timestep, :].values)
+                    + np.dot(self.disturbance_matrix.values, self.disturbance_timeseries.iloc[timestep, :].values)
             )
         for timestep in range(len(self.set_timesteps)):
             output_timeseries.iloc[timestep, :] = (
-                    np.inner(self.state_output_matrix, state_timeseries.iloc[timestep, :])
-                    + np.inner(self.control_output_matrix, control_timeseries.iloc[timestep, :])
-                    + np.inner(self.disturbance_output_matrix, self.disturbance_timeseries.iloc[timestep, :])
+                    np.dot(self.state_output_matrix.values, state_timeseries.iloc[timestep, :].values)
+                    + np.dot(self.control_output_matrix.values, control_timeseries.iloc[timestep, :].values)
+                    + np.dot(self.disturbance_output_matrix.values, self.disturbance_timeseries.iloc[timestep, :].values)
             )
 
         return (
