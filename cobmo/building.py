@@ -3476,6 +3476,7 @@ class Building(object):
 
         # Reindex and construct full disturbance timeseries
         # TODO: Initialize disturbance_timeseries in _init_
+        # TODO: Consider higher order interpolation
         self.disturbance_timeseries = pd.concat(
             [
                 weather_timeseries[[
@@ -3487,11 +3488,11 @@ class Building(object):
                     'irradiation_west',
                     'irradiation_north'
                 ]].reindex(
-                    index=self.set_timesteps, method='nearest'
-                ),
+                    index=self.set_timesteps, method=None
+                ).interpolate(),
                 building_internal_gain_timeseries.reindex(
-                    index=self.set_timesteps, method='nearest'
-                ),
+                    index=self.set_timesteps, method=None
+                ).interpolate(),
                 (
                     pd.DataFrame(
                         1.0,
