@@ -6,8 +6,8 @@ import os
 import sqlite3
 import numpy as np
 import pandas as pd
-import hvplot.pandas
 import hvplot
+import hvplot.pandas
 import time
 import cobmo.building
 import cobmo.controller
@@ -216,10 +216,12 @@ def example():
     )
     error_plot = (
         zone_temperature_comparison[['error']].stack().stack().rename('zone_temperature_error').reset_index()
-    ).hvplot(
+    ).hvplot.area(
         x='time',
         y='zone_temperature_error',
         by='output_name',
+        stacked = False,
+        alpha = 0.5,
         **hvplot_default_options
     )
 
