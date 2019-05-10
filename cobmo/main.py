@@ -196,6 +196,16 @@ def example():
         y='ambient_air_temperature',
         **hvplot_default_options
     )
+    irradiation_plot = (
+        building.disturbance_timeseries.loc[
+            :, building.disturbance_timeseries.columns.str.contains('irradiation')
+        ].stack().rename('irradiation').reset_index()
+    ).hvplot.line(
+        x='time',
+        y='irradiation',
+        by='disturbance_name',
+        **hvplot_default_options
+    )
     zone_temperature_plot = (
         zone_temperature_comparison[['expected', 'simulated']].stack().stack().rename('zone_temperature').reset_index()
     ).hvplot.line(
@@ -214,18 +224,22 @@ def example():
     )
 
     # Define layout and labels / render plots.
-    hvplot.show((
-        thermal_power_plot
-        + ambient_air_temperature_plot
-        + zone_temperature_plot
-        + error_plot
-    ).redim.label(
-        time="Date / time",
-        zone_temperature="Zone temperature [°C]",
-        ambient_air_temperature="Ambient air temp. [°C]",
-        thermal_power="Thermal power [W]",
-        zone_temperature_error="Zone temp. error [K]"
-    ).cols(1))
+    hvplot.show(
+        (
+            thermal_power_plot
+            + ambient_air_temperature_plot
+            + irradiation_plot
+            + zone_temperature_plot
+            + error_plot
+        ).redim.label(
+            time="Date / time",
+            thermal_power="Thermal power [W]",
+            ambient_air_temperature="Ambient air temp. [°C]",
+            irradiation="Irradiation [W/m²]",
+            zone_temperature="Zone temperature [°C]",
+            zone_temperature_error="Zone temp. error [K]",
+        ).cols(1)
+    )
 
     # Outputs for debugging
     print("-----------------------------------------------------------------------------------------------------------")
