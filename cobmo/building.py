@@ -3505,8 +3505,8 @@ class Building(object):
                     ) if self.define_constant else pd.DataFrame([])  # Append constant only when needed
                 )
             ],
-            axis='columns'
-        )
+            axis='columns',
+        ).rename_axis('disturbance_name', axis='columns')
 
     def define_output_constraint_timeseries(self, conn):
         """
