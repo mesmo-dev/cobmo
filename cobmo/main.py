@@ -158,7 +158,7 @@ def example():
     )
 
     # Plots for debugging
-    output_comparison = pd.concat(
+    zone_temperature_comparison = pd.concat(
         [
             output_timeseries_validation,
             output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains('temperature')],
@@ -175,22 +175,57 @@ def example():
         ],
         axis=1
     )
-    output_comparison.columns = ['_'.join(col).strip() for col in output_comparison.columns.values]
 
-    control_plot = (
-        control_timeseries_simulation
-    ).hvplot.step(width=1500, height=200)
-    expected_plot = (
-        output_comparison.loc[:, output_comparison.columns.str.contains('expected')]
-    ).hvplot.line(width=1500, height=300)
-    simulated_plot = (
-        output_comparison.loc[:, output_comparison.columns.str.contains('simulated')]
-    ).hvplot.line(width=1500, height=300)
+    # Hvplot has no default options.
+    # Workaround: Pass this dict to every new plot.
+    hvplot_default_options = dict(width=1500, height=200)
+
+    # Generate plot handles.
+    thermal_power_plot = (
+        control_timeseries_simulation.stack().rename('thermal_power').reset_index()
+    ).hvplot.step(
+        x='time',
+        y='thermal_power',
+        by='zone_name',
+        **hvplot_default_options
+    )
+    ambient_air_temperature_plot = (
+        building.disturbance_timeseries['ambient_air_temperature'].rename('ambient_air_temperature').reset_index()
+    ).hvplot.line(
+        x='time',
+        y='ambient_air_temperature',
+        **hvplot_default_options
+    )
+    zone_temperature_plot = (
+        zone_temperature_comparison[['expected', 'simulated']].stack().stack().rename('zone_temperature').reset_index()
+    ).hvplot.line(
+        x='time',
+        y='zone_temperature',
+        by=['type', 'output_name'],
+        **hvplot_default_options
+    )
     error_plot = (
-        output_comparison.loc[:, output_comparison.columns.str.contains('error')]
-    ).hvplot(width=1500, height=200)
+        zone_temperature_comparison[['error']].stack().stack().rename('zone_temperature_error').reset_index()
+    ).hvplot(
+        x='time',
+        y='zone_temperature_error',
+        by='output_name',
+        **hvplot_default_options
+    )
 
-    hvplot.show((control_plot + expected_plot * simulated_plot + error_plot).cols(1))
+    # Define layout and labels / render plots.
+    hvplot.show((
+        thermal_power_plot
+        + ambient_air_temperature_plot
+        + zone_temperature_plot
+        + error_plot
+    ).redim.label(
+        time="Date / time",
+        zone_temperature="Zone temperature [°C]",
+        ambient_air_temperature="Ambient air temp. [°C]",
+        thermal_power="Thermal power [W]",
+        zone_temperature_error="Zone temp. error [K]"
+    ).cols(1))
 
     # Outputs for debugging
     print("-----------------------------------------------------------------------------------------------------------")
