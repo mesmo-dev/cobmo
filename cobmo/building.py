@@ -3771,7 +3771,8 @@ class Building(object):
     def simulate(
             self,
             state_initial,
-            control_timeseries
+            control_timeseries,
+            disturbance_timeseries=None
     ):
         """Simulate building model with given initial state and control timeseries.
 
@@ -3779,6 +3780,9 @@ class Building(object):
         - Disturbance timeseries is derived from database.
         - TODO: Automatically create initial state from database.
         """
+        # Default values
+        if disturbance_timeseries is None:
+            disturbance_timeseries = self.disturbance_timeseries
 
         # Initialize state and output timeseries
         state_timeseries = pd.DataFrame(
@@ -3797,15 +3801,14 @@ class Building(object):
         for timestep in range(len(self.set_timesteps) - 1):
             state_timeseries.iloc[timestep + 1, :] = (
                     np.dot(self.state_matrix.values, state_timeseries.iloc[timestep, :].values)
-                    # np.dot(self.state_matrix.values, np.transpose([state_timeseries.iloc[timestep,:].values]))[0]
                     + np.dot(self.control_matrix.values, control_timeseries.iloc[timestep, :].values)
-                    + np.dot(self.disturbance_matrix.values, self.disturbance_timeseries.iloc[timestep, :].values)
+                    + np.dot(self.disturbance_matrix.values, disturbance_timeseries.iloc[timestep, :].values)
             )
         for timestep in range(len(self.set_timesteps)):
             output_timeseries.iloc[timestep, :] = (
                     np.dot(self.state_output_matrix.values, state_timeseries.iloc[timestep, :].values)
                     + np.dot(self.control_output_matrix.values, control_timeseries.iloc[timestep, :].values)
-                    + np.dot(self.disturbance_output_matrix.values, self.disturbance_timeseries.iloc[timestep, :].values)
+                    + np.dot(self.disturbance_output_matrix.values, disturbance_timeseries.iloc[timestep, :].values)
             )
 
         return (
