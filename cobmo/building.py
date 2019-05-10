@@ -203,7 +203,8 @@ class Building(object):
                 start=pd.to_datetime(self.building_scenarios['time_start'][0]),
                 end=pd.to_datetime(self.building_scenarios['time_end'][0]),
                 freq=pd.to_timedelta(self.building_scenarios['time_step'][0])
-            )
+            ),
+            name='time'
         )
 
         # Define model matrices
@@ -3488,10 +3489,10 @@ class Building(object):
                     'irradiation_west',
                     'irradiation_north'
                 ]].reindex(
-                    index=self.set_timesteps, method=None
+                    self.set_timesteps, method=None
                 ).interpolate(),
                 building_internal_gain_timeseries.reindex(
-                    index=self.set_timesteps, method=None
+                    self.set_timesteps, method=None
                 ).interpolate(),
                 (
                     pd.DataFrame(
