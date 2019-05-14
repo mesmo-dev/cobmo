@@ -71,6 +71,14 @@ def example():
     )
     control_timeseries_simulation.loc[:]['zone_1_generic_cool_thermal_power'] = 200
 
+    building.disturbance_timeseries.loc[
+    :, building.disturbance_timeseries.columns.str.contains('irradiation')
+    ] = (
+        building.disturbance_timeseries.loc[
+            :, building.disturbance_timeseries.columns.str.contains('irradiation')
+        ] * 1.0
+    )
+
     # Run simulation
     time_start = time.clock()
     (
@@ -78,7 +86,8 @@ def example():
         output_timeseries_simulation
     ) = building.simulate(
         state_initial=state_initial,
-        control_timeseries=control_timeseries_simulation
+        control_timeseries=control_timeseries_simulation,
+        disturbance_timeseries=building.disturbance_timeseries
     )
     print("Simulation solve time: {:.2f} seconds".format(time.clock() - time_start))
 
