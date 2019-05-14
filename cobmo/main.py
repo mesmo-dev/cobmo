@@ -159,7 +159,7 @@ def example():
 
     # Run error calculation function
     (
-        error_mean,
+        error_summary,
         error_timeseries
     ) = cobmo.utils.calculate_error(
         output_timeseries_validation,
@@ -257,8 +257,8 @@ def example():
     print("error_timeseries=")
     print(error_timeseries.head())
     print("-----------------------------------------------------------------------------------------------------------")
-    print("error_mean=")
-    print(error_mean.head())
+    print("error_summary=")
+    print(error_summary.head())
     print("-----------------------------------------------------------------------------------------------------------")
 
 if __name__ == "__main__":
