@@ -117,7 +117,8 @@ CREATE TABLE IF NOT EXISTS "building_surfaces_interior" (
 CREATE TABLE IF NOT EXISTS "building_window_types" (
 	"window_type"	TEXT,
 	"thermal_resistance_window"	TEXT,
-	"irradiation_transfer_coefficient"	TEXT
+	"irradiation_gain_coefficient_window"	TEXT,
+	"emissivity_window"	TEXT
 );
 CREATE TABLE IF NOT EXISTS "building_zone_constraint_profiles" (
 	"zone_constraint_profile"	TEXT,
