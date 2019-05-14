@@ -352,6 +352,8 @@ class Building(object):
         # Create empty rows in dataframe
         self.building_surfaces_exterior['heat_transfer_coefficient_surface_sky'] = ''
         self.building_surfaces_exterior['heat_transfer_coefficient_surface_ground'] = ''
+        self.building_surfaces_exterior['heat_transfer_coefficient_window_sky'] = ''
+        self.building_surfaces_exterior['heat_transfer_coefficient_window_ground'] = ''
 
         # Calculate heat transfer coefficients
         for surface_name, surface_data in self.building_surfaces_exterior.iterrows():
@@ -380,6 +382,32 @@ class Building(object):
                         / 2.0
                         + 273.15
                 ) ** 3
+            )
+            surface_data['heat_transfer_coefficient_window_sky'] = (
+                    4.0
+                    * self.parse_parameter('stefan_boltzmann_constant')
+                    * self.parse_parameter(surface_data['emissivity_window'])
+                    * self.parse_parameter(surface_data['sky_view_factor'])
+                    * (
+                            self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
+                            / 2.0
+                            + self.parse_parameter(self.building_scenarios['linearization_sky_temperature'])
+                            / 2.0
+                            + 273.15
+                    ) ** 3
+            )
+            surface_data['heat_transfer_coefficient_window_ground'] = (
+                    4.0
+                    * self.parse_parameter('stefan_boltzmann_constant')
+                    * self.parse_parameter(surface_data['emissivity_window'])
+                    * (1.0 - self.parse_parameter(surface_data['sky_view_factor']))
+                    * (
+                            self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
+                            / 2.0
+                            + self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
+                            / 2.0
+                            + 273.15
+                    ) ** 3
             )
 
     def define_heat_transfer_surfaces_exterior(self):
@@ -411,7 +439,7 @@ class Building(object):
                 ).iterrows()  # For all surfaces adjacent to the zone
             )
 
-            if self.parse_parameter(surface_data['heat_capacity']) != 0:  # Surfaces with non-zero heat capacity
+            if self.parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
                 # Conductive heat transfer from the exterior towards the core of surface
                 self.disturbance_matrix.at[
                     surface_name + '_temperature',
@@ -846,6 +874,164 @@ class Building(object):
                             / self.heat_capacity_vector[surface_data['zone_name']]
                     )
 
+            # Windows for each exterior surface - Modelled as surfaces with neglected heat capacity
+            if self.parse_parameter(surface_data['window_wall_ratio']) != 0.0:
+                # Complete convective heat transfer from surface to zone
+                self.disturbance_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    'irradiation_' + surface_data['direction_name']
+                ] = (
+                        self.disturbance_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            'irradiation_' + surface_data['direction_name']
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * self.parse_parameter(surface_data['window_wall_ratio'])
+                        * (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+                self.disturbance_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    'ambient_air_temperature'
+                ] = (
+                        self.disturbance_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            'ambient_air_temperature'
+                        ]
+                ) + (
+                        (
+                                self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                        )
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * self.parse_parameter(surface_data['window_wall_ratio'])
+                        * (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+                self.disturbance_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    'sky_temperature'
+                ] = (
+                        self.disturbance_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            'sky_temperature'
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * self.parse_parameter(surface_data['window_wall_ratio'])
+                        * (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+                self.state_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    surface_data['zone_name'] + '_temperature'
+                ] = (
+                        self.state_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            surface_data['zone_name'] + '_temperature'
+                        ]
+                ) + (
+                        - 1.0
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * self.parse_parameter(surface_data['window_wall_ratio'])
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                + 1.0
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + 1.0
+                                / (self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+                for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                    self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
+                ].iterrows():
+                    # Interior irradiation through all exterior surfaces adjacent to the zone
+                    self.disturbance_matrix.at[
+                        surface_data['zone_name'] + '_temperature',
+                        'irradiation_' + zone_exterior_surface_data['direction_name']
+                    ] = (
+                            self.disturbance_matrix.at[
+                                surface_data['zone_name'] + '_temperature',
+                                'irradiation_' + zone_exterior_surface_data['direction_name']
+                            ]
+                    ) + (
+                            (
+                                    self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                    * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    / zone_surface_area
+                            )  # Considers the share at the respective surface
+                            * self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                            * self.parse_parameter(surface_data['surface_area'])
+                            * self.parse_parameter(surface_data['window_wall_ratio'])
+                            * (1.0 - (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                            ) ** (- 1))
+                            / self.heat_capacity_vector[surface_data['zone_name']]
+                    )
+
     def define_heat_transfer_surfaces_interior(self):
         """Thermal model: Interior surfaces"""
         # TODO: Interior windows
@@ -874,7 +1060,7 @@ class Building(object):
                     ).iterrows()  # For all surfaces adjacent to the zone
                 )
 
-                if self.parse_parameter(surface_data['heat_capacity']) != 0:  # Surfaces with non-zero heat capacity
+                if self.parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
                     # Conductive heat transfer from the interior towards the core of surface
                     for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
                         self.building_surfaces_exterior['zone_name'] == zone_name
@@ -1191,7 +1377,7 @@ class Building(object):
                 ).iterrows()  # For all surfaces adjacent to the zone
             )
 
-            if self.parse_parameter(surface_data['heat_capacity']) != 0:  # Surfaces with non-zero heat capacity
+            if self.parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
                 # Conductive heat transfer from the interior towards the core of surface
                 for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
                     self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
