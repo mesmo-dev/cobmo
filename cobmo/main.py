@@ -20,13 +20,22 @@ def connect_database(
 ):
     # Create database, if none
     if overwrite_database or not os.path.isfile(os.path.join(data_path, 'data.sqlite')):
+        time_start = time.clock()
         cobmo.utils.create_database(
             sqlite_path=os.path.join(data_path, 'data.sqlite'),
             sql_path=os.path.join(data_path, 'data.sqlite.schema.sql'),
             csv_path=data_path
         )
+        print("Database setup time: {:.2f} seconds".format(time.clock() - time_start))
 
     conn = sqlite3.connect(os.path.join(data_path, 'data.sqlite'))
+    time_start = time.clock()
+    cobmo.utils.calculate_irradiation_surfaces(
+        conn,
+        weather_type='singapore_iwec',
+        irradiation_model='disc'
+    )
+    print("Irradiation processing time: {:.2f} seconds".format(time.clock() - time_start))
     return conn
 
 
@@ -215,6 +224,16 @@ def example():
         by='disturbance_name',
         **hvplot_default_options
     )
+    surface_irradition_plot = (
+        output_timeseries_simulation.loc[
+            :, output_timeseries_simulation.columns.str.contains('_irradiation')
+        ].stack().rename('surface_irradiation').reset_index()
+    ).hvplot.line(
+        x='time',
+        y='surface_irradiation',
+        by='output_name',
+        **hvplot_default_options
+    )
     zone_temperature_plot = (
         zone_temperature_comparison[['expected', 'simulated']].stack().stack().rename('zone_temperature').reset_index()
     ).hvplot.line(
@@ -248,6 +267,7 @@ def example():
             thermal_power_plot
             + ambient_air_temperature_plot
             + irradiation_plot
+            + surface_irradition_plot
             + zone_temperature_plot
             + error_plot
             + error_table
