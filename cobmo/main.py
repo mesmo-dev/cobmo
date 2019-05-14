@@ -127,7 +127,7 @@ def example():
 
     # Run error calculation function
     (
-        error_mean,
+        error_summary,
         error_timeseries
     ) = cobmo.utils.calculate_error(
         output_timeseries_simulation.loc[:, output_timeseries_controller.columns.str.contains('temperature')],
@@ -139,8 +139,8 @@ def example():
     print("error_timeseries=")
     print(error_timeseries)
     print("-----------------------------------------------------------------------------------------------------------")
-    print("error_mean=")
-    print(error_mean)
+    print("error_summary=")
+    print(error_summary)
     print("-----------------------------------------------------------------------------------------------------------")
 
 if __name__ == "__main__":

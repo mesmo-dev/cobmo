@@ -229,18 +229,30 @@ def calculate_error(
     """
     error_timeseries = pd.DataFrame(
         0.0,
-        expected_timeseries.index,
-        expected_timeseries.columns
+        index=expected_timeseries.index,
+        columns=expected_timeseries.columns
     )
-    for index, row in expected_timeseries.iterrows():
+    error_summary = pd.DataFrame(
+        0.0,
+        index=pd.Index(['error_mean', 'error_squared_mean'], name='error_type'),
+        columns=expected_timeseries.columns
+    )
+
+    for index, row in error_timeseries.iterrows():
         error_timeseries.loc[index, :] = (
             predicted_timeseries.loc[index, :]
             - expected_timeseries.loc[index, :]
         )
 
-    error_mean = error_timeseries.abs().mean()
+    for column_name, column in error_summary.iteritems():
+        error_summary.loc['error_mean', column_name] = (
+            error_timeseries[column_name].abs().mean()
+        )
+        error_summary.loc['error_squared_mean', column_name] = (
+            (error_timeseries[column_name] ** 2).mean()
+        )
 
     return (
-        error_mean,
+        error_summary,
         error_timeseries
     )
