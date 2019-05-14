@@ -195,7 +195,7 @@ def example():
     ).hvplot.step(
         x='time',
         y='thermal_power',
-        by='zone_name',
+        by='control_name',
         **hvplot_default_options
     )
     ambient_air_temperature_plot = (
@@ -233,6 +233,14 @@ def example():
         alpha = 0.5,
         **hvplot_default_options
     )
+    error_table = (
+        error_summary.stack().rename('error_value').reset_index()
+    ).hvplot.table(
+        x='output_name',
+        y='error_value',
+        by='error_type',
+        **hvplot_default_options
+    )
 
     # Define layout and labels / render plots.
     hvplot.show(
@@ -242,6 +250,7 @@ def example():
             + irradiation_plot
             + zone_temperature_plot
             + error_plot
+            + error_table
         ).redim.label(
             time="Date / time",
             thermal_power="Thermal power [W]",
