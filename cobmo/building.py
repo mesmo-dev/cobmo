@@ -114,7 +114,8 @@ class Building(object):
                     (self.building_zones['hvac_ahu_type'] != '')
                     & (self.building_scenarios['humidity_model_type'][0] != '')
                     ] + '_absolute_humidity'
-            ])
+            ]),
+            name='state_name'
         )
         self.set_controls = pd.Index(
             pd.concat([
@@ -139,7 +140,8 @@ class Building(object):
                 self.building_zones['zone_name'][
                     (self.building_zones['window_type'] != '')
                 ] + '_window_air_flow'
-            ])
+            ]),
+            name='control_name'
         )
         self.set_disturbances = pd.Index(
             pd.concat([
@@ -155,7 +157,8 @@ class Building(object):
                 pd.Series(self.building_zones['internal_gain_type'].unique() + '_occupancy'),
                 pd.Series(self.building_zones['internal_gain_type'].unique() + '_appliances'),
                 (pd.Series(['constant']) if self.define_constant else pd.Series([]))
-            ])
+            ]),
+            name='disturbance_name'
         )
         self.set_outputs = pd.Index(
             pd.concat([
@@ -196,7 +199,8 @@ class Building(object):
                 self.building_zones['zone_name'][
                     self.building_zones['hvac_tu_type'] != ''
                     ] + '_tu_cool_electric_power'
-            ])
+            ]),
+            name='output_name'
         )
         self.set_timesteps = pd.Index(
             pd.date_range(
