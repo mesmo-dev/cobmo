@@ -2909,6 +2909,99 @@ class Building(object):
             columns=self.disturbance_matrix.columns
         )
 
+    def define_augmented_model(self):
+        """Define augmented state space model matrices.
+
+        - Based on Oldewurtel 2011: https://doi.org/10.3929/ethz-a-007157625%0A
+        - Construct augmented state space matrices based on 'normal' state space matrices.
+        - Augmented state space matrices are stored in the build model (not returned).
+        - TODO: Validate matrices.
+        - TODO: Check alternatives for np.block(), which is slow for a large number of time steps.
+        """
+        # Create local numpy.array copies of state space matrices for speed
+        state_matrix = self.state_matrix.values
+        control_matrix = self.control_matrix.values
+        disturbance_matrix = self.disturbance_matrix.values
+        state_output_matrix = self.state_output_matrix.values
+        control_output_matrix = self.control_output_matrix.values
+        disturbance_output_matrix = self.disturbance_output_matrix.values
+
+        # Construct first column, i.e., rows, of augmented matrices.
+        state_matrix_augmented_rows = [np.eye(state_matrix.shape[0])]
+        control_matrix_augmented_rows = [np.zeros_like(control_matrix)]
+        disturbance_matrix_augmented_rows = [np.zeros_like(disturbance_matrix)]
+        state_output_matrix_augmented_rows = [state_output_matrix]
+        control_output_matrix_augmented_rows = [control_output_matrix]
+        disturbance_output_matrix_augmented_rows = [disturbance_output_matrix]
+        for timestep in range(1, len(self.set_timesteps)):
+            state_matrix_augmented_rows.append(
+                state_matrix ** timestep
+            )
+            control_matrix_augmented_rows.append(
+                (state_matrix ** (timestep - 1)).dot(control_matrix)
+            )
+            disturbance_matrix_augmented_rows.append(
+                (state_matrix ** (timestep - 1)).dot(disturbance_matrix)
+            )
+            state_output_matrix_augmented_rows.append(
+                state_output_matrix.dot(state_matrix_augmented_rows[-1])
+            )
+            control_output_matrix_augmented_rows.append(
+                state_output_matrix.dot(control_matrix_augmented_rows[-1])
+            )
+            disturbance_output_matrix_augmented_rows.append(
+                state_output_matrix.dot(disturbance_matrix_augmented_rows[-1])
+            )
+
+        # Construct remaining columns of augmented matrices (except state and state_output).
+        control_matrix_augmented_cols = [control_matrix_augmented_rows]
+        disturbance_matrix_augmented_cols = [disturbance_matrix_augmented_rows]
+        control_output_matrix_augmented_cols = [control_output_matrix_augmented_rows]
+        disturbance_output_matrix_augmented_cols = [disturbance_output_matrix_augmented_rows]
+        for timestep in range(1, len(self.set_timesteps)):
+            control_matrix_augmented_cols.append(
+                [np.zeros(control_matrix.shape)] * timestep
+                + control_matrix_augmented_rows[:-timestep]
+            )
+            disturbance_matrix_augmented_cols.append(
+                [np.zeros(disturbance_matrix.shape)] * timestep
+                + disturbance_matrix_augmented_rows[:-timestep]
+            )
+            control_output_matrix_augmented_cols.append(
+                [np.zeros(control_output_matrix.shape)] * timestep
+                + control_output_matrix_augmented_rows[:-timestep]
+            )
+            disturbance_output_matrix_augmented_cols.append(
+                [np.zeros(disturbance_output_matrix.shape)] * timestep
+                + disturbance_output_matrix_augmented_rows[:-timestep]
+            )
+
+        # Construct full augmented matrices.
+        self.state_matrix_augmented = np.zeros(
+            (state_matrix.shape[0] * len(self.set_timesteps), state_matrix.shape[0])
+        )
+        self.control_matrix_augmented = np.zeros(
+            (control_matrix.shape[0] * len(self.set_timesteps),) * 2
+        )
+        self.disturbance_matrix_augmented = np.zeros(
+            (disturbance_matrix.shape[0] * len(self.set_timesteps),) * 2
+        )
+        self.state_output_matrix_augmented = np.zeros(
+            (state_output_matrix.shape[0] * len(self.set_timesteps), state_output_matrix.shape[0])
+        )
+        self.control_output_matrix_augmented = np.zeros(
+            (control_output_matrix.shape[0] * len(self.set_timesteps),) * 2
+        )
+        self.disturbance_output_matrix_augmented = np.zeros(
+            (disturbance_output_matrix.shape[0] * len(self.set_timesteps),) * 2
+        )
+        self.state_matrix_augmented = np.vstack(state_matrix_augmented_rows)
+        self.control_matrix_augmented = np.block(control_matrix_augmented_cols).transpose()
+        self.disturbance_matrix_augmented = np.block(disturbance_matrix_augmented_cols).transpose()
+        self.state_output_matrix_augmented = np.vstack(state_output_matrix_augmented_rows)
+        self.control_output_matrix_augmented = np.block(control_output_matrix_augmented_cols).transpose()
+        self.disturbance_output_matrix_augmented = np.block(disturbance_output_matrix_augmented_cols).transpose()
+
     def simulate(
             self,
             state_initial,
