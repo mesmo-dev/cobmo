@@ -234,7 +234,7 @@ def calculate_error(
     )
     error_summary = pd.DataFrame(
         0.0,
-        index=pd.Index(['error_mean', 'error_squared_mean'], name='error_type'),
+        index=pd.Index(['mean_absolute_error', 'root_mean_squared_error'], name='error_type'),
         columns=expected_timeseries.columns
     )
 
@@ -245,11 +245,11 @@ def calculate_error(
         )
 
     for column_name, column in error_summary.iteritems():
-        error_summary.loc['error_mean', column_name] = (
+        error_summary.loc['mean_absolute_error', column_name] = (
             error_timeseries[column_name].abs().mean()
         )
-        error_summary.loc['error_squared_mean', column_name] = (
-            (error_timeseries[column_name] ** 2).mean()
+        error_summary.loc['root_mean_squared_error', column_name] = (
+            (error_timeseries[column_name] ** 2).mean() ** 0.5
         )
 
     return (
