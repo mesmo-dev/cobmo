@@ -61,9 +61,7 @@ def example():
     )
 
     # Define augemented state space model matrices
-    time_start = time.clock()
     building.define_augmented_model()
-    print("Augmented model setup time: {:.2f} seconds".format(time.clock() - time_start))
 
     # Run simulation
     (
