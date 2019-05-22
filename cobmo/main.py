@@ -245,13 +245,6 @@ def example():
         by='control_name',
         **hvplot_default_options
     )
-    ambient_air_temperature_plot = (
-        building.disturbance_timeseries['ambient_air_temperature'].rename('ambient_air_temperature').reset_index()
-    ).hvplot.line(
-        x='time',
-        y='ambient_air_temperature',
-        **hvplot_default_options
-    )
     irradiation_plot = (
         building.disturbance_timeseries.loc[
             :, building.disturbance_timeseries.columns.str.contains('irradiation')
@@ -287,6 +280,13 @@ def example():
         by=['type', 'output_name'],
         **hvplot_default_options
     )
+    ambient_air_temperature_plot = (
+        building.disturbance_timeseries['ambient_air_temperature'].rename('ambient_air_temperature').reset_index()
+    ).hvplot.line(
+        x='time',
+        y='ambient_air_temperature',
+        **hvplot_default_options
+    )
     zone_temperature_plot = (
         zone_temperature_comparison.stack().stack().rename('zone_temperature').reset_index()
     ).hvplot.line(
@@ -320,11 +320,11 @@ def example():
     hvplot.show(
         (
             thermal_power_plot
-            + ambient_air_temperature_plot
             + irradiation_plot
             + surface_irradition_gain_plot
             + sky_temperature_plot
             + surface_thermal_radiation_gain_exterior_plot
+            + ambient_air_temperature_plot
             + zone_temperature_plot
             + zone_temperature_error_plot
             + error_table
