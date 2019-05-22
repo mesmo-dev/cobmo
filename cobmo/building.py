@@ -3280,13 +3280,13 @@ class Building(object):
 
         # Initialize state and output timeseries
         state_timeseries = pd.DataFrame(
-            0.0,
+            np.nan,
             self.set_timesteps,
             self.set_states
         )
         state_timeseries.iloc[0, :] = state_initial
         output_timeseries = pd.DataFrame(
-            0.0,
+            np.nan,
             self.set_timesteps,
             self.set_outputs
         )
@@ -3298,8 +3298,9 @@ class Building(object):
                     + np.dot(self.control_matrix.values, control_timeseries.iloc[timestep, :].values)
                     + np.dot(self.disturbance_matrix.values, disturbance_timeseries.iloc[timestep, :].values)
             )
-        for timestep in range(len(self.set_timesteps)):
-            output_timeseries.iloc[timestep, :] = (
+        for timestep in range(1, len(self.set_timesteps)):
+            # TODO: Check `timestep - 1` (This was added to match with EnergyPlus outputs)
+            output_timeseries.iloc[timestep - 1, :] = (
                     np.dot(self.state_output_matrix.values, state_timeseries.iloc[timestep, :].values)
                     + np.dot(self.control_output_matrix.values, control_timeseries.iloc[timestep, :].values)
                     + np.dot(self.disturbance_output_matrix.values, disturbance_timeseries.iloc[timestep, :].values)
