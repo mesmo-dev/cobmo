@@ -212,6 +212,25 @@ def example():
         ],
         axis=1
     )
+    surface_thermal_radiation_gain_exterior_comparison = pd.concat(
+        [
+            output_timeseries_validation.loc[:, output_timeseries_validation.columns.str.contains(
+                'thermal_radiation_gain_exterior'
+            )],
+            output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains(
+                'thermal_radiation_gain_exterior'
+            )],
+        ],
+        keys=[
+            'expected',
+            'simulated',
+        ],
+        names=[
+            'type',
+            'output_name'
+        ],
+        axis=1
+    )
 
     # Hvplot has no default options.
     # Workaround: Pass this dict to every new plot.
@@ -251,6 +270,23 @@ def example():
         by=['type', 'output_name'],
         **hvplot_default_options
     )
+    sky_temperature_plot = (
+        building.disturbance_timeseries['sky_temperature'].rename('sky_temperature').reset_index()
+    ).hvplot.line(
+        x='time',
+        y='sky_temperature',
+        **hvplot_default_options
+    )
+    surface_thermal_radiation_gain_exterior_plot = (
+        surface_thermal_radiation_gain_exterior_comparison.stack().stack().rename(
+            'thermal_radiation_gain_exterior'
+        ).reset_index()
+    ).hvplot.line(
+        x='time',
+        y='thermal_radiation_gain_exterior',
+        by=['type', 'output_name'],
+        **hvplot_default_options
+    )
     zone_temperature_plot = (
         zone_temperature_comparison.stack().stack().rename('zone_temperature').reset_index()
     ).hvplot.line(
@@ -287,6 +323,8 @@ def example():
             + ambient_air_temperature_plot
             + irradiation_plot
             + surface_irradition_gain_plot
+            + sky_temperature_plot
+            + surface_thermal_radiation_gain_exterior_plot
             + zone_temperature_plot
             + zone_temperature_error_plot
             + error_table
