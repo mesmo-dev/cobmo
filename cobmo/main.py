@@ -29,13 +29,14 @@ def connect_database(
         print("Database setup time: {:.2f} seconds".format(time.clock() - time_start))
 
     conn = sqlite3.connect(os.path.join(data_path, 'data.sqlite'))
-    time_start = time.clock()
-    cobmo.utils.calculate_irradiation_surfaces(
-        conn,
-        weather_type='singapore_iwec',
-        irradiation_model='disc'
-    )
-    print("Irradiation processing time: {:.2f} seconds".format(time.clock() - time_start))
+
+    # time_start = time.clock()
+    # cobmo.utils.calculate_irradiation_surfaces(
+    #     conn,
+    #     weather_type='singapore_iwec',
+    #     irradiation_model='disc'
+    # )
+    # print("Irradiation processing time: {:.2f} seconds".format(time.clock() - time_start))
     return conn
 
 
@@ -59,7 +60,7 @@ def example():
     # Define initial state and control timeseries
     state_initial = pd.Series(
         np.concatenate([
-            22.5  # in °C
+            24.0  # in °C
             * np.ones(sum(building.set_states.str.contains('temperature'))),
             100.0  # in ppm
             * np.ones(sum(building.set_states.str.contains('co2_concentration'))),
@@ -88,10 +89,10 @@ def example():
         ] * 1.0
     )
 
-    # Define augemented state space model matrices
-    time_start = time.clock()
-    building.define_augmented_model()
-    print("Augmented model setup time: {:.2f} seconds".format(time.clock() - time_start))
+    # # Define augemented state space model matrices
+    # time_start = time.clock()
+    # building.define_augmented_model()
+    # print("Augmented model setup time: {:.2f} seconds".format(time.clock() - time_start))
 
     # Run simulation
     time_start = time.clock()
