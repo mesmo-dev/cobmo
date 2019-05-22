@@ -197,7 +197,7 @@ def example():
         ],
         axis=1
     )
-    surface_irradiation_gain_comparison = pd.concat(
+    surface_irradiation_gain_exterior_comparison = pd.concat(
         [
             output_timeseries_validation.loc[:, output_timeseries_validation.columns.str.contains('irradiation_gain')],
             output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains('irradiation_gain')],
@@ -263,7 +263,7 @@ def example():
         **hvplot_default_options
     )
     surface_irradition_gain_plot = (
-        surface_irradiation_gain_comparison.stack().stack().rename('irradiation_gain').reset_index()
+        surface_irradiation_gain_exterior_comparison.stack().stack().rename('irradiation_gain').reset_index()
     ).hvplot.line(
         x='time',
         y='irradiation_gain',
