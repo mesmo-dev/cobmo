@@ -199,7 +199,7 @@ class Building(object):
                 self.building_zones['zone_name'][
                     self.building_zones['hvac_tu_type'] != ''
                     ] + '_tu_cool_electric_power',
-                self.building_surfaces_exterior['surface_name'] + '_irradiation'
+                self.building_surfaces_exterior['surface_name'] + '_irradiation_gain'
             ]),
             name='output_name'
         )
@@ -297,7 +297,7 @@ class Building(object):
         self.define_output_fresh_air_flow()
         self.define_output_window_fresh_air_flow()
         self.define_output_ahu_fresh_air_flow()
-        self.define_output_surfaces_exterior_irradiation()
+        self.define_output_surfaces_exterior_irradiation_gain()
 
         # Define timeseries
         self.load_disturbance_timeseries(conn)
@@ -2560,7 +2560,7 @@ class Building(object):
                     index + '_window_air_flow'
                 ] = 1
 
-    def define_output_surfaces_exterior_irradiation(self):
+    def define_output_surfaces_exterior_irradiation_gain(self):
         for surface_name, surface_data in self.building_surfaces_exterior.iterrows():
             # Total zone surface area for later calculating share of interior (indirect) irradiation
             zone_surface_area = sum(
@@ -2587,11 +2587,11 @@ class Building(object):
 
             if self.parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
                 self.disturbance_output_matrix.at[
-                    surface_name + '_irradiation',
+                    surface_name + '_irradiation_gain',
                     'irradiation_' + surface_data['direction_name']
                 ] = (
                         self.disturbance_output_matrix.at[
-                            surface_name + '_irradiation',
+                            surface_name + '_irradiation_gain',
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (
@@ -2682,11 +2682,11 @@ class Building(object):
             else:  # Surfaces with neglected heat capacity
                 # Complete convective heat transfer from surface to zone
                 self.disturbance_output_matrix.at[
-                    surface_data['surface_name'] + '_irradiation',
+                    surface_data['surface_name'] + '_irradiation_gain',
                     'irradiation_' + surface_data['direction_name']
                 ] = (
                         self.disturbance_output_matrix.at[
-                            surface_data['surface_name'] + '_irradiation',
+                            surface_data['surface_name'] + '_irradiation_gain',
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (

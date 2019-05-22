@@ -169,6 +169,10 @@ def example():
     ).pivot(
         columns='output_name',
         values='output_value'
+    ).reindex(
+        building.set_timesteps
+    ).interpolate(
+        'linear'
     )
 
     # Run error calculation function
@@ -177,20 +181,33 @@ def example():
         error_timeseries
     ) = cobmo.utils.calculate_error(
         output_timeseries_validation,
-        output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains('temperature')],
+        output_timeseries_simulation,
     )
 
-    # Plots for debugging
+    # Combine data for plotting
     zone_temperature_comparison = pd.concat(
         [
-            output_timeseries_validation,
+            output_timeseries_validation.loc[:, output_timeseries_validation.columns.str.contains('temperature')],
             output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains('temperature')],
-            error_timeseries,
         ],
         keys=[
             'expected',
             'simulated',
-            'error',
+        ],
+        names=[
+            'type',
+            'output_name'
+        ],
+        axis=1
+    )
+    surface_irradiation_gain_comparison = pd.concat(
+        [
+            output_timeseries_validation.loc[:, output_timeseries_validation.columns.str.contains('irradiation_gain')],
+            output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains('irradiation_gain')],
+        ],
+        keys=[
+            'expected',
+            'simulated',
         ],
         names=[
             'type',
@@ -201,7 +218,7 @@ def example():
 
     # Hvplot has no default options.
     # Workaround: Pass this dict to every new plot.
-    hvplot_default_options = dict(width=1500, height=200)
+    hvplot_default_options = dict(width=1500, height=300)
 
     # Generate plot handles.
     thermal_power_plot = (
@@ -229,26 +246,26 @@ def example():
         by='disturbance_name',
         **hvplot_default_options
     )
-    surface_irradition_plot = (
-        output_timeseries_simulation.loc[
-            :, output_timeseries_simulation.columns.str.contains('_irradiation')
-        ].stack().rename('surface_irradiation').reset_index()
+    surface_irradition_gain_plot = (
+        surface_irradiation_gain_comparison.stack().stack().rename('irradiation_gain').reset_index()
     ).hvplot.line(
         x='time',
-        y='surface_irradiation',
-        by='output_name',
+        y='irradiation_gain',
+        by=['type', 'output_name'],
         **hvplot_default_options
     )
     zone_temperature_plot = (
-        zone_temperature_comparison[['expected', 'simulated']].stack().stack().rename('zone_temperature').reset_index()
+        zone_temperature_comparison.stack().stack().rename('zone_temperature').reset_index()
     ).hvplot.line(
         x='time',
         y='zone_temperature',
         by=['type', 'output_name'],
         **hvplot_default_options
     )
-    error_plot = (
-        zone_temperature_comparison[['error']].stack().stack().rename('zone_temperature_error').reset_index()
+    zone_temperature_error_plot = (
+        error_timeseries.loc[
+            :, error_timeseries.columns.str.contains('temperature')
+        ].stack().rename('zone_temperature_error').reset_index()
     ).hvplot.area(
         x='time',
         y='zone_temperature_error',
@@ -272,9 +289,9 @@ def example():
             thermal_power_plot
             + ambient_air_temperature_plot
             + irradiation_plot
-            + surface_irradition_plot
+            + surface_irradition_gain_plot
             + zone_temperature_plot
-            + error_plot
+            + zone_temperature_error_plot
             + error_table
         ).redim.label(
             time="Date / time",
