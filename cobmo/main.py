@@ -162,19 +162,15 @@ def example():
     # print(output_timeseries_controller.head())
     # print("-----------------------------------------------------------------------------------------------------------")
 
-    # Load validation data
+    # Load validation data.
     output_timeseries_validation = pd.read_csv(
         os.path.join(os.path.dirname(os.path.normpath(__file__)), '..', 'data', 'temp', 'validation_timeseries.csv'),
         index_col='time',
-        parse_dates=True
-    ).pivot(
-        columns='output_name',
-        values='output_value'
+        parse_dates=True,
     ).reindex(
         building.set_timesteps
-    ).interpolate(
-        'linear'
-    )
+    )  # Do not interpolate here, because it defeats the purpose of validation.
+    output_timeseries_validation.columns.name = 'output_name'  # For compatibility with output_timeseries.
 
     # Run error calculation function
     (
