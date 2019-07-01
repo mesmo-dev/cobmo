@@ -5,8 +5,8 @@ Building model class definition
 import warnings
 import numpy as np
 import pandas as pd
-from scipy.linalg import expm
-from scipy.interpolate import interp1d
+import scipy.linalg
+import scipy.interpolate
 # Using CoolProp for calculating humid air properties: http://www.coolprop.org/fluid_properties/HumidAir.html
 from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
 
@@ -2697,7 +2697,7 @@ class Building(object):
             )
 
             # Create index function for `from_weekday` (mapping from `row_time.weekday()` to `from_weekday`)
-            constraint_profile_index_day = interp1d(
+            constraint_profile_index_day = scipy.interpolate.interp1d(
                 building_zone_constraint_profile['from_weekday'],
                 building_zone_constraint_profile['from_weekday'],
                 kind='zero',
@@ -2705,7 +2705,7 @@ class Building(object):
             )
             for row_time in self.set_timesteps:
                 # Create index function for `from_time` (mapping `row_time.timestamp` to `from_time`)
-                constraint_profile_index_time = interp1d(
+                constraint_profile_index_time = scipy.interpolate.interp1d(
                     pd.to_datetime(
                         str(row_time.date())
                         + ' '
@@ -2866,7 +2866,7 @@ class Building(object):
         - Discretization assuming zero order hold
         - Source: https://en.wikipedia.org/wiki/Discretization#Discretization_of_linear_state_space_models
         """
-        state_matrix_discrete = expm(
+        state_matrix_discrete = scipy.linalg.expm(
             self.state_matrix.values
             * pd.to_timedelta(self.building_scenarios['time_step'][0]).seconds
         )
