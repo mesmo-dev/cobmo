@@ -4,7 +4,7 @@ The Control-oriented Building Model (CoBMo) is a building modelling framework ca
 
 ## Documentation
 
-The preliminary CoBMo documentation is located at: [https://readthedocs.org/projects/cobmo/](https://readthedocs.org/projects/cobmo/)
+The preliminary CoBMo documentation is located at: [cobmo.readthedocs.io](https://cobmo.readthedocs.io/)
 
 ## Installation
 
@@ -13,6 +13,8 @@ The preliminary CoBMo documentation is located at: [https://readthedocs.org/proj
     - [Gurobi Optimizer](http://www.gurobi.com/)
 2. Clone or download repository.
 3. In your Python environment, run `pip install -e path_to_cobmo_repository`.
+
+Please also read [docs/intro.md](./docs/intro.md).
 
 ## Contributing
 
