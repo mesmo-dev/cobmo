@@ -10,4 +10,5 @@ The Control-oriented Building Model (CoBMo) is a building modelling framework ca
    intro
    data
    api
+   contributing
 ```

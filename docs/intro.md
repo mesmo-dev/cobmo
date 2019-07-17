@@ -10,4 +10,4 @@
 
 ## Contributing
 
-If you are keen to contribute to this project, please see <a href=../CONTRIBUTING.md>CONTRIBUTING.md.
+If you are keen to contribute to this project, please see [Contributing](contributing.md).
