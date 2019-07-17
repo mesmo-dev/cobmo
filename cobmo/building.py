@@ -91,7 +91,6 @@ class Building(object):
                 (self.building_scenarios['co2_model_type'][0] != '')
                 | (self.building_zones['hvac_ahu_type'] != '').any()
                 | (self.building_zones['window_type'] != '').any()
-                | (self.building_zones['thermal_sensible_storage_type'] != '').any()    # @add2_constant.2: here we need to add a line that says that we can add a constant when storage is present   - weather_timeseries
         )
 
         # Define sets -> defining the name of each line
