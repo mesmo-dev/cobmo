@@ -22,6 +22,7 @@ class Building(object):
             select * from building_scenarios 
             join buildings using (building_name) 
             join building_linearization_types using (linearization_type) 
+            left join building_storage_types using (building_storage_type)
             where scenario_name='{}'
             """.format(scenario_name),
             conn
@@ -79,7 +80,6 @@ class Building(object):
             left join building_hvac_generic_types using (hvac_generic_type) 
             left join building_hvac_ahu_types using (hvac_ahu_type) 
             left join building_hvac_tu_types using (hvac_tu_type)
-            left join building_thermal_sensible_storage_types using (thermal_sensible_storage_type) 
             where building_name='{}'
             """.format(self.building_scenarios['building_name'][0]),
             conn
@@ -91,6 +91,7 @@ class Building(object):
                 (self.building_scenarios['co2_model_type'][0] != '')
                 | (self.building_zones['hvac_ahu_type'] != '').any()
                 | (self.building_zones['window_type'] != '').any()
+                # | (self.building_zones['building_storage_type'] != '').any()
         )
 
         # Define sets -> defining the name of each line
@@ -114,10 +115,16 @@ class Building(object):
                     (self.building_zones['hvac_ahu_type'] != '')
                     & (self.building_scenarios['humidity_model_type'][0] != '')
                     ] + '_absolute_humidity',
-                self.building_zones['zone_name'][  #@add1.2: sensible storage temperature index
-                    (self.building_zones['thermal_sensible_storage_type'] != '')
-                    & (self.building_scenarios['thermal_sensible_storage_model_type'][0] != '')
-                    ] + 'temperature'   # previously storage_temperature
+
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                    ] + '_tank_temperature',
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'latent_thermal_storage_default')
+                ] + '_pcm_level',
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'battery_storage_li_ion_default')
+                ] + '_state_of_charge'
             ])
         )
         self.set_controls = pd.Index(
@@ -143,9 +150,16 @@ class Building(object):
                 self.building_zones['zone_name'][
                     (self.building_zones['window_type'] != '')
                 ] + '_window_air_flow',
-                self.building_zones['zone_name'][           # @add3
-                    (self.building_zones['thermal_sensible_storage_type'] != '')
-                ] + '_storage_to_zone_heat_power'
+
+                self.building_zones['zone_name'][
+                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                    | (self.building_scenarios['building_storage_type'] == 'latent_thermal_storage_default')
+                ] + '_storage_to_zone_heat_power',
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'battery_storage_li_ion_default')
+                    ] + '_storage_to_zone_electric_power'
+                # No need to define the power flow from BES per each TU and AHU since the storage interacts only
+                # with the central chiller
             ])
         )
         self.set_disturbances = pd.Index(  # creating an array of indexes
@@ -204,7 +218,17 @@ class Building(object):
                     ] + '_tu_heat_electric_power',
                 self.building_zones['zone_name'][
                     self.building_zones['hvac_tu_type'] != ''
-                    ] + '_tu_cool_electric_power'
+                    ] + '_tu_cool_electric_power',
+
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                ] + '_tank_temperature',
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'latent_thermal_storage_default')
+                ] + '_pcm_level',
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'battery_storage_li_ion_default')
+                ] + '_state_of_charge'
             ])
         )
         self.set_timesteps = pd.Index(
