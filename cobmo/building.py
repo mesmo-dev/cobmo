@@ -151,13 +151,13 @@ class Building(object):
                     (self.building_zones['window_type'] != '')
                 ] + '_window_air_flow',
 
-                self.building_zones['zone_name'][
-                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')  #
-                    | (self.building_scenarios['building_storage_type'] == 'latent_thermal_storage_default')  #
-                ] + '_storage_to_zone_heat_power',
-                self.building_zones['zone_name'][
-                    (self.building_scenarios['building_storage_type'] == 'battery_storage_li_ion_default')
-                    ] + '_storage_to_zone_electric_power'
+                ((self.building_zones['zone_name'] + '_storage_to_zone_heat_power') if (
+                        (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                        | (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ) else None),
+                ((self.building_zones['zone_name'] + '_storage_to_zone_electric_power') if (
+                        (self.building_scenarios['building_storage_type'][0] == 'battery_storage_li_ion_default')  #
+                ) else None),
                 # No need to define the power flow from BES per each TU and AHU since the storage interacts only
                 # with the central chiller
             ])
