@@ -152,8 +152,8 @@ class Building(object):
                 ] + '_window_air_flow',
 
                 self.building_zones['zone_name'][
-                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
-                    | (self.building_scenarios['building_storage_type'] == 'latent_thermal_storage_default')
+                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')  #
+                    | (self.building_scenarios['building_storage_type'] == 'latent_thermal_storage_default')  #
                 ] + '_storage_to_zone_heat_power',
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'battery_storage_li_ion_default')
