@@ -155,7 +155,7 @@ class Building(object):
                     (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')  #
                     | (self.building_scenarios['building_storage_type'] == 'latent_thermal_storage_default')  #
                 ] + '_storage_to_zone_heat_power',
-                self.building_scenarios['building_name'][
+                self.building_zones['zone_name'][
                     (self.building_scenarios['building_storage_type'] == 'battery_storage_li_ion_default')
                     ] + '_storage_to_zone_electric_power'
                 # No need to define the power flow from BES per each TU and AHU since the storage interacts only
