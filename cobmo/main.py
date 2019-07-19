@@ -212,13 +212,14 @@ def example():
         ],
         axis=1
     )
-    surface_thermal_radiation_gain_exterior_comparison = pd.concat(
+    surface_convection_interior_comparison = pd.concat(
         [
             output_timeseries_validation.loc[:, output_timeseries_validation.columns.str.contains(
-                'thermal_radiation_gain_exterior'
+                'convection_interior'
             )],
-            output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains(
-                'thermal_radiation_gain_exterior'
+            # Invert sign, because E+ considers convection heat transfer to surface as positive.
+            -1 * output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains(
+                'convection_interior'
             )],
         ],
         keys=[
@@ -270,13 +271,13 @@ def example():
         y='sky_temperature',
         **hvplot_default_options
     )
-    surface_thermal_radiation_gain_exterior_plot = (
-        surface_thermal_radiation_gain_exterior_comparison.stack().stack().rename(
-            'thermal_radiation_gain_exterior'
+    surface_convection_interior_plot = (
+        surface_convection_interior_comparison.stack().stack().rename(
+            'convection_interior'
         ).reset_index()
     ).hvplot.line(
         x='time',
-        y='thermal_radiation_gain_exterior',
+        y='convection_interior',
         by=['type', 'output_name'],
         **hvplot_default_options
     )
@@ -323,7 +324,7 @@ def example():
             + irradiation_plot
             + surface_irradition_gain_plot
             + sky_temperature_plot
-            + surface_thermal_radiation_gain_exterior_plot
+            + surface_convection_interior_plot
             + ambient_air_temperature_plot
             + zone_temperature_plot
             + zone_temperature_error_plot
