@@ -1,4 +1,4 @@
-building_storage_type
-sensible_thermal_storage_default
-latent_thermal_storage_default
-battery_storage_li_ion_default
+building_storage_type,storage_state_of_charge
+sensible_thermal_storage_default,4
+latent_thermal_storage_default,0.5
+battery_storage_li_ion_default,0.5

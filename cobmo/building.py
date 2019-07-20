@@ -71,7 +71,7 @@ class Building(object):
             conn
         )
         self.building_surfaces_interior.index = self.building_surfaces_interior['surface_name']
-        self.building_zones = pd.read_sql( #add1.1: last line added to include storage
+        self.building_zones = pd.read_sql(
             """
             select * from building_zones 
             join building_zone_types using (zone_type) 
@@ -107,6 +107,7 @@ class Building(object):
                 self.building_surfaces_interior['surface_name'][
                     self.building_surfaces_interior['heat_capacity'] != '0'
                     ] + '_temperature',
+                
                 self.building_zones['zone_name'][
                     ((self.building_zones['hvac_ahu_type'] != '') | (self.building_zones['window_type'] != ''))
                     & (self.building_scenarios['co2_model_type'][0] != '')
@@ -116,15 +117,20 @@ class Building(object):
                     & (self.building_scenarios['humidity_model_type'][0] != '')
                     ] + '_absolute_humidity',
 
+
+                # (self.building_scenarios['building_name'] + '_tank_temperature' if(
+                #   (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                #   ) else None),
+
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
                     ] + '_tank_temperature',
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'latent_thermal_storage_default')
-                ] + '_pcm_level',
+                ] + '_pcm_state_of_charge',
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'battery_storage_li_ion_default')
-                ] + '_state_of_charge'
+                ] + 'batteries_state_of_charge'
             ])
         )
         self.set_controls = pd.Index(
@@ -923,7 +929,7 @@ class Building(object):
         for index, row in self.building_zones.iterrows():
             if row['window_type'] != '':
                 self.control_matrix.at[
-                    index + '_temperature',
+                    index + '_temperature',  # the "index" is the zone_name. Defined in line 87
                     index + '_window_air_flow'
                 ] = (
                         self.control_matrix.at[
@@ -1941,6 +1947,7 @@ class Building(object):
                             )
                     )
                 # @add2: here need to add the definition of ambient temperature for the storage
+
     def define_output_zone_temperature(self):
         for index, row in self.building_zones.iterrows():
             self.state_output_matrix.at[
@@ -1989,7 +1996,7 @@ class Building(object):
                             index + '_generic_cool_thermal_power'
                         ]
                         + 1
-                        / self.parse_parameter(row['generic_cooling_efficiency'])
+                        / self.parse_parameter(row['generic_cooling_efficiency'])  # =1 (in building_hvac_generic_types
                 )
 
     def define_output_hvac_ahu_electric_power(self):

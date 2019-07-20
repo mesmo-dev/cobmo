@@ -146,13 +146,17 @@ def example():
     print(error_mean)
     print("-----------------------------------------------------------------------------------------------------------")
 
-    print_on_csv = input("\nPrint results on csv files?\n")
+    print_on_csv = 1
     if print_on_csv == 1:
         building.state_matrix.to_csv('building___state_matrix.csv')
         building.control_matrix.to_csv('building___control_matrix.csv')
         building.disturbance_matrix.to_csv('building___disturbance_matrix.csv')
+
         building.state_output_matrix.to_csv('building___state_output_matrix.csv')
-        np.savetxt(r'my_file_output_state_matrix.txt', building.state_matrix.values) # , fmt='%d'
+        building.control_output_matrix.to_csv('building___control_output_matrix.csv')
+        building.disturbance_output_matrix.to_csv('building___disturbance_output_matrix.csv')
+
+        # np.savetxt(r'my_file_output_state_matrix.txt', building.state_matrix.values) # , fmt='%d'
         state_timeseries_simulation.to_csv('state_timeseries_simulation.csv')
         state_timeseries_controller.to_csv('state_timeseries_controller.csv')
 
