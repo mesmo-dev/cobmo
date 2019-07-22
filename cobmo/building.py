@@ -157,15 +157,33 @@ class Building(object):
                     (self.building_zones['window_type'] != '')
                 ] + '_window_air_flow',
 
+                # Defining the DISCHARGE control variables. One per zone.
                 ((self.building_zones['zone_name'] + '_storage_to_zone_heat_power') if (
+                        (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                        | (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ) else None),
+                ((self.building_zones['zone_name'] + '_storage_to_zone_cool_power') if (
                         (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
                         | (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
                 ) else None),
                 ((self.building_zones['zone_name'] + '_storage_to_zone_electric_power') if (
                         (self.building_scenarios['building_storage_type'][0] == 'battery_storage_li_ion_default')  #
                 ) else None),
-                # No need to define the power flow from BES per each TU and AHU since the storage interacts only
-                # with the central chiller
+
+                # Defining the CHARGE control variables. One per building.
+                ((self.building_scenarios['building_name'] + '_storage_charge_heat_power') if (
+                        (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                        | (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ) else None),
+                ((self.building_scenarios['building_name'] + '_storage_charge_cool_power') if (
+                        (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                        | (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ) else None),
+                ((self.building_scenarios['building_name'] + '_storage_charge_electric_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_li_ion_default')  #
+                ) else None)
+
+
             ])
         )
         self.set_disturbances = pd.Index(  # creating an array of indexes
@@ -231,10 +249,10 @@ class Building(object):
                 ] + '_tank_temperature',
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'latent_thermal_storage_default')
-                ] + '_pcm_level',
+                ] + '_pcm_state_of_charge',
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'battery_storage_li_ion_default')
-                ] + '_state_of_charge'
+                ] + 'batteries_state_of_charge'
             ])
         )
         self.set_timesteps = pd.Index(

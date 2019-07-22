@@ -1,4 +1,4 @@
-building_storage_type,storage_state_of_charge
-sensible_thermal_storage_default,4
-latent_thermal_storage_default,0.5
-battery_storage_li_ion_default,0.5
+building_storage_type,storage_initial_state_of_charge,storage_type_comments
+sensible_thermal_storage_default,0.8,Initial share (as 0.xx) of the bottom layer if the storage tank compared to the whole mass of the tank.
+latent_thermal_storage_default,0.5,Initial share (as 0.xx) of the PCM charge state.
+battery_storage_li_ion_default,0.5,Initial share (as 0.xx) of the BES charge state.
