@@ -217,8 +217,7 @@ def example():
             output_timeseries_validation.loc[:, output_timeseries_validation.columns.str.contains(
                 'convection_interior'
             )],
-            # Invert sign, because E+ considers convection heat transfer to surface as positive.
-            -1 * output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains(
+            output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains(
                 'convection_interior'
             )],
         ],
