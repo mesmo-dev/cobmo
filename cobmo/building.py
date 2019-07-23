@@ -17,6 +17,9 @@ class Building(object):
     """
 
     def __init__(self, conn, scenario_name):
+        # Obtain scenario name.
+        self.scenario_name = scenario_name
+
         # Load building information from database
         self.building_scenarios = pd.read_sql(
             """
@@ -24,7 +27,7 @@ class Building(object):
             join buildings using (building_name) 
             join building_linearization_types using (linearization_type) 
             where scenario_name='{}'
-            """.format(scenario_name),
+            """.format(self.scenario_name),
             conn
         )
         self.building_parameters = pd.read_sql(

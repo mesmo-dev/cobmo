@@ -41,7 +41,7 @@ def connect_database(
 
 
 def get_building_model(
-        scenario_name='example_1_zone',
+        scenario_name='validation_1zone_no_window_no_mass',
         conn=connect_database()
 ):
     building = cobmo.building.Building(conn, scenario_name)
@@ -164,7 +164,9 @@ def example():
 
     # Load validation data.
     output_timeseries_validation = pd.read_csv(
-        os.path.join(os.path.dirname(os.path.normpath(__file__)), '..', 'data', 'temp', 'validation_timeseries.csv'),
+        os.path.join(
+            os.path.dirname(os.path.normpath(__file__)), '..', 'data', 'validation', building.scenario_name + '.csv'
+        ),
         index_col='time',
         parse_dates=True,
     ).reindex(

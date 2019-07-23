@@ -657,4 +657,5 @@ create_level_8_14a,zone13,surface_adiabatic_47,base_ceiling,28,
 create_level_8_14a,zone14,surface_adiabatic_48,interior_wall_concrete,95.808,9.98+9.98
 create_level_8_14a,zone14,surface_adiabatic_49,base_ceiling,64.2712,
 create_level_8_14a,zone14,surface_adiabatic_50,base_ceiling,64.2712,
-example_1_zone,zone_1,surface_floor,example_floor,25,5*5
+validation_1zone_no_window_no_mass,zone_1,surface_floor_1,validation_floor,25,5*5
+validation_1zone_no_window,zone_1,surface_floor_1,validation_floor,25,5*5
