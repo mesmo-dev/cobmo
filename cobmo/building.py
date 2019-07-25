@@ -2029,14 +2029,14 @@ class Building(object):
                         and row['ahu_return_air_heat_recovery_type'] == 'default'
                 ):
                     if (
-                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])#0.0216
                             <= humid_air_properties(
                                 'W',
                                 'R',
-                                self.parse_parameter(row['ahu_supply_air_relative_humidity_setpoint'])
+                                self.parse_parameter(row['ahu_supply_air_relative_humidity_setpoint'])  # 60%
                                 / 100,
                                 'T',
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
+                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])#30
                                 + 273.15,
                                 'P',
                                 101325
@@ -2047,11 +2047,11 @@ class Building(object):
                             humid_air_properties(
                                 'H',
                                 'T',
-                                self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
+                                self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])  # 20
                                 + 273.15,
                                 'W',
                                 self.parse_parameter(
-                                    self.building_scenarios['linearization_ambient_air_humidity_ratio']
+                                    self.building_scenarios['linearization_ambient_air_humidity_ratio']  # 0.0216
                                 ),
                                 'P',
                                 101325
@@ -2059,7 +2059,7 @@ class Building(object):
                             - humid_air_properties(
                                 'H',
                                 'T',
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
+                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])#30
                                 + 273.15,
                                 'W',
                                 self.parse_parameter(
@@ -2317,12 +2317,12 @@ class Building(object):
                                         abs(delta_enthalpy_ahu_cooling)
                                         - abs(delta_enthalpy_cooling_recovery)
                                 )
-                                / self.parse_parameter(row['ahu_cooling_efficiency'])
+                                / self.parse_parameter(row['ahu_cooling_efficiency'])  # 4.75
                                 + (
                                             abs(delta_enthalpy_ahu_heating)
                                             - abs(delta_enthalpy_heating_recovery)
                                 )
-                                / self.parse_parameter(row['ahu_heating_efficiency'])
+                                / self.parse_parameter(row['ahu_heating_efficiency'])  # 1.0
                                 + self.parse_parameter(row['ahu_fan_efficiency'])
                         )
                 )
