@@ -124,13 +124,13 @@ class Building(object):
 
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
-                    ] + '_tank_temperature',
+                    ] + '_sensible_thermal_storage_state_of_charge',
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'latent_thermal_storage_default')
-                ] + '_pcm_state_of_charge',
+                ] + '_latent_thermal_storage_state_of_charge',
                 self.building_scenarios['building_name'][
-                    (self.building_scenarios['building_storage_type'] == 'battery_storage_li_ion_default')
-                ] + 'batteries_state_of_charge'
+                    (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
+                ] + '_battery_storage_state_of_charge'
             ])
         )
         self.set_controls = pd.Index(
@@ -158,29 +158,48 @@ class Building(object):
                 ] + '_window_air_flow',
 
                 # Defining the DISCHARGE control variables. One per zone.
-                ((self.building_zones['zone_name'] + '_storage_to_zone_heat_thermal_power') if (
+                # Heating
+                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_heat_thermal_power') if (
                         (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                        | (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
                 ) else None),
-                ((self.building_zones['zone_name'] + '_storage_to_zone_cool_thermal_power') if (
+                ((self.building_zones['zone_name'] + '_latent_storage_to_zone_heat_thermal_power') if (
+                        (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ) else None),
+
+                # Cooling
+                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_cool_thermal_power') if (
                         (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                        | (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
                 ) else None),
-                ((self.building_zones['zone_name'] + '_storage_to_zone_electric_power') if (
-                        (self.building_scenarios['building_storage_type'][0] == 'battery_storage_li_ion_default')  #
+                ((self.building_zones['zone_name'] + '_latent_storage_to_zone_cool_thermal_power') if (
+                        (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ) else None),
+
+                # Battery
+                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_electric_power') if (
+                        (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ) else None),  # the battery discharge is also defined per zone
 
                 # Defining the CHARGE control variables. One per building.
-                ((self.building_scenarios['building_name'] + '_storage_charge_heat_thermal_power') if (
+
+                # Heating
+                ((self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power') if (
                         (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                        | (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
                 ) else None),
-                ((self.building_scenarios['building_name'] + '_storage_charge_thermal_cool_power') if (
+                ((self.building_scenarios['building_name'] + '_latent_storage_charge_heat_thermal_power') if (
+                        (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ) else None),
+
+                # Cooling
+                ((self.building_scenarios['building_name'] + '_sensible_storage_charge_thermal_cool_power') if (
                         (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                        | (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
                 ) else None),
-                ((self.building_scenarios['building_name'] + '_storage_charge_electric_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_li_ion_default')  #
+                ((self.building_scenarios['building_name'] + '_latent_storage_charge_thermal_cool_power') if (
+                        (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ) else None),
+
+                # Battery
+                ((self.building_scenarios['building_name'] + '_battery_storage_charge_electric_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')  #
                 ) else None)
 
 
@@ -244,28 +263,38 @@ class Building(object):
                     self.building_zones['hvac_tu_type'] != ''
                     ] + '_tu_cool_electric_power',
 
-                # Storage state output
+                # Storage STATE output
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
-                ] + '_tank_temperature',
+                ] + '_sensible_thermal_storage_state_of_charge',
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'latent_thermal_storage_default')
-                ] + '_pcm_state_of_charge',
+                ] + '_latent_thermal_storage_state_of_charge',
                 self.building_scenarios['building_name'][
-                    (self.building_scenarios['building_storage_type'] == 'battery_storage_li_ion_default')
-                ] + 'batteries_state_of_charge',
+                    (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
+                ] + '_battery_storage_state_of_charge',
 
-                ((self.building_zones['zone_name'] + '_storage_to_zone_heat_power') if (
-                        (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                        | (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                # Storage CONTROL output
+                # Heating
+                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_heat_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
                 ) else None),
-                ((self.building_zones['zone_name'] + '_storage_to_zone_cool_power') if (
-                        (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                        | (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ((self.building_zones['zone_name'] + '_latent_storage_to_zone_heat_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
                 ) else None),
-                ((self.building_zones['zone_name'] + '_storage_to_zone_electric_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_li_ion_default')  #
-                ) else None)  # for batteries no conversion is needed
+
+                # Cooling
+                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_cool_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ) else None),
+                ((self.building_zones['zone_name'] + '_latent_storage_to_zone_cool_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ) else None),
+
+                # Battery
+                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_electric_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ) else None),  # the battery discharge is also defined per zone
 
 
             ])
@@ -2318,6 +2347,7 @@ class Building(object):
                         )
 
                 # Matrix entries
+                # Heating
                 self.control_output_matrix.at[
                     index + '_ahu_heat_electric_power',
                     index + '_ahu_heat_air_flow'
@@ -2346,9 +2376,15 @@ class Building(object):
                     index + '_ahu_heat_electric_power',
                     index + '_storage_to_zone_heat_power'
                 ] = (
+                        self.control_output_matrix.at[
+                            index + '_ahu_heat_electric_power',
+                            index + '_storage_to_zone_heat_power'  #
+                            # Defining sensible and latent at the same time since same efficiency
+                        ]
                         - 1 / self.parse_parameter(row['ahu_heating_efficiency'])
                 )
 
+                # Cooling
                 self.control_output_matrix.at[
                     index + '_ahu_cool_electric_power',
                     index + '_ahu_cool_air_flow'
@@ -2377,17 +2413,21 @@ class Building(object):
                     index + '_ahu_cool_electric_power',
                     index + '_storage_to_zone_cool_power'
                 ] = (
-                    - 1 / self.parse_parameter(row['ahu_cooling_efficiency'])
+                        self.control_output_matrix.at[
+                            index + '_ahu_cool_electric_power',
+                            index + '_storage_to_zone_cool_power'
+                        ]
+                        - 1 / self.parse_parameter(row['ahu_cooling_efficiency'])
                 )
 
                 # For batteries no efficiency conversion is needed
                 self.control_output_matrix.at[
                     index + '_ahu_heat_electric_power',
-                    index + '_storage_to_zone_electric_power'
+                    index + '_battery_storage_to_zone_electric_power'
                 ] = - 1
                 self.control_output_matrix.at[
                     index + '_ahu_cool_electric_power',
-                    index + '_storage_to_zone_electric_power'
+                    index + '_battery_storage_to_zone_electric_power'
                 ] = - 1
 
     def define_output_hvac_tu_electric_power(self):
@@ -2418,6 +2458,7 @@ class Building(object):
                         )
 
                 # Matrix entries
+                # Heating
                 self.control_output_matrix.at[
                     index + '_tu_heat_electric_power',
                     index + '_tu_heat_air_flow'
@@ -2438,9 +2479,14 @@ class Building(object):
                     index + '_tu_heat_electric_power',
                     index + '_storage_to_zone_heat_power'
                 ] = (
+                        self.control_output_matrix.at[
+                            index + '_tu_heat_electric_power',
+                            index + '_storage_to_zone_heat_power'
+                        ]
                         - 1 / self.parse_parameter(row['tu_heating_efficiency'])
                 )
 
+                # Cooling
                 self.control_output_matrix.at[
                     index + '_tu_cool_electric_power',
                     index + '_tu_cool_air_flow'
@@ -2460,17 +2506,21 @@ class Building(object):
                     index + '_tu_cool_electric_power',
                     index + '_storage_to_zone_cool_power'
                 ] = (
+                        self.control_output_matrix.at[
+                            index + '_tu_cool_electric_power',
+                            index + '_storage_to_zone_cool_power'
+                        ]
                         - 1 / self.parse_parameter(row['tu_cooling_efficiency'])
                 )
 
                 # For batteries no efficiency conversion is needed
                 self.control_output_matrix.at[
                     index + '_tu_heat_electric_power',
-                    index + '_storage_to_zone_electric_power'
+                    index + '_battery_storage_to_zone_electric_power'
                 ] = - 1
                 self.control_output_matrix.at[
                     index + '_tu_cool_electric_power',
-                    index + '_storage_to_zone_electric_power'
+                    index + '_battery_storage_to_zone_electric_power'
                 ] = - 1
 
     def define_output_fresh_air_flow(self):
