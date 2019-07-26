@@ -78,6 +78,11 @@ CREATE TABLE IF NOT EXISTS "building_scenarios" (
 	"time_end"	TEXT,
 	"time_step"	TEXT
 );
+CREATE TABLE IF NOT EXISTS "building_storage_types" (
+	"building_storage_type"	TEXT,
+	"storage_initial_state_of_charge"	REAL,
+	"storage_type_comments"	TEXT
+);
 CREATE TABLE IF NOT EXISTS "building_surface_types" (
 	"surface_type"	TEXT,
 	"heat_capacity"	TEXT,
@@ -158,6 +163,7 @@ CREATE TABLE IF NOT EXISTS "building_zones" (
 CREATE TABLE IF NOT EXISTS "buildings" (
 	"building_name"	TEXT,
 	"weather_type"	TEXT
+	"building_storage_type"	TEXT
 );
 CREATE TABLE IF NOT EXISTS "weather_timeseries" (
 	"weather_type"	TEXT,
@@ -170,6 +176,7 @@ CREATE TABLE IF NOT EXISTS "weather_timeseries" (
 	"irradiation_south"	REAL,
 	"irradiation_west"	REAL,
 	"irradiation_north"	REAL
+	"storage_ambient_air_temperature"	REAL
 );
 CREATE TABLE IF NOT EXISTS "weather_types" (
 	"weather_type"	TEXT,
