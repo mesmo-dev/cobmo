@@ -7,6 +7,8 @@
 import os.path  # Import like this, instead of `from os import path` or `from os.path import *`
 import pandas as pd  # Use abbreviations only for very common packages
 
+import cobmo.config  # Imports from current package should appear last.
+
 
 def template_function(
     hello_string,
