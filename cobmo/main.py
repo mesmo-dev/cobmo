@@ -9,17 +9,18 @@ import pandas as pd
 import cobmo.building
 import cobmo.controller
 import cobmo.utils
+import cobmo.config
 
 
 def connect_database(
-        data_path=os.path.join(os.path.dirname(os.path.normpath(__file__)), '..', 'data'),
+        data_path=cobmo.config.data_path,
         overwrite_database=True
 ):
     # Create database, if none
     if overwrite_database or not os.path.isfile(os.path.join(data_path, 'data.sqlite')):
         cobmo.utils.create_database(
             sqlite_path=os.path.join(data_path, 'data.sqlite'),
-            sql_path=os.path.join(data_path, 'data.sqlite.schema.sql'),
+            sql_path=os.path.join(cobmo.config.cobmo_path, 'cobmo', 'database_schema.sql'),
             csv_path=data_path
         )
 
