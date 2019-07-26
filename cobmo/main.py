@@ -9,17 +9,18 @@ import pandas as pd
 import cobmo.building
 import cobmo.controller
 import cobmo.utils
+import cobmo.config
 
 
 def connect_database(
-        data_path=os.path.join(os.path.dirname(os.path.normpath(__file__)), '..', 'data'),
+        data_path=cobmo.config.data_path,
         overwrite_database=True
 ):
     # Create database, if none
     if overwrite_database or not os.path.isfile(os.path.join(data_path, 'data.sqlite')):
         cobmo.utils.create_database(
             sqlite_path=os.path.join(data_path, 'data.sqlite'),
-            sql_path=os.path.join(data_path, 'data.sqlite.schema.sql'),
+            sql_path=os.path.join(cobmo.config.cobmo_path, 'cobmo', 'database_schema.sql'),
             csv_path=data_path
         )
 
@@ -59,6 +60,9 @@ def example():
         building.set_timesteps,
         building.set_controls
     )
+
+    # Define augemented state space model matrices
+    building.define_augmented_model()
 
     # Run simulation
     (
@@ -130,7 +134,7 @@ def example():
 
     # Run error calculation function
     (
-        error_mean,
+        error_summary,
         error_timeseries
     ) = cobmo.utils.calculate_error(
         output_timeseries_simulation.loc[:, output_timeseries_controller.columns.str.contains('temperature')],
@@ -142,8 +146,8 @@ def example():
     print("error_timeseries=")
     print(error_timeseries)
     print("-----------------------------------------------------------------------------------------------------------")
-    print("error_mean=")
-    print(error_mean)
+    print("error_summary=")
+    print(error_summary)
     print("-----------------------------------------------------------------------------------------------------------")
 
     print_on_csv = 0

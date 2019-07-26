@@ -14,3 +14,7 @@ cobmo\.egg-info/
 *.pyc
 
 *.DS_Store
+
+cobmo/default\.html
+
+docs/_build/

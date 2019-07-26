@@ -9,7 +9,7 @@ setup(
     version='0.1',
     py_modules=find_packages(),
     install_requires=[
-        'CoolProp',
+        'CoolProp==6.2.1',
         'numpy',
         'pandas',
         'pvlib',
