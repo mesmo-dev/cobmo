@@ -12,10 +12,11 @@ import time
 import cobmo.building
 import cobmo.controller
 import cobmo.utils
+import cobmo.config
 
 
 def connect_database(
-        data_path=os.path.join(os.path.dirname(os.path.normpath(__file__)), '..', 'data'),
+        data_path=cobmo.config.data_path,
         overwrite_database=True
 ):
     # Create database, if none
@@ -23,7 +24,7 @@ def connect_database(
         time_start = time.clock()
         cobmo.utils.create_database(
             sqlite_path=os.path.join(data_path, 'data.sqlite'),
-            sql_path=os.path.join(data_path, 'data.sqlite.schema.sql'),
+            sql_path=os.path.join(cobmo.config.cobmo_path, 'cobmo', 'database_schema.sql'),
             csv_path=data_path
         )
         print("Database setup time: {:.2f} seconds".format(time.clock() - time_start))
@@ -346,7 +347,7 @@ def example():
     print(error_timeseries.head())
     print("-----------------------------------------------------------------------------------------------------------")
     print("error_summary=")
-    print(error_summary.head())
+    print(error_summary)
     print("-----------------------------------------------------------------------------------------------------------")
 
 if __name__ == "__main__":
