@@ -2533,12 +2533,21 @@ class Building(object):
                 # Storage AHU heat
                 self.control_output_matrix.at[
                     index + '_ahu_heat_electric_power',
-                    index + '_storage_to_zone_heat_power'
+                    index + '_sensible_storage_to_zone_heat_power'
                 ] = (
                         self.control_output_matrix.at[
                             index + '_ahu_heat_electric_power',
-                            index + '_storage_to_zone_heat_power'  #
-                            # Defining sensible and latent at the same time since same efficiency
+                            index + '_sensible_storage_to_zone_heat_power'
+                        ]
+                        - 1 / self.parse_parameter(row['ahu_heating_efficiency'])
+                )
+                self.control_output_matrix.at[
+                    index + '_ahu_heat_electric_power',
+                    index + '_latent_storage_to_zone_heat_power'
+                ] = (
+                        self.control_output_matrix.at[
+                            index + '_ahu_heat_electric_power',
+                            index + '_latent_storage_to_zone_heat_power'
                         ]
                         - 1 / self.parse_parameter(row['ahu_heating_efficiency'])
                 )
@@ -2570,11 +2579,21 @@ class Building(object):
                 # Storage AHU cool
                 self.control_output_matrix.at[
                     index + '_ahu_cool_electric_power',
-                    index + '_storage_to_zone_cool_power'
+                    index + '_sensible_storage_to_zone_cool_power'
                 ] = (
                         self.control_output_matrix.at[
                             index + '_ahu_cool_electric_power',
-                            index + '_storage_to_zone_cool_power'
+                            index + '_sensible_storage_to_zone_cool_power'
+                        ]
+                        - 1 / self.parse_parameter(row['ahu_cooling_efficiency'])
+                )
+                self.control_output_matrix.at[
+                    index + '_ahu_cool_electric_power',
+                    index + '_latent_storage_to_zone_cool_power'
+                ] = (
+                        self.control_output_matrix.at[
+                            index + '_ahu_cool_electric_power',
+                            index + '_latent_storage_to_zone_cool_power'
                         ]
                         - 1 / self.parse_parameter(row['ahu_cooling_efficiency'])
                 )
@@ -2583,11 +2602,23 @@ class Building(object):
                 self.control_output_matrix.at[
                     index + '_ahu_heat_electric_power',
                     index + '_battery_storage_to_zone_electric_power'
-                ] = - 1
+                ] = (
+                    self.control_output_matrix.at[
+                        index + '_ahu_heat_electric_power',
+                        index + '_battery_storage_to_zone_electric_power'
+                    ]
+                    - 1
+                )
                 self.control_output_matrix.at[
                     index + '_ahu_cool_electric_power',
                     index + '_battery_storage_to_zone_electric_power'
-                ] = - 1
+                ] = (
+                    self.control_output_matrix.at[
+                        index + '_ahu_cool_electric_power',
+                        index + '_battery_storage_to_zone_electric_power'
+                    ]
+                    - 1
+                )
 
     def define_output_hvac_tu_electric_power(self):
         for index, row in self.building_zones.iterrows():
@@ -2636,11 +2667,21 @@ class Building(object):
                 # Storage TU heat
                 self.control_output_matrix.at[
                     index + '_tu_heat_electric_power',
-                    index + '_storage_to_zone_heat_power'
+                    index + '_sensible_storage_to_zone_heat_power'
                 ] = (
                         self.control_output_matrix.at[
                             index + '_tu_heat_electric_power',
-                            index + '_storage_to_zone_heat_power'
+                            index + '_sensible_storage_to_zone_heat_power'
+                        ]
+                        - 1 / self.parse_parameter(row['tu_heating_efficiency'])
+                )
+                self.control_output_matrix.at[
+                    index + '_tu_heat_electric_power',
+                    index + '_latent_storage_to_zone_heat_power'
+                ] = (
+                        self.control_output_matrix.at[
+                            index + '_tu_heat_electric_power',
+                            index + '_latent_storage_to_zone_heat_power'
                         ]
                         - 1 / self.parse_parameter(row['tu_heating_efficiency'])
                 )
@@ -2663,11 +2704,21 @@ class Building(object):
                 # Storage TU cool
                 self.control_output_matrix.at[
                     index + '_tu_cool_electric_power',
-                    index + '_storage_to_zone_cool_power'
+                    index + '_sensible_storage_to_zone_cool_power'
                 ] = (
                         self.control_output_matrix.at[
                             index + '_tu_cool_electric_power',
-                            index + '_storage_to_zone_cool_power'
+                            index + '_sensible_storage_to_zone_cool_power'
+                        ]
+                        - 1 / self.parse_parameter(row['tu_cooling_efficiency'])
+                )
+                self.control_output_matrix.at[
+                    index + '_tu_cool_electric_power',
+                    index + '_latent_storage_to_zone_cool_power'
+                ] = (
+                        self.control_output_matrix.at[
+                            index + '_tu_cool_electric_power',
+                            index + '_latent_storage_to_zone_cool_power'
                         ]
                         - 1 / self.parse_parameter(row['tu_cooling_efficiency'])
                 )
@@ -2676,11 +2727,23 @@ class Building(object):
                 self.control_output_matrix.at[
                     index + '_tu_heat_electric_power',
                     index + '_battery_storage_to_zone_electric_power'
-                ] = - 1
+                ] = (
+                    self.control_output_matrix.at[
+                        index + '_tu_heat_electric_power',
+                        index + '_battery_storage_to_zone_electric_power'
+                    ]
+                    - 1
+                )
                 self.control_output_matrix.at[
                     index + '_tu_cool_electric_power',
                     index + '_battery_storage_to_zone_electric_power'
-                ] = - 1
+                ] = (
+                    self.control_output_matrix.at[
+                        index + '_tu_cool_electric_power',
+                        index + '_battery_storage_to_zone_electric_power'
+                    ]
+                    - 1
+                )
 
     def define_output_fresh_air_flow(self):
         for index, row in self.building_zones.iterrows():
