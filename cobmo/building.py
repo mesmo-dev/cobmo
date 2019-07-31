@@ -432,16 +432,16 @@ class Building(object):
                 ]
             ) - (
                 (
-                    self.parse_parameter('storage_sensible_UA_external')
+                    self.parse_parameter('storage_UA_external')
                     * (
-                        self.parse_parameter('storage_sensible_cooling_ambient_temperature')
-                        - self.parse_parameter('storage_sensible_cooling_temperature_bottom_layer')
+                        self.parse_parameter('storage_cooling_ambient_temperature')
+                        - self.parse_parameter('storage_cooling_temperature_bottom_layer')
                     )
                     / self.parse_parameter('water_specific_heat')
                     / self.parse_parameter('storage_sensible_total_delta_temperature_layers')
                 )
                 + (
-                    self.parse_parameter('storage_sensible_UA_internal')
+                    self.parse_parameter('storage_UA_thermocline')
                     / self.parse_parameter('water_specific_heat')
                 )
             )
@@ -462,22 +462,22 @@ class Building(object):
                     * self.parse_parameter('storage_sensible_total_delta_temperature_layers')
             )
 
-    def battery_storage_level(self):
+    def define_battery_storage_level(self):
         for building_name in self.building_scenarios['building_name'].iterrows():
             self.control_matrix[
                 building_name + '_battery_storage_state_of_charge',
                 building_name + '_battery_storage_to_zone_electric_power'
             ] = - 1.0 * (
-                np.sqrt(self.parse_parameter('storage_battery_round_trip_efficiency'))
+                np.sqrt(self.parse_parameter('storage_round_trip_efficiency'))
+                # TODO: need to specify to pick up the one for battery
             )
 
             self.control_matrix[
                 building_name + '_battery_storage_state_of_charge',
                 building_name + '_battery_storage_charge_electric_power'
             ] = + 1.0 * (
-                np.sqrt(self.parse_parameter('storage_battery_round_trip_efficiency'))
+                np.sqrt(self.parse_parameter('storage_round_trip_efficiency'))
             )
-
 
     def parse_parameter(self, parameter):
         """
