@@ -99,13 +99,13 @@ class Controller(object):
         self.problem.parameter_output_timeseries_minimum = pyo.Param(
             self.problem.set_timesteps,
             self.problem.set_outputs,
-            initialize=self.building.output_constraint_timeseries_minimum.transpose().stack().to_dict()
-        )  # TODO: Transpose output_constraint_timeseries_minimum.
+            initialize=self.building.output_constraint_timeseries_minimum.stack().to_dict()
+        )
         self.problem.parameter_output_timeseries_maximum = pyo.Param(
             self.problem.set_timesteps,
             self.problem.set_outputs,
-            initialize=self.building.output_constraint_timeseries_maximum.transpose().stack().to_dict()
-        )  # TODO: Transpose output_constraint_timeseries_maximum.
+            initialize=self.building.output_constraint_timeseries_maximum.stack().to_dict()
+        )
 
         # Define initial state
         self.problem.parameter_state_initial = pyo.Param(
