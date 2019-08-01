@@ -3131,11 +3131,17 @@ class Building(object):
             [column for column in self.output_constraint_timeseries_minimum.columns if '_flow' in column]
         ] = 0
 
+        # Outputs that are some kind of state_of_charge can only be positive (greater than zero)
+        self.output_constraint_timeseries_minimum.loc[
+            :,
+            [column for column in self.output_constraint_timeseries_minimum.columns if '_state_of_charge' in column]
+        ] = 0
+
         # If a heating/cooling session is defined, the cooling/heating air flow is forced to 0
         # Comment: The cooling or heating coil may still be working, because of the dehumidification,
         # however it would not appear explicitly in the output.
         if self.building_scenarios['heating_cooling_session'][0] == 'heating':
-            self.output_constraint_timeseries_maximum.loc[          # HERE THE UPPER CONSTRAINT IS TO 0 ==> THE VALUE IS FORCED TO 0
+            self.output_constraint_timeseries_maximum.loc[
                 :, [column for column in self.output_constraint_timeseries_minimum.columns if '_cool' in column]
             ] = 0
         if self.building_scenarios['heating_cooling_session'][0] == 'cooling':
@@ -3160,7 +3166,7 @@ class Building(object):
                 kind='zero',
                 fill_value='extrapolate'
             )
-            for row_time in self.set_timesteps:  # @working_checkpoint_28/03
+            for row_time in self.set_timesteps:
                 # Create index function for `from_time` (mapping `row_time.timestamp` to `from_time`)
                 constraint_profile_index_time = scipy.interpolate.interp1d(
                     pd.to_datetime(
@@ -3180,6 +3186,34 @@ class Building(object):
                 )
 
                 # Select constraint values
+                # Storage constraints values
+                self.output_constraint_timeseries_maximum.at[
+                    row_time,
+                    index_zone + '_sensible_thermal_storage_state_of_charge'
+                ] = self.parse_parameter(
+                    building_zone_constraint_profile['maximum_sensible_storage_capacity_m3'][
+                        int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
+                    ]
+                ) * 1000  # Multiplying for the water density to have the mass
+
+                self.output_constraint_timeseries_maximum.at[
+                    row_time,
+                    index_zone + '_latent_thermal_storage_state_of_charge'
+                ] = self.parse_parameter(
+                    building_zone_constraint_profile['maximum_latent_storage_capacity_kg'][
+                        int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
+                    ]
+                )
+
+                self.output_constraint_timeseries_maximum.at[
+                    row_time,
+                    index_zone + '_battery_storage_state_of_charge'
+                ] = self.parse_parameter(
+                    building_zone_constraint_profile['maximum_battery_storage_capacity_kwh'][
+                        int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
+                    ]
+                )
+
                 self.output_constraint_timeseries_minimum.at[
                     row_time,
                     index_zone + '_temperature'

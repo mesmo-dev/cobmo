@@ -81,7 +81,16 @@ CREATE TABLE IF NOT EXISTS "building_scenarios" (
 CREATE TABLE IF NOT EXISTS "building_storage_types" (
 	"building_storage_type"	TEXT,
 	"storage_initial_state_of_charge"	REAL,
-	"storage_type_comments"	TEXT
+	"storage_UA_external"	REAL,
+	"storage_UA_thermocline"	REAL,
+	"storage_cooling_temperature_bottom_layer"	REAL,
+	"storage_cooling_temperature_top_layer"	REAL,
+	"storage_cooling_ambient_temperature"	REAL,
+	"storage_sensible_total_delta_temperature_layers"	REAL,
+	"storage_round_trip_efficiency"	REAL,
+	"storage_max_capacity"	REAL,
+	"comments_storage_max_capacity"	TEXT,
+	"comments_storage_type_general"	TEXT
 );
 CREATE TABLE IF NOT EXISTS "building_surface_types" (
 	"surface_type"	TEXT,
@@ -136,7 +145,11 @@ CREATE TABLE IF NOT EXISTS "building_zone_constraint_profiles" (
 	"maximum_co2_concentration"	TEXT,
 	"minimum_fresh_air_flow_per_area_no_dcv"	TEXT,
 	"minimum_relative_humidity"	TEXT,
-	"maximum_relative_humidity"	TEXT
+	"maximum_relative_humidity"	TEXT,
+	"maximum_sensible_storage_capacity_m3" TEXT,
+    "maximum_latent_storage_capacity_kg" TEXT,
+	"maximum_battery_storage_capacity_kwh" TEXT,
+
 );
 CREATE TABLE IF NOT EXISTS "building_zone_types" (
 	"zone_type"	TEXT,
@@ -162,7 +175,7 @@ CREATE TABLE IF NOT EXISTS "building_zones" (
 );
 CREATE TABLE IF NOT EXISTS "buildings" (
 	"building_name"	TEXT,
-	"weather_type"	TEXT
+	"weather_type"	TEXT,
 	"building_storage_type"	TEXT
 );
 CREATE TABLE IF NOT EXISTS "weather_timeseries" (

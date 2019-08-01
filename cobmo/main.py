@@ -150,15 +150,15 @@ def example():
     print(error_summary)
     print("-----------------------------------------------------------------------------------------------------------")
 
-    print_on_csv = 0
+    print_on_csv = 1
     if print_on_csv == 1:
-        building.state_matrix.to_excel('building___state_matrix.xlsx')
-        building.control_matrix.to_excel('building___control_matrix.xlsx')
-        building.disturbance_matrix.to_excel('building___disturbance_matrix.xlsx')
+        building.state_matrix.to_excel('delete_me/state_matrix.xlsx')
+        building.control_matrix.to_excel('control_matrix.xlsx')
+        building.disturbance_matrix.to_excel('disturbance_matrix.xlsx')
 
-        building.state_output_matrix.to_excel('building___state_output_matrix.xlsx')
-        building.control_output_matrix.to_excel('building___control_output_matrix.xlsx')
-        building.disturbance_output_matrix.to_excel('building___disturbance_output_matrix.xlsx')
+        building.state_output_matrix.to_excel('state_output_matrix.xlsx')
+        building.control_output_matrix.to_excel('control_output_matrix.xlsx')
+        building.disturbance_output_matrix.to_excel('disturbance_output_matrix.xlsx')
 
         # np.savetxt(r'my_file_output_state_matrix.txt', building.state_matrix.values) # , fmt='%d'
         state_timeseries_simulation.to_excel('state_timeseries_simulation.xlsx')

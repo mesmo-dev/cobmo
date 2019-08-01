@@ -112,6 +112,8 @@ class Controller(object):
             self.problem.set_states,
             initialize=pd.Series(
                 np.concatenate([
+                    0.0  # in all units (m3, kg, kwh)  |  Initialize the storage as empty
+                    * np.ones(sum(self.building.set_states.str.contains('state_of_charge'))),
                     26.0  # in °C
                     * np.ones(sum(self.building.set_states.str.contains('temperature'))),
                     100.0  # in ppm
