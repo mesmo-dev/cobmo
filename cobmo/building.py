@@ -421,64 +421,65 @@ class Building(object):
         self.discretize_model()
 
     def define_sensible_storage_level(self):
-        if self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default':
-            for building_name in self.building_scenarios['building_name'].iterrows():
-                self.state_matrix.at[
-                    building_name + '_sensible_thermal_storage_state_of_charge',
-                    building_name + '_sensible_thermal_storage_mass_factor',
-                ] = (
+        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            for scenario_name, parameter_name in self.building_scenarios.iterrows():
+                if 'building_name' in parameter_name:
                     self.state_matrix.at[
-                        building_name + '_sensible_thermal_storage_state_of_charge',
-                        building_name + '_sensible_thermal_storage_mass_factor',
-                    ]
-                ) - (
-                    (
-                        self.parse_parameter(self.building_scenarios['storage_UA_external'])
-                        * (
-                            self.parse_parameter(self.building_scenarios['storage_cooling_ambient_temperature'])
-                            - self.parse_parameter(self.building_scenarios['storage_cooling_temperature_bottom_layer'])
+                        self.building_scenarios['building_name'] + '_sensible_thermal_storage_state_of_charge',
+                        parameter_name + '_sensible_thermal_storage_mass_factor',
+                    ] = (
+                        self.state_matrix.at[
+                            parameter_name + '_sensible_thermal_storage_state_of_charge',
+                            parameter_name + '_sensible_thermal_storage_mass_factor',
+                        ]
+                    ) - (
+                        (
+                            self.parse_parameter(self.building_scenarios['storage_UA_external'])
+                            * (
+                                self.parse_parameter(self.building_scenarios['storage_cooling_ambient_temperature'])
+                                - self.parse_parameter(self.building_scenarios['storage_cooling_temperature_bottom_layer'])
+                            )
+                            / self.parse_parameter(self.building_scenarios['water_specific_heat'])
+                            / self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
                         )
-                        / self.parse_parameter(self.building_scenarios['water_specific_heat'])
-                        / self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
+                        + (
+                            self.parse_parameter(self.building_scenarios['storage_UA_thermocline'])
+                            / self.parse_parameter(self.building_scenarios['water_specific_heat'])
+                        )
                     )
-                    + (
-                        self.parse_parameter(self.building_scenarios['storage_UA_thermocline'])
-                        / self.parse_parameter(self.building_scenarios['water_specific_heat'])
+
+                    self.control_matrix.at[
+                        parameter_name + '_sensible_thermal_storage_state_of_charge',
+                        parameter_name + '_sensible_storage_to_zone_cool_thermal_power',
+                    ] = - 1.0 / (
+                            self.parse_parameter('water_specific_heat')
+                            * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
                     )
-                )
 
-                self.control_matrix.at[
-                    building_name + '_sensible_thermal_storage_state_of_charge',
-                    building_name + '_sensible_storage_to_zone_cool_thermal_power',
-                ] = - 1.0 / (
-                        self.parse_parameter('water_specific_heat')
-                        * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-                )
-
-                self.control_matrix.at[
-                    building_name + '_sensible_thermal_storage_state_of_charge',
-                    building_name + '_sensible_storage_charge_heat_thermal_power',
-                ] = + 1.0 / (
-                        self.parse_parameter('water_specific_heat')
-                        * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-                )
+                    self.control_matrix.at[
+                        parameter_name + '_sensible_thermal_storage_state_of_charge',
+                        parameter_name + '_sensible_storage_charge_heat_thermal_power',
+                    ] = + 1.0 / (
+                            self.parse_parameter('water_specific_heat')
+                            * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
+                    )
 
     def define_battery_storage_level(self):
-        if self.building_scenarios['building_storage_type'] == 'battery_storage_default':
-            for building_name in self.building_scenarios['building_name'].iterrows():
-                self.control_matrix[
-                    building_name + '_battery_storage_state_of_charge',
-                    building_name + '_battery_storage_to_zone_electric_power'
-                ] = - 1.0 * (
-                    np.sqrt(self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))
-                )
+        building_name = self.building_scenarios['building_name']
+        if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+            self.control_matrix[
+                building_name + '_battery_storage_state_of_charge',
+                building_name + '_battery_storage_to_zone_electric_power'
+            ] = - 1.0 * (
+                np.sqrt(self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))
+            )
 
-                self.control_matrix[
-                    building_name + '_battery_storage_state_of_charge',
-                    building_name + '_battery_storage_charge_electric_power'
-                ] = + 1.0 * (
-                    np.sqrt(self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))
-                )
+            self.control_matrix[
+                building_name + '_battery_storage_state_of_charge',
+                building_name + '_battery_storage_charge_electric_power'
+            ] = + 1.0 * (
+                np.sqrt(self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))
+            )
 
     def parse_parameter(self, parameter):
         """
