@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS "building_zone_constraint_profiles" (
 	"maximum_relative_humidity"	TEXT,
 	"maximum_sensible_storage_capacity_m3" TEXT,
     "maximum_latent_storage_capacity_kg" TEXT,
-	"maximum_battery_storage_capacity_kwh" TEXT,
+	"maximum_battery_storage_capacity_kwh" TEXT
 
 );
 CREATE TABLE IF NOT EXISTS "building_zone_types" (
@@ -188,7 +188,7 @@ CREATE TABLE IF NOT EXISTS "weather_timeseries" (
 	"irradiation_east"	REAL,
 	"irradiation_south"	REAL,
 	"irradiation_west"	REAL,
-	"irradiation_north"	REAL
+	"irradiation_north"	REAL,
 	"storage_ambient_air_temperature"	REAL
 );
 CREATE TABLE IF NOT EXISTS "weather_types" (
