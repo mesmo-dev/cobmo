@@ -433,17 +433,17 @@ class Building(object):
                     ]
                 ) - (
                     (
-                        self.building_scenarios['storage_UA_external']
+                        self.parse_parameter(self.building_scenarios['storage_UA_external'])
                         * (
-                            self.building_scenarios['storage_cooling_ambient_temperature']
-                            - self.building_scenarios['storage_cooling_temperature_bottom_layer']
+                            self.parse_parameter(self.building_scenarios['storage_cooling_ambient_temperature'])
+                            - self.parse_parameter(self.building_scenarios['storage_cooling_temperature_bottom_layer'])
                         )
-                        / self.building_scenarios['water_specific_heat']
-                        / self.building_scenarios['storage_sensible_total_delta_temperature_layers']
+                        / self.parse_parameter(self.building_scenarios['water_specific_heat'])
+                        / self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
                     )
                     + (
-                        self.building_scenarios['storage_UA_thermocline']
-                        / self.building_scenarios['water_specific_heat']
+                        self.parse_parameter(self.building_scenarios['storage_UA_thermocline'])
+                        / self.parse_parameter(self.building_scenarios['water_specific_heat'])
                     )
                 )
 
@@ -452,7 +452,7 @@ class Building(object):
                     building_name + '_sensible_storage_to_zone_cool_thermal_power',
                 ] = - 1.0 / (
                         self.parse_parameter('water_specific_heat')
-                        * self.building_scenarios['storage_sensible_total_delta_temperature_layers']
+                        * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
                 )
 
                 self.control_matrix.at[
@@ -460,7 +460,7 @@ class Building(object):
                     building_name + '_sensible_storage_charge_heat_thermal_power',
                 ] = + 1.0 / (
                         self.parse_parameter('water_specific_heat')
-                        * self.building_scenarios['storage_sensible_total_delta_temperature_layers']
+                        * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
                 )
 
     def define_battery_storage_level(self):
@@ -470,15 +470,14 @@ class Building(object):
                     building_name + '_battery_storage_state_of_charge',
                     building_name + '_battery_storage_to_zone_electric_power'
                 ] = - 1.0 * (
-                    np.sqrt(self.building_scenarios['storage_round_trip_efficiency'])
-                    # TODO: need to specify to pick up the one for battery
+                    np.sqrt(self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))
                 )
 
                 self.control_matrix[
                     building_name + '_battery_storage_state_of_charge',
                     building_name + '_battery_storage_charge_electric_power'
                 ] = + 1.0 * (
-                    np.sqrt(self.building_scenarios['storage_round_trip_efficiency'])
+                    np.sqrt(self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))
                 )
 
     def parse_parameter(self, parameter):
@@ -3120,7 +3119,7 @@ class Building(object):
         )
         self.output_constraint_timeseries_minimum = -self.output_constraint_timeseries_maximum
 
-        # Outputs that are some kind of power can only be positive (greater than zero). DONE BY MAKING THE MINIMUM CONSTRAINT EQUAL TO ZERO
+        # Outputs that are some kind of power can only be positive (greater than zero).
         self.output_constraint_timeseries_minimum.loc[
             :,
             [column for column in self.output_constraint_timeseries_minimum.columns if '_power' in column]
