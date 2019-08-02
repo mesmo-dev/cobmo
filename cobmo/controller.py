@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pyomo.environ as pyo
 import time as time
-
+import cobmo.utils as utls
 
 class Controller(object):
     """Controller object to store the model predictive control problem."""
@@ -112,16 +112,16 @@ class Controller(object):
             self.problem.set_states,
             initialize=pd.Series(
                 np.concatenate([
-                    0.0  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
-                    * np.ones(sum(building.set_states.str.contains('state_of_charge'))),
-                    0.0  # Mass factor must be coherent with initial volume of bottom layer
-                    * np.ones(sum(building.set_states.str.contains('storage_mass_factor'))),
                     26.0  # in °C
                     * np.ones(sum(self.building.set_states.str.contains('temperature'))),
                     100.0  # in ppm
                     * np.ones(sum(self.building.set_states.str.contains('co2_concentration'))),
                     0.013  # in kg(water)/kg(air)
-                    * np.ones(sum(self.building.set_states.str.contains('absolute_humidity')))
+                    * np.ones(sum(self.building.set_states.str.contains('absolute_humidity'))),
+                    0.0  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
+                    * np.ones(sum(building.set_states.str.contains('state_of_charge'))),
+                    0.0  # Mass factor must be coherent with initial volume of bottom layer
+                    * np.ones(sum(building.set_states.str.contains('storage_mass_factor')))
                 ]),
                 self.building.set_states
             ).to_dict()
@@ -309,6 +309,9 @@ class Controller(object):
                     self.problem.variable_output_timeseries[timestep, output].value
                 )
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
+
+        # utls.log_infeasible_constraints(self.problem)
+        # utls.log_infeasible_bounds(self.problem)
 
         return (
             control_timeseries,
