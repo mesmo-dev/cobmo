@@ -3371,6 +3371,11 @@ class Building(object):
             self.state_matrix.values
             * pd.to_timedelta(self.building_scenarios['time_step'][0]).seconds
         )
+        self.state_matrix = self.state_matrix + 0.000000001*np.random.rand(
+            self.state_matrix.values.shape[0], self.state_matrix.values.shape[1]
+        )  # adding a bit of noise to make the matrix invertible.
+        # source:
+        # https://stackoverflow.com/questions/44305456/why-am-i-getting-linalgerror-singular-matrix-from-grangercausalitytests?rq=1
         control_matrix_discrete = (
             np.linalg.matrix_power(
                 self.state_matrix.values,
