@@ -276,41 +276,45 @@ class Building(object):
                     (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
                 ] + '_battery_storage_state_of_charge',
 
-                # # Storage CONTROL output
-                # # Heating
-                # ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_heat_power') if (
-                #     (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                # ) else None),
-                # ((self.building_zones['zone_name'] + '_latent_storage_to_zone_heat_power') if (
-                #     (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
-                # ) else None),
-                #
-                # # Storage DISCHARGE
-                # # Cooling
-                # ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_cool_power') if (
-                #     (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                # ) else None),
-                # ((self.building_zones['zone_name'] + '_latent_storage_to_zone_cool_power') if (
-                #     (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
-                # ) else None),
-                #
-                # # Battery
-                # ((self.building_zones['zone_name'] + '_battery_storage_to_zone_electric_power') if (
-                #     (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                # ) else None),  # the battery discharge is also defined per zone
-                #
-                # # Storage CHARGE
-                # ((self.building_scenarios['building_name'] + '_sensible_storage_charge_thermal_cool_power') if (
-                #     (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                # ) else None),
-                # ((self.building_scenarios['building_name'] + '_latent_storage_charge_thermal_cool_power') if (
-                #     (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
-                # ) else None),
-                #
-                # # Battery
-                # ((self.building_scenarios['building_name'] + '_battery_storage_charge_electric_power') if (
-                #     (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')  #
-                # ) else None)
+                # Defining the DISCHARGE control variables also in the outputs. One per zone.
+                # Heating
+                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_heat_thermal_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ) else None),
+                ((self.building_zones['zone_name'] + '_latent_storage_to_zone_heat_thermal_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ) else None),
+                # Cooling
+                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_cool_thermal_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ) else None),
+                ((self.building_zones['zone_name'] + '_latent_storage_to_zone_cool_thermal_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ) else None),
+                # Battery
+                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_electric_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ) else None),  # the battery discharge is also defined per zone
+
+                # Defining the CHARGE control variables. One per building.
+                # Heating
+                ((self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ) else None),
+                ((self.building_scenarios['building_name'] + '_latent_storage_charge_heat_thermal_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ) else None),
+                # Cooling
+                ((self.building_scenarios['building_name'] + '_sensible_storage_charge_thermal_cool_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ) else None),
+                ((self.building_scenarios['building_name'] + '_latent_storage_charge_thermal_cool_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                ) else None),
+                # Battery
+                ((self.building_scenarios['building_name'] + '_battery_storage_charge_electric_power') if (
+                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')  #
+                ) else None)
 
             ]),
             name='output_name'
@@ -3116,22 +3120,6 @@ class Building(object):
         - Generate minimum/maximum constraint timeseries based on `building_zone_constraint_profiles`  # @8constraint@23@degree@temperature
         - TODO: Make construction / interpolation simpler and more efficient
         """
-        self.control_constraint_timeseries_minimum = pd.DataFrame(
-            -1.0 * np.infty,  # data
-            self.set_timesteps,  # index
-            self.set_controls  # column
-        )
-        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-            # Charge and discharge heat flows can't be negative
-            self.control_constraint_timeseries_minimum.loc[
-                :,
-                [column for column in self.control_constraint_timeseries_minimum.columns if '_storage_charge' in column]
-            ] = 0
-
-            self.control_constraint_timeseries_minimum.loc[
-                :,
-                [column for column in self.control_constraint_timeseries_minimum.columns if '_storage_to_zone' in column]
-            ] = 0
 
         # Initialise constraint timeseries as +/- infinity
         self.output_constraint_timeseries_maximum = pd.DataFrame(
@@ -3153,11 +3141,16 @@ class Building(object):
             [column for column in self.output_constraint_timeseries_minimum.columns if '_flow' in column]
         ] = 0
 
-        # # Outputs that are some kind of state_of_charge can only be positive (greater than zero)
-        # self.output_constraint_timeseries_minimum.loc[
-        #     :,
-        #     [column for column in self.output_constraint_timeseries_minimum.columns if '_state_of_charge' in column]
-        # ] = 0
+        # Defining MIN bound for storage charge and discharge
+        self.output_constraint_timeseries_minimum.loc[
+            :,
+            [column for column in self.output_constraint_timeseries_minimum.columns if '_storage_charge' in column]
+        ] = 0
+
+        self.output_constraint_timeseries_minimum.loc[
+            :,
+            [column for column in self.output_constraint_timeseries_minimum.columns if '_storage_to_zone' in column]
+        ] = 0
 
         # If a heating/cooling session is defined, the cooling/heating air flow is forced to 0
         # Comment: The cooling or heating coil may still be working, because of the dehumidification,

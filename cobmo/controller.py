@@ -96,13 +96,6 @@ class Controller(object):
             self.problem.set_disturbances,
             initialize=self.building.disturbance_timeseries.stack().to_dict()
         )
-
-        self.problem.parameter_constraint_timeseries_minimum = pyo.Param(
-            self.problem.set_timesteps,
-            self.problem.set_controls,
-            initialize=self.building.control_constraint_timeseries_minimum.stack().to_dict()
-        )
-
         self.problem.parameter_output_timeseries_minimum = pyo.Param(
             self.problem.set_timesteps,
             self.problem.set_outputs,
@@ -135,16 +128,6 @@ class Controller(object):
         )  # TODO: Move intial state defintion to building model
 
         # Define variable bound rules
-        def rule_control_bounds(
-                problem,
-                timestep,
-                control
-        ):
-            return (
-                problem.parameter_constraint_timeseries_minimum[timestep, control],
-                np.inf
-            )
-
         def rule_output_bounds(
                 problem,
                 timestep,
@@ -164,8 +147,7 @@ class Controller(object):
         self.problem.variable_control_timeseries = pyo.Var(
             self.problem.set_timesteps,
             self.problem.set_controls,
-            domain=pyo.Reals,
-            bounds=rule_control_bounds
+            domain=pyo.Reals
         )
         self.problem.variable_output_timeseries = pyo.Var(
             self.problem.set_timesteps,
