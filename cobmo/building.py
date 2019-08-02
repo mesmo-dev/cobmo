@@ -3116,6 +3116,23 @@ class Building(object):
         - Generate minimum/maximum constraint timeseries based on `building_zone_constraint_profiles`  # @8constraint@23@degree@temperature
         - TODO: Make construction / interpolation simpler and more efficient
         """
+        self.control_constraint_timeseries_minimum = pd.DataFrame(
+            -1.0 * np.infty,  # data
+            self.set_timesteps,  # index
+            self.set_controls  # column
+        )
+        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            # Charge and discharge heat flows can't be negative
+            self.control_constraint_timeseries_minimum.loc[
+                :,
+                [column for column in self.control_constraint_timeseries_minimum.columns if '_storage_charge' in column]
+            ] = 0
+
+            self.control_constraint_timeseries_minimum.loc[
+                :,
+                [column for column in self.control_constraint_timeseries_minimum.columns if '_storage_to_zone' in column]
+            ] = 0
+
         # Initialise constraint timeseries as +/- infinity
         self.output_constraint_timeseries_maximum = pd.DataFrame(
             1.0 * np.infty,     # data
@@ -3135,18 +3152,6 @@ class Building(object):
             :,
             [column for column in self.output_constraint_timeseries_minimum.columns if '_flow' in column]
         ] = 0
-
-        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-            # Charge and discharge heat flows can't be negative
-            self.output_constraint_timeseries_minimum.loc[
-                :,
-                [column for column in self.output_constraint_timeseries_minimum.columns if '_storage_charge' in column]
-            ] = 0
-
-            self.output_constraint_timeseries_minimum.loc[
-                :,
-                [column for column in self.output_constraint_timeseries_minimum.columns if '_storage_to_zone' in column]
-            ] = 0
 
         # # Outputs that are some kind of state_of_charge can only be positive (greater than zero)
         # self.output_constraint_timeseries_minimum.loc[

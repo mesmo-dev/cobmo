@@ -96,6 +96,13 @@ class Controller(object):
             self.problem.set_disturbances,
             initialize=self.building.disturbance_timeseries.stack().to_dict()
         )
+
+        self.problem.parameter_constraint_timeseries_minimum = pyo.Param(
+            self.problem.set_timesteps,
+            self.problem.set_controls,
+            initialize=self.building.control_constraint_timeseries_minimum.transpose().stack().to_dict()
+        )
+
         self.problem.parameter_output_timeseries_minimum = pyo.Param(
             self.problem.set_timesteps,
             self.problem.set_outputs,
@@ -128,6 +135,16 @@ class Controller(object):
         )  # TODO: Move intial state defintion to building model
 
         # Define variable bound rules
+        def rule_control_bounds(
+                problem,
+                timestep,
+                output
+        ):
+            return (
+                problem.parameter_constraint_timeseries_minimum[timestep, output],
+                np.inf
+            )
+
         def rule_output_bounds(
                 problem,
                 timestep,
@@ -147,7 +164,8 @@ class Controller(object):
         self.problem.variable_control_timeseries = pyo.Var(
             self.problem.set_timesteps,
             self.problem.set_controls,
-            domain=pyo.Reals
+            domain=pyo.Reals,
+            bound=rule_control_bounds
         )
         self.problem.variable_output_timeseries = pyo.Var(
             self.problem.set_timesteps,
@@ -310,8 +328,8 @@ class Controller(object):
                 )
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 
-        # utls.log_infeasible_constraints(self.problem)
-        # utls.log_infeasible_bounds(self.problem)
+        utls.log_infeasible_constraints(self.problem)
+        utls.log_infeasible_bounds(self.problem)
 
         return (
             control_timeseries,

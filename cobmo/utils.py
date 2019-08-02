@@ -10,6 +10,58 @@ import pandas as pd
 import pvlib
 # Using CoolProp for calculating humid air properties: http://www.coolprop.org/fluid_properties/HumidAir.html
 from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
+# Import for infeasibility analysis
+from pyomo.core import Constraint, Var, value, TraversalStrategy
+from math import fabs
+import logging
+
+
+"""
+    Module with diagnostic utilities for infeasible models.
+    >>> https://github.com/Pyomo/pyomo/blob/master/pyomo/util/infeasible.py
+    """
+logger = logging.getLogger('pyomo.util.infeasible')
+logger.setLevel(logging.INFO)
+
+
+def log_infeasible_constraints(m, tol=1E-6, logger=logger):
+    """Print the infeasible constraints in the model.
+    Uses the current model state. Uses pyomo.util.infeasible logger unless one
+    is provided.
+    Args:
+        m (Block): Pyomo block or model to check
+        tol (float): feasibility tolerance
+    """
+    for constr in m.component_data_objects(
+            ctype=Constraint, active=True, descend_into=True):
+        # if constraint is an equality, handle differently
+        if constr.equality and fabs(value(constr.lower - constr.body)) >= tol:
+            logger.info('CONSTR {}: {} != {}'.format(
+                constr.name, value(constr.body), value(constr.lower)))
+            continue
+        # otherwise, check LB and UB, if they exist
+        if constr.has_lb() and value(constr.lower - constr.body) >= tol:
+            logger.info('CONSTR {}: {} < {}'.format(
+                constr.name, value(constr.body), value(constr.lower)))
+        if constr.has_ub() and value(constr.body - constr.upper) >= tol:
+            logger.info('CONSTR {}: {} > {}'.format(
+                constr.name, value(constr.body), value(constr.upper)))
+
+
+def log_infeasible_bounds(m, tol=1E-6, logger=logger):
+    """Print the infeasible variable bounds in the model.
+    Args:
+        m (Block): Pyomo block or model to check
+        tol (float): feasibility tolerance
+    """
+    for var in m.component_data_objects(
+            ctype=Var, descend_into=True):
+        if var.has_lb() and value(var.lb - var) >= tol:
+            logger.info('VAR {}: {} < LB {}'.format(
+                var.name, value(var), value(var.lb)))
+        if var.has_ub() and value(var - var.ub) >= tol:
+            logger.info('VAR {}: {} > UB {}'.format(
+                var.name, value(var), value(var.ub)))
 
 
 def create_database(
