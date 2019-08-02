@@ -3228,7 +3228,11 @@ class Building(object):
                     self.output_constraint_timeseries_minimum.at[
                         row_time,
                         self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
-                    ] = 0.0
+                    ] = self.parse_parameter(
+                        building_zone_constraint_profile['minimum_sensible_storage_capacity_m3'][
+                            int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
+                        ]
+                    )
 
                 self.output_constraint_timeseries_minimum.at[
                     row_time,
@@ -3246,6 +3250,8 @@ class Building(object):
                         int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
                     ]
                 )
+                # 21.0
+
                 if (row_zone['hvac_ahu_type'] != '') | (row_zone['window_type'] != ''):
                     if self.building_scenarios['demand_controlled_ventilation_type'][0] != '':
                         if self.building_scenarios['co2_model_type'][0] != '':

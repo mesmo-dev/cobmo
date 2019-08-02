@@ -1,4 +1,4 @@
-zone_constraint_profile,from_weekday,from_time,minimum_air_temperature,maximum_air_temperature,minimum_fresh_air_flow_per_area,minimum_fresh_air_flow_per_person,maximum_co2_concentration,minimum_fresh_air_flow_per_area_no_dcv,minimum_relative_humidity,maximum_relative_humidity,maximum_sensible_storage_capacity_m3,maximum_latent_storage_capacity_kg,maximum_battery_storage_capacity_kwh
-zone_constraint_default,0,0:00:00,5,35,0,0,3000,0,0,100,2000,1000,5000
-zone_constraint_default,0,6:30:00,18,23,0.0006,0.0025,1000,0.0014,0,70,2000,1000,5000
-zone_constraint_default,0,18:00:00,5,35,0,0,3000,0,0,100,2000,1000,5000
+zone_constraint_profile,from_weekday,from_time,minimum_air_temperature,maximum_air_temperature,minimum_fresh_air_flow_per_area,minimum_fresh_air_flow_per_person,maximum_co2_concentration,minimum_fresh_air_flow_per_area_no_dcv,minimum_relative_humidity,maximum_relative_humidity,maximum_sensible_storage_capacity_m3,maximum_latent_storage_capacity_kg,maximum_battery_storage_capacity_kwh,minimum_sensible_storage_capacity_m3
+zone_constraint_default,0,0:00:00,5,35,0,0,3000,0,0,100,2000,1000,5000,0
+zone_constraint_default,0,6:30:00,18,23,0.0006,0.0025,1000,0.0014,0,70,2000,1000,5000,0
+zone_constraint_default,0,18:00:00,5,35,0,0,3000,0,0,100,2000,1000,5000,0
