@@ -3136,7 +3136,17 @@ class Building(object):
             [column for column in self.output_constraint_timeseries_minimum.columns if '_flow' in column]
         ] = 0
 
+        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            # Charge and discharge heat flows can't be negative
+            self.output_constraint_timeseries_minimum.loc[
+                :,
+                [column for column in self.output_constraint_timeseries_minimum.columns if '_storage_charge' in column]
+            ] = 0
 
+            self.output_constraint_timeseries_minimum.loc[
+                :,
+                [column for column in self.output_constraint_timeseries_minimum.columns if '_storage_to_zone' in column]
+            ] = 0
 
         # # Outputs that are some kind of state_of_charge can only be positive (greater than zero)
         # self.output_constraint_timeseries_minimum.loc[
