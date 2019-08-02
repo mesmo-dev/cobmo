@@ -460,7 +460,7 @@ class Building(object):
 
             self.control_matrix.at[
                 self.building_scenarios['building_name'] + '_sensible_thermal_storage_state_of_charge',
-                self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power',
+                self.building_scenarios['building_name'] + '_sensible_storage_charge_thermal_cool_power',
             ] = + 1.0 / (
                     self.parse_parameter('water_specific_heat')
                     * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
@@ -2713,7 +2713,8 @@ class Building(object):
                     ] = (
                             self.control_output_matrix.at[
                                 index + '_ahu_cool_electric_power',
-                                self.building_scenarios['building_name'][0] + '_sensible_storage_charge_thermal_cool_power'
+                                self.building_scenarios['building_name'][0] +
+                                '_sensible_storage_charge_thermal_cool_power'
                             ]
                             + 1 / self.parse_parameter(row['ahu_cooling_efficiency'])
                     )
@@ -2912,7 +2913,8 @@ class Building(object):
                     ] = (
                             self.control_output_matrix.at[
                                 index + '_tu_cool_electric_power',
-                                self.building_scenarios['building_name'][0] + '_sensible_storage_charge_thermal_cool_power'
+                                self.building_scenarios['building_name'][0] +
+                                '_sensible_storage_charge_thermal_cool_power'
                             ]
                             + 1 / self.parse_parameter(row['tu_cooling_efficiency'])
                     )
@@ -3128,7 +3130,6 @@ class Building(object):
             self.set_outputs    # column
         )
         self.output_constraint_timeseries_minimum = -self.output_constraint_timeseries_maximum
-
         # Outputs that are some kind of power can only be positive (greater than zero).
         self.output_constraint_timeseries_minimum.loc[
             :,
