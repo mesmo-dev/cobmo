@@ -468,14 +468,14 @@ class Building(object):
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                 self.building_zones['zone_name'] + '_battery_storage_to_zone_electric_power'
             ] = - 1.0 * (
-                np.sqrt(self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))
+                (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))**(-1)
             )
 
             self.control_matrix[
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                 self.building_scenarios['building_name'][0] + '_battery_storage_charge_electric_power'
             ] = + 1.0 * (
-                np.sqrt(self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))
+                (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))**(-1)
             )
 
     def parse_parameter(self, parameter):
@@ -3196,33 +3196,37 @@ class Building(object):
                 )
 
                 # Select constraint values
+
                 # Storage constraints values
-                self.output_constraint_timeseries_maximum.at[
-                    row_time,
-                    index_zone + '_sensible_thermal_storage_state_of_charge'
-                ] = self.parse_parameter(
-                    building_zone_constraint_profile['maximum_sensible_storage_capacity_m3'][
-                        int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
-                    ]
-                ) * 1000  # Multiplying for the water density to have the mass
+                if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                    self.output_constraint_timeseries_maximum.at[
+                        row_time,
+                        self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
+                    ] = self.parse_parameter(
+                        building_zone_constraint_profile['maximum_sensible_storage_capacity_m3'][
+                            int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
+                        ]
+                    ) * self.parse_parameter('tank_fluid_density')  # Multiplying for the water density to have the mass
 
-                self.output_constraint_timeseries_maximum.at[
-                    row_time,
-                    index_zone + '_latent_thermal_storage_state_of_charge'
-                ] = self.parse_parameter(
-                    building_zone_constraint_profile['maximum_latent_storage_capacity_kg'][
-                        int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
-                    ]
-                )
+                if self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default':
+                    self.output_constraint_timeseries_maximum.at[
+                        row_time,
+                        self.building_scenarios['building_name'][0] + '_latent_thermal_storage_state_of_charge'
+                    ] = self.parse_parameter(
+                        building_zone_constraint_profile['maximum_latent_storage_capacity_kg'][
+                            int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
+                        ]
+                    )
 
-                self.output_constraint_timeseries_maximum.at[
-                    row_time,
-                    index_zone + '_battery_storage_state_of_charge'
-                ] = self.parse_parameter(
-                    building_zone_constraint_profile['maximum_battery_storage_capacity_kwh'][
-                        int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
-                    ]
-                )
+                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                    self.output_constraint_timeseries_maximum.at[
+                        row_time,
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
+                    ] = self.parse_parameter(
+                        building_zone_constraint_profile['maximum_battery_storage_capacity_kwh'][
+                            int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
+                        ]
+                    )
 
                 self.output_constraint_timeseries_minimum.at[
                     row_time,

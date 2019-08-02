@@ -46,6 +46,10 @@ def example():
     # Define initial state and control timeseries
     state_initial = pd.Series(
         np.concatenate([
+            0.5  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
+            * np.ones(sum(building.set_states.str.contains('state_of_charge'))),
+            0.5  # Mass factor must be coherent with initial volume of bottom layer
+            * np.ones(sum(building.set_states.str.contains('storage_mass_factor'))),
             26.0  # in °C
             * np.ones(sum(building.set_states.str.contains('temperature'))),
             100.0  # in ppm
@@ -152,17 +156,17 @@ def example():
 
     print_on_csv = 1
     if print_on_csv == 1:
-        building.state_matrix.to_excel('delete_me/state_matrix.xlsx')
-        building.control_matrix.to_excel('control_matrix.xlsx')
-        building.disturbance_matrix.to_excel('disturbance_matrix.xlsx')
+        building.state_matrix.to_csv('delete_me/state_matrix.csv')
+        building.control_matrix.to_csv('delete_me/control_matrix.csv')
+        building.disturbance_matrix.to_csv('delete_me/disturbance_matrix.csv')
 
-        building.state_output_matrix.to_excel('state_output_matrix.xlsx')
-        building.control_output_matrix.to_excel('control_output_matrix.xlsx')
-        building.disturbance_output_matrix.to_excel('disturbance_output_matrix.xlsx')
+        building.state_output_matrix.to_csv('delete_me/state_output_matrix.csv')
+        building.control_output_matrix.to_csv('delete_me/control_output_matrix.csv')
+        building.disturbance_output_matrix.to_csv('delete_me/disturbance_output_matrix.csv')
 
         # np.savetxt(r'my_file_output_state_matrix.txt', building.state_matrix.values) # , fmt='%d'
-        state_timeseries_simulation.to_excel('state_timeseries_simulation.xlsx')
-        state_timeseries_controller.to_excel('state_timeseries_controller.xlsx')
+        state_timeseries_simulation.to_csv('delete_me/state_timeseries_simulation.csv')
+        state_timeseries_controller.to_csv('delete_me/state_timeseries_controller.csv')
 
 
 if __name__ == "__main__":
