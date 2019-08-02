@@ -422,29 +422,29 @@ class Building(object):
 
     def define_sensible_storage_level(self):
         if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-            self.state_matrix.at[
-                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_mass_factor',
-            ] = (
-                self.state_matrix.at[
-                    self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-                    self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_mass_factor',
-                ]
-            ) - (
-                (
-                    self.parse_parameter(self.building_scenarios['storage_UA_external'])
-                    * (
-                        self.parse_parameter(self.building_scenarios['storage_cooling_ambient_temperature'])
-                        - self.parse_parameter(self.building_scenarios['storage_cooling_temperature_bottom_layer'])
-                    )
-                    / self.parse_parameter('water_specific_heat')
-                    / self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-                )
-                + (
-                    self.parse_parameter(self.building_scenarios['storage_UA_thermocline'])
-                    / self.parse_parameter('water_specific_heat')
-                )
-            )
+            # self.state_matrix.at[
+            #     self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+            #     self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_mass_factor',
+            # ] = (
+            #     self.state_matrix.at[
+            #         self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+            #         self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_mass_factor',
+            #     ]
+            # ) - (
+            #     (
+            #         self.parse_parameter(self.building_scenarios['storage_UA_external'])
+            #         * (
+            #             self.parse_parameter(self.building_scenarios['storage_cooling_ambient_temperature'])
+            #             - self.parse_parameter(self.building_scenarios['storage_cooling_temperature_bottom_layer'])
+            #         )
+            #         / self.parse_parameter('water_specific_heat')
+            #         / self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
+            #     )
+            #     + (
+            #         self.parse_parameter(self.building_scenarios['storage_UA_thermocline'])
+            #         / self.parse_parameter('water_specific_heat')
+            #     )
+            # )
 
             self.control_matrix.at[
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -3136,6 +3136,8 @@ class Building(object):
             [column for column in self.output_constraint_timeseries_minimum.columns if '_flow' in column]
         ] = 0
 
+
+
         # # Outputs that are some kind of state_of_charge can only be positive (greater than zero)
         # self.output_constraint_timeseries_minimum.loc[
         #     :,
@@ -3232,7 +3234,7 @@ class Building(object):
                         building_zone_constraint_profile['minimum_sensible_storage_capacity_m3'][
                             int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
                         ]
-                    )
+                    ) * self.parse_parameter('tank_fluid_density')
 
                 self.output_constraint_timeseries_minimum.at[
                     row_time,
