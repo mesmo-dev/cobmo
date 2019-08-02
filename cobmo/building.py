@@ -3387,10 +3387,6 @@ class Building(object):
                             101325
                         )
 
-        # Transpose to align with result of state space output matrix equation
-        self.output_constraint_timeseries_minimum = self.output_constraint_timeseries_minimum.transpose()
-        self.output_constraint_timeseries_maximum = self.output_constraint_timeseries_maximum.transpose()
-
     def discretize_model(self):
         """
         - Discretization assuming zero order hold
