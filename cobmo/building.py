@@ -3136,11 +3136,11 @@ class Building(object):
             [column for column in self.output_constraint_timeseries_minimum.columns if '_flow' in column]
         ] = 0
 
-        # Outputs that are some kind of state_of_charge can only be positive (greater than zero)
-        self.output_constraint_timeseries_minimum.loc[
-            :,
-            [column for column in self.output_constraint_timeseries_minimum.columns if '_state_of_charge' in column]
-        ] = 0
+        # # Outputs that are some kind of state_of_charge can only be positive (greater than zero)
+        # self.output_constraint_timeseries_minimum.loc[
+        #     :,
+        #     [column for column in self.output_constraint_timeseries_minimum.columns if '_state_of_charge' in column]
+        # ] = 0
 
         # If a heating/cooling session is defined, the cooling/heating air flow is forced to 0
         # Comment: The cooling or heating coil may still be working, because of the dehumidification,
@@ -3192,7 +3192,7 @@ class Building(object):
 
                 # Select constraint values
 
-                # Storage constraints values
+                # Storage MAX constraints values
                 if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
                     self.output_constraint_timeseries_maximum.at[
                         row_time,
@@ -3222,6 +3222,13 @@ class Building(object):
                             int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
                         ]
                     )
+
+                # Storage MIN constraints values  TODO: add for other storage techs too
+                if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                    self.output_constraint_timeseries_minimum.at[
+                        row_time,
+                        self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
+                    ] = 0.0
 
                 self.output_constraint_timeseries_minimum.at[
                     row_time,

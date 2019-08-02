@@ -46,9 +46,9 @@ def example():
     # Define initial state and control timeseries
     state_initial = pd.Series(
         np.concatenate([
-            0.5  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
+            0.0  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
             * np.ones(sum(building.set_states.str.contains('state_of_charge'))),
-            0.5  # Mass factor must be coherent with initial volume of bottom layer
+            0.0  # Mass factor must be coherent with initial volume of bottom layer
             * np.ones(sum(building.set_states.str.contains('storage_mass_factor'))),
             26.0  # in °C
             * np.ones(sum(building.set_states.str.contains('temperature'))),
@@ -167,6 +167,7 @@ def example():
         # np.savetxt(r'my_file_output_state_matrix.txt', building.state_matrix.values) # , fmt='%d'
         state_timeseries_simulation.to_csv('delete_me/state_timeseries_simulation.csv')
         state_timeseries_controller.to_csv('delete_me/state_timeseries_controller.csv')
+        output_timeseries_controller.to_csv('delete_me/output_timeseries_controller.csv')
 
 
 if __name__ == "__main__":

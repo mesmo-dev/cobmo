@@ -112,9 +112,9 @@ class Controller(object):
             self.problem.set_states,
             initialize=pd.Series(
                 np.concatenate([
-                    0.5  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
+                    0.0  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
                     * np.ones(sum(building.set_states.str.contains('state_of_charge'))),
-                    0.5  # Mass factor must be coherent with initial volume of bottom layer
+                    0.0  # Mass factor must be coherent with initial volume of bottom layer
                     * np.ones(sum(building.set_states.str.contains('storage_mass_factor'))),
                     26.0  # in °C
                     * np.ones(sum(self.building.set_states.str.contains('temperature'))),
