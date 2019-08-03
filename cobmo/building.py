@@ -126,9 +126,9 @@ class Building(object):
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
                     ] + '_sensible_thermal_storage_state_of_charge',
-                self.building_scenarios['building_name'][
-                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
-                ] + '_sensible_thermal_storage_mass_factor',
+                # self.building_scenarios['building_name'][
+                #     (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                # ] + '_sensible_thermal_storage_mass_factor',
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'latent_thermal_storage_default')
                 ] + '_latent_thermal_storage_state_of_charge',
@@ -163,13 +163,13 @@ class Building(object):
                 ] + '_window_air_flow',
 
                 # Defining the DISCHARGE control variables. One per zone.
-                # Heating
-                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_heat_thermal_power') if (
-                        (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
-                ((self.building_zones['zone_name'] + '_latent_storage_to_zone_heat_thermal_power') if (
-                        (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
-                ) else None),
+                # # Heating
+                # ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_heat_thermal_power') if (
+                #         (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                # ) else None),
+                # ((self.building_zones['zone_name'] + '_latent_storage_to_zone_heat_thermal_power') if (
+                #         (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                # ) else None),
                 # Cooling
                 ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_cool_thermal_power') if (
                         (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
@@ -183,13 +183,13 @@ class Building(object):
                 ) else None),  # the battery discharge is also defined per zone
 
                 # Defining the CHARGE control variables. One per building.
-                # Heating
-                ((self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power') if (
-                        (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
-                ((self.building_scenarios['building_name'] + '_latent_storage_charge_heat_thermal_power') if (
-                        (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
-                ) else None),
+                # # Heating
+                # ((self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power') if (
+                #         (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                # ) else None),
+                # ((self.building_scenarios['building_name'] + '_latent_storage_charge_heat_thermal_power') if (
+                #         (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                # ) else None),
                 # Cooling
                 ((self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power') if (
                         (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
@@ -277,13 +277,13 @@ class Building(object):
                 ] + '_battery_storage_state_of_charge',
 
                 # Defining the DISCHARGE control variables also in the outputs. One per zone.
-                # Heating
-                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_heat_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
-                ((self.building_zones['zone_name'] + '_latent_storage_to_zone_heat_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
-                ) else None),
+                # # Heating
+                # ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_heat_thermal_power') if (
+                #     (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                # ) else None),
+                # ((self.building_zones['zone_name'] + '_latent_storage_to_zone_heat_thermal_power') if (
+                #     (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                # ) else None),
                 # Cooling
                 ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_cool_thermal_power') if (
                     (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
@@ -297,13 +297,13 @@ class Building(object):
                 ) else None),  # the battery discharge is also defined per zone
 
                 # Defining the CHARGE control variables. One per building.
-                # Heating
-                ((self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
-                ((self.building_scenarios['building_name'] + '_latent_storage_charge_heat_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
-                ) else None),
+                # # Heating
+                # ((self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power') if (
+                #     (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                # ) else None),
+                # ((self.building_scenarios['building_name'] + '_latent_storage_charge_heat_thermal_power') if (
+                #     (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                # ) else None),
                 # Cooling
                 ((self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power') if (
                     (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
@@ -459,8 +459,8 @@ class Building(object):
             )
 
             self.control_matrix.at[
-                self.building_scenarios['building_name'] + '_sensible_thermal_storage_state_of_charge',
-                self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power',
+                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power',
             ] = + 1.0 / (
                     self.parse_parameter('water_specific_heat')
                     * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
