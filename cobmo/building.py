@@ -265,6 +265,9 @@ class Building(object):
                     self.building_zones['hvac_tu_type'] != ''
                     ] + '_tu_cool_electric_power',
 
+                # FIXME: Although the outputs are defined here, the definition of the output matrix values is missing.
+                # FIXME: See for example define_output_zone_temperature().
+
                 # Storage STATE output
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
@@ -2707,14 +2710,15 @@ class Building(object):
                 # Storage AHU - cooling
                 # sensible storage
                 if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                    # FIXME: Charging is defined per zone although it should be per building level.
+                    # FIXME: In fact, there should be a separate output variable for the electric power due to charging.
                     self.control_output_matrix.at[
                         index + '_ahu_cool_electric_power',
                         self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
                     ] = (
                             self.control_output_matrix.at[
                                 index + '_ahu_cool_electric_power',
-                                self.building_scenarios['building_name'][0] +
-                                '_sensible_storage_charge_cool_thermal_power'
+                                self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
                             ]
                             + 1 / self.parse_parameter(row['ahu_cooling_efficiency'])
                     )
@@ -2909,6 +2913,7 @@ class Building(object):
                 # Storage TU - cooling
                 # sensible storage
                 if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                    # FIXME: Same as above for AHU.
                     self.control_output_matrix.at[
                         index + '_tu_cool_electric_power',
                         self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
@@ -3206,6 +3211,8 @@ class Building(object):
                 # Select constraint values
 
                 # Storage MAX constraints values
+                # FIXME: Move storage size to storage_types.
+                # FIXME: As in, the storage will not change over time, so it should be in constraint_profiles.
                 if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
                     self.output_constraint_timeseries_maximum.at[
                         row_time,
