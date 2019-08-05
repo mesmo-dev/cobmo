@@ -156,20 +156,40 @@ def example():
 
     print_on_csv = 1
     if print_on_csv == 1:
-        building.state_matrix.to_csv('delete_me/state_matrix.csv')
-        building.control_matrix.to_csv('delete_me/control_matrix.csv')
-        building.disturbance_matrix.to_csv('delete_me/disturbance_matrix.csv')
+        if ((building.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                or (building.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
+                or (building.building_scenarios['building_storage_type'][0] == 'battery_storage_default')):
 
-        building.state_output_matrix.to_csv('delete_me/state_output_matrix.csv')
-        building.control_output_matrix.to_csv('delete_me/control_output_matrix.csv')
-        building.disturbance_output_matrix.to_csv('delete_me/disturbance_output_matrix.csv')
+            building.state_matrix.to_csv('delete_me_storage/state_matrix_STORAGE.csv')
+            building.control_matrix.to_csv('delete_me_storage/control_matrix_STORAGE.csv')
+            building.disturbance_matrix.to_csv('delete_me_storage/disturbance_matrix_STORAGE.csv')
 
-        # np.savetxt(r'my_file_output_state_matrix.txt', building.state_matrix.values) # , fmt='%d'
-        state_timeseries_simulation.to_csv('delete_me/state_timeseries_simulation.csv')
+            building.state_output_matrix.to_csv('delete_me_storage/state_output_matrix_STORAGE.csv')
+            building.control_output_matrix.to_csv('delete_me_storage/control_output_matrix_STORAGE.csv')
+            building.disturbance_output_matrix.to_csv('delete_me_storage/disturbance_output_matrix_STORAGE.csv')
 
-        state_timeseries_controller.to_csv('delete_me/state_timeseries_controller.csv')
-        output_timeseries_controller.to_csv('delete_me/output_timeseries_controller.csv')
-        control_timeseries_controller.to_csv('delete_me/control_timeseries_controller.csv')
+            # np.savetxt(r'my_file_output_state_matrix.txt', building.state_matrix.values) # , fmt='%d'
+            state_timeseries_simulation.to_csv('delete_me_storage/state_timeseries_simulation_STORAGE.csv')
+
+            state_timeseries_controller.to_csv('delete_me_storage/state_timeseries_controller_STORAGE.csv')
+            output_timeseries_controller.to_csv('delete_me_storage/output_timeseries_controller_STORAGE.csv')
+            control_timeseries_controller.to_csv('delete_me_storage/control_timeseries_controller_STORAGE.csv')
+
+        else:
+            building.state_matrix.to_csv('delete_me/state_matrix.csv')
+            building.control_matrix.to_csv('delete_me/control_matrix.csv')
+            building.disturbance_matrix.to_csv('delete_me/disturbance_matrix.csv')
+
+            building.state_output_matrix.to_csv('delete_me/state_output_matrix.csv')
+            building.control_output_matrix.to_csv('delete_me/control_output_matrix.csv')
+            building.disturbance_output_matrix.to_csv('delete_me/disturbance_output_matrix.csv')
+
+            # np.savetxt(r'my_file_output_state_matrix.txt', building.state_matrix.values) # , fmt='%d'
+            state_timeseries_simulation.to_csv('delete_me/state_timeseries_simulation.csv')
+
+            state_timeseries_controller.to_csv('delete_me/state_timeseries_controller.csv')
+            output_timeseries_controller.to_csv('delete_me/output_timeseries_controller.csv')
+            control_timeseries_controller.to_csv('delete_me/control_timeseries_controller.csv')
 
 
 if __name__ == "__main__":
