@@ -47,5 +47,5 @@ constants,heat_transfer_coefficient_surface_to_ambient,25,W/(m2*K),
 constants,heat_transfer_coefficient_surface_to_zone,7.69,W/(m2*K),TODO: differentiate between vertical/horizontal
 constants,heat_transfer_coefficient_exterior_convection,25,W/(m2*K),ISO 6946
 constants,heat_transfer_coefficient_interior_convection,7.69,W/(m2*K),"ISO 6946, TODO: differentiate between vertical/horizontal"
-constants,water_specific_heat,4.186,J/(kg*K),
+constants,water_specific_heat,4186,J/(kg*K),
 constants,tank_fluid_density,1000,kg/m3,
