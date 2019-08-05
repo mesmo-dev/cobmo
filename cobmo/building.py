@@ -494,7 +494,7 @@ class Building(object):
             ] = - 1.0 / (
                     self.parse_parameter('water_specific_heat')
                     * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-            )
+            ) * self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
 
             self.control_matrix.at[
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -3311,7 +3311,7 @@ class Building(object):
                 # Select constraint values
 
                 # Storage MAX constraints values
-                # FIXME: Move storage size to storage_types.
+                # FIXME: Move storage size to storage_types. --> go to storage_types
                 # FIXME: As in, the storage will not change over time, so it should be in constraint_profiles.
                 if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
                     self.output_constraint_timeseries_maximum.at[

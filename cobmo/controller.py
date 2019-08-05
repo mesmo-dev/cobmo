@@ -39,7 +39,7 @@ class Controller(object):
             initialize=self.building.set_outputs
         )
         self.problem.set_outputs_power = pyo.Set(
-            initialize=self.building.set_outputs[self.building.set_outputs.str.contains('electric_power')]
+            initialize=self.building.set_outputs[self.building.set_outputs.str.contains('power')]
         )
         self.problem.set_outputs_temperature = pyo.Set(
             initialize=self.building.set_outputs[self.building.set_outputs.str.contains('temperature')]
@@ -258,7 +258,6 @@ class Controller(object):
             sense=1  # Minimize
         )
 # =================================================================================================
-
 
 
 # =================================================================================================

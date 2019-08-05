@@ -192,6 +192,12 @@ CREATE TABLE IF NOT EXISTS "weather_timeseries" (
 	"irradiation_north"	REAL,
 	"storage_ambient_air_temperature"	REAL
 );
+CREATE TABLE IF NOT EXISTS "electricity_price_timeseries" (
+	"price_type"	TEXT,
+	"time"	TEXT,
+	"price"	REAL,
+	"price_unit"	TEXT
+);
 CREATE TABLE IF NOT EXISTS "weather_types" (
 	"weather_type"	TEXT,
 	"time_zone"	TEXT,
