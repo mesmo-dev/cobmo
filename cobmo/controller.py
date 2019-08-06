@@ -39,7 +39,7 @@ class Controller(object):
             initialize=self.building.set_outputs
         )
         self.problem.set_outputs_power = pyo.Set(
-            initialize=self.building.set_outputs[self.building.set_outputs.str.contains('power')]
+            initialize=self.building.set_outputs[self.building.set_outputs.str.contains('electric_power')]
         )
         self.problem.set_outputs_temperature = pyo.Set(
             initialize=self.building.set_outputs[self.building.set_outputs.str.contains('temperature')]
@@ -61,6 +61,10 @@ class Controller(object):
         self.problem.timestep_delta = self.building.set_timesteps[1] - self.building.set_timesteps[0]
 
         # Define parameters
+        self.problem.parameter_electricity_price = pyo.Param(
+            self.problem.set_timesteps,
+            initialize=self.building.electrity_prices.stack().to_dict()
+        )
         self.problem.parameter_state_matrix = pyo.Param(
             self.problem.set_states,
             self.problem.set_states,
@@ -240,27 +244,24 @@ class Controller(object):
             self.problem.set_outputs,
             rule=rule_output_equation
         )
-# =================================================================================================
+
         # Define objective rule
         def objective_rule(problem):
             objective_value = 0.0
             for timestep in problem.set_timesteps:
                 for output_power in problem.set_outputs_power:  # TODO: Differentiate between thermal and electric.
-                    objective_value += problem.variable_output_timeseries[timestep, output_power]
+                    objective_value += (
+                            problem.variable_output_timeseries[timestep, output_power]
+                            * problem.parameter_electricity_price[timestep]
+                    )
             return objective_value
 
-# =================================================================================================
-
-# =================================================================================================
         # Define objective
         self.problem.objective = pyo.Objective(
             rule=objective_rule,
             sense=1  # Minimize
         )
-# =================================================================================================
 
-
-# =================================================================================================
         # Print setup time for debugging
         print("Controller setup time: {:.2f} seconds".format(time.clock() - time_start))
 
@@ -312,6 +313,12 @@ class Controller(object):
         print("\nlog infesibility")
         utls.log_infeasible_constraints(self.problem)
         utls.log_infeasible_bounds(self.problem)
+
+        """
+        print("\n>> Electricity prices\n")
+        print(self.building.electrity_prices)  # price.to_string(index=True)
+        print(self.building.disturbance_timeseries)
+        """
 
         return (
             control_timeseries,

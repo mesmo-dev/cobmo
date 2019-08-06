@@ -18,6 +18,15 @@ class Building(object):
 
     def __init__(self, conn, scenario_name):
         # Load building information from database
+        self.electrity_prices = pd.read_sql(
+            """
+            select * from electricity_price_timeseries
+            where scenario_name='{}'
+            """.format(scenario_name),
+            conn
+        )
+        self.electrity_prices.index = pd.to_datetime(self.electrity_prices['time'])
+
         self.building_scenarios = pd.read_sql(
             """
             select * from building_scenarios 
