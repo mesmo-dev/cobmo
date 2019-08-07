@@ -88,8 +88,8 @@ CREATE TABLE IF NOT EXISTS "building_storage_types" (
 	"storage_cooling_ambient_temperature"	REAL,
 	"storage_sensible_total_delta_temperature_layers"	REAL,
 	"storage_round_trip_efficiency"	REAL,
-	"storage_max_capacity"	REAL,
-	"comments_storage_max_capacity"	TEXT,
+	"storage_size"	REAL,
+	"storage_size_unit"	TEXT,
 	"comments_storage_type_general"	TEXT
 );
 CREATE TABLE IF NOT EXISTS "building_surface_types" (
@@ -145,11 +145,7 @@ CREATE TABLE IF NOT EXISTS "building_zone_constraint_profiles" (
 	"maximum_co2_concentration"	TEXT,
 	"minimum_fresh_air_flow_per_area_no_dcv"	TEXT,
 	"minimum_relative_humidity"	TEXT,
-	"maximum_relative_humidity"	TEXT,
-	"maximum_sensible_storage_capacity_m3" TEXT,
-    "maximum_latent_storage_capacity_kg" TEXT,
-	"maximum_battery_storage_capacity_kwh" TEXT,
-	"minimum_sensible_storage_capacity_m3" TEXT
+	"maximum_relative_humidity"	TEXT
 
 );
 CREATE TABLE IF NOT EXISTS "building_zone_types" (

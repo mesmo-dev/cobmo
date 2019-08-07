@@ -61,9 +61,13 @@ class Controller(object):
         self.problem.timestep_delta = self.building.set_timesteps[1] - self.building.set_timesteps[0]
 
         # Define parameters
-        self.problem.parameter_electricity_price = pyo.Param(
+        self.problem.parameter_electricity_prices = pyo.Param(
             self.problem.set_timesteps,
-            initialize=self.building.electrity_prices.stack().to_dict()
+            initialize=(
+                (self.building.electricity_prices['price'] / 1000).to_dict()  # W --> kW
+                if self.building.electricity_prices['price_unit'][0] == '$/kWh'
+                else (self.building.electricity_prices['price'].to_dict())
+            )
         )
         self.problem.parameter_state_matrix = pyo.Param(
             self.problem.set_states,
@@ -252,7 +256,7 @@ class Controller(object):
                 for output_power in problem.set_outputs_power:  # TODO: Differentiate between thermal and electric.
                     objective_value += (
                             problem.variable_output_timeseries[timestep, output_power]
-                            * problem.parameter_electricity_price[timestep]
+                            * problem.parameter_electricity_prices[timestep] * 1800  # * 30 mins
                     )
             return objective_value
 
@@ -316,7 +320,7 @@ class Controller(object):
 
         """
         print("\n>> Electricity prices\n")
-        print(self.building.electrity_prices)  # price.to_string(index=True)
+        print(self.building.electricity_prices)  # price.to_string(index=True)
         print(self.building.disturbance_timeseries)
         """
 

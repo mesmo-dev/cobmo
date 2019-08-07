@@ -18,14 +18,14 @@ class Building(object):
 
     def __init__(self, conn, scenario_name):
         # Load building information from database
-        self.electrity_prices = pd.read_sql(
+        self.electricity_prices = pd.read_sql(
             """
             select * from electricity_price_timeseries
             where scenario_name='{}'
             """.format(scenario_name),
             conn
         )
-        self.electrity_prices.index = pd.to_datetime(self.electrity_prices['time'])
+        self.electricity_prices.index = pd.to_datetime(self.electricity_prices['time'])
 
         self.building_scenarios = pd.read_sql(
             """
@@ -37,6 +37,8 @@ class Building(object):
             """.format(scenario_name),
             conn
         )
+        # self.building_scenarios.to_csv('delete_me/building_scenarios.txt')
+
         self.building_parameters = pd.read_sql(
             """
             select * from building_parameter_sets 
@@ -286,7 +288,6 @@ class Building(object):
                 ] + '_battery_storage_state_of_charge',
 
                 # Electric output for storage charge
-                # TODO: maybe need to add [0] after self.building_scenarios['building_name']
                 # AHU
                 ((self.building_scenarios['building_name'] + '_storage_charge_ahu_heat_electric_power') if (
                     (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
@@ -3327,9 +3328,7 @@ class Building(object):
                         row_time,
                         self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
                     ] = self.parse_parameter(
-                        building_zone_constraint_profile['maximum_sensible_storage_capacity_m3'][
-                            int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
-                        ]
+                        self.building_scenarios['storage_size']
                     ) * self.parse_parameter('tank_fluid_density')  # Multiplying for the water density to have the mass
 
                 if self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default':
@@ -3337,7 +3336,7 @@ class Building(object):
                         row_time,
                         self.building_scenarios['building_name'][0] + '_latent_thermal_storage_state_of_charge'
                     ] = self.parse_parameter(
-                        building_zone_constraint_profile['maximum_latent_storage_capacity_kg'][
+                        self.building_scenarios['storage_size'][
                             int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
                         ]
                     )
@@ -3347,16 +3346,28 @@ class Building(object):
                         row_time,
                         self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
                     ] = self.parse_parameter(
-                        building_zone_constraint_profile['maximum_battery_storage_capacity_kwh'][
+                        self.building_scenarios['storage_size'][
                             int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
                         ]
                     )
 
-                # Storage MIN constraints values  TODO: add for other storage techs too
+                # Storage MIN constraints values
                 if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
                     self.output_constraint_timeseries_minimum.at[
                         row_time,
                         self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
+                    ] = 0.0
+
+                if self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default':
+                    self.output_constraint_timeseries_minimum.at[
+                        row_time,
+                        self.building_scenarios['building_name'][0] + '_latent_thermal_storage_state_of_charge'
+                    ] = 0.0
+
+                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                    self.output_constraint_timeseries_minimum.at[
+                        row_time,
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
                     ] = 0.0
 
                 self.output_constraint_timeseries_minimum.at[
@@ -3504,9 +3515,9 @@ class Building(object):
             self.state_matrix.values
             * pd.to_timedelta(self.building_scenarios['time_step'][0]).seconds
         )
-        self.state_matrix = self.state_matrix + 0.000000001*np.random.rand(
+        self.state_matrix = self.state_matrix + 0.000000001*abs(np.random.rand(
             self.state_matrix.values.shape[0], self.state_matrix.values.shape[1]
-        )  # adding a bit of noise to make the matrix invertible.
+        ))  # adding a bit of noise to make the matrix invertible.
         # source:
         # https://stackoverflow.com/questions/44305456/why-am-i-getting-linalgerror-singular-matrix-from-grangercausalitytests?rq=1
         control_matrix_discrete = (
