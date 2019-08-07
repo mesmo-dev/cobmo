@@ -3515,11 +3515,15 @@ class Building(object):
             self.state_matrix.values
             * pd.to_timedelta(self.building_scenarios['time_step'][0]).seconds
         )
-        self.state_matrix = self.state_matrix + 0.000000001*abs(np.random.rand(
-            self.state_matrix.values.shape[0], self.state_matrix.values.shape[1]
-        ))  # adding a bit of noise to make the matrix invertible.
+        # adding some noise to make the matrix invertible.
         # source:
         # https://stackoverflow.com/questions/44305456/why-am-i-getting-linalgerror-singular-matrix-from-grangercausalitytests?rq=1
+        self.state_matrix = self.state_matrix + 1e-20*np.clip(np.random.rand(
+            self.state_matrix.values.shape[0], self.state_matrix.values.shape[1]
+        ), 0e-20, 2.0)
+        # The clipping command is needed to limit the random numbers between 0 (with 20 float points) and 2.0
+        # source: https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.clip.html
+
         control_matrix_discrete = (
             np.linalg.matrix_power(
                 self.state_matrix.values,
