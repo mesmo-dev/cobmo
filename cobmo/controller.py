@@ -126,7 +126,7 @@ class Controller(object):
                     * np.ones(sum(self.building.set_states.str.contains('co2_concentration'))),
                     0.013  # in kg(water)/kg(air)
                     * np.ones(sum(self.building.set_states.str.contains('absolute_humidity'))),
-                    200000.0  # in all the storage units (sensible: kg | PCM: kg | battery: kWh)
+                    0.0  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
                     * np.ones(sum(building.set_states.str.contains('state_of_charge'))),
                     0.0  # Mass factor must be coherent with initial volume of bottom layer
                     * np.ones(sum(building.set_states.str.contains('storage_mass_factor')))
