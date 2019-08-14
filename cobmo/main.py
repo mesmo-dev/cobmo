@@ -52,7 +52,7 @@ def example():
             * np.ones(sum(building.set_states.str.contains('co2_concentration'))),
             0.013  # in kg(water)/kg(air)
             * np.ones(sum(building.set_states.str.contains('absolute_humidity'))),
-            0.0  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
+            200000.0  # in all the storage units (sensible: kg | PCM: kg | battery: kWh)
             * np.ones(sum(building.set_states.str.contains('state_of_charge'))),
             0.0  # Mass factor must be coherent with initial volume of bottom layer
             * np.ones(sum(building.set_states.str.contains('storage_mass_factor')))
@@ -125,16 +125,16 @@ def example():
     ) = controller.solve()
 
     # Outputs for debugging
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("control_timeseries_controller=")
-    print(control_timeseries_controller)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("state_timeseries_controller=")
-    print(state_timeseries_controller)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("output_timeseries_controller=")
-    print(output_timeseries_controller)
-    print("-----------------------------------------------------------------------------------------------------------")
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("control_timeseries_controller=")
+    # print(control_timeseries_controller)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("state_timeseries_controller=")
+    # print(state_timeseries_controller)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("output_timeseries_controller=")
+    # print(output_timeseries_controller)
+    # print("-----------------------------------------------------------------------------------------------------------")
 
     # Run error calculation function
     (
@@ -146,6 +146,7 @@ def example():
     )  # Note: These are exemplary inputs.
 
     # Outputs for debugging
+    """
     print("-----------------------------------------------------------------------------------------------------------")
     print("error_timeseries=")
     print(error_timeseries)
@@ -153,6 +154,7 @@ def example():
     print("error_summary=")
     print(error_summary)
     print("-----------------------------------------------------------------------------------------------------------")
+    """
 
     print_on_csv = 1
     if print_on_csv == 1:

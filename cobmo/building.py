@@ -501,13 +501,14 @@ class Building(object):
             #     )
             # )
 
-            self.control_matrix.at[
-                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-                self.building_zones['zone_name'] + '_sensible_storage_to_zone_cool_thermal_power',
-            ] = - 1.0 / (
-                    self.parse_parameter('water_specific_heat')
-                    * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-            ) * self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
+            for index, row in self.building_zones.iterrows():
+                self.control_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                    index + '_sensible_storage_to_zone_cool_thermal_power',
+                ] = - 1.0 / (
+                        self.parse_parameter('water_specific_heat')
+                        * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
+                ) * self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
 
             self.control_matrix.at[
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -3518,6 +3519,15 @@ class Building(object):
         - Discretization assuming zero order hold
         - Source: https://en.wikipedia.org/wiki/Discretization#Discretization_of_linear_state_space_models
         """
+
+        """
+        # Printing control_matrix before discretization...
+        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            self.control_matrix.to_csv('delete_me_storage/control_before_STORAGE.csv')
+        else:
+            self.control_matrix.to_csv('delete_me/control_before.csv')
+        """
+
         state_matrix_discrete = scipy.linalg.expm(
             self.state_matrix.values
             * pd.to_timedelta(self.building_scenarios['time_step'][0]).seconds
@@ -3564,6 +3574,14 @@ class Building(object):
             index=self.control_matrix.index,
             columns=self.control_matrix.columns
         )
+
+        """
+        # ...and after discretization
+        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            self.control_matrix.to_csv('delete_me_storage/control_after_STORAGE.csv')
+        else:
+            self.control_matrix.to_csv('delete_me/control_after.csv')
+        """
         self.disturbance_matrix = pd.DataFrame(
             data=disturbance_matrix_discrete,
             index=self.disturbance_matrix.index,
