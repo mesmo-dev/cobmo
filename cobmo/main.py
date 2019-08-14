@@ -124,35 +124,35 @@ def example():
         output_timeseries_controller
     ) = controller.solve()
 
-    # Outputs for debugging
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("control_timeseries_controller=")
-    print(control_timeseries_controller)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("state_timeseries_controller=")
-    print(state_timeseries_controller)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("output_timeseries_controller=")
-    print(output_timeseries_controller)
-    print("-----------------------------------------------------------------------------------------------------------")
-
-    # Run error calculation function
-    (
-        error_summary,
-        error_timeseries
-    ) = cobmo.utils.calculate_error(
-        output_timeseries_simulation.loc[:, output_timeseries_controller.columns.str.contains('temperature')],
-        output_timeseries_controller.loc[:, output_timeseries_controller.columns.str.contains('temperature')]
-    )  # Note: These are exemplary inputs.
-
-    # Outputs for debugging
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("error_timeseries=")
-    print(error_timeseries)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("error_summary=")
-    print(error_summary)
-    print("-----------------------------------------------------------------------------------------------------------")
+    # # Outputs for debugging
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("control_timeseries_controller=")
+    # print(control_timeseries_controller)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("state_timeseries_controller=")
+    # print(state_timeseries_controller)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("output_timeseries_controller=")
+    # print(output_timeseries_controller)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    #
+    # # Run error calculation function
+    # (
+    #     error_summary,
+    #     error_timeseries
+    # ) = cobmo.utils.calculate_error(
+    #     output_timeseries_simulation.loc[:, output_timeseries_controller.columns.str.contains('temperature')],
+    #     output_timeseries_controller.loc[:, output_timeseries_controller.columns.str.contains('temperature')]
+    # )  # Note: These are exemplary inputs.
+    #
+    # # Outputs for debugging
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("error_timeseries=")
+    # print(error_timeseries)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("error_summary=")
+    # print(error_summary)
+    # print("-----------------------------------------------------------------------------------------------------------")
 
     print_on_csv = 1
     if print_on_csv == 1:

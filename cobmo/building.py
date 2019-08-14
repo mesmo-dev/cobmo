@@ -287,7 +287,7 @@ class Building(object):
                     (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
                 ] + '_battery_storage_state_of_charge',
 
-                # Storage CHARGE
+                # Electric output for storage charge
                 # AHU
                 ((self.building_scenarios['building_name'] + '_storage_charge_ahu_heat_electric_power') if (
                     (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
@@ -350,9 +350,6 @@ class Building(object):
 
 
                 # Cooling
-                # Thermal power for storage charging
-                # These are needed in the output in order to put a constraint on them.
-                # The constraint considers that AHUs have a limited rated power.
                 ((self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power') if (
                     (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
                 ) else None),
@@ -362,7 +359,7 @@ class Building(object):
                 # Battery
                 ((self.building_scenarios['building_name'] + '_battery_storage_charge_electric_power') if (
                     (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')  #
-                ) else None),
+                ) else None)
 
             ]),
             name='output_name'
@@ -515,7 +512,7 @@ class Building(object):
             ] = + 1.0 / (
                     self.parse_parameter('water_specific_heat')
                     * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-            )
+            ) * self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
 
             self.state_output_matrix.at[
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -2910,19 +2907,19 @@ class Building(object):
                     )
 
     def define_output_hvac_tu_electric_power(self):
-        # # Storage TU - cooling
-        # if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-        #     self.control_output_matrix.at[
-        #         self.building_scenarios['building_name'][0] + '_storage_charge_tu_cool_electric_power',
-        #         self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
-        #     ] = (
-        #             self.control_output_matrix.at[
-        #                 self.building_scenarios['building_name'][0] + '_storage_charge_tu_cool_electric_power',
-        #                 self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
-        #             ]
-        #             + 1 / 4.75  # self.building_zones['hvac_tu_default']['tu_cooling_efficiency']
-        #             # TODO: use efficiency properly
-        #     )
+        # Storage TU - cooling
+        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            self.control_output_matrix.at[
+                self.building_scenarios['building_name'][0] + '_storage_charge_tu_cool_electric_power',
+                self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
+            ] = (
+                    self.control_output_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_storage_charge_tu_cool_electric_power',
+                        self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
+                    ]
+                    + 1 / 4.75  # self.building_zones['hvac_tu_default']['tu_cooling_efficiency']
+                    # TODO: use efficiency properly
+            )
 
         for index, row in self.building_zones.iterrows():
             if row['hvac_tu_type'] != '':
@@ -3324,6 +3321,8 @@ class Building(object):
                 # Select constraint values
 
                 # Storage MAX constraints values
+                # FIXME: Move storage size to storage_types. --> go to storage_types
+                # FIXME: As in, the storage will not change over time, so it should be in constraint_profiles.
                 if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
                     self.output_constraint_timeseries_maximum.at[
                         row_time,
@@ -3331,12 +3330,6 @@ class Building(object):
                     ] = self.parse_parameter(
                         self.building_scenarios['storage_size']
                     ) * self.parse_parameter('tank_fluid_density')  # Multiplying for the water density to have the mass
-
-                    # # Max operations of the AHU is the total demand in the peak demand
-                    # self.output_constraint_timeseries_maximum.at[
-                    #     row_time,
-                    #     self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power'
-                    # ] = (8e+6) * 1.2
 
                 if self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default':
                     self.output_constraint_timeseries_maximum.at[
