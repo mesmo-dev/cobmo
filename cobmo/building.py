@@ -199,10 +199,10 @@ class Building(object):
                 ) else None),
 
                 # Battery DISCHARGE
-                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_ahu_electric_power') if (
+                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_ahu') if (
                     (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ) else None),
-                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_tu_electric_power') if (
+                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_tu') if (
                     (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ) else None),
 
@@ -227,7 +227,7 @@ class Building(object):
                 ) else None),
 
                 # Battery CHARGE
-                ((self.building_scenarios['building_name'] + '_battery_storage_charge_electric_power') if (
+                ((self.building_scenarios['building_name'] + '_battery_storage_charge') if (
                     (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ) else None)
 
@@ -330,10 +330,10 @@ class Building(object):
                 ) else None),
 
                 # Battery DISCHARGE
-                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_ahu_electric_power') if (
+                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_ahu') if (
                     (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ) else None),
-                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_tu_electric_power') if (
+                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_tu') if (
                     (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ) else None),
 
@@ -358,7 +358,7 @@ class Building(object):
                 ) else None),
 
                 # Battery CHARGE
-                ((self.building_scenarios['building_name'] + '_battery_storage_charge_electric_power') if (
+                ((self.building_scenarios['building_name'] + '_battery_storage_charge') if (
                     (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ) else None),
 
@@ -593,11 +593,11 @@ class Building(object):
             for index, row in self.building_zones.iterrows():
                 self.control_matrix.at[
                     self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                    index + '_battery_storage_to_zone_ahu_electric_power',
+                    index + '_battery_storage_to_zone_ahu',
                 ] = (
                         self.control_matrix.at[
                             self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                            index + '_battery_storage_to_zone_ahu_electric_power',
+                            index + '_battery_storage_to_zone_ahu',
                         ]
                 ) - 1.0 * (
                     (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))**(1/2)
@@ -605,11 +605,11 @@ class Building(object):
 
                 self.control_matrix.at[
                     self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                    index + '_battery_storage_to_zone_tu_electric_power',
+                    index + '_battery_storage_to_zone_tu',
                 ] = (
                         self.control_matrix.at[
                             self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                            index + '_battery_storage_to_zone_tu_electric_power',
+                            index + '_battery_storage_to_zone_tu',
                         ]
                 ) - 1.0 * (
                         (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])) ** (1/2)
@@ -617,7 +617,7 @@ class Building(object):
 
             self.control_matrix.at[
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                self.building_scenarios['building_name'][0] + '_battery_storage_charge_electric_power'
+                self.building_scenarios['building_name'][0] + '_battery_storage_charge'
             ] = + 1.0 * (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))**(1/2)
 
             self.state_matrix.at[
@@ -2434,12 +2434,12 @@ class Building(object):
 
             if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
                 self.control_output_matrix.at[
-                    index + '_battery_storage_to_zone_ahu_electric_power',
-                    index + '_battery_storage_to_zone_ahu_electric_power'
+                    index + '_battery_storage_to_zone_ahu',
+                    index + '_battery_storage_to_zone_ahu'
                 ] = 1
                 self.control_output_matrix.at[
-                    index + '_battery_storage_to_zone_tu_electric_power',
-                    index + '_battery_storage_to_zone_tu_electric_power'
+                    index + '_battery_storage_to_zone_tu',
+                    index + '_battery_storage_to_zone_tu'
                 ] = 1
 
     def define_output_storage_charge(self):  # per building
@@ -2468,8 +2468,8 @@ class Building(object):
 
         if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
             self.control_output_matrix.at[
-                self.building_scenarios['building_name'] + '_battery_storage_charge_electric_power',
-                self.building_scenarios['building_name'] + '_battery_storage_charge_electric_power'
+                self.building_scenarios['building_name'] + '_battery_storage_charge',
+                self.building_scenarios['building_name'] + '_battery_storage_charge'
             ] = 1
 
     def define_output_zone_co2_concentration(self):
@@ -2547,11 +2547,11 @@ class Building(object):
         if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
             self.control_output_matrix.at[
                 self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
-                self.building_scenarios['building_name'][0] + '_battery_storage_charge_electric_power'
+                self.building_scenarios['building_name'][0] + '_battery_storage_charge'
             ] = (
                     self.control_output_matrix.at[
                         self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
-                        self.building_scenarios['building_name'][0] + '_battery_storage_charge_electric_power'
+                        self.building_scenarios['building_name'][0] + '_battery_storage_charge'
                     ]
                     + 1
             )
@@ -2587,11 +2587,11 @@ class Building(object):
         # if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
         #     self.control_output_matrix.at[
         #         self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
-        #         self.building_scenarios['building_name'][0] + '_battery_storage_charge_electric_power'
+        #         self.building_scenarios['building_name'][0] + '_battery_storage_charge'
         #     ] = (
         #             self.control_output_matrix.at[
         #                 self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
-        #                 self.building_scenarios['building_name'][0] + '_battery_storage_charge_electric_power'
+        #                 self.building_scenarios['building_name'][0] + '_battery_storage_charge'
         #             ]
         #             + 1
         #     )
@@ -2999,11 +2999,11 @@ class Building(object):
                 if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
                     self.control_output_matrix.at[
                         index + '_ahu_cool_electric_power',
-                        index + '_battery_storage_to_zone_ahu_electric_power'
+                        index + '_battery_storage_to_zone_ahu'
                     ] = (
                             self.control_output_matrix.at[
                                 index + '_ahu_cool_electric_power',
-                                index + '_battery_storage_to_zone_ahu_electric_power'
+                                index + '_battery_storage_to_zone_ahu'
                             ]
                             - 1
                     )
@@ -3118,11 +3118,11 @@ class Building(object):
                             # if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
                             #     self.control_output_matrix.at[
                             #         index + '_tu_heat_electric_power',
-                            #         self.building_scenarios['building_name'][0] + '_battery_storage_charge_electric_power'
+                            #         self.building_scenarios['building_name'][0] + '_battery_storage_charge'
                             #     ] = (
                             #             self.control_output_matrix.at[
                             #                 index + '_tu_heat_electric_power',
-                            #                 self.building_scenarios['building_name'][0] + '_battery_storage_charge_electric_power'
+                            #                 self.building_scenarios['building_name'][0] + '_battery_storage_charge'
                             #             ]
                             #             + 1
                             #     )
@@ -3184,11 +3184,11 @@ class Building(object):
                 if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
                     self.control_output_matrix.at[
                         index + '_tu_cool_electric_power',
-                        index + '_battery_storage_to_zone_tu_electric_power'
+                        index + '_battery_storage_to_zone_tu'
                     ] = (
                             self.control_output_matrix.at[
                                 index + '_tu_cool_electric_power',
-                                index + '_battery_storage_to_zone_tu_electric_power'
+                                index + '_battery_storage_to_zone_tu'
                             ]
                             - 1
                     )
