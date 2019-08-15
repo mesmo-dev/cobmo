@@ -521,7 +521,7 @@ class Building(object):
                 ] - 1.0 / (
                         self.parse_parameter('water_specific_heat')
                         * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-                ) * self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
+                ) * (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])) ** (1/2)
 
                 self.control_matrix.at[
                     self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -532,7 +532,7 @@ class Building(object):
                 ] - 1.0 / (
                         self.parse_parameter('water_specific_heat')
                         * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-                ) * self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
+                ) * (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])) ** (1/2)
 
             self.control_matrix.at[
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -543,7 +543,7 @@ class Building(object):
             ] + 1.0 / (
                     self.parse_parameter('water_specific_heat')
                     * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-            ) * self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
+            ) * (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])) ** (1/2)
 
             self.state_matrix.at[
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -3334,7 +3334,7 @@ class Building(object):
             [column for column in self.output_constraint_timeseries_maximum.columns if (
                 '_storage_charge' in column and '_thermal_power' in column
             )]
-        ] = 20000.0
+        ] = 20000.0  # [W]
 
         # If a heating/cooling session is defined, the cooling/heating air flow is forced to 0
         # Comment: The cooling or heating coil may still be working, because of the dehumidification,
