@@ -2,4 +2,4 @@ building_storage_type,storage_initial_state_of_charge,storage_UA_external,storag
 sensible_thermal_storage_default,0.8,53.0,100.0,4.0,12.0,30.0,8.0,0.8,"50.0
 ",1.0,0.939124,W/(K*m2),Volume (m3),Initial share (as 0.xx) of the bottom layer if the storage tank compared to the whole mass of the tank.
 latent_thermal_storage_default,0.5,53.0,,,,30.0,,,2000.0,,,,Mass (kg),Initial share (as 0.xx) of the PCM charge state.
-battery_storage_default,0.5,,,,,30.0,,0.95,5000.0,,,,Energy (kWh),Initial share (as 0.xx) of the BES charge state.
+battery_storage_default,0.5,,,,,30.0,,0.95,50000.0,,,,Energy (kWh),Initial share (as 0.xx) of the BES charge state.

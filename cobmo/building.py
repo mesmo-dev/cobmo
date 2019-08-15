@@ -360,7 +360,7 @@ class Building(object):
                 # Battery CHARGE
                 ((self.building_scenarios['building_name'] + '_battery_storage_charge_electric_power') if (
                     (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                ) else None)
+                ) else None),
 
                 # Electric output for storage charge
                 # AHU
@@ -590,34 +590,35 @@ class Building(object):
 
     def define_battery_storage_level(self):
         if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
-            self.control_matrix[
-                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                self.building_zones['zone_name'] + '_battery_storage_to_zone_ahu_electric_power'
-            ] = (
-                    self.control_matrix[
-                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                        self.building_zones['zone_name'] + '_battery_storage_to_zone_ahu_electric_power'
-                    ]
-            ) - 1.0 * (
-                (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))**(-1)
-            )
+            for index, row in self.building_zones.iterrows():
+                self.control_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                    index + '_battery_storage_to_zone_ahu_electric_power',
+                ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                            index + '_battery_storage_to_zone_ahu_electric_power',
+                        ]
+                ) - 1.0 * (
+                    (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))**(1/2)
+                )
 
-            self.control_matrix[
-                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                self.building_zones['zone_name'] + '_battery_storage_to_zone_tu_electric_power'
-            ] = (
-                    self.control_matrix[
-                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                        self.building_zones['zone_name'] + '_battery_storage_to_zone_tu_electric_power'
-                    ]
-            ) - 1.0 * (
-                    (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])) ** (-1)
-            )
+                self.control_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                    index + '_battery_storage_to_zone_tu_electric_power',
+                ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                            index + '_battery_storage_to_zone_tu_electric_power',
+                        ]
+                ) - 1.0 * (
+                        (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])) ** (1/2)
+                )
 
-            self.control_matrix[
+            self.control_matrix.at[
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                 self.building_scenarios['building_name'][0] + '_battery_storage_charge_electric_power'
-            ] = + 1.0 * (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))**(-1)
+            ] = + 1.0 * (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))**(1/2)
 
             self.state_matrix.at[
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
