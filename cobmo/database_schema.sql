@@ -89,6 +89,9 @@ CREATE TABLE IF NOT EXISTS "building_storage_types" (
 	"storage_sensible_total_delta_temperature_layers"	REAL,
 	"storage_round_trip_efficiency"	REAL,
 	"storage_size"	REAL,
+	"tank_aspect_ratio"  REAL,
+    "heat_transfer_coefficient"  REAL,
+	"unit_heat_transfer_coefficient"  TEXT,
 	"storage_size_unit"	TEXT,
 	"comments_storage_type_general"	TEXT
 );
