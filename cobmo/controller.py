@@ -256,7 +256,6 @@ class Controller(object):
                 for output_power in problem.set_outputs_power:  # TODO: Differentiate between thermal and electric.
                     objective_value += (
                             problem.variable_output_timeseries[timestep, output_power]
-                            * problem.parameter_electricity_prices[timestep] * 1800  # * 30 mins
                     )
             return objective_value
 
