@@ -587,10 +587,10 @@ class Building(object):
             #     * self.parse_parameter('water_specific_heat')
             # )
             #
-            # self.state_output_matrix.at[
-            #     self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-            #     self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
-            #     ] = 1
+            self.state_output_matrix.at[
+                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
+                ] = 1
 
     def define_battery_storage_level(self):
         if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
