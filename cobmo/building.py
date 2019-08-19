@@ -2949,11 +2949,11 @@ class Building(object):
                 #     )
 
                 self.control_output_matrix.at[
-                    index + '_ahu_cool_electric_power',
+                    index + '_ahu_cool_electric_power_cooling_coil',
                     index + '_ahu_cool_air_flow'
                 ] = (
                         self.control_output_matrix.at[
-                            index + '_ahu_cool_electric_power',
+                            index + '_ahu_cool_electric_power_cooling_coil',
                             index + '_ahu_cool_air_flow'
                         ]
                         + self.parse_parameter('density_air')
@@ -2963,6 +2963,19 @@ class Building(object):
                                         - abs(delta_enthalpy_cooling_recovery)
                                 )
                                 / self.parse_parameter(row['ahu_cooling_efficiency'])
+                        )
+                )
+
+                self.control_output_matrix.at[
+                    index + '_ahu_cool_electric_power_heating_coil',
+                    index + '_ahu_cool_air_flow'
+                ] = (
+                        self.control_output_matrix.at[
+                            index + '_ahu_cool_electric_power_heating_coil',
+                            index + '_ahu_cool_air_flow'
+                        ]
+                        + self.parse_parameter('density_air')
+                        * (
                                 + (
                                         abs(delta_enthalpy_ahu_heating)
                                         - abs(delta_enthalpy_heating_recovery)
