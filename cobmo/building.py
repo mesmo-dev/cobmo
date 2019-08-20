@@ -294,7 +294,10 @@ class Building(object):
                     ] + '_ahu_heat_electric_power',
                 self.building_zones['zone_name'][
                     self.building_zones['hvac_ahu_type'] != ''
-                    ] + '_ahu_cool_electric_power',
+                    ] + '_ahu_cool_electric_power_cooling_coil',
+                self.building_zones['zone_name'][
+                    self.building_zones['hvac_ahu_type'] != ''
+                    ] + '_ahu_cool_electric_power_heating_coil',
                 self.building_zones['zone_name'][
                     self.building_zones['hvac_tu_type'] != ''
                     ] + '_tu_heat_electric_power',
@@ -2957,11 +2960,11 @@ class Building(object):
                 #     )
 
                 self.control_output_matrix.at[
-                    index + '_ahu_cool_electric_power',
+                    index + '_ahu_cool_electric_power_cooling_coil',
                     index + '_ahu_cool_air_flow'
                 ] = (
                         self.control_output_matrix.at[
-                            index + '_ahu_cool_electric_power',
+                            index + '_ahu_cool_electric_power_cooling_coil',
                             index + '_ahu_cool_air_flow'
                         ]
                         + self.parse_parameter('density_air')
@@ -2971,6 +2974,19 @@ class Building(object):
                                         - abs(delta_enthalpy_cooling_recovery)
                                 )
                                 / self.parse_parameter(row['ahu_cooling_efficiency'])
+                        )
+                )
+
+                self.control_output_matrix.at[
+                    index + '_ahu_cool_electric_power_heating_coil',
+                    index + '_ahu_cool_air_flow'
+                ] = (
+                        self.control_output_matrix.at[
+                            index + '_ahu_cool_electric_power_heating_coil',
+                            index + '_ahu_cool_air_flow'
+                        ]
+                        + self.parse_parameter('density_air')
+                        * (
                                 + (
                                         abs(delta_enthalpy_ahu_heating)
                                         - abs(delta_enthalpy_heating_recovery)
@@ -2980,34 +2996,17 @@ class Building(object):
                         )
                 )
 
-                # self.control_output_matrix.at[
-                #     index + '_ahu_cool_electric_power_heating_coil',
-                #     index + '_ahu_cool_air_flow'
-                # ] = (
-                #         self.control_output_matrix.at[
-                #             index + '_ahu_cool_electric_power_heating_coil',
-                #             index + '_ahu_cool_air_flow'
-                #         ]
-                #         + self.parse_parameter('density_air')
-                #         * (
-                #                 + (
-                #                         abs(delta_enthalpy_ahu_heating)
-                #                         - abs(delta_enthalpy_heating_recovery)
-                #                 )
-                #                 / self.parse_parameter(row['ahu_heating_efficiency'])
-                #                 + self.parse_parameter(row['ahu_fan_efficiency'])
-                #         )
-                # )
-
                 # Storage AHU - cooling - DISCHARGE
+                # Sensible and latent storage (i.e. thermal storage) can assist the AHU only with the cooling coil.
+
                 # sensible storage
                 if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
                     self.control_output_matrix.at[
-                        index + '_ahu_cool_electric_power',
+                        index + '_ahu_cool_electric_power_cooling_coil',
                         index + '_sensible_storage_to_zone_ahu_cool_thermal_power'
                     ] = (
                             self.control_output_matrix.at[
-                                index + '_ahu_cool_electric_power',
+                                index + '_ahu_cool_electric_power_cooling_coil',
                                 index + '_sensible_storage_to_zone_ahu_cool_thermal_power'
                             ]
                             - 1 / self.parse_parameter(row['ahu_cooling_efficiency'])
@@ -3016,11 +3015,11 @@ class Building(object):
                 # latent storage
                 if self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default':
                     self.control_output_matrix.at[
-                        index + '_ahu_cool_electric_power',
+                        index + '_ahu_cool_electric_power_cooling_coil',
                         index + '_latent_storage_to_zone_cool_thermal_power'
                     ] = (
                             self.control_output_matrix.at[
-                                index + '_ahu_cool_electric_power',
+                                index + '_ahu_cool_electric_power_cooling_coil',
                                 index + '_latent_storage_to_zone_cool_thermal_power'
                             ]
                             - 1 / self.parse_parameter(row['ahu_cooling_efficiency'])
@@ -3028,16 +3027,65 @@ class Building(object):
 
                 # battery storage
                 if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                    # The approach for battery storage is that it decreases the electric power necessary for both
+                    # the cooling and heating coils. This is divided depending on the ration between the two.
+
                     self.control_output_matrix.at[
-                        index + '_ahu_cool_electric_power',
+                        index + '_ahu_cool_electric_power_cooling_coil',
                         index + '_battery_storage_to_zone_ahu'
                     ] = (
                             self.control_output_matrix.at[
-                                index + '_ahu_cool_electric_power',
+                                index + '_ahu_cool_electric_power_cooling_coil',
                                 index + '_battery_storage_to_zone_ahu'
                             ]
-                            - 1
+                            - (
+                                    (
+                                        self.control_output_matrix.at[
+                                            index + '_ahu_cool_electric_power_cooling_coil',
+                                            index + '_ahu_cool_air_flow'
+                                        ]
+                                    ) / (
+                                            self.control_output_matrix.at[
+                                                index + '_ahu_cool_electric_power_cooling_coil',
+                                                index + '_ahu_cool_air_flow'
+                                            ]
+                                            + self.control_output_matrix.at[
+                                                index + '_ahu_cool_electric_power_heating_coil',
+                                                index + '_ahu_cool_air_flow'
+                                            ]
+                                    )
+                            )
+
                     )
+
+                    self.control_output_matrix.at[
+                        index + '_ahu_cool_electric_power_heating_coil',
+                        index + '_battery_storage_to_zone_ahu'
+                    ] = (
+                            self.control_output_matrix.at[
+                                index + '_ahu_cool_electric_power_heating_coil',
+                                index + '_battery_storage_to_zone_ahu'
+                            ]
+                            - (
+                                    (
+                                        self.control_output_matrix.at[
+                                            index + '_ahu_cool_electric_power_heating_coil',
+                                            index + '_ahu_cool_air_flow'
+                                        ]
+                                    ) / (
+                                            self.control_output_matrix.at[
+                                                index + '_ahu_cool_electric_power_cooling_coil',
+                                                index + '_ahu_cool_air_flow'
+                                            ]
+                                            + self.control_output_matrix.at[
+                                                index + '_ahu_cool_electric_power_heating_coil',
+                                                index + '_ahu_cool_air_flow'
+                                            ]
+                                    )
+                            )
+
+                    )
+
 
     def define_output_hvac_tu_electric_power(self):
         # # Storage TU - cooling
