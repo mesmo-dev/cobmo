@@ -121,8 +121,12 @@ def example():
     (
         control_timeseries_controller,
         state_timeseries_controller,
-        output_timeseries_controller
+        output_timeseries_controller,
+        storage_size
     ) = controller.solve()
+
+    print('\n>> Storage type %s' % building.building_scenarios['building_storage_type'][0])
+    print('\n>> Optimal storage size >> %.2f' % storage_size)
 
     # # Outputs for debugging
     # print("-----------------------------------------------------------------------------------------------------------")

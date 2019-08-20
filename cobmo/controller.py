@@ -135,17 +135,6 @@ class Controller(object):
             ).to_dict()
         )  # TODO: Move intial state defintion to building model
 
-        # Define variable bound rules
-        def rule_output_bounds(
-                problem,
-                timestep,
-                output
-        ):
-            return (
-                problem.parameter_output_timeseries_minimum[timestep, output],
-                problem.parameter_output_timeseries_maximum[timestep, output]
-            )
-
         # Define variables - they are defined as matrixes
         self.problem.variable_state_timeseries = pyo.Var(
             self.problem.set_timesteps,
@@ -160,8 +149,11 @@ class Controller(object):
         self.problem.variable_output_timeseries = pyo.Var(
             self.problem.set_timesteps,
             self.problem.set_outputs,
+            domain=pyo.Reals
+        )
+        self.problem.variable_storage_size = pyo.Var(
             domain=pyo.Reals,
-            bounds=rule_output_bounds
+            bounds=(0.0, 1e20)
         )
 
 # =================================================================================================
@@ -228,6 +220,36 @@ class Controller(object):
 
             # Equality constraint
             return problem.variable_output_timeseries[timestep, output] == output_value
+
+        def rule_output_minimum(
+                problem,
+                timestep,
+                output
+        ):
+            return (
+                problem.variable_output_timeseries[timestep, output]
+                >=
+                problem.parameter_output_timeseries_minimum[timestep, output]
+            )
+
+        def rule_output_maximum(
+                problem,
+                timestep,
+                output
+        ):
+            if 'state_of_charge' in output:
+                return (
+                    problem.variable_output_timeseries[timestep, output]
+                    <=
+                    problem.parameter_output_timeseries_maximum[timestep, output]
+                    * problem.variable_storage_size
+                )
+            else:
+                return (
+                    problem.variable_output_timeseries[timestep, output]
+                    <=
+                    problem.parameter_output_timeseries_maximum[timestep, output]
+                )
 # =================================================================================================
 
 
@@ -247,6 +269,16 @@ class Controller(object):
             self.problem.set_timesteps,
             self.problem.set_outputs,
             rule=rule_output_equation
+        )
+        self.problem.constraint_output_minimum = pyo.Constraint(
+            self.problem.set_timesteps,
+            self.problem.set_outputs,
+            rule=rule_output_minimum
+        )
+        self.problem.constraint_output_maximum = pyo.Constraint(
+            self.problem.set_timesteps,
+            self.problem.set_outputs,
+            rule=rule_output_maximum
         )
 
         # Define objective rule
@@ -312,6 +344,8 @@ class Controller(object):
                 output_timeseries.at[timestep, output] = (
                     self.problem.variable_output_timeseries[timestep, output].value
                 )
+        storage_size = self.problem.variable_storage_size.value
+
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 
         print("\nlog infesibility")
@@ -327,5 +361,6 @@ class Controller(object):
         return (
             control_timeseries,
             state_timeseries,
-            output_timeseries
+            output_timeseries,
+            storage_size
         )
