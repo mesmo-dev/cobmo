@@ -18,6 +18,14 @@ class Building(object):
 
     def __init__(self, conn, scenario_name):
         # Load building information from database
+        self.battery_storage_types = pd.read_sql(
+            """
+            select * from battery_storage_types
+            """,
+            conn,
+            index_col='battery_technology'
+        )
+
         self.electricity_prices = pd.read_sql(
             """
             select * from electricity_price_timeseries
@@ -2949,11 +2957,11 @@ class Building(object):
                 #     )
 
                 self.control_output_matrix.at[
-                    index + '_ahu_cool_electric_power_cooling_coil',
+                    index + '_ahu_cool_electric_power',
                     index + '_ahu_cool_air_flow'
                 ] = (
                         self.control_output_matrix.at[
-                            index + '_ahu_cool_electric_power_cooling_coil',
+                            index + '_ahu_cool_electric_power',
                             index + '_ahu_cool_air_flow'
                         ]
                         + self.parse_parameter('density_air')
@@ -2963,19 +2971,6 @@ class Building(object):
                                         - abs(delta_enthalpy_cooling_recovery)
                                 )
                                 / self.parse_parameter(row['ahu_cooling_efficiency'])
-                        )
-                )
-
-                self.control_output_matrix.at[
-                    index + '_ahu_cool_electric_power_heating_coil',
-                    index + '_ahu_cool_air_flow'
-                ] = (
-                        self.control_output_matrix.at[
-                            index + '_ahu_cool_electric_power_heating_coil',
-                            index + '_ahu_cool_air_flow'
-                        ]
-                        + self.parse_parameter('density_air')
-                        * (
                                 + (
                                         abs(delta_enthalpy_ahu_heating)
                                         - abs(delta_enthalpy_heating_recovery)
@@ -2984,6 +2979,25 @@ class Building(object):
                                 + self.parse_parameter(row['ahu_fan_efficiency'])
                         )
                 )
+
+                # self.control_output_matrix.at[
+                #     index + '_ahu_cool_electric_power_heating_coil',
+                #     index + '_ahu_cool_air_flow'
+                # ] = (
+                #         self.control_output_matrix.at[
+                #             index + '_ahu_cool_electric_power_heating_coil',
+                #             index + '_ahu_cool_air_flow'
+                #         ]
+                #         + self.parse_parameter('density_air')
+                #         * (
+                #                 + (
+                #                         abs(delta_enthalpy_ahu_heating)
+                #                         - abs(delta_enthalpy_heating_recovery)
+                #                 )
+                #                 / self.parse_parameter(row['ahu_heating_efficiency'])
+                #                 + self.parse_parameter(row['ahu_fan_efficiency'])
+                #         )
+                # )
 
                 # Storage AHU - cooling - DISCHARGE
                 # sensible storage
@@ -3652,9 +3666,6 @@ class Building(object):
         #     self.state_matrix.to_csv('delete_me_storage/state_matrix_before_STORAGE.csv')
         # else:
         #     self.state_matrix.to_csv('delete_me/state_matrix_before.csv')
-        #
-        # print('conditional number\n')
-        # print(np.linalg.cond(self.state_matrix))
 
         control_matrix_discrete = (
             np.linalg.matrix_power(
