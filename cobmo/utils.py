@@ -66,7 +66,7 @@ def discounted_payback_time(
     investment_cost_array = investment_cost * np.ones(discounted_payback)  # array with constant value = investment
     cumulative_discounted_savings = cumulative_discounted_savings[1:discounted_payback + 1]
     yearly_discounted_savings = yearly_discounted_savings[1:discounted_payback + 1]
-    discounted_total_savings_at_payback = cumulative_discounted_savings[-1]
+    # discounted_total_savings_at_payback = cumulative_discounted_savings[-1]
 
     simple_payback_time = np.ceil(investment_cost / savings_one_year)
     
@@ -95,7 +95,7 @@ def discounted_payback_time(
                     label='Simple payback')
 
         # plt.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
-        plt.legend(loc='lower right')
+        plt.legend(loc='lower right', fontsize=10)
         plt.grid(True, which='both')
         title = 'Savings/year = %.1f | payback year = %i' % (savings_one_year, discounted_payback)
         plt.title(title)
@@ -106,9 +106,6 @@ def discounted_payback_time(
         # plt.savefig('figs/discounted_payback.svg', format='svg', dpi=1200)
 
         plt.show()
-
-    elif plot_on_off != 'on' and plot_on_off != 'off':
-        print('The plot command is neither 0 nor 1. No plot will be generated')
 
     return (
         discounted_payback,

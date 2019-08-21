@@ -3449,13 +3449,13 @@ class Building(object):
             [column for column in self.output_constraint_timeseries_minimum.columns if '_storage_to_zone' in column]
         ] = 0
 
-        # Defining MAX bound for storage charge
-        self.output_constraint_timeseries_maximum.loc[
-            :,
-            [column for column in self.output_constraint_timeseries_maximum.columns if (
-                '_storage_charge' in column and '_thermal_power' in column
-            )]
-        ] = 20000.0  # [W]
+        # # Defining MAX bound for storage charge
+        # self.output_constraint_timeseries_maximum.loc[
+        #     :,
+        #     [column for column in self.output_constraint_timeseries_maximum.columns if (
+        #         'charge_ahu_cool_electric_power' in column
+        #     )]
+        # ] = 20000.0  # [W_el]
 
         # If a heating/cooling session is defined, the cooling/heating air flow is forced to 0
         # Comment: The cooling or heating coil may still be working, because of the dehumidification,
