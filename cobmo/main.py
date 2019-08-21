@@ -78,37 +78,37 @@ def example():
     )
 
     # Outputs for debugging
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("building.state_matrix=")
-    print(building.state_matrix)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("building.control_matrix=")
-    print(building.control_matrix)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("building.disturbance_matrix=")
-    print(building.disturbance_matrix)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("building.state_output_matrix=")
-    print(building.state_output_matrix)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("building.control_output_matrix=")
-    print(building.control_output_matrix)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("building.disturbance_output_matrix=")
-    print(building.disturbance_output_matrix)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("control_timeseries_simulation=")
-    print(control_timeseries_simulation)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("building.disturbance_timeseries=")
-    print(building.disturbance_timeseries)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("state_timeseries_simulation=")
-    print(state_timeseries_simulation)
-    print("-----------------------------------------------------------------------------------------------------------")
-    print("output_timeseries_simulation=")
-    print(output_timeseries_simulation)
-    print("-----------------------------------------------------------------------------------------------------------")
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("building.state_matrix=")
+    # print(building.state_matrix)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("building.control_matrix=")
+    # print(building.control_matrix)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("building.disturbance_matrix=")
+    # print(building.disturbance_matrix)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("building.state_output_matrix=")
+    # print(building.state_output_matrix)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("building.control_output_matrix=")
+    # print(building.control_output_matrix)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("building.disturbance_output_matrix=")
+    # print(building.disturbance_output_matrix)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("control_timeseries_simulation=")
+    # print(control_timeseries_simulation)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("building.disturbance_timeseries=")
+    # print(building.disturbance_timeseries)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("state_timeseries_simulation=")
+    # print(state_timeseries_simulation)
+    # print("-----------------------------------------------------------------------------------------------------------")
+    # print("output_timeseries_simulation=")
+    # print(output_timeseries_simulation)
+    # print("-----------------------------------------------------------------------------------------------------------")
 
     # file_output_text = open("my_file_out.txt", "w")
     # file_output_text.write(building.state_matrix)
@@ -122,11 +122,38 @@ def example():
         control_timeseries_controller,
         state_timeseries_controller,
         output_timeseries_controller,
-        storage_size
+        storage_size,
+        optimum_obj
     ) = controller.solve()
 
-    print('\n>> Storage type %s' % building.building_scenarios['building_storage_type'][0])
-    print('\n>> Optimal storage size >> %.2f' % storage_size)
+    if 'storage' in building.building_scenarios['building_storage_type'][0]:
+        # Calculating the savings and the payback time
+        costs_without_storage = 3.549369459e-01  # SGD/day
+        savings_day = (costs_without_storage - optimum_obj)
+
+        storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
+        storage_investment_per_kwh = 44.0
+        storage_energy_size = storage_size * 1000 * 4186 * 8 * 2.77778e-7  # kWh
+        print('\n>> storage cost {}'.format(storage_size*storage_investment_per_kwh))
+        print('\n>> savings year {}'.format(savings_day * 250))
+
+        (payback, payback_df) = cobmo.utils.discounted_payback_time(
+            building,
+            storage_size,
+            storage_investment_per_unit,  # storage_investment_per_unit,
+            savings_day,
+            plot_on_off='on'
+        )
+
+        print('\n>> Storage type = %s  |  Optimal storage size = %.2f' % (
+            building.building_scenarios['building_storage_type'][0]
+            , storage_size)
+        )
+        # print('\n>> Optimum objective function = %.2f' % optimum_obj)
+        # print('\n>> Discounted payback = %i' % payback)
+
+    # print('\n>> Storage size = {}'.format(storage_size))
+    print('\n>> Optimum cost = %.5f' % optimum_obj)
 
     # # Outputs for debugging
     # print("-----------------------------------------------------------------------------------------------------------")

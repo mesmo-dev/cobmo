@@ -14,6 +14,10 @@ from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
 from pyomo.core import Constraint, Var, value, TraversalStrategy
 from math import fabs
 import logging
+import numpy as np
+import datetime as dt
+import matplotlib.pyplot as plt
+import datetime
 
 
 """
@@ -23,6 +27,94 @@ import logging
 logger = logging.getLogger('pyomo.util.infeasible')
 logger.setLevel(logging.INFO)
 
+
+def discounted_payback_time(
+        building,
+        storage_size,
+        storage_investment_per_unit,
+        savings_day,
+        plot_on_off
+):
+    # DISCOUNTED PAYBACK
+    start_date = dt.date(2019, 1, 1)
+    end_date = dt.date(2019, 12, 31)
+    working_days = np.busday_count(start_date, end_date)
+
+    interest_rate = 0.06
+    period = 15
+    pvaf = (1 - (1 + interest_rate) ** (-period)) / interest_rate  # Present value Annuity factor
+
+    economic_horizon = 1000
+    cumulative_discounted_savings = np.zeros(economic_horizon)
+    yearly_discounted_savings = np.zeros(economic_horizon)
+    savings_one_year = savings_day * working_days
+    investment_cost = storage_size * storage_investment_per_unit
+    
+    year = 0
+    while cumulative_discounted_savings[year] < investment_cost:
+        year += 1  # increment defined here to end the while at the right year (instead of 1 year more)
+        discount_factor = (1 + interest_rate) ** (-year)
+        yearly_discounted_savings[year] = savings_one_year * discount_factor
+        cumulative_discounted_savings[year] = cumulative_discounted_savings[year - 1] + yearly_discounted_savings[year]
+        # print("\nat year %i the cumulative is >> %.2f" % (year, cumulative_discounted_savings[year]))
+        if year == 70:
+            print('\nDISCOUNTED PAYBACK IS TOO HIGH! reached 70 years')
+            break
+
+    discounted_payback = year
+    years_array = np.arange(1, discounted_payback + 1)
+    investment_cost_array = investment_cost * np.ones(discounted_payback)  # array with constant value = investment
+    cumulative_discounted_savings = cumulative_discounted_savings[1:discounted_payback + 1]
+    yearly_discounted_savings = yearly_discounted_savings[1:discounted_payback + 1]
+    discounted_total_savings_at_payback = cumulative_discounted_savings[-1]
+
+    simple_payback_time = np.ceil(investment_cost / savings_one_year)
+    
+    payback_df = pd.DataFrame(
+        np.column_stack(
+            (
+                years_array,
+                investment_cost_array,
+                cumulative_discounted_savings,
+                yearly_discounted_savings
+                
+            )
+        )
+    )
+
+    if plot_on_off == 'on':
+        date_main = datetime.datetime.now()
+        plt.figure()
+        plt.plot(years_array, investment_cost_array, linestyle='-', color='g', alpha=0.7,
+                 label='Investment')
+        plt.plot(years_array, yearly_discounted_savings, linestyle='--', color='b', alpha=0.7,
+                 label='Yearly discounted savings')
+        plt.plot(years_array, cumulative_discounted_savings, linestyle='-', color='r', marker='o', alpha=0.7,
+                 label='Cumulative Discounted savings')
+        plt.scatter(simple_payback_time, investment_cost_array[0], marker='o', color='yellow', s=200,
+                    label='Simple payback')
+
+        # plt.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
+        plt.legend(loc='lower right')
+        plt.grid(True, which='both')
+        title = 'Savings/year = %.1f | payback year = %i' % (savings_one_year, discounted_payback)
+        plt.title(title)
+        filename = 'discounted_payback_' + building.building_scenarios['building_name'][0] \
+                   + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+            date_main.year, date_main.month, date_main.day, date_main.hour, date_main.minute, date_main.second)
+        plt.savefig('figs/' + filename + '.svg', format='svg', dpi=1200)
+        # plt.savefig('figs/discounted_payback.svg', format='svg', dpi=1200)
+
+        plt.show()
+
+    elif plot_on_off != 'on' and plot_on_off != 'off':
+        print('The plot command is neither 0 nor 1. No plot will be generated')
+
+    return (
+        discounted_payback,
+        payback_df
+    )
+    
 
 def log_infeasible_constraints(m, tol=1E-6, logger=logger):
     """Print the infeasible constraints in the model.

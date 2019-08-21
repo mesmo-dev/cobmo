@@ -287,8 +287,8 @@ class Controller(object):
             for timestep in problem.set_timesteps:
                 for output_power in problem.set_outputs_power:  # TODO: Differentiate between thermal and electric.
                     objective_value += (
-                            problem.variable_output_timeseries[timestep, output_power]
-                            * problem.parameter_electricity_prices[timestep] * 1800  # * 30 mins
+                            problem.variable_output_timeseries[timestep, output_power] * 1800  # W --> J
+                            * problem.parameter_electricity_prices[timestep] * 3.6e-06  # $/kWh --> $/J
                     )
             return objective_value
 
@@ -346,11 +346,20 @@ class Controller(object):
                 )
         storage_size = self.problem.variable_storage_size.value
 
+        # Retrieving objective
+        optimum_obj = 0.0
+        for timestep in self.problem.set_timesteps:
+            for output_power in self.problem.set_outputs_power:
+                optimum_obj += (
+                        self.problem.variable_output_timeseries[timestep, output_power].value * 1800
+                        * self.problem.parameter_electricity_prices[timestep] * 3.6e-06
+                )
+
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 
-        print("\nlog infesibility")
-        utls.log_infeasible_constraints(self.problem)
-        utls.log_infeasible_bounds(self.problem)
+        # print("\nlog infesibility")
+        # utls.log_infeasible_constraints(self.problem)
+        # utls.log_infeasible_bounds(self.problem)
 
         """
         print("\n>> Electricity prices\n")
@@ -362,5 +371,6 @@ class Controller(object):
             control_timeseries,
             state_timeseries,
             output_timeseries,
-            storage_size
+            storage_size,
+            optimum_obj
         )
