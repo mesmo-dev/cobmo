@@ -64,9 +64,7 @@ class Controller(object):
         self.problem.parameter_electricity_prices = pyo.Param(
             self.problem.set_timesteps,
             initialize=(
-                (self.building.electricity_prices['price'] / 1000).to_dict()  # W --> kW
-                if self.building.electricity_prices['price_unit'][0] == '$/kWh'
-                else (self.building.electricity_prices['price'].to_dict())
+                (self.building.electricity_prices['price']).to_dict()
             )
         )
         self.problem.parameter_state_matrix = pyo.Param(
@@ -286,10 +284,22 @@ class Controller(object):
             objective_value = 0.0
             for timestep in problem.set_timesteps:
                 for output_power in problem.set_outputs_power:  # TODO: Differentiate between thermal and electric.
-                    objective_value += (
-                            problem.variable_output_timeseries[timestep, output_power] * 1800  # W --> J
-                            * problem.parameter_electricity_prices[timestep] * 3.6e-06  # $/kWh --> $/J
-                    )
+                    if 'storage' in building.building_scenarios['building_storage_type'][0]:
+                        objective_value += (
+                                (
+                                    problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
+                                    * problem.parameter_electricity_prices[timestep]
+                                )# * 260 * 10
+                                # + (
+                                #         problem.variable_storage_size *
+                                #         300.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
+                                # )
+                        )
+                    else:
+                        objective_value += (
+                                problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
+                                * problem.parameter_electricity_prices[timestep]
+                        )# * 260 * 10
             return objective_value
 
         # Define objective
@@ -350,10 +360,26 @@ class Controller(object):
         optimum_obj = 0.0
         for timestep in self.problem.set_timesteps:
             for output_power in self.problem.set_outputs_power:
-                optimum_obj += (
-                        self.problem.variable_output_timeseries[timestep, output_power].value * 1800
-                        * self.problem.parameter_electricity_prices[timestep] * 3.6e-06
-                )
+                # optimum_obj += (
+                #         self.problem.variable_output_timeseries[timestep, output_power].value * 1800
+                #         * self.problem.parameter_electricity_prices[timestep] * 3.6e-06
+                # )
+                if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
+                    optimum_obj += (
+                            (
+                                self.problem.variable_output_timeseries[timestep, output_power].value / 1000 / 2
+                                * self.problem.parameter_electricity_prices[timestep]
+                            )# * 260 * 10
+                            # + (
+                            #         self.problem.variable_storage_size *
+                            #         300.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
+                            # )
+                    )
+                else:
+                    optimum_obj += (
+                            self.problem.variable_output_timeseries[timestep, output_power].value / 1000 / 2
+                            * self.problem.parameter_electricity_prices[timestep]
+                    )# * 260 * 10
 
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 

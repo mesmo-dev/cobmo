@@ -5,6 +5,7 @@ Building model utility function definitions
 import os
 import sqlite3
 import csv
+from math import fabs
 import glob
 import pandas as pd
 import pvlib
@@ -12,7 +13,6 @@ import pvlib
 from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
 # Import for infeasibility analysis
 from pyomo.core import Constraint, Var, value, TraversalStrategy
-from math import fabs
 import logging
 import numpy as np
 import datetime as dt
@@ -41,14 +41,14 @@ def discounted_payback_time(
     working_days = np.busday_count(start_date, end_date)
 
     interest_rate = 0.06
-    period = 15
+    period = 10
     pvaf = (1 - (1 + interest_rate) ** (-period)) / interest_rate  # Present value Annuity factor
 
     economic_horizon = 1000
     cumulative_discounted_savings = np.zeros(economic_horizon)
     yearly_discounted_savings = np.zeros(economic_horizon)
     savings_one_year = savings_day * working_days
-    investment_cost = storage_size * storage_investment_per_unit
+    investment_cost = float(storage_size) * float(storage_investment_per_unit)
     
     year = 0
     while cumulative_discounted_savings[year] < investment_cost:

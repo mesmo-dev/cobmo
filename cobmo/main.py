@@ -10,6 +10,7 @@ import cobmo.building
 import cobmo.controller
 import cobmo.utils
 import cobmo.config
+import datetime as dt
 
 
 def connect_database(
@@ -51,7 +52,7 @@ def example():
     )
 
     # Here make the changes to the data in the sql
-    building_storage_types.at['storage_round_trip_efficiency'][0] = 0.95
+    # building_storage_types.at['storage_round_trip_efficiency'][0] = 0.95
 
     building_storage_types.to_sql(
         'building_storage_types',
@@ -147,12 +148,12 @@ def example():
 
     if 'storage' in building.building_scenarios['building_storage_type'][0]:
         # Calculating the savings and the payback time
-        costs_without_storage = 3.549369459e-01  # SGD/day
+        costs_without_storage = 2.7387110e+01  # SGD/day
         savings_day = (costs_without_storage - optimum_obj)
 
         storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
-        storage_investment_per_kwh = 44.0
         storage_energy_size = storage_size * 1000 * 4186 * 8 * 2.77778e-7  # kWh
+        storage_investment_per_kwh = 44.0
         # print('\n>> storage cost {}'.format(storage_size*storage_investment_per_kwh))
         print('\n>> savings year {}'.format(savings_day * 250))
 
@@ -161,7 +162,7 @@ def example():
             storage_size,
             storage_investment_per_unit,  # storage_investment_per_unit,
             savings_day,
-            plot_on_off='off'
+            plot_on_off='on'
         )
 
         print('\n>> Storage type = %s  |  Optimal storage size = %.2f' % (
@@ -222,7 +223,15 @@ def example():
             state_timeseries_simulation.to_csv('delete_me_storage/state_timeseries_simulation_STORAGE.csv')
 
             state_timeseries_controller.to_csv('delete_me_storage/state_timeseries_controller_STORAGE.csv')
-            output_timeseries_controller.to_csv('delete_me_storage/output_timeseries_controller_STORAGE.csv')
+            date_main = dt.datetime.now()
+            filename_out_controller = (
+                    'output_timeseries_controller_STORAGE' + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+                        date_main.year, date_main.month, date_main.day, date_main.hour, date_main.minute,
+                        date_main.second)
+                    + '.csv'
+            )
+            output_timeseries_controller.to_csv('delete_me_storage/' + filename_out_controller)
+
             control_timeseries_controller.to_csv('delete_me_storage/control_timeseries_controller_STORAGE.csv')
 
         else:
@@ -238,7 +247,15 @@ def example():
             state_timeseries_simulation.to_csv('delete_me/state_timeseries_simulation.csv')
 
             state_timeseries_controller.to_csv('delete_me/state_timeseries_controller.csv')
-            output_timeseries_controller.to_csv('delete_me/output_timeseries_controller.csv')
+
+            date_main = dt.datetime.now()
+            filename_out_controller = (
+                    'output_timeseries_controller' + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+                        date_main.year, date_main.month, date_main.day, date_main.hour, date_main.minute,
+                        date_main.second)
+                    + '.csv'
+            )
+            output_timeseries_controller.to_csv('delete_me/' + filename_out_controller)
             control_timeseries_controller.to_csv('delete_me/control_timeseries_controller.csv')
 
 
