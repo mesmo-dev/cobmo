@@ -41,7 +41,26 @@ def example():
     Example script
     """
 
-    building = get_building_model()
+    conn = connect_database()
+
+    building_storage_types = pd.read_sql(
+        """
+        select * from building_storage_types
+        """,
+        conn
+    )
+
+    # Here make the changes to the data in the sql
+    building_storage_types.at['storage_round_trip_efficiency'][0] = 0.95
+
+    building_storage_types.to_sql(
+        'building_storage_types',
+        con=conn,
+        if_exists='replace',
+        index=False
+    )
+
+    building = get_building_model(conn=conn)
 
     # Define initial state and control timeseries
     state_initial = pd.Series(
@@ -115,7 +134,7 @@ def example():
 
     # Run controller
     controller = cobmo.controller.Controller(
-        conn=connect_database(),
+        conn=conn,
         building=building
     )
     (

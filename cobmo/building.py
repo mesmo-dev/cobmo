@@ -47,6 +47,13 @@ class Building(object):
         )
         # self.building_scenarios.to_csv('delete_me/building_scenarios.txt')
 
+        self.building_storage_types = pd.read_sql(
+            """
+            select * from building_storage_types
+            """,
+            conn
+        )
+
         self.building_parameters = pd.read_sql(
             """
             select * from building_parameter_sets 
