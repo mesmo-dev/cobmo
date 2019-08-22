@@ -248,6 +248,21 @@ class Controller(object):
                     <=
                     problem.parameter_output_timeseries_maximum[timestep, output]
                 )
+
+        def rule_maximum_ahu_electric_power(
+                problem,
+                timestep
+        ):
+            ahu_cool_electric_power_tot = 0.0
+            for output in problem.set_outputs_power:
+                if '_ahu_cool_electric_power' in output:
+                    ahu_cool_electric_power_tot += problem.variable_output_timeseries[timestep, output]
+            return (
+                    ahu_cool_electric_power_tot
+                    <=
+                    20000
+            )
+
 # =================================================================================================
 
 
@@ -277,6 +292,10 @@ class Controller(object):
             self.problem.set_timesteps,
             self.problem.set_outputs,
             rule=rule_output_maximum
+        )
+        self.problem.constraint_ahu_electric_power_output_maximum = pyo.Constraint(
+            self.problem.set_timesteps,
+            rule=rule_maximum_ahu_electric_power
         )
 
         # Define objective rule

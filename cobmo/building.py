@@ -2139,7 +2139,7 @@ class Building(object):
                                 self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
                                 - self.parse_parameter(
                                         self.building_scenarios['linearization_zone_air_temperature_cool']
-                                )
+                                )  # (20 - 25) < 0: same as TU
                         )
                         / self.heat_capacity_vector[index]
                 )
@@ -2177,7 +2177,7 @@ class Building(object):
                                 self.parse_parameter(row['tu_supply_air_temperature_setpoint'])
                                 - self.parse_parameter(
                                         self.building_scenarios['linearization_zone_air_temperature_cool']
-                                )
+                                )  # = (20 - 25) < 0 ==> make the temperature decrease in the room
                         )
                         / self.heat_capacity_vector[index]
                 )
@@ -3119,6 +3119,7 @@ class Building(object):
                         delta_enthalpy_tu_cooling = self.parse_parameter('heat_capacity_air') * (
                                 self.parse_parameter(self.building_scenarios['linearization_zone_air_temperature_cool'])
                                 - self.parse_parameter(row['tu_supply_air_temperature_setpoint'])
+                                # = 25 - 20
                         )
                         delta_enthalpy_tu_heating = self.parse_parameter('heat_capacity_air') * (
                                 self.parse_parameter(self.building_scenarios['linearization_zone_air_temperature_heat'])
@@ -3457,12 +3458,12 @@ class Building(object):
         ] = 0
 
         # Defining MAX bound for storage charge
-        self.output_constraint_timeseries_maximum.loc[
-            :,
-            [column for column in self.output_constraint_timeseries_maximum.columns if (
-                '_charge_ahu_cool_electric_power' in column
-            )]
-        ] = 20000.0  # W [P_el]
+        # self.output_constraint_timeseries_maximum.loc[
+        #     :,
+        #     [column for column in self.output_constraint_timeseries_maximum.columns if (
+        #         '_charge_ahu_cool_electric_power' in column
+        #     )]
+        # ] = 1.0  # W [P_el]
 
         # If a heating/cooling session is defined, the cooling/heating air flow is forced to 0
         # Comment: The cooling or heating coil may still be working, because of the dehumidification,
