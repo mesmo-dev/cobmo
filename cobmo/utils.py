@@ -41,8 +41,8 @@ def discounted_payback_time(
     working_days = np.busday_count(start_date, end_date)
 
     interest_rate = 0.06
-    period = 10
-    pvaf = (1 - (1 + interest_rate) ** (-period)) / interest_rate  # Present value Annuity factor
+    lifetime = 10
+    pvaf = (1 - (1 + interest_rate) ** (-lifetime)) / interest_rate  # Present value Annuity factor
 
     economic_horizon = 1000
     cumulative_discounted_savings = np.zeros(economic_horizon)
@@ -83,6 +83,12 @@ def discounted_payback_time(
     )
 
     if plot_on_off == 'on':
+        # Change default font of plots
+        # (http://jonathansoma.com/lede/data-studio/matplotlib/changing-fonts-in-matplotlib/)
+        # usable fonts: Control Panel\Appearance and Personalization\Fonts
+        plt.rcParams['font.serif'] = "Palatino Linotype"
+        plt.rcParams['font.family'] = "serif"
+
         date_main = datetime.datetime.now()
         plt.figure()
         plt.plot(years_array, investment_cost_array, linestyle='-', color='g', alpha=0.7,
@@ -95,9 +101,20 @@ def discounted_payback_time(
                     label='Simple payback')
 
         # plt.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
+        plt.ylabel('SGD')
+        plt.xlabel('year')
         plt.legend(loc='lower right', fontsize=10)
         plt.grid(True, which='both')
-        title = 'Savings/year = %.1f | payback year = %i' % (savings_one_year, discounted_payback)
+
+        plt.text(
+            discounted_payback/4, (investment_cost_array[0])*3/4,
+            'storage lifetime = %i\ninterest rate = %.2f\nSTORAGE SIZE = %.2f m3' % (lifetime, interest_rate,
+                                                                                     storage_size),
+            # style='italic',
+            fontsize=10, 
+            bbox={'facecolor': 'grey', 'alpha': 0.5, 'pad': 5})
+
+        title = 'Savings/year = %.1f S$ | payback year = %i' % (savings_one_year, discounted_payback)
         plt.title(title)
         filename = 'discounted_payback_' + building.building_scenarios['building_name'][0] \
                    + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(

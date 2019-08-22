@@ -289,7 +289,7 @@ class Controller(object):
                                 (
                                     problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
                                     * problem.parameter_electricity_prices[timestep]
-                                )# * 260 * 10
+                                ) *14 #* 260 * 10
                                 # + (
                                 #         problem.variable_storage_size *
                                 #         300.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
@@ -299,7 +299,7 @@ class Controller(object):
                         objective_value += (
                                 problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
                                 * problem.parameter_electricity_prices[timestep]
-                        )# * 260 * 10
+                        ) *14 #* 260 * 10
             return objective_value
 
         # Define objective
@@ -369,9 +369,9 @@ class Controller(object):
                             (
                                 self.problem.variable_output_timeseries[timestep, output_power].value / 1000 / 2
                                 * self.problem.parameter_electricity_prices[timestep]
-                            )# * 260 * 10
+                            ) *14  #* 260 * 10
                             # + (
-                            #         self.problem.variable_storage_size *
+                            #         self.problem.variable_storage_size.value *
                             #         300.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
                             # )
                     )
@@ -379,7 +379,7 @@ class Controller(object):
                     optimum_obj += (
                             self.problem.variable_output_timeseries[timestep, output_power].value / 1000 / 2
                             * self.problem.parameter_electricity_prices[timestep]
-                    )# * 260 * 10
+                    ) *14 # 260 * 10
 
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 

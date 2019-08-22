@@ -148,7 +148,7 @@ def example():
 
     if 'storage' in building.building_scenarios['building_storage_type'][0]:
         # Calculating the savings and the payback time
-        costs_without_storage = 2.7387110e+01  # SGD/day
+        costs_without_storage = 3.8341954e+02  # SGD/day
         savings_day = (costs_without_storage - optimum_obj)
 
         storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
