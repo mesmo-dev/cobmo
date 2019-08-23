@@ -338,7 +338,7 @@ class Controller(object):
         time_start = time.clock()
         self.result = self.solver.solve(
             self.problem,
-            tee=True  # Verbose solver outputs
+            tee=False  # Verbose solver outputs
         )
         print("Controller solve time: {:.2f} seconds".format(time.clock() - time_start))
 
