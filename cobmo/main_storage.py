@@ -48,17 +48,23 @@ def example():
         """
         select * from building_storage_types
         """,
-        conn
+        conn,
+        index_col='building_storage_type'
+        # Indexing to allow precise modification of the dataframe.
+        # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
     )
 
     # Here make the changes to the data in the sql
-    building_storage_types['sensible_thermal_storage_default']['storage_round_trip_efficiency'] = 0.92
+    building_storage_types.at['sensible_thermal_storage_default', 'storage_round_trip_efficiency'] = 0.6
+
+    # print('\nbuilding_storage_types in main = ')
+    # print(building_storage_types)
 
     building_storage_types.to_sql(
         'building_storage_types',
         con=conn,
-        if_exists='replace',
-        index=False
+        if_exists='replace'
+        # index=False
     )
 
     # NB: All the changes to the sql need to be done BEFORE getting the building_model
@@ -147,6 +153,10 @@ def example():
         optimum_obj
     ) = controller.solve()
 
+    print_on_csv = 0
+    if storage_size is not None:
+        print('storage size = %.2f' % storage_size)
+
     if 'storage' in building.building_scenarios['building_storage_type'][0]:
         # Calculating the savings and the payback time
         costs_without_storage = 3.8341954e+02  # SGD/day
@@ -156,22 +166,25 @@ def example():
         storage_energy_size = storage_size * 1000 * 4186 * 8 * 2.77778e-7  # kWh
         storage_investment_per_kwh = 44.0
         # print('\n>> storage cost {}'.format(storage_size*storage_investment_per_kwh))
-        print('\n>> savings year {}'.format(savings_day * 250))
 
         (payback, payback_df) = cobmo.utils.discounted_payback_time(
             building,
-            storage_size,
-            storage_investment_per_unit,  # storage_investment_per_unit,
+            storage_size,  # storage_energy_size  |  storage_size
+            storage_investment_per_unit,  # storage_investment_per_kwh  |  storage_investment_per_unit
             savings_day,
-            plot_on_off='on'
+            save_plot_on_off='on'
         )
 
-        print('\n>> Storage type = %s  |  Optimal storage size = %.2f' % (
-            building.building_scenarios['building_storage_type'][0]
-            , storage_size)
-        )
+        print('\n>> Storage type = %s  |  Optimal storage size = %.2f | savings year 〜= %.2f | Discounted payback = %i'
+              % (
+                building.building_scenarios['building_storage_type'][0],
+                storage_size,
+                (savings_day * 260),
+                payback
+              )
+              )
         # print('\n>> Optimum objective function = %.2f' % optimum_obj)
-        print('\n>> Discounted payback = %i' % payback)
+        # print('\n>> Discounted payback = %i' % payback)
 
     # print('\n>> Storage size = {}'.format(storage_size))
     # print('\n>> Optimum cost per day = %.5f' % optimum_obj)
@@ -206,7 +219,6 @@ def example():
     # print(error_summary)
     # print("-----------------------------------------------------------------------------------------------------------")
 
-    print_on_csv = 1
     if print_on_csv == 1:
         if ((building.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
                 or (building.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')

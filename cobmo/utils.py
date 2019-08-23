@@ -34,7 +34,7 @@ def discounted_payback_time(
         storage_size,
         storage_investment_per_unit,
         savings_day,
-        plot_on_off
+        save_plot_on_off
 ):
     # DISCOUNTED PAYBACK
     start_date = dt.date(2019, 1, 1)
@@ -83,47 +83,48 @@ def discounted_payback_time(
         )
     )
 
-    if plot_on_off == 'on':
-        # Change default font of plots
-        # (http://jonathansoma.com/lede/data-studio/matplotlib/changing-fonts-in-matplotlib/)
-        # usable fonts: Control Panel\Appearance and Personalization\Fonts
-        plt.rcParams['font.serif'] = "Palatino Linotype"
-        plt.rcParams['font.family'] = "serif"
+    # Change default font of plots
+    # (http://jonathansoma.com/lede/data-studio/matplotlib/changing-fonts-in-matplotlib/)
+    # usable fonts: Control Panel\Appearance and Personalization\Fonts
+    plt.rcParams['font.serif'] = "Palatino Linotype"
+    plt.rcParams['font.family'] = "serif"
 
-        date_main = datetime.datetime.now()
-        plt.figure()
-        plt.plot(years_array, investment_cost_array, linestyle='-', color='g', alpha=0.7,
-                 label='Investment')
-        plt.plot(years_array, yearly_discounted_savings, linestyle='--', color='b', alpha=0.7,
-                 label='Yearly discounted savings')
-        plt.plot(years_array, cumulative_discounted_savings, linestyle='-', color='r', marker='o', alpha=0.7,
-                 label='Cumulative Discounted savings')
-        plt.scatter(simple_payback_time, investment_cost_array[0], marker='o', color='yellow', s=200,
-                    label='Simple payback')
+    date_main = datetime.datetime.now()
+    plt.figure()
+    plt.plot(years_array, investment_cost_array, linestyle='-', color='g', alpha=0.7,
+             label='Investment')
+    plt.plot(years_array, yearly_discounted_savings, linestyle='--', color='b', alpha=0.7,
+             label='Yearly discounted savings')
+    plt.plot(years_array, cumulative_discounted_savings, linestyle='-', color='r', marker='o', alpha=0.7,
+             label='Cumulative Discounted savings')
+    plt.scatter(simple_payback_time, investment_cost_array[0], marker='o', color='yellow', s=200,
+                label='Simple payback')
 
-        # plt.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
-        plt.ylabel('SGD')
-        plt.xlabel('year')
-        plt.legend(loc='lower right', fontsize=10)
-        plt.grid(True, which='both')
+    # plt.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
+    plt.ylabel('SGD')
+    plt.xlabel('year')
+    plt.legend(loc='lower right', fontsize=10)
+    plt.grid(True, which='both')
 
-        plt.text(
-            discounted_payback/4, (investment_cost_array[0])*3/4,
-            'storage lifetime = %i\ninterest rate = %.2f\nSTORAGE SIZE = %.2f m3' % (lifetime, interest_rate,
-                                                                                     storage_size),
-            # style='italic',
-            fontsize=10, 
-            bbox={'facecolor': 'grey', 'alpha': 0.5, 'pad': 5})
+    plt.text(
+        discounted_payback/4, (investment_cost_array[0])*3/4,
+        'storage lifetime = %i\ninterest rate = %.2f\nSTORAGE SIZE = %.2f m3' % (lifetime, interest_rate,
+                                                                                 storage_size),
+        # style='italic',
+        fontsize=10,
+        bbox={'facecolor': 'grey', 'alpha': 0.5, 'pad': 5})
 
-        title = 'Savings/year = %.1f S$ | payback year = %i' % (savings_one_year, discounted_payback)
-        plt.title(title)
+    title = 'Savings/year = %.1f S$ | payback year = %i' % (savings_one_year, discounted_payback)
+    plt.title(title)
+
+    if save_plot_on_off == 'on':
         filename = 'discounted_payback_' + building.building_scenarios['building_name'][0] \
                    + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
             date_main.year, date_main.month, date_main.day, date_main.hour, date_main.minute, date_main.second)
         plt.savefig('figs/' + filename + '.svg', format='svg', dpi=1200)
         # plt.savefig('figs/discounted_payback.svg', format='svg', dpi=1200)
 
-        plt.show()
+    plt.show()
 
     return (
         discounted_payback,
