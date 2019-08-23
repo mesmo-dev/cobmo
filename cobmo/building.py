@@ -35,6 +35,14 @@ class Building(object):
         )
         self.electricity_prices.index = pd.to_datetime(self.electricity_prices['time'])
 
+        self.building_storage_types = pd.read_sql(
+            """
+            select * from building_storage_types
+            """,
+            conn,
+            index_col='building_storage_type'
+        )
+
         self.building_scenarios = pd.read_sql(
             """
             select * from building_scenarios 
@@ -47,12 +55,9 @@ class Building(object):
         )
         # self.building_scenarios.to_csv('delete_me/building_scenarios.txt')
 
-        self.building_storage_types = pd.read_sql(
-            """
-            select * from building_storage_types
-            """,
-            conn
-        )
+        # print(self.building_scenarios)
+        # print('\n>> @storage_round_trip_efficiency (in building.py) = %.2f'
+        #       % float(self.building_scenarios['storage_round_trip_efficiency'][0]))
 
         self.building_parameters = pd.read_sql(
             """
@@ -3015,7 +3020,7 @@ class Building(object):
                                 index + '_ahu_cool_electric_power_cooling_coil',
                                 index + '_sensible_storage_to_zone_ahu_cool_thermal_power'
                             ]
-                            - 1 / self.parse_parameter(row['ahu_cooling_efficiency'])
+                            - 1 / self.parse_parameter(row['ahu_cooling_efficiency']) * (1 - 0.0000001)
                     )
 
                 # latent storage
@@ -3028,7 +3033,7 @@ class Building(object):
                                 index + '_ahu_cool_electric_power_cooling_coil',
                                 index + '_latent_storage_to_zone_cool_thermal_power'
                             ]
-                            - 1 / self.parse_parameter(row['ahu_cooling_efficiency'])
+                            - 1 / self.parse_parameter(row['ahu_cooling_efficiency']) * (1 - 0.0000001)
                     )
 
                 # battery storage
@@ -3060,7 +3065,7 @@ class Building(object):
                                                 index + '_ahu_cool_air_flow'
                                             ]
                                     )
-                            )
+                            ) * (1 - 0.0000001)
 
                     )
 
@@ -3088,7 +3093,7 @@ class Building(object):
                                                 index + '_ahu_cool_air_flow'
                                             ]
                                     )
-                            )
+                            ) * (1 - 0.0000001)
 
                     )
 
