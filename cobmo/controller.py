@@ -149,10 +149,10 @@ class Controller(object):
             self.problem.set_outputs,
             domain=pyo.Reals
         )
-        self.problem.variable_storage_size = pyo.Var(
-            domain=pyo.Reals,
-            bounds=(0.0, 1e20)
-        )
+        # self.problem.variable_storage_size = pyo.Var(
+        #     domain=pyo.Reals,
+        #     bounds=(0.0, 1e20)
+        # )
 
 # =================================================================================================
 
@@ -230,6 +230,7 @@ class Controller(object):
                 problem.parameter_output_timeseries_minimum[timestep, output]
             )
 
+        fixed_storage_size = 50.0
         def rule_output_maximum(
                 problem,
                 timestep,
@@ -240,7 +241,7 @@ class Controller(object):
                     problem.variable_output_timeseries[timestep, output]
                     <=
                     problem.parameter_output_timeseries_maximum[timestep, output]
-                    * problem.variable_storage_size
+                    * fixed_storage_size  # problem.variable_storage_size
                 )
             else:
                 return (
@@ -298,7 +299,7 @@ class Controller(object):
             rule=rule_maximum_ahu_electric_power
         )
 
-        lifetime = 1
+        lifetime = 10
         # Define objective rule
         def objective_rule(problem):
             objective_value = 0.0
@@ -309,17 +310,17 @@ class Controller(object):
                                 (
                                     problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
                                     * problem.parameter_electricity_prices[timestep]
-                                ) * 14  # * 260 * lifetime
-                                # + (
-                                #         problem.variable_storage_size *
-                                #         50.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
-                                # )
+                                ) * 14 * 260 * lifetime
+                                + (
+                                        fixed_storage_size  # problem.variable_storage_size *
+                                        * 300.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
+                                )
                         )
                     else:
                         objective_value += (
                                 problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
                                 * problem.parameter_electricity_prices[timestep]
-                        ) * 14  # * 260 * lifetime
+                        ) * 14 * 260 * lifetime
             return objective_value
 
         # Define objective
@@ -338,7 +339,7 @@ class Controller(object):
         time_start = time.clock()
         self.result = self.solver.solve(
             self.problem,
-            tee=False  # Verbose solver outputs
+            tee=True  # Verbose solver outputs
         )
         print("Controller solve time: {:.2f} seconds".format(time.clock() - time_start))
 
@@ -374,9 +375,10 @@ class Controller(object):
                 output_timeseries.at[timestep, output] = (
                     self.problem.variable_output_timeseries[timestep, output].value
                 )
-        storage_size = self.problem.variable_storage_size.value
-
-        lifetime = 1
+        # storage_size = self.problem.variable_storage_size.value
+        fixed_storage_size = 50.0
+        storage_size = fixed_storage_size
+        lifetime = 10
         # Retrieving objective
         optimum_obj = 0.0
         for timestep in self.problem.set_timesteps:
@@ -390,17 +392,17 @@ class Controller(object):
                             (
                                 self.problem.variable_output_timeseries[timestep, output_power].value / 1000 / 2
                                 * self.problem.parameter_electricity_prices[timestep]
-                            ) * 14  # * 260 * lifetime
+                            ) * 14 * 260 * lifetime
                             # + (
-                            #         self.problem.variable_storage_size.value *
-                            #         50.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
+                            #         fixed_storage_size  # self.problem.variable_storage_size.value *
+                            #         * 300.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
                             # )
                     )
                 else:
                     optimum_obj += (
                             self.problem.variable_output_timeseries[timestep, output_power].value / 1000 / 2
                             * self.problem.parameter_electricity_prices[timestep]
-                    ) * 14  # * 260 * lifetime
+                    ) * 14 * 260 * lifetime
 
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 
