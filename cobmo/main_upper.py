@@ -13,6 +13,7 @@ import cobmo.config
 import datetime as dt
 import time as time
 import pyomo.environ as pyo
+import cobmo.utils as utls
 
 
 def connect_database(
@@ -162,7 +163,7 @@ def example():
 
     # Parameters
     storage_capex = 300.0
-    fixed_capex = 1e05
+    fixed_capex = 1e02
     problem.param_baseline_yearly_opex = pyo.Param(
         initialize=3.8341954e+02 * 260.0
     )
@@ -179,7 +180,7 @@ def example():
     problem.var_storage_yearly_opex = pyo.Var(
         domain=pyo.Reals,
         bounds=(0.0, np.inf),
-        initialize=0.0
+        initialize=99689.08047889751  # number taken from the "log_infeasibility"
     )
     problem.var_years = pyo.Var(
         domain=pyo.Reals,
@@ -188,13 +189,13 @@ def example():
     )
     problem.var_yearly_savings = pyo.Var(
         domain=pyo.Reals,
-        bounds=(0.0, np.inf),
-        initialize=0.0
+        bounds=(-7.889751577749848e-05, np.inf),  # 0e-20
+        initialize=3.8341954e+02 * 260.0 - 99689.08047889751
+        # 7.889751577749848e-05  # number taken from the "log_infeasibility"
     )
 
     # Rules
     def rule_storage_size(p):
-
         (_, _, _, size, _) = controller.solve()
         return p.var_storage_size == size
 
@@ -213,7 +214,7 @@ def example():
                     p.var_years * p.var_yearly_savings
                     - p.param_storage_capex * p.var_storage_size
                     - fixed_capex  # fixed cost not dependent on the storage mass
-            ) >= 0.0
+            ) >= -0.0  # -7.889751577749848e-05
         )
 
     # Constraints
@@ -229,7 +230,7 @@ def example():
     problem.constraint_obj_g_zero = pyo.Constraint(
         rule=rule_obj_g_zero
     )
-    problem.constraint_obj_g_zero.activate()
+    problem.constraint_obj_g_zero.deactivate()
 
     # objective_opt_opt rule
     def rule_obj(p):
@@ -250,7 +251,12 @@ def example():
         problem,
         tee=True
     )
-    print("Overall Bi-level problem took: {:.2f} seconds".format(time.clock() - time_start))
+    print("\nOverall Bi-level problem took: {:.2f} seconds\n".format(time.clock() - time_start))
+
+    # Printing @infeasibility
+    print("\nlog infesibility:\n")
+    utls.log_infeasible_constraints(problem)
+    utls.log_infeasible_bounds(problem)
 
     # print(results)
 
