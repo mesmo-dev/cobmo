@@ -3020,9 +3020,7 @@ class Building(object):
                                 index + '_ahu_cool_electric_power_cooling_coil',
                                 index + '_sensible_storage_to_zone_ahu_cool_thermal_power'
                             ]
-                            - 1 / self.parse_parameter(row['ahu_cooling_efficiency']) * (
-                                (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))*0.0000001
-                            )
+                            - 1 / self.parse_parameter(row['ahu_cooling_efficiency']) * (1 + 0.0000001)
                     )
 
                 # latent storage
@@ -3035,9 +3033,7 @@ class Building(object):
                                 index + '_ahu_cool_electric_power_cooling_coil',
                                 index + '_latent_storage_to_zone_cool_thermal_power'
                             ]
-                            - 1 / self.parse_parameter(row['ahu_cooling_efficiency']) * (
-                                (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))*0.0000001
-                            )
+                            - 1 / self.parse_parameter(row['ahu_cooling_efficiency']) * (1 + 0.0000001)
                     )
 
                 # battery storage
@@ -3069,9 +3065,7 @@ class Building(object):
                                                 index + '_ahu_cool_air_flow'
                                             ]
                                     )
-                            ) * (
-                                (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))*0.0000001
-                            )
+                            ) * (1 + 0.0000001)
 
                     )
 
@@ -3099,12 +3093,9 @@ class Building(object):
                                                 index + '_ahu_cool_air_flow'
                                             ]
                                     )
-                            ) * (
-                                (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))*0.0000001
-                            )
+                            ) * (1 + 0.0000001)
 
                     )
-
 
     def define_output_hvac_tu_electric_power(self):
         # # Storage TU - cooling
