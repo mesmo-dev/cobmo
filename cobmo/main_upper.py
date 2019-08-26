@@ -287,11 +287,11 @@ def example():
                'solution was run at time...']
 
     if 'sensible_thermal_storage' in building.building_scenarios['building_storage_type'][0]:
-        file_results = 'cobmo results/results_from_code/results_bi_opt-SENSIBLE.csv'
+        file_results = 'results/results_bi_opt-SENSIBLE.csv'
     elif 'latent_thermal_storage' in building.building_scenarios['building_storage_type'][0]:
-        file_results = 'cobmo results/results_from_code/results_bi_opt-LATENT.csv'
+        file_results = 'results/results_bi_opt-LATENT.csv'
     elif 'battery_storage' in building.building_scenarios['building_storage_type'][0]:
-        file_results = 'cobmo results/results_from_code/results_bi_opt-BATTERY.csv'
+        file_results = 'results/results_bi_opt-BATTERY.csv'
     else:
         print("\n>> no storage selected\n")
 
