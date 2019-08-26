@@ -11,6 +11,7 @@ import cobmo.controller
 import cobmo.utils
 import cobmo.config
 import datetime as dt
+import time as time
 import pyomo.environ as pyo
 
 
@@ -56,7 +57,7 @@ def example():
     )
 
     # Here make the changes to the data in the sql
-    # building_storage_types.at['sensible_thermal_storage_default', 'storage_round_trip_efficiency'] = 0.6
+    # building_storage_types.at['sensible_thermal_storage_default', 'storage_round_trip_efficiency'] = 0.2
 
     # print('\nbuilding_storage_types in main = ')
     # print(building_storage_types)
@@ -155,12 +156,13 @@ def example():
     # ) = controller.solve()
 
     # Creating the higher level problem
+    time_start = time.clock()
     problem = pyo.ConcreteModel()
     solver = pyo.SolverFactory('gurobi')
 
     # Parameters
     storage_capex = 300.0
-    fixed_capex = 1e03
+    fixed_capex = 1e05
     problem.param_baseline_yearly_opex = pyo.Param(
         initialize=3.8341954e+02 * 260.0
     )
@@ -243,11 +245,14 @@ def example():
         rule=rule_obj,
         sense=1
     )
+
     results = solver.solve(
         problem,
         tee=True
     )
-    print(results)
+    print("Overall Bi-level problem took: {:.2f} seconds".format(time.clock() - time_start))
+
+    # print(results)
 
     # Retrieve variables
     storage_size = problem.var_storage_size.value
@@ -261,7 +266,7 @@ def example():
                 - fixed_capex  # fixed cost
             )
 
-    print('============= RESULTS')
+    # print('============= RESULTS')
     # print('\nsize = %.1f'
     #       '  |  yearly OPEX with storage = %.1f'
     #       '  |  years = %.1f'
@@ -269,28 +274,44 @@ def example():
     #       '  |  obj = %.1f\n' % (storage_size, storage_yearly_opex, years, yearly_savings, objective_opt))
 
     # Saving results of each iteration into csv
+
+    round_trip_efficiency = building.building_scenarios['storage_round_trip_efficiency'][0]
     columns = ['obj',
+               'round trip efficiency',
                'storage capex/m3',
                'fixed capex',
                'size',
                'years',
                'storage yearly OPEX',
-               'yearly savings']
+               'yearly savings',
+               'solution was run at time...']
 
     if 'sensible_thermal_storage' in building.building_scenarios['building_storage_type'][0]:
         file_results = 'cobmo results/results_from_code/results_bi_opt-SENSIBLE.csv'
+    elif 'latent_thermal_storage' in building.building_scenarios['building_storage_type'][0]:
+        file_results = 'cobmo results/results_from_code/results_bi_opt-LATENT.csv'
+    elif 'battery_storage' in building.building_scenarios['building_storage_type'][0]:
+        file_results = 'cobmo results/results_from_code/results_bi_opt-BATTERY.csv'
+    else:
+        print("\n>> no storage selected\n")
 
     results_df = pd.read_csv(file_results)
+    date_main = dt.datetime.now()
+    solution_time = '{:04d}_{:02d}_{:02d} - {:02d}_{:02d}_{:02d}'.format(
+        date_main.year, date_main.month, date_main.day, date_main.hour, date_main.minute,
+        date_main.second)
     results_new = pd.DataFrame(
         np.column_stack(
             (
                 objective_opt,
+                round_trip_efficiency,
                 round(storage_capex, 0),
-                round(fixed_capex, 0),
+                format(fixed_capex, ".1E"),
                 round(storage_size, 2),
                 round(years, 0),
-                round(storage_yearly_opex, 2),
-                round(yearly_savings, 2)
+                round(storage_yearly_opex, 1),
+                round(yearly_savings, 2),
+                solution_time
             )
         ), columns=columns
     )
