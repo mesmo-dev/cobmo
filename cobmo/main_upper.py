@@ -56,7 +56,7 @@ def example():
     )
 
     # Here make the changes to the data in the sql
-    building_storage_types.at['sensible_thermal_storage_default', 'storage_round_trip_efficiency'] = 0.6
+    # building_storage_types.at['sensible_thermal_storage_default', 'storage_round_trip_efficiency'] = 0.6
 
     # print('\nbuilding_storage_types in main = ')
     # print(building_storage_types)
@@ -146,13 +146,13 @@ def example():
         conn=conn,
         building=building
     )
-    (
-        control_timeseries_controller,
-        state_timeseries_controller,
-        output_timeseries_controller,
-        storage_size,
-        optimum_obj
-    ) = controller.solve()
+    # (
+    #     control_timeseries_controller,
+    #     state_timeseries_controller,
+    #     output_timeseries_controller,
+    #     storage_size,
+    #     optimum_obj
+    # ) = controller.solve()
 
     # Creating the higher level problem
     problem = pyo.ConcreteModel()
@@ -160,7 +160,8 @@ def example():
 
     # Parameters
     storage_capex = 300.0
-    problem.param_baseline_yearly_cost = pyo.Param(
+    fixed_capex = 1e03
+    problem.param_baseline_yearly_opex = pyo.Param(
         initialize=3.8341954e+02 * 260.0
     )
     problem.param_storage_capex = pyo.Param(
@@ -173,7 +174,7 @@ def example():
         bounds=(0.0, np.inf),
         initialize=0.0
     )
-    problem.var_storage_yearly_cost = pyo.Var(
+    problem.var_storage_yearly_opex = pyo.Var(
         domain=pyo.Reals,
         bounds=(0.0, np.inf),
         initialize=0.0
@@ -195,13 +196,13 @@ def example():
         (_, _, _, size, _) = controller.solve()
         return p.var_storage_size == size
 
-    def rule_storage_yearly_cost(p):
+    def rule_storage_yearly_opex(p):
         (_, _, _, _, cost) = controller.solve()
-        return p.var_storage_yearly_cost == cost*260.0
+        return p.var_storage_yearly_opex == cost*260.0
 
     def rule_yearly_savings(p):
         return (
-            p.var_yearly_savings == problem.param_baseline_yearly_cost - p.var_storage_yearly_cost
+            p.var_yearly_savings == problem.param_baseline_yearly_opex - p.var_storage_yearly_opex
         )
 
     def rule_obj_g_zero(p):
@@ -209,7 +210,7 @@ def example():
             (
                     p.var_years * p.var_yearly_savings
                     - p.param_storage_capex * p.var_storage_size
-                    + 100.0  # fixed cost
+                    - fixed_capex  # fixed cost not dependent on the storage mass
             ) >= 0.0
         )
 
@@ -217,8 +218,8 @@ def example():
     problem.constraint_storage_size = pyo.Constraint(
         rule=rule_storage_size
     )
-    problem.constraint_storage_yearly_cost = pyo.Constraint(
-        rule=rule_storage_yearly_cost
+    problem.constraint_storage_yearly_opex = pyo.Constraint(
+        rule=rule_storage_yearly_opex
     )
     problem.constraint_yearly_savings = pyo.Constraint(
         rule=rule_yearly_savings
@@ -228,12 +229,12 @@ def example():
     )
     problem.constraint_obj_g_zero.activate()
 
-    # Objective rule
+    # objective_opt_opt rule
     def rule_obj(p):
         obj = (
             p.var_years * p.var_yearly_savings
             - p.param_storage_capex * p.var_storage_size
-            + 100.0  # fixed cost
+            - fixed_capex  # fixed cost
         )
         return obj
 
@@ -250,22 +251,52 @@ def example():
 
     # Retrieve variables
     storage_size = problem.var_storage_size.value
-    storage_yearly_cost = problem.var_storage_yearly_cost.value
+    storage_yearly_opex = problem.var_storage_yearly_opex.value
     years = problem.var_years.value
     yearly_savings = problem.var_yearly_savings.value
 
-    objective = (
+    objective_opt = (
                 years * yearly_savings
                 - storage_capex * storage_size
-                + 100.0  # fixed cost
+                - fixed_capex  # fixed cost
             )
 
     print('============= RESULTS')
-    print('\nsize = %.1f'
-          '  |  storage yearly cost = %.1f'
-          '  |  years = %.1f'
-          '  |  yearly_savings = %.1f'
-          '  |  obj = %.1f\n' % (storage_size, storage_yearly_cost, years, yearly_savings, objective))
+    # print('\nsize = %.1f'
+    #       '  |  yearly OPEX with storage = %.1f'
+    #       '  |  years = %.1f'
+    #       '  |  yearly_savings = %.1f'
+    #       '  |  obj = %.1f\n' % (storage_size, storage_yearly_opex, years, yearly_savings, objective_opt))
+
+    # Saving results of each iteration into csv
+    columns = ['obj',
+               'storage capex/m3',
+               'fixed capex',
+               'size',
+               'years',
+               'storage yearly OPEX',
+               'yearly savings']
+
+    if 'sensible_thermal_storage' in building.building_scenarios['building_storage_type'][0]:
+        file_results = 'cobmo results/results_from_code/results_bi_opt-SENSIBLE.csv'
+
+    results_df = pd.read_csv(file_results)
+    results_new = pd.DataFrame(
+        np.column_stack(
+            (
+                objective_opt,
+                round(storage_capex, 0),
+                round(fixed_capex, 0),
+                round(storage_size, 2),
+                round(years, 0),
+                round(storage_yearly_opex, 2),
+                round(yearly_savings, 2)
+            )
+        ), columns=columns
+    )
+
+    results_df = pd.concat([results_df, results_new], axis=0, sort=False)
+    results_df.to_csv(file_results, index=False)
 
 
 if __name__ == "__main__":
