@@ -153,7 +153,7 @@ def example():
         optimum_obj
     ) = controller.solve()
 
-    print_on_csv = 1
+    print_on_csv = 0
     if storage_size is not None:
         print('storage size = %.2f' % storage_size)
 

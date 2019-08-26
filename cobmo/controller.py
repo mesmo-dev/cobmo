@@ -299,28 +299,26 @@ class Controller(object):
             rule=rule_maximum_ahu_electric_power
         )
 
-        lifetime = 10
+        lifetime = 5
         # Define objective rule
+
         def objective_rule(problem):
             objective_value = 0.0
             for timestep in problem.set_timesteps:
                 for output_power in problem.set_outputs_power:  # TODO: Differentiate between thermal and electric.
-                    if 'storage' in building.building_scenarios['building_storage_type'][0]:
-                        objective_value += (
-                                (
-                                    problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
-                                    * problem.parameter_electricity_prices[timestep]
-                                ) * 14 * 260 * lifetime
-                                + (
+                    objective_value += (
+                            (
+                                problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
+                                * problem.parameter_electricity_prices[timestep]
+                            ) * 14 * 260 * lifetime
+                    )
+            # If there is storage, adding the CAPEX
+            if 'storage' in building.building_scenarios['building_storage_type'][0]:
+                objective_value = objective_value + (
                                         fixed_storage_size  # problem.variable_storage_size *
                                         * 300.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
                                 )
-                        )
-                    else:
-                        objective_value += (
-                                problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
-                                * problem.parameter_electricity_prices[timestep]
-                        ) * 14 * 260 * lifetime
+
             return objective_value
 
         # Define objective
@@ -378,31 +376,26 @@ class Controller(object):
         # storage_size = self.problem.variable_storage_size.value
         fixed_storage_size = 50.0
         storage_size = fixed_storage_size
-        lifetime = 10
+        lifetime = 5
         # Retrieving objective
         optimum_obj = 0.0
         for timestep in self.problem.set_timesteps:
             for output_power in self.problem.set_outputs_power:
-                # optimum_obj += (
-                #         self.problem.variable_output_timeseries[timestep, output_power].value * 1800
-                #         * self.problem.parameter_electricity_prices[timestep] * 3.6e-06
-                # )
-                if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
-                    optimum_obj += (
-                            (
-                                self.problem.variable_output_timeseries[timestep, output_power].value / 1000 / 2
-                                * self.problem.parameter_electricity_prices[timestep]
-                            ) * 14 * 260 * lifetime
-                            # + (
-                            #         fixed_storage_size  # self.problem.variable_storage_size.value *
-                            #         * 300.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
-                            # )
-                    )
-                else:
-                    optimum_obj += (
+                optimum_obj += (
+                        (
                             self.problem.variable_output_timeseries[timestep, output_power].value / 1000 / 2
                             * self.problem.parameter_electricity_prices[timestep]
-                    ) * 14 * 260 * lifetime
+                        ) * 14 * 260 * lifetime
+                        + (
+                                fixed_storage_size  # self.problem.variable_storage_size.value *
+                                * 300.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
+                        )
+                )
+        if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
+            optimum_obj = optimum_obj + (
+                                    fixed_storage_size  # self.problem.variable_storage_size.value *
+                                    * 300.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
+                            )
 
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 
