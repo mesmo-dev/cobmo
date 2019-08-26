@@ -556,7 +556,7 @@ class Building(object):
                 ] - 1.0 / (
                         self.parse_parameter('water_specific_heat')
                         * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-                ) * (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])) ** (1/2)
+                )
 
                 self.control_matrix.at[
                     self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -567,7 +567,7 @@ class Building(object):
                 ] - 1.0 / (
                         self.parse_parameter('water_specific_heat')
                         * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-                ) * (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])) ** (1/2)
+                )
 
             self.control_matrix.at[
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -578,7 +578,7 @@ class Building(object):
             ] + 1.0 / (
                     self.parse_parameter('water_specific_heat')
                     * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-            ) * (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])) ** (1/2)
+            ) * (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))
 
             self.state_matrix.at[
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -625,9 +625,7 @@ class Building(object):
                             self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                             index + '_battery_storage_to_zone_ahu',
                         ]
-                ) - 1.0 * (
-                    (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))**(1/2)
-                )
+                ) - 1.0
 
                 self.control_matrix.at[
                     self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
@@ -637,14 +635,12 @@ class Building(object):
                             self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                             index + '_battery_storage_to_zone_tu',
                         ]
-                ) - 1.0 * (
-                        (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])) ** (1/2)
-                )
+                ) - 1.0
 
             self.control_matrix.at[
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                 self.building_scenarios['building_name'][0] + '_battery_storage_charge'
-            ] = + 1.0 * (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))**(1/2)
+            ] = + 1.0 * (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))
 
             self.state_matrix.at[
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
