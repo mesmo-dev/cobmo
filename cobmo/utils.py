@@ -94,35 +94,36 @@ def discounted_payback_time(
     # usable fonts: Control Panel\Appearance and Personalization\Fonts
     plt.rcParams['font.serif'] = "Palatino Linotype"
     plt.rcParams['font.family'] = "serif"
-
     date_main = datetime.datetime.now()
-    plt.figure()
-    plt.plot(years_array, investment_cost_array, linestyle='--', color='black', alpha=0.7,
-             label='Investment')
-    plt.plot(years_array, yearly_discounted_savings, linestyle='-', color='#64BB8E', marker=6, alpha=1.0,
-             label='Yearly discounted savings')
-    plt.plot(years_array, cumulative_discounted_savings, linestyle='-', color='#0074BD', marker='s', alpha=1.0,
-             label='Cumulative Discounted savings')
-    plt.scatter(simple_payback_time, investment_cost, marker='o', color='r', s=100,
-                label='Simple payback')
+
+    fig, pb = plt.subplots(1, 1)
+
+    pb.plot(years_array, investment_cost_array, linestyle='--', color='black', alpha=0.7,
+            label='Investment')
+    pb.plot(years_array, yearly_discounted_savings, linestyle='-', color='#64BB8E', marker='^', alpha=1.0,
+            label='Yearly discounted savings')
+    pb.plot(years_array, cumulative_discounted_savings, linestyle='-', color='#0074BD', marker='s', alpha=1.0,
+            label='Cumulative Discounted savings')
+    pb.scatter(simple_payback_time, investment_cost, marker='o', color='r', s=100,
+               label='Simple payback')
 
     # plt.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
-    plt.ylabel('SGD')
-    plt.xlabel('year')
+    pb.set_ylabel('SGD')
+    pb.set_xlabel('year')
 
     # major_ticks = np.arange(years_array[0], years_array[-1], 1)
     # minor_ticks = np.arange(years_array[0], years_array[-1], 0.2)
-    # plt.xticks(major_ticks)
-    # # plt.xticks(minor_ticks, minor=True)
-    # plt.yticks(major_ticks)
-    # # plt.yticks(minor_ticks, minor=True)
+    # pb.set_xticks(major_ticks)
+    # pb.set_xticks(minor_ticks, minor=True)
+    # pb.set_yticks(major_ticks)
+    # pb.set_yticks(minor_ticks, minor=True)
 
-    plt.legend(loc='lower right', fontsize=10)
-    plt.grid(True, which='both')
-    plt.grid(which='minor', alpha=0.2)
-    plt.grid(which='major', alpha=0.5)
+    fig.legend(loc='center right', fontsize=10)
+    pb.grid(True, which='both')
+    pb.grid(which='minor', alpha=0.2)
+    pb.grid(which='major', alpha=0.5)
 
-    plt.text(
+    pb.text(
         0.2, investment_cost*3/4,
         'storage lifetime = %i\ninterest rate = %.2f\nSTORAGE SIZE = %.2f m3'
         '\nefficiency = %.2f'
@@ -132,7 +133,7 @@ def discounted_payback_time(
         bbox={'facecolor': 'grey', 'alpha': 0.5, 'pad': 5})
 
     title = 'payback year = %i' % discounted_payback
-    plt.title(title)
+    fig.suptitle(title)
 
     if save_plot_on_off == 'on':
         filename = 'discounted_payback_' + building.building_scenarios['building_name'][0] \
