@@ -19,6 +19,8 @@ import datetime as dt
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import datetime
+import seaborn as sns
+
 
 
 """
@@ -36,6 +38,9 @@ def discounted_payback_time(
         savings_day,
         save_plot_on_off
 ):
+    # Activating seaborn theme
+    sns.set()
+
     # DISCOUNTED PAYBACK
     start_date = dt.date(2019, 1, 1)
     end_date = dt.date(2019, 12, 31)
@@ -45,6 +50,7 @@ def discounted_payback_time(
     lifetime = 10
     pvaf = (1 - (1 + interest_rate) ** (-lifetime)) / interest_rate  # Present value Annuity factor
 
+    rt_efficiency = building.building_scenarios['storage_round_trip_efficiency'][0]
     economic_horizon = 1000
     cumulative_discounted_savings = np.zeros(economic_horizon)
     yearly_discounted_savings = np.zeros(economic_horizon)
@@ -91,30 +97,41 @@ def discounted_payback_time(
 
     date_main = datetime.datetime.now()
     plt.figure()
-    plt.plot(years_array, investment_cost_array, linestyle='-', color='g', alpha=0.7,
+    plt.plot(years_array, investment_cost_array, linestyle='--', color='black', alpha=0.7,
              label='Investment')
-    plt.plot(years_array, yearly_discounted_savings, linestyle='--', color='b', alpha=0.7,
+    plt.plot(years_array, yearly_discounted_savings, linestyle='-', color='#64BB8E', marker=6, alpha=1.0,
              label='Yearly discounted savings')
-    plt.plot(years_array, cumulative_discounted_savings, linestyle='-', color='r', marker='o', alpha=0.7,
+    plt.plot(years_array, cumulative_discounted_savings, linestyle='-', color='#0074BD', marker='s', alpha=1.0,
              label='Cumulative Discounted savings')
-    plt.scatter(simple_payback_time, investment_cost_array[0], marker='o', color='yellow', s=200,
+    plt.scatter(simple_payback_time, investment_cost, marker='o', color='r', s=100,
                 label='Simple payback')
 
     # plt.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
     plt.ylabel('SGD')
     plt.xlabel('year')
+
+    # major_ticks = np.arange(years_array[0], years_array[-1], 1)
+    # minor_ticks = np.arange(years_array[0], years_array[-1], 0.2)
+    # plt.xticks(major_ticks)
+    # # plt.xticks(minor_ticks, minor=True)
+    # plt.yticks(major_ticks)
+    # # plt.yticks(minor_ticks, minor=True)
+
     plt.legend(loc='lower right', fontsize=10)
     plt.grid(True, which='both')
+    plt.grid(which='minor', alpha=0.2)
+    plt.grid(which='major', alpha=0.5)
 
     plt.text(
-        discounted_payback/4, (investment_cost_array[0])*3/4,
-        'storage lifetime = %i\ninterest rate = %.2f\nSTORAGE SIZE = %.2f m3' % (lifetime, interest_rate,
-                                                                                 storage_size),
+        0.2, investment_cost*3/4,
+        'storage lifetime = %i\ninterest rate = %.2f\nSTORAGE SIZE = %.2f m3'
+        '\nefficiency = %.2f'
+        '\nSavings/year = %.2f SGD' % (lifetime, interest_rate, storage_size, float(rt_efficiency), savings_one_year),
         # style='italic',
-        fontsize=10,
+        fontsize=9,
         bbox={'facecolor': 'grey', 'alpha': 0.5, 'pad': 5})
 
-    title = 'Savings/year = %.1f S$ | payback year = %i' % (savings_one_year, discounted_payback)
+    title = 'payback year = %i' % discounted_payback
     plt.title(title)
 
     if save_plot_on_off == 'on':
