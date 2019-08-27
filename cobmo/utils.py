@@ -20,6 +20,8 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import datetime
 import seaborn as sns
+from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
+                               AutoMinorLocator)
 
 
 
@@ -98,18 +100,21 @@ def discounted_payback_time(
 
     fig, pb = plt.subplots(1, 1)
 
+    pb.scatter(simple_payback_time, investment_cost, marker='o', color='r', s=100,
+               label='Simple payback', zorder=10)
     pb.plot(years_array, investment_cost_array, linestyle='--', color='black', alpha=0.7,
             label='Investment')
     pb.plot(years_array, yearly_discounted_savings, linestyle='-', color='#64BB8E', marker='^', alpha=1.0,
             label='Yearly discounted savings')
     pb.plot(years_array, cumulative_discounted_savings, linestyle='-', color='#0074BD', marker='s', alpha=1.0,
             label='Cumulative Discounted savings')
-    pb.scatter(simple_payback_time, investment_cost, marker='o', color='r', s=100,
-               label='Simple payback')
 
-    # plt.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
+    pb.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
     pb.set_ylabel('SGD')
     pb.set_xlabel('year')
+    # pb.xaxis.set_major_locator(MultipleLocator(5))
+    pb.xaxis.set_major_formatter(FormatStrFormatter('%i'))
+    pb.xaxis.set_minor_locator(MultipleLocator(1))
 
     # major_ticks = np.arange(years_array[0], years_array[-1], 1)
     # minor_ticks = np.arange(years_array[0], years_array[-1], 0.2)
@@ -121,11 +126,11 @@ def discounted_payback_time(
     fig.legend(loc='center right', fontsize=10)
     pb.grid(True, which='both')
     pb.grid(which='minor', alpha=0.2)
-    pb.grid(which='major', alpha=0.5)
+    # pb.grid(which='major', alpha=0.5)
 
     pb.text(
         0.2, investment_cost*3/4,
-        'storage lifetime = %i\ninterest rate = %.2f\nSTORAGE SIZE = %.2f m3'
+        'storage lifetime = %i\ninterest rate = %.2f\nstorage size = %.2f m3'
         '\nefficiency = %.2f'
         '\nSavings/year = %.2f SGD' % (lifetime, interest_rate, storage_size, float(rt_efficiency), savings_one_year),
         # style='italic',
