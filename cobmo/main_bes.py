@@ -176,7 +176,7 @@ def example():
                 storage_size,
                 storage_investment_per_unit,
                 savings_day,
-                save_plot_on_off='on'  # "on" to save the plot as .svg (not tracked by the git)
+                save_plot_on_off='off'  # "on" to save the plot as .svg (not tracked by the git)
             )
 
             print('\n>> Storage type = %s'

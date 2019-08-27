@@ -3557,7 +3557,10 @@ class Building(object):
                     self.output_constraint_timeseries_minimum.at[
                         row_time,
                         self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
-                    ] = 0.0
+                    ] = (
+                            self.parse_parameter(self.building_scenarios['storage_size'])
+                            * float(self.parse_parameter(self.building_scenarios['storage_depth_of_discharge']))
+                    )
 
                 self.output_constraint_timeseries_minimum.at[
                     row_time,
