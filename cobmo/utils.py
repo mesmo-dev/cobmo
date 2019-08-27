@@ -22,13 +22,12 @@ import datetime
 import seaborn as sns
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
                                AutoMinorLocator)
-import seaborn as sns
 
 
 
-"""
-    Module with diagnostic utilities for infeasible models.
-    >>> https://github.com/Pyomo/pyomo/blob/master/pyomo/util/infeasible.py
+""" 
+    Module with diagnostic utilities for infeasible models. 
+    >>> https://github.com/Pyomo/pyomo/blob/master/pyomo/util/infeasible.py 
     """
 logger = logging.getLogger('pyomo.util.infeasible')
 logger.setLevel(logging.INFO)
@@ -59,7 +58,7 @@ def discounted_payback_time(
     yearly_discounted_savings = np.zeros(economic_horizon)
     savings_one_year = savings_day * working_days
     investment_cost = float(storage_size) * float(storage_investment_per_unit)
-    
+
     year = 0
     while cumulative_discounted_savings[year] < investment_cost:
         year += 1  # increment defined here to end the while at the right year (instead of 1 year more)
@@ -79,7 +78,7 @@ def discounted_payback_time(
     # discounted_total_savings_at_payback = cumulative_discounted_savings[-1]
 
     simple_payback_time = np.ceil(investment_cost / savings_one_year)
-    
+
     payback_df = pd.DataFrame(
         np.column_stack(
             (
@@ -87,7 +86,7 @@ def discounted_payback_time(
                 investment_cost_array,
                 cumulative_discounted_savings,
                 yearly_discounted_savings
-                
+
             )
         )
     )
@@ -99,16 +98,43 @@ def discounted_payback_time(
     plt.rcParams['font.family'] = "serif"
     date_main = datetime.datetime.now()
 
-    # plt.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
-    plt.ylabel('SGD')
-    plt.xlabel('year')
-    plt.legend(loc='lower right', fontsize=10)
-    plt.grid(True, which='both')
+    fig, pb = plt.subplots(1, 1)
 
-    plt.text(
-        discounted_payback/4, (investment_cost_array[0])*3/4,
-        'storage lifetime = %i\ninterest rate = %.2f\nSTORAGE SIZE = %.2f m3' % (lifetime, interest_rate,
-                                                                                 storage_size),
+    pb.scatter(simple_payback_time, investment_cost, marker='o', color='r', s=100,
+               label='Simple payback', zorder=10)
+    pb.plot(years_array, investment_cost_array, linestyle='--', color='black', alpha=0.7,
+            label='Investment')
+    pb.plot(years_array, yearly_discounted_savings, linestyle='-', color='#64BB8E', marker='^', alpha=1.0,
+            label='Yearly Disc. Savings')
+    pb.plot(years_array, cumulative_discounted_savings, linestyle='-', color='#0074BD', marker='s', alpha=1.0,
+            label='Cumulative Disc. Savings')
+
+    pb.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
+    pb.set_ylabel('SGD')
+    pb.set_xlabel('year')
+    # pb.xaxis.set_major_locator(MultipleLocator(5))
+    pb.xaxis.set_major_formatter(FormatStrFormatter('%i'))
+    pb.xaxis.set_minor_locator(MultipleLocator(1))
+
+    # major_ticks = np.arange(years_array[0], years_array[-1], 1)
+    # minor_ticks = np.arange(years_array[0], years_array[-1], 0.2)
+    # pb.set_xticks(major_ticks)
+    # pb.set_xticks(minor_ticks, minor=True)
+    # pb.set_yticks(major_ticks)
+    # pb.set_yticks(minor_ticks, minor=True)
+
+    fig.legend(loc='center right', fontsize=9)
+    pb.grid(True, which='both')
+    pb.grid(which='minor', alpha=0.2)
+    # pb.grid(which='major', alpha=0.5)
+
+    pb.text(
+        years_array[0], investment_cost*2.5/4,
+        'storage lifetime = %i\ninterest rate = %.2f\nstorage size = %.2f m3' 
+        '\nefficiency = %.2f' 
+        '\nSavings/year = %.1f SGD' 
+        '\nstorage caper per unit = %.1f' % (lifetime, interest_rate, storage_size, float(rt_efficiency),
+                                             savings_one_year, float(storage_investment_per_unit)),
         # style='italic',
         fontsize=9,
         bbox={'facecolor': 'grey', 'alpha': 0.5, 'pad': 5})
@@ -131,7 +157,7 @@ def discounted_payback_time(
         discounted_payback,
         payback_df
     )
-    
+
 
 def log_infeasible_constraints(m, tol=1E-6, logger=logger):
     """Print the infeasible constraints in the model.
@@ -186,11 +212,11 @@ def create_database(
     cursor = conn.cursor()
 
     # Remove old data, if any
-    cursor.executescript("""
-        PRAGMA writable_schema = 1;
-        DELETE FROM sqlite_master WHERE type IN ('table', 'index', 'trigger');
-        PRAGMA writable_schema = 0;
-        VACUUM;
+    cursor.executescript(""" 
+        PRAGMA writable_schema = 1; 
+        DELETE FROM sqlite_master WHERE type IN ('table', 'index', 'trigger'); 
+        PRAGMA writable_schema = 0; 
+        VACUUM; 
         """)
 
     # Recreate SQLITE database (schema) from SQL file
@@ -233,16 +259,16 @@ def calculate_irradiation_surfaces(
 
     # Load weather data from database
     weather_types = pd.read_sql(
-        """
-        select * from weather_types 
-        where weather_type='{}'
+        """ 
+        select * from weather_types  
+        where weather_type='{}' 
         """.format(weather_type),
         conn
     )
     weather_timeseries = pd.read_sql(
-        """
-        select * from weather_timeseries 
-        where weather_type='{}'
+        """ 
+        select * from weather_timeseries  
+        where weather_type='{}' 
         """.format(weather_type),
         conn
     )
@@ -328,9 +354,9 @@ def calculate_irradiation_surfaces(
 
     # Update weather_timeseries in database
     conn.cursor().execute(
-        """
-        delete from weather_timeseries 
-        where weather_type='{}'
+        """ 
+        delete from weather_timeseries  
+        where weather_type='{}' 
         """.format(weather_type),
     )
     weather_timeseries.to_sql(
@@ -347,16 +373,16 @@ def calculate_sky_temperature(conn, weather_type='singapore_nus'):
     """
     # Load weather data
     weather_types = pd.read_sql(
-        """
-        select * from weather_types 
-        where weather_type='{}'
+        """ 
+        select * from weather_types  
+        where weather_type='{}' 
         """.format(weather_type),
         conn
     )
     weather_timeseries = pd.read_sql(
-        """
-        select * from weather_timeseries 
-        where weather_type='{}'
+        """ 
+        select * from weather_timeseries  
+        where weather_type='{}' 
         """.format(weather_type),
         conn
     )
@@ -371,9 +397,9 @@ def calculate_sky_temperature(conn, weather_type='singapore_nus'):
 
     # Update weather_timeseries in database
     conn.cursor().execute(
-        """
-        delete from weather_timeseries 
-        where weather_type='{}'
+        """ 
+        delete from weather_timeseries  
+        where weather_type='{}' 
         """.format(weather_type),
     )
 
