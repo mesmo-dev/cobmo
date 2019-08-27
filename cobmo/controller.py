@@ -149,10 +149,10 @@ class Controller(object):
             self.problem.set_outputs,
             domain=pyo.Reals
         )
-        self.problem.variable_storage_size = pyo.Var(
-            domain=pyo.Reals,
-            bounds=(0.0, 1e20)
-        )
+        # self.problem.variable_storage_size = pyo.Var(
+        #     domain=pyo.Reals,
+        #     bounds=(0.0, 1e20)
+        # )
 
 # =================================================================================================
 
@@ -230,7 +230,7 @@ class Controller(object):
                 problem.parameter_output_timeseries_minimum[timestep, output]
             )
 
-        # fixed_storage_size = 5.0
+        fixed_storage_size = 8.0
         def rule_output_maximum(
                 problem,
                 timestep,
@@ -241,7 +241,7 @@ class Controller(object):
                     problem.variable_output_timeseries[timestep, output]
                     <=
                     problem.parameter_output_timeseries_maximum[timestep, output]
-                    * problem.variable_storage_size  # fixed_storage_size
+                    * fixed_storage_size  # problem.variable_storage_size
                 )
             else:
                 return (
@@ -319,7 +319,7 @@ class Controller(object):
             # If there is storage, adding the CAPEX
             if 'storage' in building.building_scenarios['building_storage_type'][0]:
                 objective_value = objective_value + (
-                                        problem.variable_storage_size  # fixed_storage_size
+                                        fixed_storage_size  # problem.variable_storage_size 
                                         * 300.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
                                 )
 
@@ -377,9 +377,9 @@ class Controller(object):
                 output_timeseries.at[timestep, output] = (
                     self.problem.variable_output_timeseries[timestep, output].value
                 )
-        storage_size = self.problem.variable_storage_size.value
-        # fixed_storage_size = 5.0
-        # storage_size = fixed_storage_size
+        # storage_size = self.problem.variable_storage_size.value
+        fixed_storage_size = 8.0
+        storage_size = fixed_storage_size
         lifetime = 10
         # Retrieving objective
         optimum_obj = 0.0
@@ -396,7 +396,7 @@ class Controller(object):
 
         if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
             optimum_obj = optimum_obj + (
-                                    self.problem.variable_storage_size.value  # fixed_storage_size
+                                    fixed_storage_size  # self.problem.variable_storage_size.value 
                                     * 300.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
                             )
 
