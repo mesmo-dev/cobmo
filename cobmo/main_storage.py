@@ -55,7 +55,7 @@ def example():
     )
 
     # Here make the changes to the data in the sql
-    rt_efficiency = 0.4
+    rt_efficiency = 0.8
     # building_storage_types.at['sensible_thermal_storage_default', 'storage_round_trip_efficiency'] = rt_efficiency
 
     # print('\nbuilding_storage_types in main = ')
@@ -192,7 +192,7 @@ def example():
     #     # print('\n>> Optimum objective function = %.2f' % optimum_obj)
     #     # print('\n>> Discounted payback = %i' % payback)
     else:
-        print('\n>> Total opex (baseline)= {}'.format(format(optimum_obj, '.2f')))
+        print('\n>> Total opex (baseline)= {}\n'.format(format(optimum_obj, '.2f')))
 
     # print('\n>> Storage size = {}'.format(storage_size))
     # print('\n>> Optimum cost per day = %.5f' % optimum_obj)
