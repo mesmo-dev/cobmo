@@ -156,38 +156,41 @@ def example():
 
     print_on_csv = 0
     if storage_size is not None:
-        print('storage size = %.2f' % storage_size)
+        print('\nstorage size = %.2f\n' % storage_size)
 
-    if 'storage' in building.building_scenarios['building_storage_type'][0]:
-        print('\n>> Total opex + capex (storage)= {}'.format(format(optimum_obj, '.2f')))
-
-        # Calculating the savings and the payback time
-        costs_without_storage = 3.8341954e+02  # SGD/day
-        savings_day = (costs_without_storage - optimum_obj)
-
-        storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
-        storage_energy_size = storage_size * 1000 * 4186 * 8 * 2.77778e-7  # kWh
-        storage_investment_per_kwh = 44.0
-        # print('\n>> storage cost {}'.format(storage_size*storage_investment_per_kwh))
-
-        (payback, payback_df) = cobmo.utils.discounted_payback_time(
-            building,
-            storage_size,  # storage_energy_size  |  storage_size
-            storage_investment_per_unit,  # storage_investment_per_kwh  |  storage_investment_per_unit
-            savings_day,
-            save_plot_on_off='on'
-        )
-
-        print('\n>> Storage type = %s  |  Optimal storage size = %.2f | savings year 〜= %.2f | Discounted payback = %i'
-              % (
-                building.building_scenarios['building_storage_type'][0],
-                storage_size,
-                (savings_day * 260),
-                payback
-              )
-              )
-        # print('\n>> Optimum objective function = %.2f' % optimum_obj)
-        # print('\n>> Discounted payback = %i' % payback)
+    # if 'storage' in building.building_scenarios['building_storage_type'][0]:
+    #     print('\n>> Total opex + capex (storage)= {}\n'.format(format(optimum_obj, '.2f')))
+    #
+    #     # Calculating the savings and the payback time
+    #     costs_without_storage = 9.968908048e+04  # SGD/year
+    #     savings_year = (costs_without_storage - optimum_obj)
+    #
+    #     storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
+    #     storage_energy_size = storage_size * 1000 * 4186 * 8 * 2.77778e-7  # kWh
+    #     storage_investment_per_kwh = 44.0
+    #     # print('\n>> storage cost {}'.format(storage_size*storage_investment_per_kwh))
+    #
+    #     (payback, payback_df) = cobmo.utils.discounted_payback_time(
+    #         building,
+    #         storage_size,  # storage_energy_size  |  storage_size
+    #         storage_investment_per_unit,  # storage_investment_per_kwh  |  storage_investment_per_unit
+    #         savings_year,
+    #         save_plot_on_off='off'
+    #     )
+    #
+    #     print('\n>> Storage type = %s'
+    #           '  |  Optimal storage size = %.2f'
+    #           '  | savings year 〜= %.2f'
+    #           '  | Discounted payback = %i\n'
+    #           % (
+    #             building.building_scenarios['building_storage_type'][0],
+    #             storage_size,
+    #             savings_year,
+    #             payback
+    #           )
+    #           )
+    #     # print('\n>> Optimum objective function = %.2f' % optimum_obj)
+    #     # print('\n>> Discounted payback = %i' % payback)
     else:
         print('\n>> Total opex (baseline)= {}'.format(format(optimum_obj, '.2f')))
 
