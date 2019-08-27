@@ -105,9 +105,9 @@ def discounted_payback_time(
     pb.plot(years_array, investment_cost_array, linestyle='--', color='black', alpha=0.7,
             label='Investment')
     pb.plot(years_array, yearly_discounted_savings, linestyle='-', color='#64BB8E', marker='^', alpha=1.0,
-            label='Yearly discounted savings')
+            label='Yearly Disc. Savings')
     pb.plot(years_array, cumulative_discounted_savings, linestyle='-', color='#0074BD', marker='s', alpha=1.0,
-            label='Cumulative Discounted savings')
+            label='Cumulative Disc. Savings')
 
     pb.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
     pb.set_ylabel('SGD')
@@ -123,16 +123,18 @@ def discounted_payback_time(
     # pb.set_yticks(major_ticks)
     # pb.set_yticks(minor_ticks, minor=True)
 
-    fig.legend(loc='center right', fontsize=10)
+    fig.legend(loc='center right', fontsize=9)
     pb.grid(True, which='both')
     pb.grid(which='minor', alpha=0.2)
     # pb.grid(which='major', alpha=0.5)
 
     pb.text(
-        0.2, investment_cost*3/4,
+        years_array[0], investment_cost*2.5/4,
         'storage lifetime = %i\ninterest rate = %.2f\nstorage size = %.2f m3'
         '\nefficiency = %.2f'
-        '\nSavings/year = %.2f SGD' % (lifetime, interest_rate, storage_size, float(rt_efficiency), savings_one_year),
+        '\nSavings/year = %.1f SGD'
+        '\nstorage caper per unit = %.1f' % (lifetime, interest_rate, storage_size, float(rt_efficiency),
+                                             savings_one_year, float(storage_investment_per_unit)),
         # style='italic',
         fontsize=9,
         bbox={'facecolor': 'grey', 'alpha': 0.5, 'pad': 5})
@@ -141,9 +143,11 @@ def discounted_payback_time(
     fig.suptitle(title)
 
     if save_plot_on_off == 'on':
-        filename = 'discounted_payback_' + building.building_scenarios['building_name'][0] \
-                   + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
-            date_main.year, date_main.month, date_main.day, date_main.hour, date_main.minute, date_main.second)
+        filename = ('discounted_payback_'  # + building.building_scenarios['building_name'][0]
+                    + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+                        date_main.year, date_main.month, date_main.day,
+                        date_main.hour, date_main.minute, date_main.second)
+                    )
         plt.savefig('figs/' + filename + '.svg', format='svg', dpi=1200)
         # plt.savefig('figs/discounted_payback.svg', format='svg', dpi=1200)
 
