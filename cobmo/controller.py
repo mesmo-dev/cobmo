@@ -307,15 +307,15 @@ class Controller(object):
                             (
                                 problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
                                 * problem.parameter_electricity_prices[timestep]
-                            ) * 14.0*260.0  # for 14 levels
+                            ) * 14.0 * 260.0 * 15.0
+                            # 14 levels * 260 working days per year * 15 years
                     )
 
             # If there is storage, adding the CAPEX
             if 'storage' in building.building_scenarios['building_storage_type'][0]:
                 objective_value = objective_value + (
                                         problem.variable_storage_size  # fixed_storage_size
-                                        * 300.0  # float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
-                                        # TODO: take the investment cost from building
+                                        * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
                                 )
 
             return objective_value
@@ -383,13 +383,14 @@ class Controller(object):
                         (
                             self.problem.variable_output_timeseries[timestep, output_power].value / 1000 / 2
                             * self.problem.parameter_electricity_prices[timestep]
-                        ) * 14.0*260.0  # for 14 levels
+                        ) * 14.0 * 260.0 * 15.0
+                        # 14 levels * 260 working days per year * 15 years
                 )
 
         if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
             optimum_obj = optimum_obj + (
                                     self.problem.variable_storage_size.value  # fixed_storage_size
-                                    * 300.0  # building.building_scenarios['storage_investment_sgd_per_unit'][0]
+                                    * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
                             )
 
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
@@ -403,6 +404,15 @@ class Controller(object):
         print(self.building.electricity_prices)  # price.to_string(index=True)
         print(self.building.disturbance_timeseries)
         """
+
+        # Bringing back the result in SGD/day for 14 levels
+        if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
+            optimum_obj = (
+                            optimum_obj
+                            - storage_size * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                          ) / 260.0 / 15.0
+        else:
+            optimum_obj = optimum_obj / 260.0 / 15.0
 
         return (
             control_timeseries,
