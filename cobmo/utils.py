@@ -35,7 +35,7 @@ def discounted_payback_time(
         building,
         storage_size,
         storage_investment_per_unit,
-        savings_year,
+        savings_day,
         save_plot_on_off
 ):
     # Activating seaborn theme
@@ -54,7 +54,7 @@ def discounted_payback_time(
     economic_horizon = 1000
     cumulative_discounted_savings = np.zeros(economic_horizon)
     yearly_discounted_savings = np.zeros(economic_horizon)
-    savings_one_year = savings_year  # * working_days
+    savings_one_year = savings_day * working_days
     investment_cost = float(storage_size) * float(storage_investment_per_unit)
     
     year = 0
