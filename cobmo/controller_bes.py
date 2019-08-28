@@ -38,6 +38,15 @@ class Controller_bes(object):
         self.problem.set_outputs = pyo.Set(
             initialize=self.building.set_outputs
         )
+        self.problem.set_outputs_without_soc = pyo.Set(
+            initialize=self.building.set_outputs[
+                ~self.building.set_outputs.str.contains('_battery_storage_state_of_charge')
+            ]
+
+        )
+        self.problem.set_outputs_state_of_charge = pyo.Set(
+            initialize=self.building.set_outputs[self.building.set_outputs.str.contains('_battery_storage_state_of_charge')]
+        )
         self.problem.set_outputs_power = pyo.Set(
             initialize=self.building.set_outputs[self.building.set_outputs.str.contains('electric_power')]
         )
@@ -149,7 +158,13 @@ class Controller_bes(object):
                 timestep_first,
                 state
         ):
-            # Equality constraint
+            # # Equality constraint
+            # if '_battery_storage_state_of_charge' in state:
+            #     return problem.variable_state_timeseries[timestep_first, state] == (
+            #         problem.parameter_state_initial[state] * problem.variable_storage_size
+            #     )
+            #
+            # else:
             return problem.variable_state_timeseries[timestep_first, state] == (
                 problem.parameter_state_initial[state]
             )
@@ -212,19 +227,43 @@ class Controller_bes(object):
                 timestep,
                 output
         ):
-            if 'state_of_charge' in output:
-                return (
-                    problem.variable_output_timeseries[timestep, output]
+            # if 'state_of_charge' in output:
+            #     return (
+            #         problem.variable_output_timeseries[timestep, output]
+            #         >=
+            #         problem.parameter_output_timeseries_minimum[timestep, output]
+            #         * problem.variable_storage_size  # * fixed_storage_size
+            #     )
+            # else:
+            return (
+                problem.variable_output_timeseries[timestep, output]
+                >=
+                problem.parameter_output_timeseries_minimum[timestep, output]
+            )
+
+        def rule_output_minimum_timestep_first_soc(
+                problem,
+                timestep_first,
+                output
+        ):
+            return (
+                    problem.variable_output_timeseries[timestep_first, output]
                     >=
-                    problem.parameter_output_timeseries_minimum[timestep, output]
+                    problem.parameter_output_timeseries_minimum[timestep_first, output]
+            )
+
+        def rule_output_minimum_without_first_soc(
+                problem,
+                timestep_without_first,
+                output
+        ):
+            return (
+                    problem.variable_output_timeseries[timestep_without_first, output]
+                    >=
+                    problem.parameter_output_timeseries_minimum[timestep_without_first, output]
                     * problem.variable_storage_size  # * fixed_storage_size
-                )
-            else:
-                return (
-                    problem.variable_output_timeseries[timestep, output]
-                    >=
-                    problem.parameter_output_timeseries_minimum[timestep, output]
-                )
+            )
+
 
         def rule_output_maximum(
                 problem,
@@ -281,9 +320,20 @@ class Controller_bes(object):
         )
         self.problem.constraint_output_minimum = pyo.Constraint(
             self.problem.set_timesteps,
-            self.problem.set_outputs,
+            self.problem.set_outputs_without_soc,
             rule=rule_output_minimum
         )
+        self.problem.constraint_output_minimum_timestep_first_soc = pyo.Constraint(
+            self.problem.set_timestep_first,
+            self.problem.set_outputs_state_of_charge,
+            rule=rule_output_minimum_timestep_first_soc
+        )
+        self.problem.constraint_output_minimum_without_first_soc = pyo.Constraint(
+            self.problem.set_timesteps_without_first,
+            self.problem.set_outputs_state_of_charge,
+            rule=rule_output_minimum_without_first_soc
+        )
+
         self.problem.constraint_output_maximum = pyo.Constraint(
             self.problem.set_timesteps,
             self.problem.set_outputs,
@@ -295,7 +345,7 @@ class Controller_bes(object):
         )
         self.problem.constraint_ahu_electric_power_output_maximum.activate()
 
-        lifetime = 100.0  # @change
+        lifetime = 150.0  # @change
 
         # Define objective rule
         def objective_rule(problem):
@@ -375,7 +425,7 @@ class Controller_bes(object):
         # Retrieving objective
         storage_size = self.problem.variable_storage_size.value
 
-        lifetime = 100.0  # @change
+        lifetime = 150.0  # @change
         # fixed_storage_size = 5000.0 * 1000.0 * 3.6e+3  # to Joule  # @change
         # storage_size = fixed_storage_size
 

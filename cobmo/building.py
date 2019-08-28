@@ -421,8 +421,9 @@ class Building(object):
                 # Note that for the battery the initial state should be the product of DoD*Energy, but since the energy
                 # is set to 1.0 in the sql, giving the DoD equals giving DoD*WEnergy = DoD*1.
                 # The controller will then change the energy size of the battery storage.
-                # (1.0 - float(self.parse_parameter(self.building_scenarios['storage_depth_of_discharge'])))  # battery storage in [kWh]
-                0.0
+                (1.0 - float(self.parse_parameter(self.building_scenarios['storage_depth_of_discharge'])))
+                * float(self.parse_parameter(self.building_scenarios['storage_size']))
+                # 0.0
                 * np.ones(sum(self.set_states.str.contains('_battery_storage_state_of_charge')))
             ]),
             self.set_states
@@ -3585,11 +3586,11 @@ class Building(object):
                         row_time,
                         self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
                     ] = (
-                        0.0
-                        # + float(
-                        #         float(self.parse_parameter(self.building_scenarios['storage_size'])) *
-                        #         (1.0 - float(self.parse_parameter(self.building_scenarios['storage_depth_of_discharge'])))*0.99
-                        # )  # Limiting battery minimum charge state
+                        # 0.0
+                        + float(
+                                float(self.parse_parameter(self.building_scenarios['storage_size'])) *
+                                (1.0 - float(self.parse_parameter(self.building_scenarios['storage_depth_of_discharge'])))
+                        )  # Limiting battery minimum charge state
 
                     )
                 self.output_constraint_timeseries_minimum.at[
