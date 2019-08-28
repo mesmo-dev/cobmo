@@ -92,6 +92,40 @@ def retrieve_battery_parameters():
     )
     battery_params_2030 = battery_params.loc[:, columns_2030]
 
+    # Converting values from USD to SGD. Change rate of 1.39
+    # 2016
+    usd2sgd = 1.39
+    battery_params_2016.loc[:, 'energy_installation_cost_2016'] = (
+            battery_params_2016.loc[:, 'energy_installation_cost_2016'] * usd2sgd
+    )
+    battery_params_2016.loc[:, 'power_installation_cost_2016'] = (
+            battery_params_2016.loc[:, 'power_installation_cost_2016'] * usd2sgd
+    )
+
+    # 2020
+    battery_params_2020.loc[:, 'energy_installation_cost_2020'] = (
+            battery_params_2020.loc[:, 'energy_installation_cost_2020'] * usd2sgd
+    )
+    battery_params_2020.loc[:, 'power_installation_cost_2020'] = (
+            battery_params_2020.loc[:, 'power_installation_cost_2020'] * usd2sgd
+    )
+
+    # 2025
+    battery_params_2025.loc[:, 'energy_installation_cost_2025'] = (
+            battery_params_2025.loc[:, 'energy_installation_cost_2025'] * usd2sgd
+    )
+    battery_params_2025.loc[:, 'power_installation_cost_2025'] = (
+            battery_params_2025.loc[:, 'power_installation_cost_2025'] * usd2sgd
+    )
+
+    # 2030
+    battery_params_2030.loc[:, 'energy_installation_cost_2030'] = (
+            battery_params_2030.loc[:, 'energy_installation_cost_2030'] * usd2sgd
+    )
+    battery_params_2030.loc[:, 'power_installation_cost_2030'] = (
+            battery_params_2030.loc[:, 'power_installation_cost_2030'] * usd2sgd
+    )
+
     return (
         battery_params_2016,
         battery_params_2020,
@@ -196,7 +230,7 @@ def discounted_payback_time(
     # pb.grid(which='major', alpha=0.5)
 
     pb.text(
-        years_array[0], investment_cost*2.5/4,
+        1, investment_cost*2.5/4,
         'storage lifetime = %i\ninterest rate = %.2f\nstorage size = %.2f m3' 
         '\nefficiency = %.2f' 
         '\nSavings/year = %.1f SGD' 
