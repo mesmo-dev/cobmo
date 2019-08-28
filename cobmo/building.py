@@ -3071,54 +3071,54 @@ class Building(object):
                                 index + '_ahu_cool_electric_power_cooling_coil',
                                 index + '_battery_storage_to_zone_ahu'
                             ]
-                            - 1.0
-                            #     (
-                            #         (
-                            #             self.control_output_matrix.at[
-                            #                 index + '_ahu_cool_electric_power_cooling_coil',
-                            #                 index + '_ahu_cool_air_flow'
-                            #             ]
-                            #         ) / (
-                            #                 self.control_output_matrix.at[
-                            #                     index + '_ahu_cool_electric_power_cooling_coil',
-                            #                     index + '_ahu_cool_air_flow'
-                            #                 ]
-                            #                 + self.control_output_matrix.at[
-                            #                     index + '_ahu_cool_electric_power_heating_coil',
-                            #                     index + '_ahu_cool_air_flow'
-                            #                 ]
-                            #         )
-                            # )
+                            # - 1.0
+                            - (
+                                (
+                                    self.control_output_matrix.at[
+                                        index + '_ahu_cool_electric_power_cooling_coil',
+                                        index + '_ahu_cool_air_flow'
+                                    ]
+                                ) / (
+                                        self.control_output_matrix.at[
+                                            index + '_ahu_cool_electric_power_cooling_coil',
+                                            index + '_ahu_cool_air_flow'
+                                        ]
+                                        + self.control_output_matrix.at[
+                                            index + '_ahu_cool_electric_power_heating_coil',
+                                            index + '_ahu_cool_air_flow'
+                                        ]
+                                )
+                            )
 
                     )
 
-                    # self.control_output_matrix.at[
-                    #     index + '_ahu_cool_electric_power_heating_coil',
-                    #     index + '_battery_storage_to_zone_ahu'
-                    # ] = (
-                    #         self.control_output_matrix.at[
-                    #             index + '_ahu_cool_electric_power_heating_coil',
-                    #             index + '_battery_storage_to_zone_ahu'
-                    #         ]
-                    #         - (
-                    #                 (
-                    #                     self.control_output_matrix.at[
-                    #                         index + '_ahu_cool_electric_power_heating_coil',
-                    #                         index + '_ahu_cool_air_flow'
-                    #                     ]
-                    #                 ) / (
-                    #                         self.control_output_matrix.at[
-                    #                             index + '_ahu_cool_electric_power_cooling_coil',
-                    #                             index + '_ahu_cool_air_flow'
-                    #                         ]
-                    #                         + self.control_output_matrix.at[
-                    #                             index + '_ahu_cool_electric_power_heating_coil',
-                    #                             index + '_ahu_cool_air_flow'
-                    #                         ]
-                    #                 )
-                    #         )
-                    #
-                    # )
+                    self.control_output_matrix.at[
+                        index + '_ahu_cool_electric_power_heating_coil',
+                        index + '_battery_storage_to_zone_ahu'
+                    ] = (
+                            self.control_output_matrix.at[
+                                index + '_ahu_cool_electric_power_heating_coil',
+                                index + '_battery_storage_to_zone_ahu'
+                            ]
+                            - (
+                                    (
+                                        self.control_output_matrix.at[
+                                            index + '_ahu_cool_electric_power_heating_coil',
+                                            index + '_ahu_cool_air_flow'
+                                        ]
+                                    ) / (
+                                            self.control_output_matrix.at[
+                                                index + '_ahu_cool_electric_power_cooling_coil',
+                                                index + '_ahu_cool_air_flow'
+                                            ]
+                                            + self.control_output_matrix.at[
+                                                index + '_ahu_cool_electric_power_heating_coil',
+                                                index + '_ahu_cool_air_flow'
+                                            ]
+                                    )
+                            )
+
+                    )
 
     def define_output_hvac_tu_electric_power(self):
         # # Storage TU - cooling

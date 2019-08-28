@@ -161,12 +161,13 @@ def example():
     # Printing and Plotting
 
     print_on_csv = 1  # set to 1 to print results in csv files (not tracked by the git)
-    plotting = 0  # set 1 for plotting (to save the plot set "save_plot_on_off" to on
+    plotting = 1  # set 1 for plotting (to save the plot set "save_plot_on_off" to on
 
     # if storage_size is not None:
     if 'storage' in building.building_scenarios['building_storage_type'][0]:
+        storage_size_kwh = storage_size * 3.6e-3 * 1.0e-3
         print('\n----------------------------------------------')
-        print('\n>> Storage size = %.2f kWh' % (storage_size * 3.6e-3 * 1.0e-3))
+        print('\n>> Storage size = %.2f kWh' % storage_size_kwh)
         print('\n>> Total opex + capex (storage)= {}'.format(format(optimum_obj, '.2f')))
 
         if plotting == 1:
@@ -176,8 +177,9 @@ def example():
             storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
             (payback, payback_df) = cobmo.utils.discounted_payback_time(
                 building,
-                storage_size,
+                storage_size_kwh,
                 storage_investment_per_unit,
+                12.0,  # storage lifetime as input
                 savings_day,
                 save_plot_on_off='off'  # "on" to save the plot as .svg (not tracked by the git)
             )
