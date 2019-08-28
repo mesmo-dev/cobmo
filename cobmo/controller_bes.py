@@ -345,7 +345,7 @@ class Controller_bes(object):
         )
         self.problem.constraint_ahu_electric_power_output_maximum.activate()
 
-        lifetime = 150.0  # @change
+        lifetime = 20.0  # @change
 
         # Define objective rule
         def objective_rule(problem):
@@ -365,6 +365,7 @@ class Controller_bes(object):
                 objective_value = objective_value + (
                                         problem.variable_storage_size * 3.6e-6  # fixed_storage_size
                                         * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                                        + float(building.building_scenarios['storage_power_installation_cost'][0]) * 8000.0
                                 )
 
             return objective_value
@@ -425,7 +426,7 @@ class Controller_bes(object):
         # Retrieving objective
         storage_size = self.problem.variable_storage_size.value
 
-        lifetime = 150.0  # @change
+        lifetime = 20.0  # @change
         # fixed_storage_size = 5000.0 * 1000.0 * 3.6e+3  # to Joule  # @change
         # storage_size = fixed_storage_size
 
@@ -444,6 +445,7 @@ class Controller_bes(object):
             optimum_obj = optimum_obj + (
                                     self.problem.variable_storage_size.value * 3.6e-6  # fixed_storage_size
                                     * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                                    + float(self.building.building_scenarios['storage_power_installation_cost'][0]) * 8000.0
                             )
 
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
@@ -462,7 +464,10 @@ class Controller_bes(object):
         if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
             optimum_obj = (
                             optimum_obj
-                            - storage_size * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0]) * 3.6e-6
+                            - (storage_size
+                               * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0]) * 3.6e-6
+                               + float(self.building.building_scenarios['storage_power_installation_cost'][0]) * 8000.0
+                               )
                           ) / 260.0 / lifetime
         else:
             optimum_obj = optimum_obj / 260.0 / lifetime
