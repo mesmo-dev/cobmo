@@ -2550,7 +2550,7 @@ class Building(object):
                         self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
                         self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
                     ]
-                    + 1 / self.parse_parameter('hvac_ahu_cooling_efficiency')
+                    + 1 / self.parse_parameter('hvac_ahu_cooling_efficiency') * (1 + 0.0000001)
             )
         # latent storage
         if self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default':
@@ -2562,7 +2562,7 @@ class Building(object):
                         self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
                         self.building_scenarios['building_name'][0] + '_latent_storage_charge_cool_thermal_power'
                     ]
-                    + 1 / self.parse_parameter('hvac_ahu_cooling_efficiency')
+                    + 1 / self.parse_parameter('hvac_ahu_cooling_efficiency') * (1 + 0.0000001)
             )
         # battery storage
         # The battery charge is modeled as if AHU is charging electricity into teh battery.
@@ -2575,7 +2575,7 @@ class Building(object):
                         self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
                         self.building_scenarios['building_name'][0] + '_battery_storage_charge'
                     ]
-                    + 1
+                    + 1 * (1 + 0.0000001)
             )
 
         # # Storage AHU - heating - CHARGE
@@ -3016,7 +3016,7 @@ class Building(object):
                                 index + '_ahu_cool_electric_power_cooling_coil',
                                 index + '_sensible_storage_to_zone_ahu_cool_thermal_power'
                             ]
-                            - 1 / self.parse_parameter(row['ahu_cooling_efficiency']) * (1 + 0.0000001)
+                            - 1 / self.parse_parameter(row['ahu_cooling_efficiency'])
                     )
 
                 # latent storage
@@ -3029,7 +3029,7 @@ class Building(object):
                                 index + '_ahu_cool_electric_power_cooling_coil',
                                 index + '_latent_storage_to_zone_cool_thermal_power'
                             ]
-                            - 1 / self.parse_parameter(row['ahu_cooling_efficiency']) * (1 + 0.0000001)
+                            - 1 / self.parse_parameter(row['ahu_cooling_efficiency'])
                     )
 
                 # battery storage
@@ -3061,7 +3061,7 @@ class Building(object):
                                                 index + '_ahu_cool_air_flow'
                                             ]
                                     )
-                            ) * (1 + 0.0000001)
+                            )
 
                     )
 
@@ -3089,7 +3089,7 @@ class Building(object):
                                                 index + '_ahu_cool_air_flow'
                                             ]
                                     )
-                            ) * (1 + 0.0000001)
+                            )
 
                     )
 
@@ -3558,10 +3558,13 @@ class Building(object):
                         row_time,
                         self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
                     ] = (
-                            self.parse_parameter(self.building_scenarios['storage_size'])
-                            * float(self.parse_parameter(self.building_scenarios['storage_depth_of_discharge']))
-                    )
+                        # 0.0
+                        + float(
+                                # self.parse_parameter(self.building_scenarios['storage_size']) *
+                                (1.0 - (self.parse_parameter(self.building_scenarios['storage_depth_of_discharge'])))
+                        )  # Limiting battery minimum charge state
 
+                    )
                 self.output_constraint_timeseries_minimum.at[
                     row_time,
                     index_zone + '_temperature'

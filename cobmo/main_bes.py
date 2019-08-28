@@ -7,7 +7,7 @@ import sqlite3
 import numpy as np
 import pandas as pd
 import cobmo.building
-import cobmo.controller
+import cobmo.controller_bes
 import cobmo.utils
 import cobmo.config
 import datetime as dt
@@ -61,6 +61,23 @@ def example():
     # print('\nbuilding_storage_types in main = ')
     # print(building_storage_types)
 
+    # ==============================================================
+    # Creating the battery storage cases
+    (
+        battery_params_2016,
+        battery_params_2020,
+        battery_params_2025,
+        battery_params_2030
+    ) = cobmo.utils.retrieve_battery_parameters()
+
+    # Retrieving the tech names from either of the DataFrames (they all have the same Indexes)
+    techs = battery_params_2016.index
+
+
+
+
+
+    # Back to sql
     building_storage_types.to_sql(
         'building_storage_types',
         con=conn,
@@ -142,7 +159,7 @@ def example():
     # file_output_text.write(building.state_matrix)
 
     # Run controller
-    controller = cobmo.controller.Controller(
+    controller = cobmo.controller_bes.Controller_bes(
         conn=conn,
         building=building
     )
@@ -159,7 +176,7 @@ def example():
     # Printing and Plotting
 
     print_on_csv = 0  # set to 1 to print results in csv files (not tracked by the git)
-    plotting = 1  # set 1 for plotting (to save the plot set "save_plot_on_off" to on
+    plotting = 0  # set 1 for plotting (to save the plot set "save_plot_on_off" to on
 
     if storage_size is not None:
         print('\n----------------------------------------------')
@@ -229,28 +246,28 @@ def example():
                 or (building.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
                 or (building.building_scenarios['building_storage_type'][0] == 'battery_storage_default')):
 
-            building.state_matrix.to_csv('delete_me_storage/state_matrix_STORAGE.csv')
-            building.control_matrix.to_csv('delete_me_storage/control_matrix_STORAGE.csv')
-            building.disturbance_matrix.to_csv('delete_me_storage/disturbance_matrix_STORAGE.csv')
+            building.state_matrix.to_csv('delete_me_storage/bes/state_matrix_BES.csv')
+            building.control_matrix.to_csv('delete_me_storage/bes/control_matrix_BES.csv')
+            building.disturbance_matrix.to_csv('delete_me_storage/bes/disturbance_matrix_BES.csv')
 
-            building.state_output_matrix.to_csv('delete_me_storage/state_output_matrix_STORAGE.csv')
-            building.control_output_matrix.to_csv('delete_me_storage/control_output_matrix_STORAGE.csv')
-            building.disturbance_output_matrix.to_csv('delete_me_storage/disturbance_output_matrix_STORAGE.csv')
+            building.state_output_matrix.to_csv('delete_me_storage/bes/state_output_matrix_BES.csv')
+            building.control_output_matrix.to_csv('delete_me_storage/bes/control_output_matrix_BES.csv')
+            building.disturbance_output_matrix.to_csv('delete_me_storage/bes/disturbance_output_matrix_BES.csv')
 
             # np.savetxt(r'my_file_output_state_matrix.txt', building.state_matrix.values) # , fmt='%d'
-            state_timeseries_simulation.to_csv('delete_me_storage/state_timeseries_simulation_STORAGE.csv')
+            state_timeseries_simulation.to_csv('delete_me_storage/bes/state_timeseries_simulation_BES.csv')
 
-            state_timeseries_controller.to_csv('delete_me_storage/state_timeseries_controller_STORAGE.csv')
+            state_timeseries_controller.to_csv('delete_me_storage/bes/state_timeseries_controller_BES.csv')
             date_main = dt.datetime.now()
             filename_out_controller = (
-                    'output_timeseries_controller_STORAGE' + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+                    'output_timeseries_controller_BES' + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
                         date_main.year, date_main.month, date_main.day, date_main.hour, date_main.minute,
                         date_main.second)
                     + '.csv'
             )
-            output_timeseries_controller.to_csv('delete_me_storage/' + filename_out_controller)
+            output_timeseries_controller.to_csv('delete_me_storage/bes/' + filename_out_controller)
 
-            control_timeseries_controller.to_csv('delete_me_storage/control_timeseries_controller_STORAGE.csv')
+            control_timeseries_controller.to_csv('delete_me_storage/bes/control_timeseries_controller_BES.csv')
 
         else:
             building.state_matrix.to_csv('delete_me/state_matrix.csv')

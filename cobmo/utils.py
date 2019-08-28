@@ -23,15 +23,81 @@ import seaborn as sns
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
                                AutoMinorLocator)
 
-
-
 """ 
-    Module with diagnostic utilities for infeasible models. 
-    >>> https://github.com/Pyomo/pyomo/blob/master/pyomo/util/infeasible.py 
-    """
+Module with diagnostic utilities for infeasible models. 
+>>> https://github.com/Pyomo/pyomo/blob/master/pyomo/util/infeasible.py 
+"""
 logger = logging.getLogger('pyomo.util.infeasible')
 logger.setLevel(logging.INFO)
 
+
+def retrieve_battery_parameters():
+    cobmo_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
+    data_path = os.path.join(cobmo_path, 'data')
+    storage_data_path = os.path.join(data_path, 'storage_data/')
+    file_battery_parameters = storage_data_path + 'battery_storage_types.csv'
+
+    battery_params = pd.read_csv(file_battery_parameters, index_col=0)
+    columns = battery_params.columns
+
+    # 2016
+    bool_2016 = pd.Series(columns.str.contains('2016'))
+    columns_2016 = pd.Index(
+        pd.concat(
+            [
+                pd.Series('round_trip_efficiency'),
+                pd.Series('depth_of_discharge'),
+                pd.Series(columns[bool_2016])
+            ]
+        )
+    )
+    battery_params_2016 = battery_params.loc[:, columns_2016]
+
+    # 2020
+    bool_2020 = pd.Series(columns.str.contains('2020'))
+    columns_2020 = pd.Index(
+        pd.concat(
+            [
+                pd.Series('round_trip_efficiency'),
+                pd.Series('depth_of_discharge'),
+                pd.Series(columns[bool_2020])
+            ]
+        )
+    )
+    battery_params_2020 = battery_params.loc[:, columns_2020]
+
+    # 2025
+    bool_2025 = pd.Series(columns.str.contains('2025'))
+    columns_2025 = pd.Index(
+        pd.concat(
+            [
+                pd.Series('round_trip_efficiency'),
+                pd.Series('depth_of_discharge'),
+                pd.Series(columns[bool_2025])
+            ]
+        )
+    )
+    battery_params_2025 = battery_params.loc[:, columns_2025]
+
+    # 2030
+    bool_2030 = pd.Series(columns.str.contains('2030'))
+    columns_2030 = pd.Index(
+        pd.concat(
+            [
+                pd.Series('round_trip_efficiency'),
+                pd.Series('depth_of_discharge'),
+                pd.Series(columns[bool_2030])
+            ]
+        )
+    )
+    battery_params_2030 = battery_params.loc[:, columns_2030]
+
+    return (
+        battery_params_2016,
+        battery_params_2020,
+        battery_params_2025,
+        battery_params_2030
+    )
 
 def discounted_payback_time(
         building,
@@ -100,7 +166,7 @@ def discounted_payback_time(
 
     fig, pb = plt.subplots(1, 1)
 
-    pb.scatter(simple_payback_time, investment_cost, marker='o', color='r', s=100,
+    pb.scatter(simple_payback_time, investment_cost, marker='o', facecolors='none', edgecolors='r', s=100,
                label='Simple payback', zorder=10)
     pb.plot(years_array, investment_cost_array, linestyle='--', color='black', alpha=0.7,
             label='Investment')
