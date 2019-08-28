@@ -99,10 +99,12 @@ def retrieve_battery_parameters():
         battery_params_2030
     )
 
+
 def discounted_payback_time(
         building,
         storage_size,
         storage_investment_per_unit,
+        storage_lifetime,
         savings_day,
         save_plot_on_off
 ):
@@ -115,8 +117,7 @@ def discounted_payback_time(
     working_days = np.busday_count(start_date, end_date)
 
     interest_rate = 0.06
-    lifetime = 10
-    pvaf = (1 - (1 + interest_rate) ** (-lifetime)) / interest_rate  # Present value Annuity factor
+    pvaf = (1 - (1 + interest_rate) ** (-storage_lifetime)) / interest_rate  # Present value Annuity factor
 
     rt_efficiency = building.building_scenarios['storage_round_trip_efficiency'][0]
     economic_horizon = 1000
@@ -196,10 +197,10 @@ def discounted_payback_time(
 
     pb.text(
         years_array[0], investment_cost*2.5/4,
-        'storage lifetime = %i\ninterest rate = %.2f\nstorage size = %.2f m3' 
+        'storage storage_lifetime = %i\ninterest rate = %.2f\nstorage size = %.2f m3' 
         '\nefficiency = %.2f' 
         '\nSavings/year = %.1f SGD' 
-        '\nstorage caper per unit = %.1f' % (lifetime, interest_rate, storage_size, float(rt_efficiency),
+        '\nstorage caper per unit = %.1f' % (storage_lifetime, interest_rate, storage_size, float(rt_efficiency),
                                              savings_one_year, float(storage_investment_per_unit)),
         # style='italic',
         fontsize=9,
