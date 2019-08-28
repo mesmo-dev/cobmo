@@ -160,14 +160,14 @@ def example():
 
     # Printing and Plotting
 
-    print_on_csv = 0  # set to 1 to print results in csv files (not tracked by the git)
+    print_on_csv = 1  # set to 1 to print results in csv files (not tracked by the git)
     plotting = 0  # set 1 for plotting (to save the plot set "save_plot_on_off" to on
 
     # if storage_size is not None:
     if 'storage' in building.building_scenarios['building_storage_type'][0]:
-        # print('\n----------------------------------------------')
-        # print('\n>> Storage size = %.2f kWh' % storage_size)
-        # print('\n>> Total opex + capex (storage)= {}'.format(format(optimum_obj, '.2f')))
+        print('\n----------------------------------------------')
+        print('\n>> Storage size = %.2f kWh' % (storage_size * 3.6e-3 * 1.0e-3))
+        print('\n>> Total opex + capex (storage)= {}'.format(format(optimum_obj, '.2f')))
 
         if plotting == 1:
             # Calculating the savings and the payback time
