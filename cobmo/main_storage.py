@@ -162,6 +162,7 @@ def example():
     plotting = 1  # set 1 for plotting (to save the plot set "save_plot_on_off" to on
 
     if storage_size is not None:
+        storage_size_kwh = storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7
         print('\n----------------------------------------------')
         print('\n>> Storage size = %.2f m3' % storage_size)
         print('\n>> Total opex + capex (storage)= {}'.format(format(optimum_obj, '.2f')))
@@ -173,8 +174,9 @@ def example():
             storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
             (payback, payback_df) = cobmo.utils.discounted_payback_time(
                 building,
-                storage_size,
+                storage_size_kwh,
                 storage_investment_per_unit,
+                15.0,
                 savings_day,
                 save_plot_on_off='off'  # "on" to save the plot as .svg (not tracked by the git)
             )

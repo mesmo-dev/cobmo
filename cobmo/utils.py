@@ -200,7 +200,7 @@ def discounted_payback_time(
         'storage lifetime = %i\ninterest rate = %.2f\nstorage size = %.2f m3' 
         '\nefficiency = %.2f' 
         '\nSavings/year = %.1f SGD' 
-        '\nstorage caper per unit = %.1f' % (storage_lifetime, interest_rate, storage_size, float(rt_efficiency),
+        '\nstorage capex per unit = %.1f' % (storage_lifetime, interest_rate, storage_size, float(rt_efficiency),
                                              savings_one_year, float(storage_investment_per_unit)),
         # style='italic',
         fontsize=9,

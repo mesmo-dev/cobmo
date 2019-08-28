@@ -314,7 +314,7 @@ class Controller(object):
             # If there is storage, adding the CAPEX
             if 'storage' in building.building_scenarios['building_storage_type'][0]:
                 objective_value = objective_value + (
-                                        problem.variable_storage_size  # fixed_storage_size
+                                        problem.variable_storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # fixed_storage_size
                                         * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
                                 )
 
@@ -389,7 +389,7 @@ class Controller(object):
 
         if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
             optimum_obj = optimum_obj + (
-                                    self.problem.variable_storage_size.value  # fixed_storage_size
+                                    self.problem.variable_storage_size.value * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # fixed_storage_size
                                     * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
                             )
 
@@ -409,7 +409,7 @@ class Controller(object):
         if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
             optimum_obj = (
                             optimum_obj
-                            - storage_size * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                            - storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7 * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
                           ) / 260.0 / 15.0
         else:
             optimum_obj = optimum_obj / 260.0 / 15.0
