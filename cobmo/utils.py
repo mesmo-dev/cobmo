@@ -206,15 +206,24 @@ def discounted_payback_time(
         fontsize=9,
         bbox={'facecolor': 'grey', 'alpha': 0.5, 'pad': 5})
 
-    title = 'payback year = %i' % discounted_payback
-    fig.suptitle(title)
-
-    if save_plot_on_off == 'on':
-        filename = ('discounted_payback_'  # + building.building_scenarios['building_name'][0]
+    if building.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+        title = 'Sensible Thermal Storage | payback year = %i' % discounted_payback
+        filename = ('discounted_payback_STES'  # + building.building_scenarios['building_name'][0]
                     + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
                         date_main.year, date_main.month, date_main.day,
                         date_main.hour, date_main.minute, date_main.second)
                     )
+    elif building.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+        title = 'Battery Storage | payback year = %i' % discounted_payback
+        filename = ('discounted_payback_BES'  # + building.building_scenarios['building_name'][0]
+                    + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+                        date_main.year, date_main.month, date_main.day,
+                        date_main.hour, date_main.minute, date_main.second)
+                    )
+
+    fig.suptitle(title)
+
+    if save_plot_on_off == 'on':
         plt.savefig('figs/' + filename + '.svg', format='svg', dpi=1200)
         # plt.savefig('figs/discounted_payback.svg', format='svg', dpi=1200)
 
