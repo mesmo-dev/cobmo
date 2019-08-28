@@ -168,7 +168,7 @@ def discounted_payback_time(
     fig, pb = plt.subplots(1, 1)
 
     pb.scatter(simple_payback_time, investment_cost, marker='o', facecolors='none', edgecolors='r', s=100,
-               label='Simple payback', zorder=10)
+               label='Simple payback = %.0f' % simple_payback_time, zorder=10)
     pb.plot(years_array, investment_cost_array, linestyle='--', color='black', alpha=0.7,
             label='Investment')
     pb.plot(years_array, yearly_discounted_savings, linestyle='-', color='#64BB8E', marker='^', alpha=1.0,
@@ -197,7 +197,7 @@ def discounted_payback_time(
 
     pb.text(
         years_array[0], investment_cost*2.5/4,
-        'storage storage_lifetime = %i\ninterest rate = %.2f\nstorage size = %.2f m3' 
+        'storage lifetime = %i\ninterest rate = %.2f\nstorage size = %.2f m3' 
         '\nefficiency = %.2f' 
         '\nSavings/year = %.1f SGD' 
         '\nstorage caper per unit = %.1f' % (storage_lifetime, interest_rate, storage_size, float(rt_efficiency),
