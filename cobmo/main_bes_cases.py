@@ -8,9 +8,11 @@ import numpy as np
 import pandas as pd
 import cobmo.building
 import cobmo.controller_bes
-import cobmo.utils
+import cobmo.utils_bes_cases
 import cobmo.config
-import datetime as dt
+import datetime
+import time as time
+
 
 
 def connect_database(
@@ -19,7 +21,7 @@ def connect_database(
 ):
     # Create database, if none
     if overwrite_database or not os.path.isfile(os.path.join(data_path, 'data.sqlite')):
-        cobmo.utils.create_database(
+        cobmo.utils_bes_cases.create_database(
             sqlite_path=os.path.join(data_path, 'data.sqlite'),
             sql_path=os.path.join(cobmo.config.cobmo_path, 'cobmo', 'database_schema.sql'),
             csv_path=data_path
@@ -44,18 +46,10 @@ def example():
 
     conn = connect_database()
 
-    building_storage_types = pd.read_sql(
-        """
-        select * from building_storage_types
-        """,
-        conn,
-        index_col='building_storage_type'
-        # Indexing to allow precise modification of the dataframe.
-        # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
-    )
+
 
     # Here make the changes to the data in the sql
-    rt_efficiency = 0.8
+    # rt_efficiency = 0.8
     # building_storage_types.at['sensible_thermal_storage_default', 'storage_round_trip_efficiency'] = rt_efficiency
 
     # print('\nbuilding_storage_types in main = ')
@@ -67,152 +61,105 @@ def example():
         battery_params_2016,
         battery_params_2020,
         battery_params_2025,
-        battery_params_2030
-    ) = cobmo.utils.retrieve_battery_parameters()
+        battery_params_2030,
+        energy_cost,
+        power_cost,
+        lifetime,
+        efficiency_dod
+    ) = cobmo.utils_bes_cases.retrieve_battery_parameters()
 
     # Retrieving the tech names from either of the DataFrames (they all have the same Indexes)
     techs = battery_params_2016.index
+    years = pd.Index(['2016', '2020', '2025', '2030'])
 
-
-
-
-    # Back to sql
-    building_storage_types.to_sql(
-        'building_storage_types',
-        con=conn,
-        if_exists='replace'
-        # index=False
+    # Initialize dataframes to store results
+    simple_payback_df = pd.DataFrame(
+        0.0,
+        index=techs,
+        columns=years
+    )
+    disc_payback_df = pd.DataFrame(
+        0.0,
+        index=techs,
+        columns=years
     )
 
-    # NB: All the changes to the sql need to be done BEFORE getting the building_model
-    building = get_building_model(conn=conn)
-
-    # Define initial state and control timeseries
-    state_initial = building.set_state_initial
-    control_timeseries_simulation = pd.DataFrame(
-        np.random.rand(len(building.set_timesteps), len(building.set_controls)),
-        building.set_timesteps,
-        building.set_controls
-    )
-
-    # Define augemented state space model matrices
-    building.define_augmented_model()
-
-    # Run simulation
-    (
-        state_timeseries_simulation,
-        output_timeseries_simulation
-    ) = building.simulate(
-        state_initial=state_initial,
-        control_timeseries=control_timeseries_simulation
-    )
-
-    # Run controller
-    controller = cobmo.controller_bes.Controller_bes(
-        conn=conn,
-        building=building
-    )
-    (
-        control_timeseries_controller,
-        state_timeseries_controller,
-        output_timeseries_controller,
-        storage_size,
-        optimum_obj
-    ) = controller.solve()
-
-    # -------------------------------------------------------------------------------------------------------------------
-
-    # Printing and Plotting
-
-    print_on_csv = 0  # set to 1 to print results in csv files (not tracked by the git)
-
-    # if storage_size is not None:
-    if 'storage' in building.building_scenarios['building_storage_type'][0]:
-        storage_size_kwh = storage_size * 3.6e-3 * 1.0e-3
-        print('\n----------------------------------------------')
-        print('\n>> Storage size = %.2f kWh' % storage_size_kwh)
-        print('\n>> Total opex + capex (storage)= {}'.format(format(optimum_obj, '.2f')))
-
-        # Calculating the savings and the payback time
-        costs_without_storage = 3.834195403e+02  # [SGD/day], 14 levels
-        savings_day = (costs_without_storage - optimum_obj)
-        storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
-        (disc_payback, simple_payback, payback_df) = cobmo.utils.discounted_payback_time(
-            building,
-            storage_size_kwh,
-            storage_investment_per_unit,
-            12.0,  # storage lifetime as input
-            savings_day,
-            save_plot_on_off='off',  # "on" to save the plot as .svg (not tracked by the git)
-            plotting_on_off=1  # set 1 for plotting
+    time_start_cycle = time.clock()
+    for t in techs:
+        building_storage_types = pd.read_sql(
+            """
+            select * from building_storage_types
+            """,
+            conn,
+            index_col='building_storage_type'
+            # Indexing to allow precise modification of the dataframe.
+            # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
         )
 
-        print('\n>> Storage type = %s'
-              '  |  Optimal storage size = %.2f'
-              '  | savings year 〜= %.2f'
-              '  | Discounted payback = %i\n'
-              % (
-                building.building_scenarios['building_storage_type'][0],
-                storage_size,
-                savings_day * 260.0,
-                disc_payback
-              )
-              )
-    else:
-        print('\n----------------------------------------------')
-        print('\n>> Total opex (baseline)= {}\n'.format(format(optimum_obj, '.2f')))
+        building_storage_types.at['battery_storage_default', 'storage_round_trip_efficiency'] = (
+            float(efficiency_dod.iloc[techs.str.contains(t), 0])
+        )
+        building_storage_types.at['battery_storage_default', 'storage_depth_of_discharge'] = (
+            float(efficiency_dod.iloc[techs.str.contains(t), 1])
+        )
 
-    if print_on_csv == 1:
-        if ((building.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                or (building.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
-                or (building.building_scenarios['building_storage_type'][0] == 'battery_storage_default')):
-
-            building.state_matrix.to_csv('delete_me_storage/bes/state_matrix_BES.csv')
-            building.control_matrix.to_csv('delete_me_storage/bes/control_matrix_BES.csv')
-            building.disturbance_matrix.to_csv('delete_me_storage/bes/disturbance_matrix_BES.csv')
-
-            building.state_output_matrix.to_csv('delete_me_storage/bes/state_output_matrix_BES.csv')
-            building.control_output_matrix.to_csv('delete_me_storage/bes/control_output_matrix_BES.csv')
-            building.disturbance_output_matrix.to_csv('delete_me_storage/bes/disturbance_output_matrix_BES.csv')
-
-            # np.savetxt(r'my_file_output_state_matrix.txt', building.state_matrix.values) # , fmt='%d'
-            state_timeseries_simulation.to_csv('delete_me_storage/bes/state_timeseries_simulation_BES.csv')
-
-            state_timeseries_controller.to_csv('delete_me_storage/bes/state_timeseries_controller_BES.csv')
-            date_main = dt.datetime.now()
-            filename_out_controller = (
-                    'output_timeseries_controller_BES' + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
-                        date_main.year, date_main.month, date_main.day, date_main.hour, date_main.minute,
-                        date_main.second)
-                    + '.csv'
+        for i in range(energy_cost.shape[1]):
+            building_storage_types.at['battery_storage_default', 'storage_investment_sgd_per_unit'] = (
+                float(energy_cost.iloc[techs.str.contains(t), i])
             )
-            output_timeseries_controller.to_csv('delete_me_storage/bes/' + filename_out_controller)
-
-            control_timeseries_controller.to_csv('delete_me_storage/bes/control_timeseries_controller_BES.csv')
-
-        else:
-            building.state_matrix.to_csv('delete_me/state_matrix.csv')
-            building.control_matrix.to_csv('delete_me/control_matrix.csv')
-            building.disturbance_matrix.to_csv('delete_me/disturbance_matrix.csv')
-
-            building.state_output_matrix.to_csv('delete_me/state_output_matrix.csv')
-            building.control_output_matrix.to_csv('delete_me/control_output_matrix.csv')
-            building.disturbance_output_matrix.to_csv('delete_me/disturbance_output_matrix.csv')
-
-            # np.savetxt(r'my_file_output_state_matrix.txt', building.state_matrix.values) # , fmt='%d'
-            state_timeseries_simulation.to_csv('delete_me/state_timeseries_simulation.csv')
-
-            state_timeseries_controller.to_csv('delete_me/state_timeseries_controller.csv')
-
-            date_main = dt.datetime.now()
-            filename_out_controller = (
-                    'output_timeseries_controller' + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
-                        date_main.year, date_main.month, date_main.day, date_main.hour, date_main.minute,
-                        date_main.second)
-                    + '.csv'
+            building_storage_types.at['battery_storage_default', 'storage_power_installation_cost'] = (
+                float(power_cost.iloc[techs.str.contains(t), i])
             )
-            output_timeseries_controller.to_csv('delete_me/' + filename_out_controller)
-            control_timeseries_controller.to_csv('delete_me/control_timeseries_controller.csv')
+
+            # Putting back into sql
+            building_storage_types.to_sql(
+                'building_storage_types',
+                con=conn,
+                if_exists='replace'
+                # index=False
+            )
+
+            # Get the building model
+            building = get_building_model(conn=conn)
+
+            # Run controller
+            controller = cobmo.controller_bes.Controller_bes(conn=conn, building=building)
+            (_, _, _, storage_size, optimum_obj) = controller.solve()
+
+            # Calculating the savings and the payback time
+            storage_size_kwh = storage_size * 3.6e-3 * 1.0e-3
+            costs_without_storage = 3.834195403e+02
+            savings_day = (
+                costs_without_storage
+                - optimum_obj
+            )
+
+            # Running discounted payback function
+            (disc_payback, simple_payback, _) = cobmo.utils_bes_cases.discounted_payback_time(
+                building,
+                storage_size_kwh,
+                lifetime.iloc[techs.str.contains(t), i],  # storage lifetime as input
+                savings_day,
+                save_plot_on_off='off',  # "on" to save the plot as .svg (not tracked by the git)
+                plotting_on_off=0  # set 1 for plotting
+            )
+
+            # Storing results
+            simple_payback_df.iloc[techs.str.contains(t), i] = simple_payback
+            disc_payback_df.iloc[techs.str.contains(t), i] = disc_payback
+
+    print("\nTime to solve all techs and all years: {:.2f} seconds".format(time.clock() - time_start_cycle))
+
+    date_main = datetime.datetime.now()
+    filename_simple = 'simple_payback_df' + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+                date_main.year, date_main.month, date_main.day,
+                date_main.hour, date_main.minute, date_main.second) + '.csv'
+    filename_disc = 'disc_payback_df' + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+        date_main.year, date_main.month, date_main.day,
+        date_main.hour, date_main.minute, date_main.second) + '.csv'
+
+    simple_payback_df.to_csv('results/' + filename_simple)
+    disc_payback_df.to_csv('results/' + filename_disc)
 
 
 if __name__ == "__main__":

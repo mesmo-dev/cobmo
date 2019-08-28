@@ -147,7 +147,6 @@ def retrieve_battery_parameters():
 def discounted_payback_time(
         building,
         storage_size,
-        storage_investment_per_unit,
         storage_lifetime,
         savings_day,
         save_plot_on_off,
@@ -166,6 +165,7 @@ def discounted_payback_time(
     pvaf = (1 - (1 + interest_rate) ** (-storage_lifetime)) / interest_rate  # Present value Annuity factor
 
     rt_efficiency = building.building_scenarios['storage_round_trip_efficiency'][0]
+    storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
     economic_horizon = 1000
     cumulative_discounted_savings = np.zeros(economic_horizon)
     yearly_discounted_savings = np.zeros(economic_horizon)
