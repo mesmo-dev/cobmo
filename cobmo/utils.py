@@ -275,6 +275,7 @@ def discounted_payback_time(
 
     return (
         discounted_payback,
+        simple_payback_time,
         payback_df
     )
 

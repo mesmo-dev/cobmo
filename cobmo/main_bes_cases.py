@@ -137,7 +137,7 @@ def example():
         costs_without_storage = 3.834195403e+02  # [SGD/day], 14 levels
         savings_day = (costs_without_storage - optimum_obj)
         storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
-        (payback, payback_df) = cobmo.utils.discounted_payback_time(
+        (disc_payback, simple_payback, payback_df) = cobmo.utils.discounted_payback_time(
             building,
             storage_size_kwh,
             storage_investment_per_unit,
@@ -155,7 +155,7 @@ def example():
                 building.building_scenarios['building_storage_type'][0],
                 storage_size,
                 savings_day * 260.0,
-                payback
+                disc_payback
               )
               )
     else:
