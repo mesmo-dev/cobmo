@@ -140,7 +140,8 @@ def discounted_payback_time(
         storage_investment_per_unit,
         storage_lifetime,
         savings_day,
-        save_plot_on_off
+        save_plot_on_off,
+        plotting_on_off
 ):
     # Activating seaborn theme
     sns.set()
@@ -192,82 +193,84 @@ def discounted_payback_time(
         )
     )
 
-    # Change default font of plots
-    # (http://jonathansoma.com/lede/data-studio/matplotlib/changing-fonts-in-matplotlib/)
-    # usable fonts: Control Panel\Appearance and Personalization\Fonts
-    plt.rcParams['font.serif'] = "Palatino Linotype"
-    plt.rcParams['font.family'] = "serif"
-    date_main = datetime.datetime.now()
+    if plotting_on_off == 1:
+        # Plotting
+        # Change default font of plots
+        # (http://jonathansoma.com/lede/data-studio/matplotlib/changing-fonts-in-matplotlib/)
+        # usable fonts: Control Panel\Appearance and Personalization\Fonts
+        plt.rcParams['font.serif'] = "Palatino Linotype"
+        plt.rcParams['font.family'] = "serif"
+        date_main = datetime.datetime.now()
 
-    fig, pb = plt.subplots(1, 1)
+        fig, pb = plt.subplots(1, 1)
 
-    pb.scatter(simple_payback_time, investment_cost, marker='o', facecolors='none', edgecolors='r', s=100,
-               label='Simple payback = %.0f' % simple_payback_time, zorder=10)
-    pb.plot(years_array, investment_cost_array, linestyle='--', color='black', alpha=0.7,
-            label='Investment')
-    pb.plot(years_array, yearly_discounted_savings, linestyle='-', color='#64BB8E', marker='^', alpha=1.0,
-            label='Yearly Disc. Savings')
-    pb.plot(years_array, cumulative_discounted_savings, linestyle='-', color='#0074BD', marker='s', alpha=1.0,
-            label='Cumulative Disc. Savings')
+        pb.scatter(simple_payback_time, investment_cost, marker='o', facecolors='none', edgecolors='r', s=100,
+                   label='Simple payback = %.0f' % simple_payback_time, zorder=10)
+        pb.plot(years_array, investment_cost_array, linestyle='--', color='black', alpha=0.7,
+                label='Investment')
+        pb.plot(years_array, yearly_discounted_savings, linestyle='-', color='#64BB8E', marker='^', alpha=1.0,
+                label='Yearly Disc. Savings')
+        pb.plot(years_array, cumulative_discounted_savings, linestyle='-', color='#0074BD', marker='s', alpha=1.0,
+                label='Cumulative Disc. Savings')
 
-    pb.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
-    pb.set_ylabel('SGD')
-    pb.set_xlabel('year')
-    # pb.xaxis.set_major_locator(MultipleLocator(5))
-    pb.xaxis.set_major_formatter(FormatStrFormatter('%i'))
-    pb.xaxis.set_minor_locator(MultipleLocator(1))
+        pb.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
+        pb.set_ylabel('SGD')
+        pb.set_xlabel('year')
+        # pb.xaxis.set_major_locator(MultipleLocator(5))
+        pb.xaxis.set_major_formatter(FormatStrFormatter('%i'))
+        pb.xaxis.set_minor_locator(MultipleLocator(1))
 
-    # major_ticks = np.arange(years_array[0], years_array[-1], 1)
-    # minor_ticks = np.arange(years_array[0], years_array[-1], 0.2)
-    # pb.set_xticks(major_ticks)
-    # pb.set_xticks(minor_ticks, minor=True)
-    # pb.set_yticks(major_ticks)
-    # pb.set_yticks(minor_ticks, minor=True)
+        # major_ticks = np.arange(years_array[0], years_array[-1], 1)
+        # minor_ticks = np.arange(years_array[0], years_array[-1], 0.2)
+        # pb.set_xticks(major_ticks)
+        # pb.set_xticks(minor_ticks, minor=True)
+        # pb.set_yticks(major_ticks)
+        # pb.set_yticks(minor_ticks, minor=True)
 
-    fig.legend(loc='center right', fontsize=9)
-    pb.grid(True, which='both')
-    pb.grid(which='minor', alpha=0.2)
-    # pb.grid(which='major', alpha=0.5)
+        fig.legend(loc='center right', fontsize=9)
+        pb.grid(True, which='both')
+        pb.grid(which='minor', alpha=0.2)
+        # pb.grid(which='major', alpha=0.5)
 
-    pb.text(
-        1, investment_cost*2.5/4,
-        'storage lifetime = %i\ninterest rate = %.2f\nstorage size = %.2f m3' 
-        '\nefficiency = %.2f' 
-        '\nSavings/year = %.1f SGD' 
-        '\nstorage capex per unit = %.1f' % (storage_lifetime, interest_rate, storage_size, float(rt_efficiency),
-                                             savings_one_year, float(storage_investment_per_unit)),
-        # style='italic',
-        fontsize=9,
-        bbox={'facecolor': 'grey', 'alpha': 0.5, 'pad': 5})
+        pb.text(
+            1, investment_cost*2.5/4,
+            'storage lifetime = %i\ninterest rate = %.2f\nstorage size = %.2f m3' 
+            '\nefficiency = %.2f' 
+            '\nSavings/year = %.1f SGD' 
+            '\nstorage capex per unit = %.1f' % (storage_lifetime, interest_rate, storage_size, float(rt_efficiency),
+                                                 savings_one_year, float(storage_investment_per_unit)),
+            # style='italic',
+            fontsize=9,
+            bbox={'facecolor': 'grey', 'alpha': 0.5, 'pad': 5})
 
-    if building.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-        if year == 70.0:
-            title = 'Sensible Thermal Storage | Not paying back'
-        else:
-            title = 'Sensible Thermal Storage | payback year = %i' % discounted_payback
-        filename = ('discounted_payback_STES'  # + building.building_scenarios['building_name'][0]
-                    + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
-                        date_main.year, date_main.month, date_main.day,
-                        date_main.hour, date_main.minute, date_main.second)
-                    )
-    elif building.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
-        if year == 70.0:
-            title = 'Battery Storage | Not paying back'
-        else:
-            title = 'Battery Storage | payback year = %i' % discounted_payback
-        filename = ('discounted_payback_BES'  # + building.building_scenarios['building_name'][0]
-                    + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
-                        date_main.year, date_main.month, date_main.day,
-                        date_main.hour, date_main.minute, date_main.second)
-                    )
+        if building.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            if year == 70.0:
+                title = 'Sensible Thermal Storage | Not paying back'
+            else:
+                title = 'Sensible Thermal Storage | payback year = %i' % discounted_payback
+            filename = ('discounted_payback_STES'  # + building.building_scenarios['building_name'][0]
+                        + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+                            date_main.year, date_main.month, date_main.day,
+                            date_main.hour, date_main.minute, date_main.second)
+                        )
+        elif building.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+            if year == 70.0:
+                title = 'Battery Storage | Not paying back'
+            else:
+                title = 'Battery Storage | payback year = %i' % discounted_payback
+            filename = ('discounted_payback_BES'  # + building.building_scenarios['building_name'][0]
+                        + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+                            date_main.year, date_main.month, date_main.day,
+                            date_main.hour, date_main.minute, date_main.second)
+                        )
 
-    fig.suptitle(title)
+        fig.suptitle(title)
 
-    if save_plot_on_off == 'on':
-        plt.savefig('figs/' + filename + '.svg', format='svg', dpi=1200)
-        # plt.savefig('figs/discounted_payback.svg', format='svg', dpi=1200)
+        if save_plot_on_off == 'on':
+            plt.savefig('figs/' + filename + '.svg', format='svg', dpi=1200)
+            # plt.savefig('figs/discounted_payback.svg', format='svg', dpi=1200)
 
-    plt.show()
+        plt.show()
 
     return (
         discounted_payback,
