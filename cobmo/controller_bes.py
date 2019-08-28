@@ -225,7 +225,7 @@ class Controller_bes(object):
         def rule_output_minimum(
                 problem,
                 timestep,
-                output
+                output_without_soc
         ):
             # if 'state_of_charge' in output:
             #     return (
@@ -236,31 +236,31 @@ class Controller_bes(object):
             #     )
             # else:
             return (
-                problem.variable_output_timeseries[timestep, output]
+                problem.variable_output_timeseries[timestep, output_without_soc]
                 >=
-                problem.parameter_output_timeseries_minimum[timestep, output]
+                problem.parameter_output_timeseries_minimum[timestep, output_without_soc]
             )
 
         def rule_output_minimum_timestep_first_soc(
                 problem,
                 timestep_first,
-                output
+                output_soc
         ):
             return (
-                    problem.variable_output_timeseries[timestep_first, output]
+                    problem.variable_output_timeseries[timestep_first, output_soc]
                     >=
-                    problem.parameter_output_timeseries_minimum[timestep_first, output]
+                    problem.parameter_output_timeseries_minimum[timestep_first, output_soc]
             )
 
         def rule_output_minimum_without_first_soc(
                 problem,
                 timestep_without_first,
-                output
+                output_soc
         ):
             return (
-                    problem.variable_output_timeseries[timestep_without_first, output]
+                    problem.variable_output_timeseries[timestep_without_first, output_soc]
                     >=
-                    problem.parameter_output_timeseries_minimum[timestep_without_first, output]
+                    problem.parameter_output_timeseries_minimum[timestep_without_first, output_soc]
                     * problem.variable_storage_size  # * fixed_storage_size
             )
 
