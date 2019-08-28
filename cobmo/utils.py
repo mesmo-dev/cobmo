@@ -126,11 +126,21 @@ def retrieve_battery_parameters():
             battery_params_2030.loc[:, 'power_installation_cost_2030'] * usd2sgd
     )
 
+    # Energy, power and lifetime dataframes
+    energy_cost = battery_params.loc[:, columns[columns.str.contains('energy')]]
+    power_cost = battery_params.loc[:, columns[columns.str.contains('power')]]
+    lifetime = battery_params.loc[:, columns[columns.str.contains('lifetime')]]
+    efficiency_dod = battery_params.iloc[:, [0, 1]]
+
     return (
         battery_params_2016,
         battery_params_2020,
         battery_params_2025,
-        battery_params_2030
+        battery_params_2030,
+        energy_cost,
+        power_cost,
+        lifetime,
+        efficiency_dod
     )
 
 
