@@ -141,7 +141,8 @@ def discounted_payback_time(
         storage_lifetime,
         savings_day,
         save_plot_on_off,
-        plotting_on_off
+        plotting_on_off,
+        figs_path='figs/'
 ):
     # Activating seaborn theme
     sns.set()
@@ -267,7 +268,7 @@ def discounted_payback_time(
         fig.suptitle(title)
 
         if save_plot_on_off == 'on':
-            plt.savefig('figs/' + filename + '.svg', format='svg', dpi=1200)
+            plt.savefig(figs_path + filename + '.svg', format='svg', dpi=1200)
             # plt.savefig('figs/discounted_payback.svg', format='svg', dpi=1200)
 
         plt.show()
