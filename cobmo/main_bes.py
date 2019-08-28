@@ -88,21 +88,7 @@ def example():
     building = get_building_model(conn=conn)
 
     # Define initial state and control timeseries
-    state_initial = pd.Series(
-        np.concatenate([
-            26.0  # in °C
-            * np.ones(sum(building.set_states.str.contains('temperature'))),
-            100.0  # in ppm
-            * np.ones(sum(building.set_states.str.contains('co2_concentration'))),
-            0.013  # in kg(water)/kg(air)
-            * np.ones(sum(building.set_states.str.contains('absolute_humidity'))),
-
-            # 0.0
-            10.0 * 1000.0 * float(building.building_scenarios['storage_depth_of_discharge'][0])
-            * np.ones(sum(building.set_states.str.contains('state_of_charge')))
-        ]),
-        building.set_states
-    )  # TODO: Move intial state defintion to building model
+    state_initial = building.set_state_initial
     control_timeseries_simulation = pd.DataFrame(
         np.random.rand(len(building.set_timesteps), len(building.set_controls)),
         building.set_timesteps,

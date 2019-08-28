@@ -402,6 +402,31 @@ class Building(object):
             ]),
             name='output_name'
         )
+
+        self.set_state_initial = pd.Series(
+            np.concatenate([
+                26.0  # in °C
+                * np.ones(sum(self.set_states.str.contains('temperature'))),
+                100.0  # in ppm
+                * np.ones(sum(self.set_states.str.contains('co2_concentration'))),
+                0.013  # in kg(water)/kg(air)
+                * np.ones(sum(self.set_states.str.contains('absolute_humidity'))),
+
+                0.0  # latent storage mass in [kWh]
+                * np.ones(sum(self.set_states.str.contains('_latent_thermal_storage_state_of_charge'))),
+
+                0.0  # sensible storage mass in [kg]
+                * np.ones(sum(self.set_states.str.contains('_sensible_thermal_storage_state_of_charge'))),
+
+                # Note that for the battery the initial state should be the product of DoD*Energy, but since the energy
+                # is set to 1.0 in the sql, giving the DoD equals giving DoD*WEnergy = DoD*1.
+                # The controller will then change the energy size of the battery storage.
+                self.building_scenarios['storage_depth_of_discharge'][0]  # battery storage in [kWh]
+                * np.ones(sum(self.set_states.str.contains('_sensible_thermal_storage_state_of_charge'))),
+            ]),
+            name='state_initial'
+        )
+
         self.set_timesteps = pd.Index(
             pd.date_range(
                 start=pd.to_datetime(self.building_scenarios['time_start'][0]),

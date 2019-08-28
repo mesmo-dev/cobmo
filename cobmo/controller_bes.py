@@ -117,24 +117,8 @@ class Controller_bes(object):
         # Define initial state
         self.problem.parameter_state_initial = pyo.Param(
             self.problem.set_states,
-            initialize=pd.Series(
-                np.concatenate([
-                    26.0  # in °C
-                    * np.ones(sum(self.building.set_states.str.contains('temperature'))),
-                    100.0  # in ppm
-                    * np.ones(sum(self.building.set_states.str.contains('co2_concentration'))),
-                    0.013  # in kg(water)/kg(air)
-                    * np.ones(sum(self.building.set_states.str.contains('absolute_humidity'))),
-                    float(
-                        fixed_storage_size * 1.01 *
-                        float(self.building.building_scenarios['storage_depth_of_discharge'][0])
-                    )  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
-                    # 0.0
-                    * np.ones(sum(building.set_states.str.contains('state_of_charge')))
-                ]),
-                self.building.set_states
-            ).to_dict()
-        )  # TODO: Move intial state defintion to building model
+            initialize=self.building.set_state_initial
+        )
 
         # Define variables - they are defined as matrixes
         self.problem.variable_state_timeseries = pyo.Var(
