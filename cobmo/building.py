@@ -3558,9 +3558,9 @@ class Building(object):
                         row_time,
                         self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
                     ] = (
-                        # 0.0
+                        0.0
                         + float(
-                                # self.parse_parameter(self.building_scenarios['storage_size']) *
+                                float(self.parse_parameter(self.building_scenarios['storage_size'])) *
                                 (1.0 - (self.parse_parameter(self.building_scenarios['storage_depth_of_discharge'])))
                         )  # Limiting battery minimum charge state
 

@@ -1,4 +1,4 @@
 building_storage_type,storage_initial_state_of_charge,storage_UA_external,storage_UA_thermocline,storage_cooling_temperature_bottom_layer,storage_cooling_temperature_top_layer,storage_cooling_ambient_temperature,storage_sensible_total_delta_temperature_layers,storage_round_trip_efficiency,storage_size,tank_aspect_ratio,heat_transfer_coefficient,storage_investment_sgd_per_unit,storage_power_installation_cost,storage_depth_of_discharge,unit_heat_transfer_coefficient,storage_size_unit,comments_storage_type_general
 sensible_thermal_storage_default,0.8,53.0,100.0,4.0,12.0,30.0,8.0,0.8,1.0,1.0,0.939124,300.0,,,W/(K*m2),Volume (m3),Initial share (as 0.xx) of the bottom layer if the storage tank compared to the whole mass of the tank.
 latent_thermal_storage_default,0.5,53.0,,,,30.0,,,2000.0,,,,,,,Mass (kg),Initial share (as 0.xx) of the PCM charge state.
-battery_storage_default,0.5,,,,,30.0,,0.95,1.0,,,300.0,,0.2,,Energy (kWh),Initial share (as 0.xx) of the BES charge state.
+battery_storage_default,0.5,,,,,30.0,,0.95,1.0,,,1.2,,0.2,,Energy (kWh),Initial share (as 0.xx) of the BES charge state.

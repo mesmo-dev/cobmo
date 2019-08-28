@@ -76,7 +76,6 @@ def example():
 
 
 
-
     # Back to sql
     building_storage_types.to_sql(
         'building_storage_types',
@@ -97,10 +96,10 @@ def example():
             * np.ones(sum(building.set_states.str.contains('co2_concentration'))),
             0.013  # in kg(water)/kg(air)
             * np.ones(sum(building.set_states.str.contains('absolute_humidity'))),
-            0.0  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
-            * np.ones(sum(building.set_states.str.contains('state_of_charge'))),
-            0.0  # Mass factor must be coherent with initial volume of bottom layer
-            * np.ones(sum(building.set_states.str.contains('storage_mass_factor')))
+
+            # 0.0
+            10.0 * 1000.0 * float(building.building_scenarios['storage_depth_of_discharge'][0])
+            * np.ones(sum(building.set_states.str.contains('state_of_charge')))
         ]),
         building.set_states
     )  # TODO: Move intial state defintion to building model
@@ -178,10 +177,11 @@ def example():
     print_on_csv = 0  # set to 1 to print results in csv files (not tracked by the git)
     plotting = 0  # set 1 for plotting (to save the plot set "save_plot_on_off" to on
 
-    if storage_size is not None:
-        print('\n----------------------------------------------')
-        print('\n>> Storage size = %.2f m3' % storage_size)
-        print('\n>> Total opex + capex (storage)= {}'.format(format(optimum_obj, '.2f')))
+    # if storage_size is not None:
+    if 'storage' in building.building_scenarios['building_storage_type'][0]:
+        # print('\n----------------------------------------------')
+        # print('\n>> Storage size = %.2f kWh' % storage_size)
+        # print('\n>> Total opex + capex (storage)= {}'.format(format(optimum_obj, '.2f')))
 
         if plotting == 1:
             # Calculating the savings and the payback time
