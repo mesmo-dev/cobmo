@@ -57,6 +57,7 @@ def example():
 
     # ==============================================================
     # Creating the battery storage cases
+    do_plotting = 0
     iterate = 1
     # case = 'reference'
     case = 'best'
@@ -86,7 +87,7 @@ def example():
         index=techs,
         columns=years
     )
-    disc_payback_df = pd.DataFrame(
+    discounted_payback_df = pd.DataFrame(
         0.0,
         index=techs,
         columns=years
@@ -144,7 +145,7 @@ def example():
                 )
 
                 # Running discounted payback function
-                (disc_payback, simple_payback, _) = cobmo.utils_bes_cases.discounted_payback_time(
+                (discounted_payback, simple_payback, _) = cobmo.utils_bes_cases.discounted_payback_time(
                     building,
                     storage_size_kwh,
                     lifetime.iloc[techs.str.contains(t), i],  # storage lifetime as input
@@ -155,22 +156,24 @@ def example():
 
                 # Storing results
                 simple_payback_df.iloc[techs.str.contains(t), i] = simple_payback
-                disc_payback_df.iloc[techs.str.contains(t), i] = disc_payback
+                discounted_payback_df.iloc[techs.str.contains(t), i] = discounted_payback
 
-        print("\nTime to solve all techs and all years: {:.2f} seconds".format(time.clock() - time_start_cycle))
+        print("\nTime to solve all techs and all years: {:.2f} minutes".format((time.clock() - time_start_cycle)/60.0))
 
         date_main = datetime.datetime.now()
-        filename_simple = 'simple_payback_' + case + ' - {:04d}_{:02d}_{:02d} - {:02d}_{:02d}_{:02d}'.format(
+        filename_simple = 'simple_payback_' + case + '-{:04d}_{:02d}_{:02d}-{:02d}_{:02d}_{:02d}'.format(
                     date_main.year, date_main.month, date_main.day,
                     date_main.hour, date_main.minute, date_main.second) + '.csv'
-        filename_disc = 'disc_payback_' + case + ' - {:04d}_{:02d}_{:02d} - {:02d}_{:02d}_{:02d}'.format(
+        filename_discounted = 'discounted_payback_' + case + '-{:04d}_{:02d}_{:02d}-{:02d}_{:02d}_{:02d}'.format(
             date_main.year, date_main.month, date_main.day,
             date_main.hour, date_main.minute, date_main.second) + '.csv'
 
         simple_payback_df.to_csv('results/results_bes_cases/' + case + '/' + filename_simple)
-        disc_payback_df.to_csv('results/results_bes_cases/' + case + '/' + filename_disc)
+        discounted_payback_df.to_csv('results/results_bes_cases/' + case + '/' + filename_discounted)
 
     print('ciao')
+            
+        
 
 
 if __name__ == "__main__":
