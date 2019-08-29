@@ -345,7 +345,7 @@ class Controller_bes(object):
         )
         self.problem.constraint_ahu_electric_power_output_maximum.activate()
 
-        lifetime = 20.0  # @change
+        lifetime = 150.0  # @change
 
         # Define objective rule
         def objective_rule(problem):
@@ -366,6 +366,7 @@ class Controller_bes(object):
                                         problem.variable_storage_size * 3.6e-6  # fixed_storage_size
                                         * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
                                         + float(building.building_scenarios['storage_power_installation_cost'][0]) * 8000.0
+                                        + float(building.building_scenarios['storage_fixed_cost'][0])
                                 )
 
             return objective_value
@@ -426,7 +427,7 @@ class Controller_bes(object):
         # Retrieving objective
         storage_size = self.problem.variable_storage_size.value
 
-        lifetime = 20.0  # @change
+        lifetime = 150.0  # @change
         # fixed_storage_size = 5000.0 * 1000.0 * 3.6e+3  # to Joule  # @change
         # storage_size = fixed_storage_size
 
@@ -446,6 +447,7 @@ class Controller_bes(object):
                                     self.problem.variable_storage_size.value * 3.6e-6  # fixed_storage_size
                                     * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
                                     + float(self.building.building_scenarios['storage_power_installation_cost'][0]) * 8000.0
+                                    + float(self.building.building_scenarios['storage_fixed_cost'][0])
                             )
 
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
@@ -467,6 +469,7 @@ class Controller_bes(object):
                             - (storage_size
                                * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0]) * 3.6e-6
                                + float(self.building.building_scenarios['storage_power_installation_cost'][0]) * 8000.0
+                               + float(self.building.building_scenarios['storage_fixed_cost'][0])
                                )
                           ) / 260.0 / lifetime
         else:
