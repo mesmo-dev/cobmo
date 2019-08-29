@@ -57,6 +57,9 @@ def example():
 
     # ==============================================================
     # Creating the battery storage cases
+    iterate = 1
+    # case = 'reference'
+    case = 'best'
     (
         battery_params_2016,
         battery_params_2020,
@@ -65,8 +68,13 @@ def example():
         energy_cost,
         power_cost,
         lifetime,
-        efficiency_dod
-    ) = cobmo.utils_bes_cases.retrieve_battery_parameters()
+        efficiency,
+        depth_of_discharge
+    ) = cobmo.utils_bes_cases.retrieve_battery_parameters(
+        case=case
+    )
+
+    lifetime.to_csv('results/results_bes_cases/' + case + '/lifetime_' + case + '.csv')
 
     # Retrieving the tech names from either of the DataFrames (they all have the same Indexes)
     techs = battery_params_2016.index
@@ -84,82 +92,85 @@ def example():
         columns=years
     )
 
-    time_start_cycle = time.clock()
-    for t in techs:
-        building_storage_types = pd.read_sql(
-            """
-            select * from building_storage_types
-            """,
-            conn,
-            index_col='building_storage_type'
-            # Indexing to allow precise modification of the dataframe.
-            # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
-        )
-
-        building_storage_types.at['battery_storage_default', 'storage_round_trip_efficiency'] = (
-            float(efficiency_dod.iloc[techs.str.contains(t), 0])
-        )
-        building_storage_types.at['battery_storage_default', 'storage_depth_of_discharge'] = (
-            float(efficiency_dod.iloc[techs.str.contains(t), 1])
-        )
-
-        for i in range(energy_cost.shape[1]):
-            building_storage_types.at['battery_storage_default', 'storage_investment_sgd_per_unit'] = (
-                float(energy_cost.iloc[techs.str.contains(t), i])
-            )
-            building_storage_types.at['battery_storage_default', 'storage_power_installation_cost'] = (
-                float(power_cost.iloc[techs.str.contains(t), i])
+    if iterate == 1:
+        time_start_cycle = time.clock()
+        for t in techs:
+            building_storage_types = pd.read_sql(
+                """
+                select * from building_storage_types
+                """,
+                conn,
+                index_col='building_storage_type'
+                # Indexing to allow precise modification of the dataframe.
+                # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
             )
 
-            # Putting back into sql
-            building_storage_types.to_sql(
-                'building_storage_types',
-                con=conn,
-                if_exists='replace'
-                # index=False
-            )
+            for i in range(energy_cost.shape[1]):
+                building_storage_types.at['battery_storage_default', 'storage_round_trip_efficiency'] = (
+                    float(efficiency.iloc[techs.str.contains(t), i])
+                )
+                building_storage_types.at['battery_storage_default', 'storage_depth_of_discharge'] = (
+                    float(depth_of_discharge.iloc[techs.str.contains(t), 1])
+                )
 
-            # Get the building model
-            building = get_building_model(conn=conn)
+                building_storage_types.at['battery_storage_default', 'storage_investment_sgd_per_unit'] = (
+                    float(energy_cost.iloc[techs.str.contains(t), i])
+                )
+                building_storage_types.at['battery_storage_default', 'storage_power_installation_cost'] = (
+                    float(power_cost.iloc[techs.str.contains(t), i])
+                )
 
-            # Run controller
-            controller = cobmo.controller_bes.Controller_bes(conn=conn, building=building)
-            (_, _, _, storage_size, optimum_obj) = controller.solve()
+                # Putting back into sql
+                building_storage_types.to_sql(
+                    'building_storage_types',
+                    con=conn,
+                    if_exists='replace'
+                    # index=False
+                )
 
-            # Calculating the savings and the payback time
-            storage_size_kwh = storage_size * 3.6e-3 * 1.0e-3
-            costs_without_storage = 3.834195403e+02
-            savings_day = (
-                costs_without_storage
-                - optimum_obj
-            )
+                # Get the building model
+                building = get_building_model(conn=conn)
 
-            # Running discounted payback function
-            (disc_payback, simple_payback, _) = cobmo.utils_bes_cases.discounted_payback_time(
-                building,
-                storage_size_kwh,
-                lifetime.iloc[techs.str.contains(t), i],  # storage lifetime as input
-                savings_day,
-                save_plot_on_off='off',  # "on" to save the plot as .svg (not tracked by the git)
-                plotting_on_off=0  # set 1 for plotting
-            )
+                # Run controller
+                controller = cobmo.controller_bes.Controller_bes(conn=conn, building=building)
+                (_, _, _, storage_size, optimum_obj) = controller.solve()
 
-            # Storing results
-            simple_payback_df.iloc[techs.str.contains(t), i] = simple_payback
-            disc_payback_df.iloc[techs.str.contains(t), i] = disc_payback
+                # Calculating the savings and the payback time
+                storage_size_kwh = storage_size * 3.6e-3 * 1.0e-3
+                costs_without_storage = 3.834195403e+02
+                savings_day = (
+                    costs_without_storage
+                    - optimum_obj
+                )
 
-    print("\nTime to solve all techs and all years: {:.2f} seconds".format(time.clock() - time_start_cycle))
+                # Running discounted payback function
+                (disc_payback, simple_payback, _) = cobmo.utils_bes_cases.discounted_payback_time(
+                    building,
+                    storage_size_kwh,
+                    lifetime.iloc[techs.str.contains(t), i],  # storage lifetime as input
+                    savings_day,
+                    save_plot_on_off='off',  # "on" to save the plot as .svg (not tracked by the git)
+                    plotting_on_off=0  # set 1 for plotting
+                )
 
-    date_main = datetime.datetime.now()
-    filename_simple = 'simple_payback_df' + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
-                date_main.year, date_main.month, date_main.day,
-                date_main.hour, date_main.minute, date_main.second) + '.csv'
-    filename_disc = 'disc_payback_df' + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
-        date_main.year, date_main.month, date_main.day,
-        date_main.hour, date_main.minute, date_main.second) + '.csv'
+                # Storing results
+                simple_payback_df.iloc[techs.str.contains(t), i] = simple_payback
+                disc_payback_df.iloc[techs.str.contains(t), i] = disc_payback
 
-    simple_payback_df.to_csv('results/' + filename_simple)
-    disc_payback_df.to_csv('results/' + filename_disc)
+        print("\nTime to solve all techs and all years: {:.2f} seconds".format(time.clock() - time_start_cycle))
+
+        date_main = datetime.datetime.now()
+        filename_simple = 'simple_payback_' + case + ' - {:04d}_{:02d}_{:02d} - {:02d}_{:02d}_{:02d}'.format(
+                    date_main.year, date_main.month, date_main.day,
+                    date_main.hour, date_main.minute, date_main.second) + '.csv'
+        filename_disc = 'disc_payback_' + case + ' - {:04d}_{:02d}_{:02d} - {:02d}_{:02d}_{:02d}'.format(
+            date_main.year, date_main.month, date_main.day,
+            date_main.hour, date_main.minute, date_main.second) + '.csv'
+
+        simple_payback_df.to_csv('results/results_bes_cases/' + case + '/' + filename_simple)
+        disc_payback_df.to_csv('results/results_bes_cases/' + case + '/' + filename_disc)
+
+    print('ciao')
 
 
 if __name__ == "__main__":

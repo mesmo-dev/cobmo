@@ -31,11 +31,13 @@ logger = logging.getLogger('pyomo.util.infeasible')
 logger.setLevel(logging.INFO)
 
 
-def retrieve_battery_parameters():
+def retrieve_battery_parameters(
+        case='reference'
+):
     cobmo_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
     data_path = os.path.join(cobmo_path, 'data')
     storage_data_path = os.path.join(data_path, 'storage_data/')
-    file_battery_parameters = storage_data_path + 'battery_storage_types.csv'
+    file_battery_parameters = storage_data_path + 'battery_storage_types_' + case + '.csv'
 
     battery_params = pd.read_csv(file_battery_parameters, index_col=0)
     columns = battery_params.columns
@@ -130,7 +132,8 @@ def retrieve_battery_parameters():
     energy_cost = battery_params.loc[:, columns[columns.str.contains('energy')]]
     power_cost = battery_params.loc[:, columns[columns.str.contains('power')]]
     lifetime = battery_params.loc[:, columns[columns.str.contains('lifetime')]]
-    efficiency_dod = battery_params.iloc[:, [0, 1]]
+    efficiency = battery_params.loc[:, columns[columns.str.containts('round_trip_efficiency')]]
+    dod = battery_params.loc[:, columns[columns.str.containts('depth_of_discharge')]]
 
     return (
         battery_params_2016,
@@ -140,7 +143,8 @@ def retrieve_battery_parameters():
         energy_cost,
         power_cost,
         lifetime,
-        efficiency_dod
+        efficiency,
+        dod
     )
 
 
