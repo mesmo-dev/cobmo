@@ -57,8 +57,9 @@ def example():
 
     # ==============================================================
     # Creating the battery storage cases
-    do_plotting = 0
-    iterate = 1
+    do_plotting = 1
+    payback_type = 'simple'
+    iterate = 0
     # case = 'reference'
     case = 'best'
     (
@@ -161,19 +162,34 @@ def example():
         print("\nTime to solve all techs and all years: {:.2f} minutes".format((time.clock() - time_start_cycle)/60.0))
 
         date_main = datetime.datetime.now()
-        filename_simple = 'simple_payback_' + case + '-{:04d}_{:02d}_{:02d}-{:02d}_{:02d}_{:02d}'.format(
+        filename_simple = 'simple_payback_' + case + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
                     date_main.year, date_main.month, date_main.day,
                     date_main.hour, date_main.minute, date_main.second) + '.csv'
-        filename_discounted = 'discounted_payback_' + case + '-{:04d}_{:02d}_{:02d}-{:02d}_{:02d}_{:02d}'.format(
+        filename_discounted = 'discounted_payback_' + case + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
             date_main.year, date_main.month, date_main.day,
             date_main.hour, date_main.minute, date_main.second) + '.csv'
 
         simple_payback_df.to_csv('results/results_bes_cases/' + case + '/' + filename_simple)
         discounted_payback_df.to_csv('results/results_bes_cases/' + case + '/' + filename_discounted)
 
-    print('ciao')
-            
-        
+    if do_plotting == 1:
+        filepath_read = (
+                'results/results_bes_cases/'
+                + case
+                + '/'
+                + payback_type
+                + '_payback_best - 2019_08_29 - 14_33_26.csv'
+        )
+
+        savepath = 'results/results_bes_cases/best/plots-2019-08-29_14-33-26/'
+
+        cobmo.utils_bes_cases.plot_battery_cases(
+            case,
+            'simple',
+            filepath_read,
+            savepath,
+            save_plots='summary'
+        )
 
 
 if __name__ == "__main__":

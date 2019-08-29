@@ -20,8 +20,9 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import datetime
 import seaborn as sns
-from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
-                               AutoMinorLocator)
+from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,AutoMinorLocator)
+import matplotlib.cm as cm
+
 
 """ 
 Module with diagnostic utilities for infeasible models. 
@@ -29,6 +30,115 @@ Module with diagnostic utilities for infeasible models.
 """
 logger = logging.getLogger('pyomo.util.infeasible')
 logger.setLevel(logging.INFO)
+
+# cobmo_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
+# data_path = os.path.join(cobmo_path, 'data')
+# cobmo_cobmo_path = os.path.join(cobmo_path, 'cobmo')
+
+
+def plot_battery_cases(
+        case,
+        payback_type,
+        filepath_read,
+        save_path,
+        save_plots='summary'  # 'summary + each'
+):
+    """
+
+    :param case:
+    :param payback_type:
+    :param filepath_read:
+    :param save_path:
+    :param save_plots:
+    :return:
+    """
+    sns.set()
+    plt.rcParams['font.serif'] = "Palatino Linotype"
+    plt.rcParams['font.family'] = "serif"
+
+    results = pd.read_csv(filepath_read, index_col='battery_technology')
+    years = results.columns
+    x_array = np.arange(1, years.shape[0]+1, 1)
+    techs = results.index
+    colors = cm.Paired(np.linspace(0, 1, techs.shape[0]))
+    # >> Many color maps here:
+    # https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html
+
+    fig2, all_techs = plt.subplots(1, 1)
+
+    for i in np.arange(0, techs.shape[0], 1):
+        if save_plots == 'each':
+            fig, one_tech = plt.subplots(1, 1)
+            one_tech.scatter(
+                x_array,
+                np.array(results.iloc[i, :]),
+                marker='o', facecolors='none', edgecolors=colors[i], s=70  # '#0074BD'
+            )
+            one_tech.plot(
+                x_array,
+                np.array(results.iloc[i, :]),
+                linestyle='-', color=colors[i],
+                label='case: %s | payback: %s' % (case, payback_type)
+            )
+            one_tech.set_ylabel('Payback year')
+            # one_tech.set_xlabel('year')
+            fig.legend(loc='upper right', fontsize=9)
+
+            one_tech.grid(True, which='both')
+            one_tech.grid(which='minor', alpha=0.5)
+
+            title = 'Technology: %s' % techs[i]
+            fig.suptitle(title)
+
+            filename = case + '_case-' + payback_type + '_payback-' + techs[i]
+            fig.savefig(save_path + filename + '.svg', format='svg', dpi=1200)
+
+            # Filling in the global plot
+            all_techs.scatter(
+                x_array,
+                np.array(results.iloc[i, :]),
+                marker='o', facecolors='none', edgecolors=colors[i], s=70  # facecolors='none', edgecolors='#0074BD',
+            )
+            all_techs.plot(
+                x_array,
+                np.array(results.iloc[i, :]),
+                linestyle='-', color=colors[i], label='%s' % techs[i]  # color='#0074BD',
+            )
+
+        elif save_plots == 'summary':
+            # Filling in the global plot
+            all_techs.scatter(
+                x_array,
+                np.array(results.iloc[i, :]),
+                marker='o', facecolors='none', edgecolors=colors[i], s=70  # facecolors='none', edgecolors='#0074BD',
+            )
+            all_techs.plot(
+                x_array,
+                np.array(results.iloc[i, :]),
+                linestyle='-', color=colors[i], label='%s' % techs[i]  # color='#0074BD',
+            )
+
+    all_techs.legend(loc='upper right', fontsize=9)
+    all_techs.set_ylabel('years')
+
+    # Changing names in the x axis
+    all_techs.set_xticks(x_array)
+    labels = [item.get_text() for item in all_techs.get_xticklabels()]
+    for y in np.arange(0, len(x_array), 1):
+        labels[y] = years[y]
+    all_techs.set_xticklabels(labels)
+
+    # Title and saving
+    title = 'Case: %s  |  Payback:  %s' % (case, payback_type)
+    fig2.suptitle(title)
+    plt.show()
+
+    filename2 = case + '_case-' + payback_type + '_payback-all_techs'
+    fig2.savefig(save_path + filename2 + '.svg', format='svg', dpi=1200)
+
+
+
+
 
 
 def retrieve_battery_parameters(
@@ -132,8 +242,8 @@ def retrieve_battery_parameters(
     energy_cost = battery_params.loc[:, columns[columns.str.contains('energy')]]
     power_cost = battery_params.loc[:, columns[columns.str.contains('power')]]
     lifetime = battery_params.loc[:, columns[columns.str.contains('lifetime')]]
-    efficiency = battery_params.loc[:, columns[columns.str.containts('round_trip_efficiency')]]
-    dod = battery_params.loc[:, columns[columns.str.containts('depth_of_discharge')]]
+    efficiency = battery_params.loc[:, columns[columns.str.contains('round_trip_efficiency')]]
+    dod = battery_params.loc[:, columns[columns.str.contains('depth_of_discharge')]]
 
     return (
         battery_params_2016,
