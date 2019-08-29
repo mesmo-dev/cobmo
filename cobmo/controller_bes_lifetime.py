@@ -6,7 +6,7 @@ import pyomo.environ as pyo
 import time as time
 import cobmo.utils as utls
 
-class Controller_bes(object):
+class Controller_bes_lifetime(object):
     """Controller object to store the model predictive control problem."""
 
     def __init__(
