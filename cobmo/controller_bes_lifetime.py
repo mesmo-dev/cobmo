@@ -345,7 +345,6 @@ class Controller_bes(object):
         )
         self.problem.constraint_ahu_electric_power_output_maximum.activate()
 
-        lifetime = 150.0  # @change
 
         # Define objective rule
         def objective_rule(problem):
@@ -356,7 +355,7 @@ class Controller_bes(object):
                             (
                                 problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
                                 * problem.parameter_electricity_prices[timestep]
-                            ) * 14.0 * 260.0 * lifetime
+                            ) * 14.0 * 260.0 * float(building.building_scenarios['storage_lifetime'][0])
                             # 14 levels * 260 working days per year * 15 years
                     )
 
@@ -427,7 +426,6 @@ class Controller_bes(object):
         # Retrieving objective
         storage_size = self.problem.variable_storage_size.value
 
-        lifetime = 150.0  # @change
         # fixed_storage_size = 5000.0 * 1000.0 * 3.6e+3  # to Joule  # @change
         # storage_size = fixed_storage_size
 
@@ -438,7 +436,7 @@ class Controller_bes(object):
                         (
                             float(self.problem.variable_output_timeseries[timestep, output_power].value)
                             * float(self.problem.parameter_electricity_prices[timestep]) / 1000 / 2
-                        ) * 14.0 * 260.0 * lifetime
+                        ) * 14.0 * 260.0 * float(self.building.building_scenarios['storage_lifetime'][0])
                         # 14 levels * 260 working days per year * 15 years
                 )
 
@@ -471,9 +469,9 @@ class Controller_bes(object):
                                + float(self.building.building_scenarios['storage_power_installation_cost'][0]) * 8000.0
                                + float(self.building.building_scenarios['storage_fixed_cost'][0])
                                )
-                          ) / 260.0 / lifetime
+                          ) / 260.0 / float(self.building.building_scenarios['storage_lifetime'][0])
         else:
-            optimum_obj = optimum_obj / 260.0 / lifetime
+            optimum_obj = optimum_obj / 260.0 / float(self.building.building_scenarios['storage_lifetime'][0])
 
         return (
             control_timeseries,
