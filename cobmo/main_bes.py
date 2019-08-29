@@ -63,18 +63,6 @@ def example():
 
     # ==============================================================
     # Creating the battery storage cases
-    (
-        battery_params_2016,
-        battery_params_2020,
-        battery_params_2025,
-        battery_params_2030
-    ) = cobmo.utils.retrieve_battery_parameters()
-
-    # Retrieving the tech names from either of the DataFrames (they all have the same Indexes)
-    techs = battery_params_2016.index
-
-
-
 
     # Back to sql
     building_storage_types.to_sql(
