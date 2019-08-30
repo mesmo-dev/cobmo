@@ -7,11 +7,12 @@ import sqlite3
 import numpy as np
 import pandas as pd
 import cobmo.building
-import cobmo.controller_bes
+import cobmo.controller_bes_lifetime
 import cobmo.utils_bes_cases
 import cobmo.config
 import datetime
 import time as time
+import errno
 
 
 
@@ -46,20 +47,15 @@ def example():
 
     conn = connect_database()
 
+    cobmo_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
+    data_path = os.path.join(cobmo_path, 'data')
+    cobmo_cobmo_path = os.path.join(cobmo_path, 'cobmo')
 
-
-    # Here make the changes to the data in the sql
-    # rt_efficiency = 0.8
-    # building_storage_types.at['sensible_thermal_storage_default', 'storage_round_trip_efficiency'] = rt_efficiency
-
-    # print('\nbuilding_storage_types in main = ')
-    # print(building_storage_types)
-
-    # ==============================================================
     # Creating the battery storage cases
     do_plotting = 1
-    payback_type = 'simple'
-    iterate = 0
+    simulate = 1
+
+    # Definition of the IRENA case
     # case = 'reference'
     case = 'best'
     (
@@ -76,10 +72,19 @@ def example():
         case=case
     )
 
-    lifetime.to_csv('results/results_bes_cases/' + case + '/lifetime_' + case + '.csv')
+    # lifetime.to_csv('results/results_bes_cases/' + case + '/lifetime_' + case + '.csv')
 
     # Retrieving the tech names from either of the DataFrames (they all have the same Indexes)
     techs = battery_params_2016.index
+
+    # # Slicing for simulating on less technologies (shorter run time)
+    # techs = techs[0:2]
+    # energy_cost = energy_cost.iloc[0:2, :]
+    # power_cost = energy_cost.iloc[0:2, :]
+    # lifetime = energy_cost.iloc[0:2, :]
+    # efficiency = energy_cost.iloc[0:2, :]
+    # depth_of_discharge = energy_cost.iloc[0:2, :]
+
     years = pd.Index(['2016', '2020', '2025', '2030'])
 
     # Initialize dataframes to store results
@@ -93,8 +98,13 @@ def example():
         index=techs,
         columns=years
     )
+    storage_size_df = pd.DataFrame(
+        0.0,
+        index=techs,
+        columns=years
+    )
 
-    if iterate == 1:
+    if simulate == 1:
         time_start_cycle = time.clock()
         for t in techs:
             building_storage_types = pd.read_sql(
@@ -107,7 +117,7 @@ def example():
                 # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
             )
 
-            for i in range(energy_cost.shape[1]):
+            for i in range(years.shape[0]):
                 building_storage_types.at['battery_storage_default', 'storage_round_trip_efficiency'] = (
                     float(efficiency.iloc[techs.str.contains(t), i])
                 )
@@ -120,6 +130,9 @@ def example():
                 )
                 building_storage_types.at['battery_storage_default', 'storage_power_installation_cost'] = (
                     float(power_cost.iloc[techs.str.contains(t), i])
+                )
+                building_storage_types.at['battery_storage_default', 'storage_lifetime'] = (
+                    float(lifetime.iloc[techs.str.contains(t), i])
                 )
 
                 # Putting back into sql
@@ -134,7 +147,7 @@ def example():
                 building = get_building_model(conn=conn)
 
                 # Run controller
-                controller = cobmo.controller_bes.Controller_bes(conn=conn, building=building)
+                controller = cobmo.controller_bes_lifetime.Controller_bes_lifetime(conn=conn, building=building)
                 (_, _, _, storage_size, optimum_obj) = controller.solve()
 
                 # Calculating the savings and the payback time
@@ -158,37 +171,70 @@ def example():
                 # Storing results
                 simple_payback_df.iloc[techs.str.contains(t), i] = simple_payback
                 discounted_payback_df.iloc[techs.str.contains(t), i] = discounted_payback
+                storage_size_df.iloc[techs.str.contains(t), i] = format(storage_size_kwh, '.2f')
 
-        print("\nTime to solve all techs and all years: {:.2f} minutes".format((time.clock() - time_start_cycle)/60.0))
+        # Printing loop time
+        print("\nCase run: %s"
+              "\nTime to solve all techs and all years: %.2f minutes" % (case, (time.clock() - time_start_cycle)/60.0))
 
+        # Saving files
         date_main = datetime.datetime.now()
-        filename_simple = 'simple_payback_' + case + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
-                    date_main.year, date_main.month, date_main.day,
-                    date_main.hour, date_main.minute, date_main.second) + '.csv'
-        filename_discounted = 'discounted_payback_' + case + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+        date_hr_min_sec = '{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
             date_main.year, date_main.month, date_main.day,
-            date_main.hour, date_main.minute, date_main.second) + '.csv'
+            date_main.hour, date_main.minute, date_main.second)
+        save_path = os.path.join(
+            cobmo_cobmo_path,
+            'results',
+            'results_bes_cases',
+            case,
+            case + '_' + date_hr_min_sec,
+            # case + '_simple_payback_' + date_hr_min_sec
+        )
+        if not os.path.exists(save_path):
+            try:
+                os.makedirs(save_path)
+            except OSError as exc:  # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
 
-        simple_payback_df.to_csv('results/results_bes_cases/' + case + '/' + filename_simple)
-        discounted_payback_df.to_csv('results/results_bes_cases/' + case + '/' + filename_discounted)
+        filename_simple = case + '_simple_payback_' + date_hr_min_sec + '.csv'
+        filename_discounted = case + '_discounted_payback_' + date_hr_min_sec + '.csv'
+        filename_storage = case + '_storage_size_' + date_hr_min_sec + '.csv'
 
-    if do_plotting == 1:
-        filepath_read = (
-                'results/results_bes_cases/'
-                + case
-                + '/'
-                + payback_type
-                + '_payback_best - 2019_08_29 - 14_33_26.csv'
+        simple_payback_df.to_csv(os.path.join(save_path, filename_simple))
+        discounted_payback_df.to_csv(os.path.join(save_path, filename_discounted))
+        storage_size_df.to_csv(os.path.join(save_path, filename_storage))
+        
+        if do_plotting == 1:  # Simulating adn plotting at the same time
+            filepath_read = os.path.join(save_path, filename_storage)
+            filename_plot = case + '_plot_' + date_hr_min_sec
+            
+            cobmo.utils_bes_cases.plot_battery_cases_storage_sizes(
+                case,
+                filepath_read,
+                save_path,
+                filename_plot
+            )
+
+    if do_plotting == 1 and simulate == 0:  # Only plotting
+
+        filepath_read = (                                                   # << INPUT BY HAND
+            'results/results_bes_cases/best/best_2019-08-30_10-47-00/best_storage_size_2019-08-30_10-47-00.csv'
         )
 
-        savepath = 'results/results_bes_cases/best/plots-2019-08-29_14-33-26/'
+        save_path = (
+            'results/results_bes_cases/best/best_2019-08-30_10-47-00/'      # << INPUT BY HAND
+        )
 
-        cobmo.utils_bes_cases.plot_battery_cases(
+        filename_plot = case + '_plot_' + (
+            '2019-08-30_10-47-00'                                           # << INPUT BY HAND
+        )
+
+        cobmo.utils_bes_cases.plot_battery_cases_storage_sizes(
             case,
-            'simple',
             filepath_read,
-            savepath,
-            save_plots='summary'
+            save_path,
+            filename_plot
         )
 
 

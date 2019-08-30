@@ -31,9 +31,70 @@ Module with diagnostic utilities for infeasible models.
 logger = logging.getLogger('pyomo.util.infeasible')
 logger.setLevel(logging.INFO)
 
-# cobmo_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
-# data_path = os.path.join(cobmo_path, 'data')
-# cobmo_cobmo_path = os.path.join(cobmo_path, 'cobmo')
+
+def plot_battery_cases_storage_sizes(
+        case,
+        filepath_read,
+        save_path,
+        filename
+):
+    """
+
+    :param case:
+    :param payback_type:
+    :param filepath_read:
+    :param save_path:
+    :param save_plots:
+    :return:
+    """
+    sns.set()
+    plt.rcParams['font.serif'] = "Palatino Linotype"
+    plt.rcParams['font.family'] = "serif"
+
+    results = pd.read_csv(filepath_read, index_col='battery_technology')
+    years = results.columns
+    techs = results.index
+    x_array = np.arange(1, years.shape[0]+1, 1)
+    y_array = np.arange(1, techs.shape[0]+1, 1)
+    colors = cm.Paired(np.linspace(0, 1, techs.shape[0]))
+    # >> Many color maps here:
+    # https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html
+
+    fig2, all_techs = plt.subplots(1, 1)
+
+    for t in np.arange(0, techs.shape[0], 1):
+        for y in np.arange(0, len(x_array), 1):
+            all_techs.scatter(
+                x_array[y],
+                y_array[t],
+                marker='o', facecolors=colors[t], edgecolors='none', s=results.iloc[t, y], alpha=0.8,
+                # label='%s' % techs[t]
+            )
+
+    # all_techs.legend(loc='upper right', fontsize=9)  # TODO: add labels per tech
+    # potential solution for adding labels properly:
+    # https://stackoverflow.com/questions/13588920/stop-matplotlib-repeating-labels-in-legend
+
+    # Changing names in the x axis
+    all_techs.set_xticks(x_array)
+    x_labels = [item.get_text() for item in all_techs.get_xticklabels()]
+    for y in np.arange(0, len(x_array), 1):
+        x_labels[y] = years[y]
+    all_techs.set_xticklabels(x_labels)
+
+    all_techs.set_yticks(y_array)
+    y_labels = [item.get_text() for item in all_techs.get_yticklabels()]
+    for i in np.arange(0, len(y_array), 1):
+        y_labels[i] = techs[i]
+    all_techs.set_yticklabels(y_labels)
+
+    # Title and saving
+    title = 'Case: %s' % case
+    fig2.suptitle(title)
+    plt.show()
+
+    fig2.savefig(save_path + '/' + filename + '.svg', format='svg', dpi=1200)
+    # fig2.savefig(save_path + filename2 + '.pdf')
 
 
 def plot_battery_cases(
