@@ -94,7 +94,7 @@ def plot_battery_cases_storage_sizes(
     plt.show()
 
     fig2.savefig(save_path + '/' + filename + '.svg', format='svg', dpi=1200)
-    # fig2.savefig(save_path + filename2 + '.pdf')
+    fig2.savefig(save_path + '/' + filename + '.pdf')
 
 
 def plot_battery_cases(
