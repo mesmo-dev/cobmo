@@ -1,5 +1,13 @@
 """
-Building model main function definitions
+Use this script for single simulations of BATTERY storage.
+
+ATTENTION !! Keep in mind the following points.
+- The solution depends on teh lifetime assigned to the storage in the sql (file: building_storage_types.csv)
+- Changing the lifetime changes the results
+- The lifetime has to be usually very high (100 or 150) to have storage installed.
+
+Hence, teh results from this script are not totally coherent from an economic analysis point of view.
+
 """
 
 import os
@@ -54,13 +62,6 @@ def example():
         # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
     )
 
-    # Here make the changes to the data in the sql
-    rt_efficiency = 0.8
-    # building_storage_types.at['sensible_thermal_storage_default', 'storage_round_trip_efficiency'] = rt_efficiency
-
-    # print('\nbuilding_storage_types in main = ')
-    # print(building_storage_types)
-
     # ==============================================================
     # Creating the battery storage cases
 
@@ -112,7 +113,9 @@ def example():
 
     # Printing and Plotting
 
-    print_on_csv = 0  # set to 1 to print results in csv files (not tracked by the git)
+    print_on_csv = 0
+    plotting = 1
+    save_plot = 0
 
     # if storage_size is not None:
     if 'storage' in building.building_scenarios['building_storage_type'][0]:
@@ -124,15 +127,12 @@ def example():
         # Calculating the savings and the payback time
         costs_without_storage = 3.834195403e+02  # [SGD/day], 14 levels
         savings_day = (costs_without_storage - optimum_obj)
-        storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
         (payback, payback_df) = cobmo.utils.discounted_payback_time(
             building,
             storage_size_kwh,
-            storage_investment_per_unit,
-            12.0,  # storage lifetime as input
             savings_day,
-            save_plot_on_off='off',  # "on" to save the plot as .svg (not tracked by the git)
-            plotting_on_off=1  # set 1 for plotting
+            save_plot_on_off=save_plot,
+            plotting_on_off=plotting
         )
 
         print('\n>> Storage type = %s'
