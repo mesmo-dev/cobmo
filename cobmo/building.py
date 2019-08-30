@@ -18,13 +18,6 @@ class Building(object):
 
     def __init__(self, conn, scenario_name):
         # Load building information from database
-        self.battery_storage_types = pd.read_sql(
-            """
-            select * from battery_storage_types
-            """,
-            conn,
-            index_col='battery_technology'
-        )
 
         self.electricity_prices = pd.read_sql(
             """
@@ -149,22 +142,18 @@ class Building(object):
                     & (self.building_scenarios['humidity_model_type'][0] != '')
                     ] + '_absolute_humidity',
 
-
-                # (self.building_scenarios['building_name'] + '_tank_temperature' if(
-                #   (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                #   ) else None),
-
-                # Sensible SOC
+                # Storage state variables (state of charge
+                # Sensible
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
                     ] + '_sensible_thermal_storage_state_of_charge',
 
-                # Latent SOC
+                # Latent
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'latent_thermal_storage_default')
                 ] + '_latent_thermal_storage_state_of_charge',
 
-                # Battery SOC
+                # Battery
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
                 ] + '_battery_storage_state_of_charge'
@@ -317,7 +306,7 @@ class Building(object):
                     self.building_zones['hvac_tu_type'] != ''
                     ] + '_tu_cool_electric_power',
 
-                # Storage STATE output - state_of_charge
+                # Storage state variables in output (state of charge
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
                 ] + '_sensible_thermal_storage_state_of_charge',
@@ -329,6 +318,7 @@ class Building(object):
                 ] + '_battery_storage_state_of_charge',
 
                 # Defining the DISCHARGE control variables also in the outputs. One per zone.
+                # TODO: delete this as it is only for tracking behaviours in teh output csv files.
                 # # Heating
                 # ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_heat_thermal_power') if (
                 #     (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
@@ -338,7 +328,6 @@ class Building(object):
                 # ) else None),
 
                 # Cooling
-
                 # Sensible DISCHARGE
                 ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_ahu_cool_thermal_power') if (
                     (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
@@ -411,16 +400,15 @@ class Building(object):
                 * np.ones(sum(self.set_states.str.contains('co2_concentration'))),
                 0.013  # in kg(water)/kg(air)
                 * np.ones(sum(self.set_states.str.contains('absolute_humidity'))),
-
                 0.0  # latent storage mass in [kWh]
                 * np.ones(sum(self.set_states.str.contains('_latent_thermal_storage_state_of_charge'))),
-
                 0.0  # sensible storage mass in [kg]
                 * np.ones(sum(self.set_states.str.contains('_sensible_thermal_storage_state_of_charge'))),
 
                 # Note that for the battery the initial state should be the product of DoD*Energy, but since the energy
                 # is set to 1.0 in the sql, giving the DoD equals giving DoD*WEnergy = DoD*1.
                 # The controller will then change the energy size of the battery storage.
+
                 # (1.0 - float(self.parse_parameter(self.building_scenarios['storage_depth_of_discharge'])))
                 # * float(self.parse_parameter(self.building_scenarios['storage_size']))
                 0.0
@@ -537,42 +525,8 @@ class Building(object):
         # Convert to time discrete model
         self.discretize_model()
 
-    def tank_geometry(
-            self,
-            volume,
-            aspect_ratio
-    ):
-        diameter = (volume / aspect_ratio * 4 / 3.14159265359) ** (1 / 3)
-        height = diameter * aspect_ratio
-
-        return diameter
-
     def define_sensible_storage_level(self):
         if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-            # self.state_matrix.at[
-            #     self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-            #     self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_mass_factor',
-            # ] = (
-            #     self.state_matrix.at[
-            #         self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-            #         self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_mass_factor',
-            #     ]
-            # ) - (
-            #     (
-            #         self.parse_parameter(self.building_scenarios['storage_UA_external'])
-            #         * (
-            #             self.parse_parameter(self.building_scenarios['storage_cooling_ambient_temperature'])
-            #             - self.parse_parameter(self.building_scenarios['storage_cooling_temperature_bottom_layer'])
-            #         )
-            #         / self.parse_parameter('water_specific_heat')
-            #         / self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-            #     )
-            #     + (
-            #         self.parse_parameter(self.building_scenarios['storage_UA_thermocline'])
-            #         / self.parse_parameter('water_specific_heat')
-            #     )
-            # )
-
             for index, row in self.building_zones.iterrows():
                 self.control_matrix.at[
                     self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -613,29 +567,12 @@ class Building(object):
             ] = self.state_matrix.at[
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
-            ] - 2.0e-06  # This is for integration with CONCEPT. number to accounts for losses but NOT dependent
-            # on the storage size.
+            ] - 1e-17  # This number is meant to allow the inversion of the state_matrix, keeping losses negligible
 
-            # ] - (
-            #     (
-            #         4 * self.parse_parameter(self.building_scenarios['heat_transfer_coefficient'])
-            #     )
-            #     /
-            #     (
-            #         self.tank_geometry(
-            #             self.parse_parameter(self.building_scenarios['storage_size']),
-            #             self.parse_parameter(self.building_scenarios['tank_aspect_ratio'])
-            #         )
-            #         * self.parse_parameter('tank_fluid_density')
-            #     )
-            # ) * (
-            #     self.parse_parameter(self.building_scenarios['storage_cooling_ambient_temperature'])
-            #     - self.parse_parameter(self.building_scenarios['storage_cooling_temperature_bottom_layer'])
-            # ) / (
-            #     self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-            #     * self.parse_parameter('water_specific_heat')
-            # )
-            #
+            # Find code calculating the losses depending on teh storage size at file in the git
+            # cobmo/README_storage.md
+            # (https://github.com/TUMCREATE-ESTL/cobmo/blob/feature/thermal_storage/cobmo/README_storage.md)
+
             self.state_output_matrix.at[
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
@@ -677,7 +614,7 @@ class Building(object):
                     self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                     self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
                 ]
-            ) - 1E-15  # TODO: make this loss dependent on the outdoor temperature
+            ) - 1E-17  # TODO: make this loss dependent on the outdoor temperature
 
             self.state_output_matrix.at[
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
@@ -2444,7 +2381,6 @@ class Building(object):
                                     / self.parse_parameter(row['zone_height'])
                             )
                     )
-                # @add2: here need to add the definition of ambient temperature for the storage
 
     def define_output_zone_temperature(self):
         for index, row in self.building_zones.iterrows():
@@ -2562,7 +2498,7 @@ class Building(object):
                             index + '_generic_cool_thermal_power'
                         ]
                         + 1
-                        / self.parse_parameter(row['generic_cooling_efficiency'])  # =1 (in building_hvac_generic_types
+                        / self.parse_parameter(row['generic_cooling_efficiency'])
                 )
 
     def define_output_hvac_ahu_electric_power(self):
@@ -2656,14 +2592,14 @@ class Building(object):
                         and row['ahu_return_air_heat_recovery_type'] == 'default'
                 ):
                     if (
-                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])#0.0216
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
                             <= humid_air_properties(
                                 'W',
                                 'R',
-                                self.parse_parameter(row['ahu_supply_air_relative_humidity_setpoint'])  # 60%
+                                self.parse_parameter(row['ahu_supply_air_relative_humidity_setpoint'])
                                 / 100,
                                 'T',
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])#30
+                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
                                 + 273.15,
                                 'P',
                                 101325
@@ -2674,11 +2610,11 @@ class Building(object):
                             humid_air_properties(
                                 'H',
                                 'T',
-                                self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])  # 20
+                                self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
                                 + 273.15,
                                 'W',
                                 self.parse_parameter(
-                                    self.building_scenarios['linearization_ambient_air_humidity_ratio']  # 0.0216
+                                    self.building_scenarios['linearization_ambient_air_humidity_ratio']
                                 ),
                                 'P',
                                 101325
@@ -2686,7 +2622,7 @@ class Building(object):
                             - humid_air_properties(
                                 'H',
                                 'T',
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])#30
+                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
                                 + 273.15,
                                 'W',
                                 self.parse_parameter(
@@ -2945,12 +2881,12 @@ class Building(object):
                                         abs(delta_enthalpy_ahu_cooling)
                                         - abs(delta_enthalpy_cooling_recovery)
                                 )
-                                / self.parse_parameter(row['ahu_cooling_efficiency'])  # 4.75
+                                / self.parse_parameter(row['ahu_cooling_efficiency'])
                                 + (
                                             abs(delta_enthalpy_ahu_heating)
                                             - abs(delta_enthalpy_heating_recovery)
                                 )
-                                / self.parse_parameter(row['ahu_heating_efficiency'])  # 1.0
+                                / self.parse_parameter(row['ahu_heating_efficiency'])
                                 + self.parse_parameter(row['ahu_fan_efficiency'])
                         )
                 )
@@ -3122,19 +3058,7 @@ class Building(object):
                     )
 
     def define_output_hvac_tu_electric_power(self):
-        # # Storage TU - cooling
-        # if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-        #     self.control_output_matrix.at[
-        #         self.building_scenarios['building_name'][0] + '_storage_charge_tu_cool_electric_power',
-        #         self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
-        #     ] = (
-        #             self.control_output_matrix.at[
-        #                 self.building_scenarios['building_name'][0] + '_storage_charge_tu_cool_electric_power',
-        #                 self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
-        #             ]
-        #             + 1 / 4.75  # self.building_zones['hvac_tu_default']['tu_cooling_efficiency']
-        #             # TODO: use efficiency properly
-        #     )
+        # The TU is considered to not have charge capabilities.
 
         for index, row in self.building_zones.iterrows():
             if row['hvac_tu_type'] != '':
@@ -3147,7 +3071,6 @@ class Building(object):
                         delta_enthalpy_tu_cooling = self.parse_parameter('heat_capacity_air') * (
                                 self.parse_parameter(self.building_scenarios['linearization_zone_air_temperature_cool'])
                                 - self.parse_parameter(row['tu_supply_air_temperature_setpoint'])
-                                # = 25 - 20
                         )
                         delta_enthalpy_tu_heating = self.parse_parameter('heat_capacity_air') * (
                                 self.parse_parameter(self.building_scenarios['linearization_zone_air_temperature_heat'])
@@ -3180,77 +3103,77 @@ class Building(object):
                                 + self.parse_parameter(row['tu_fan_efficiency'])
                         )
                 )
-                            # # Storage TU - heating
-                            # # sensible storage
-                            # if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-                            #     self.control_output_matrix.at[
-                            #         index + '_tu_heat_electric_power',
-                            #         self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_thermal_power'
-                            #     ] = (
-                            #             self.control_output_matrix.at[
-                            #                 index + '_tu_heat_electric_power',
-                            #                 self.building_scenarios['building_name'][0] +
-                            #                 '_sensible_storage_charge_heat_thermal_power'
-                            #             ]
-                            #             + 1 / self.parse_parameter(row['tu_heating_efficiency'])
-                            #     )
-                            #     self.control_output_matrix.at[
-                            #         index + '_tu_heat_electric_power',
-                            #         index + '_sensible_storage_to_zone_heat_thermal_power'
-                            #     ] = (
-                            #             self.control_output_matrix.at[
-                            #                 index + '_tu_heat_electric_power',
-                            #                 index + '_sensible_storage_to_zone_heat_thermal_power'
-                            #             ]
-                            #             - 1 / self.parse_parameter(row['tu_heating_efficiency'])
-                            #     )
-                            #
-                            # # latent storage
-                            # if self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default':
-                            #     self.control_output_matrix.at[
-                            #         index + '_tu_heat_electric_power',
-                            #         self.building_scenarios['building_name'][0] + '_latent_storage_charge_heat_thermal_power'
-                            #     ] = (
-                            #             self.control_output_matrix.at[
-                            #                 index + '_tu_heat_electric_power',
-                            #                 self.building_scenarios['building_name'][0] + '_latent_storage_charge_heat_thermal_power'
-                            #             ]
-                            #             + 1 / self.parse_parameter(row['tu_heating_efficiency'])
-                            #     )
-                            #     self.control_output_matrix.at[
-                            #         index + '_tu_heat_electric_power',
-                            #         index + '_latent_storage_to_zone_heat_thermal_power'
-                            #     ] = (
-                            #             self.control_output_matrix.at[
-                            #                 index + '_tu_heat_electric_power',
-                            #                 index + '_latent_storage_to_zone_heat_thermal_power'
-                            #             ]
-                            #             - 1 / self.parse_parameter(row['tu_heating_efficiency'])
-                            #     )
-                            #
-                            # # battery storage
-                            # if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
-                            #     self.control_output_matrix.at[
-                            #         index + '_tu_heat_electric_power',
-                            #         self.building_scenarios['building_name'][0] + '_battery_storage_charge'
-                            #     ] = (
-                            #             self.control_output_matrix.at[
-                            #                 index + '_tu_heat_electric_power',
-                            #                 self.building_scenarios['building_name'][0] + '_battery_storage_charge'
-                            #             ]
-                            #             + 1
-                            #     )
-                            #     self.control_output_matrix.at[
-                            #         index + '_tu_heat_electric_power',
-                            #         index + '_battery_storage_to_zone_electric_power'
-                            #     ] = (
-                            #             self.control_output_matrix.at[
-                            #                 index + '_tu_heat_electric_power',
-                            #                 index + '_battery_storage_to_zone_electric_power'
-                            #             ]
-                            #             - 1
-                            #     )
-                            #
+                # # Storage TU - heating
+                # # sensible storage
+                # if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                #     self.control_output_matrix.at[
+                #         index + '_tu_heat_electric_power',
+                #         self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_thermal_power'
+                #     ] = (
+                #             self.control_output_matrix.at[
+                #                 index + '_tu_heat_electric_power',
+                #                 self.building_scenarios['building_name'][0] +
+                #                 '_sensible_storage_charge_heat_thermal_power'
+                #             ]
+                #             + 1 / self.parse_parameter(row['tu_heating_efficiency'])
+                #     )
+                #     self.control_output_matrix.at[
+                #         index + '_tu_heat_electric_power',
+                #         index + '_sensible_storage_to_zone_heat_thermal_power'
+                #     ] = (
+                #             self.control_output_matrix.at[
+                #                 index + '_tu_heat_electric_power',
+                #                 index + '_sensible_storage_to_zone_heat_thermal_power'
+                #             ]
+                #             - 1 / self.parse_parameter(row['tu_heating_efficiency'])
+                #     )
+                #
+                # # latent storage
+                # if self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default':
+                #     self.control_output_matrix.at[
+                #         index + '_tu_heat_electric_power',
+                #         self.building_scenarios['building_name'][0] + '_latent_storage_charge_heat_thermal_power'
+                #     ] = (
+                #             self.control_output_matrix.at[
+                #                 index + '_tu_heat_electric_power',
+                #                 self.building_scenarios['building_name'][0] + '_latent_storage_charge_heat_thermal_power'
+                #             ]
+                #             + 1 / self.parse_parameter(row['tu_heating_efficiency'])
+                #     )
+                #     self.control_output_matrix.at[
+                #         index + '_tu_heat_electric_power',
+                #         index + '_latent_storage_to_zone_heat_thermal_power'
+                #     ] = (
+                #             self.control_output_matrix.at[
+                #                 index + '_tu_heat_electric_power',
+                #                 index + '_latent_storage_to_zone_heat_thermal_power'
+                #             ]
+                #             - 1 / self.parse_parameter(row['tu_heating_efficiency'])
+                #     )
+                #
+                # # battery storage
+                # if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                #     self.control_output_matrix.at[
+                #         index + '_tu_heat_electric_power',
+                #         self.building_scenarios['building_name'][0] + '_battery_storage_charge'
+                #     ] = (
+                #             self.control_output_matrix.at[
+                #                 index + '_tu_heat_electric_power',
+                #                 self.building_scenarios['building_name'][0] + '_battery_storage_charge'
+                #             ]
+                #             + 1
+                #     )
+                #     self.control_output_matrix.at[
+                #         index + '_tu_heat_electric_power',
+                #         index + '_battery_storage_to_zone_electric_power'
+                #     ] = (
+                #             self.control_output_matrix.at[
+                #                 index + '_tu_heat_electric_power',
+                #                 index + '_battery_storage_to_zone_electric_power'
+                #             ]
+                #             - 1
+                #     )
+                #
 
                 self.control_output_matrix.at[
                     index + '_tu_cool_electric_power',
@@ -3457,9 +3380,9 @@ class Building(object):
 
         # Initialise constraint timeseries as +/- infinity
         self.output_constraint_timeseries_maximum = pd.DataFrame(
-            1.0 * np.infty,     # data
-            self.set_timesteps, # index
-            self.set_outputs    # column
+            1.0 * np.infty,
+            self.set_timesteps,
+            self.set_outputs
         )
         self.output_constraint_timeseries_minimum = -self.output_constraint_timeseries_maximum
         # Outputs that are some kind of power can only be positive (greater than zero).
@@ -3484,14 +3407,6 @@ class Building(object):
             :,
             [column for column in self.output_constraint_timeseries_minimum.columns if '_storage_to_zone' in column]
         ] = 0
-
-        # Defining MAX bound for storage charge
-        # self.output_constraint_timeseries_maximum.loc[
-        #     :,
-        #     [column for column in self.output_constraint_timeseries_maximum.columns if (
-        #         '_charge_ahu_cool_electric_power' in column
-        #     )]
-        # ] = 1.0  # W [P_el]
 
         # If a heating/cooling session is defined, the cooling/heating air flow is forced to 0
         # Comment: The cooling or heating coil may still be working, because of the dehumidification,
@@ -3550,7 +3465,7 @@ class Building(object):
                         self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
                     ] = self.parse_parameter(
                         self.building_scenarios['storage_size']
-                    ) * self.parse_parameter('tank_fluid_density')  # Multiplying for the water density to have the mass
+                    ) * self.parse_parameter('tank_fluid_density')  # Multiplying for the density to have the mass
 
                 if self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default':
                     self.output_constraint_timeseries_maximum.at[
@@ -3606,7 +3521,6 @@ class Building(object):
                         int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
                     ]
                 )
-                # 21.0
 
                 if (row_zone['hvac_ahu_type'] != '') | (row_zone['window_type'] != ''):
                     if self.building_scenarios['demand_controlled_ventilation_type'][0] != '':
@@ -3731,27 +3645,11 @@ class Building(object):
         - Discretization assuming zero order hold
         - Source: https://en.wikipedia.org/wiki/Discretization#Discretization_of_linear_state_space_models
         """
-        # # adding some noise to make the matrix invertible.
-        # # source:
-        # # https://stackoverflow.com/questions/44305456/why-am-i-getting-linalgerror-singular-matrix-from-grangercausalitytests?rq=1
-        # self.state_matrix = self.state_matrix + 1e-20 * np.random.rand(  # np.clip(
-        #     self.state_matrix.values.shape[0], self.state_matrix.values.shape[1]
-        # )  # , 0e-25, 2.0)
-        # # The clipping command is needed to limit the random numbers between 0 and 2.0
-        # # source: https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.clip.html
 
         state_matrix_discrete = scipy.linalg.expm(
             self.state_matrix.values
             * pd.to_timedelta(self.building_scenarios['time_step'][0]).seconds
         )
-
-        # if ((self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-        #         or (self.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')
-        #         or (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')):
-        #
-        #     self.state_matrix.to_csv('delete_me_storage/state_matrix_before_STORAGE.csv')
-        # else:
-        #     self.state_matrix.to_csv('delete_me/state_matrix_before.csv')
 
         control_matrix_discrete = (
             np.linalg.matrix_power(

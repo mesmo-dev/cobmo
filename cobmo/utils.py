@@ -147,7 +147,6 @@ def retrieve_battery_parameters():
 def discounted_payback_time(
         building,
         storage_size,
-        storage_investment_per_unit,
         savings_day,
         save_plot_on_off,
         plotting_on_off
@@ -234,12 +233,13 @@ def discounted_payback_time(
         pb.xaxis.set_major_formatter(FormatStrFormatter('%i'))
         pb.xaxis.set_minor_locator(MultipleLocator(1))
 
-        major_ticks = np.arange(years_array[0], years_array[-1]+1, 1)
-        # minor_ticks = np.arange(years_array[0], years_array[-1], 0.2)
-        pb.set_xticks(major_ticks)
-        # pb.set_xticks(minor_ticks, minor=True)
-        # pb.set_yticks(major_ticks)
-        # pb.set_yticks(minor_ticks, minor=True)
+        if building.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            major_ticks = np.arange(years_array[0], years_array[-1]+1, 1)
+            # minor_ticks = np.arange(years_array[0], years_array[-1], 0.2)
+            pb.set_xticks(major_ticks)
+            # pb.set_xticks(minor_ticks, minor=True)
+            # pb.set_yticks(major_ticks)
+            # pb.set_yticks(minor_ticks, minor=True)
 
         fig.legend(loc='center right', fontsize=9)
         pb.grid(True, which='both')
@@ -381,6 +381,19 @@ def create_database(
             conn.commit()
     cursor.close()
     conn.close()
+
+
+def tank_geometry(
+        volume,
+        aspect_ratio
+):
+    diameter = (volume / aspect_ratio * 4 / 3.14159265359) ** (1 / 3)
+    height = diameter * aspect_ratio
+
+    return (
+        diameter,
+        height
+    )
 
 
 def calculate_irradiation_surfaces(
