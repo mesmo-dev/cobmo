@@ -54,13 +54,6 @@ def example():
         # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
     )
 
-    # Here make the changes to the data in the sql
-    rt_efficiency = 0.8
-    # building_storage_types.at['sensible_thermal_storage_default', 'storage_round_trip_efficiency'] = rt_efficiency
-
-    # print('\nbuilding_storage_types in main = ')
-    # print(building_storage_types)
-
     building_storage_types.to_sql(
         'building_storage_types',
         con=conn,
@@ -90,42 +83,6 @@ def example():
         state_initial=state_initial,
         control_timeseries=control_timeseries_simulation
     )
-
-    # Outputs for debugging
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("building.state_matrix=")
-    # print(building.state_matrix)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("building.control_matrix=")
-    # print(building.control_matrix)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("building.disturbance_matrix=")
-    # print(building.disturbance_matrix)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("building.state_output_matrix=")
-    # print(building.state_output_matrix)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("building.control_output_matrix=")
-    # print(building.control_output_matrix)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("building.disturbance_output_matrix=")
-    # print(building.disturbance_output_matrix)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("control_timeseries_simulation=")
-    # print(control_timeseries_simulation)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("building.disturbance_timeseries=")
-    # print(building.disturbance_timeseries)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("state_timeseries_simulation=")
-    # print(state_timeseries_simulation)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("output_timeseries_simulation=")
-    # print(output_timeseries_simulation)
-    # print("-----------------------------------------------------------------------------------------------------------")
-
-    # file_output_text = open("my_file_out.txt", "w")
-    # file_output_text.write(building.state_matrix)
 
     # Run controller
     controller = cobmo.controller_sensible.Controller_sensible(
@@ -193,36 +150,7 @@ def example():
             print('\n----------------------------------------------')
             print('\n>> Total opex (baseline)= {}\n'.format(format(optimum_obj, '.2f')))
 
-    # # Outputs for debugging
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("control_timeseries_controller=")
-    # print(control_timeseries_controller)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("state_timeseries_controller=")
-    # print(state_timeseries_controller)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("output_timeseries_controller=")
-    # print(output_timeseries_controller)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    #
-    # # Run error calculation function
-    # (
-    #     error_summary,
-    #     error_timeseries
-    # ) = cobmo.utils.calculate_error(
-    #     output_timeseries_simulation.loc[:, output_timeseries_controller.columns.str.contains('temperature')],
-    #     output_timeseries_controller.loc[:, output_timeseries_controller.columns.str.contains('temperature')]
-    # )  # Note: These are exemplary inputs.
-    #
-    # # Outputs for debugging
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("error_timeseries=")
-    # print(error_timeseries)
-    # print("-----------------------------------------------------------------------------------------------------------")
-    # print("error_summary=")
-    # print(error_summary)
-    # print("-----------------------------------------------------------------------------------------------------------")
-
+    # Printing the outputs to dedicated csv files. These are IGNORED by the git
     if print_on_csv == 1:
         if ((building.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
                 or (building.building_scenarios['building_storage_type'][0] == 'latent_thermal_storage_default')

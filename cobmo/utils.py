@@ -155,13 +155,17 @@ def discounted_payback_time(
     # Activating seaborn theme
     sns.set()
 
+    # Storage characteristics
+    storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
+    SGD_per_X = building.building_scenarios['investment_sgd_per_X'][0]
+    storage_lifetime = building.building_scenarios['storage_lifetime'][0]
+
     # DISCOUNTED PAYBACK
     start_date = dt.date(2019, 1, 1)
     end_date = dt.date(2019, 12, 31)
     working_days = np.busday_count(start_date, end_date)
 
     interest_rate = 0.06
-    storage_lifetime = building.building_scenarios['storage_lifetime'][0]
     pvaf = (1 - (1 + interest_rate) ** (-storage_lifetime)) / interest_rate  # Present value Annuity factor
 
     rt_efficiency = building.building_scenarios['storage_round_trip_efficiency'][0]
@@ -230,9 +234,9 @@ def discounted_payback_time(
         pb.xaxis.set_major_formatter(FormatStrFormatter('%i'))
         pb.xaxis.set_minor_locator(MultipleLocator(1))
 
-        # major_ticks = np.arange(years_array[0], years_array[-1], 1)
+        major_ticks = np.arange(years_array[0], years_array[-1]+1, 1)
         # minor_ticks = np.arange(years_array[0], years_array[-1], 0.2)
-        # pb.set_xticks(major_ticks)
+        pb.set_xticks(major_ticks)
         # pb.set_xticks(minor_ticks, minor=True)
         # pb.set_yticks(major_ticks)
         # pb.set_yticks(minor_ticks, minor=True)
@@ -244,14 +248,19 @@ def discounted_payback_time(
 
         pb.text(
             1, investment_cost*2.5/4,
-            'storage lifetime = %i\ninterest rate = %.2f\nstorage size = %.2f m3' 
+            'storage lifetime = %i'
+            '\ninterest rate = %.2f'
+            '\nstorage size = %.2f m3' 
             '\nefficiency = %.2f' 
-            '\nSavings/year = %.1f SGD' 
-            '\nstorage capex per unit = %.1f' % (storage_lifetime, interest_rate, storage_size, float(rt_efficiency),
-                                                 savings_one_year, float(storage_investment_per_unit)),
+            '\nsavings/year = %.1f SGD' 
+            '\nstorage investment= %.1f SGD/%s'
+            % (
+                storage_lifetime, interest_rate, storage_size, float(rt_efficiency),
+                savings_one_year, float(storage_investment_per_unit), SGD_per_X
+               ),
             # style='italic',
             fontsize=9,
-            bbox={'facecolor': 'grey', 'alpha': 0.5, 'pad': 5})
+            bbox={'facecolor': '#0074BD', 'alpha': 0.2, 'pad': 5})
 
         if building.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
             if year == 70.0:
