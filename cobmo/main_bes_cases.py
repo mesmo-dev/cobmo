@@ -14,7 +14,6 @@ import datetime
 import time as time
 
 
-
 def connect_database(
         data_path=cobmo.config.data_path,
         overwrite_database=True
@@ -31,8 +30,11 @@ def connect_database(
     return conn
 
 
+scenario = 'scenario_default'
+
+
 def get_building_model(
-        scenario_name='scenario_default',
+        scenario_name=scenario,
         conn=connect_database()
 ):
     building = cobmo.building.Building(conn, scenario_name)
@@ -46,17 +48,40 @@ def example():
 
     conn = connect_database()
 
+    # Extracting tables from the sql
+    # CAREFUL!
+    # Indexing to allow precise modification of the dataframe.
+    # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
+    building_scenarios_csv = pd.read_sql(
+        """
+        select * from building_scenarios
+        """,
+        conn,
+        index_col='scenario_name'
+    )
+    buildings_csv = pd.read_sql(
+        """
+        select * from buildings
+        """,
+        conn,
+        index_col='building_name'
+    )
 
+    # Setting the storage type to into the building.
+    # This is done to avoid changing by hand the storage type in the buildings.csv
+    building_name = building_scenarios_csv.at[scenario, 'building_name']
+    buildings_csv.at[building_name, 'building_storage_type'] = 'battery_storage_default'
 
-    # Here make the changes to the data in the sql
-    # rt_efficiency = 0.8
-    # building_storage_types.at['sensible_thermal_storage_default', 'storage_round_trip_efficiency'] = rt_efficiency
+    # Back to sql
+    buildings_csv.to_sql(
+        'buildings',
+        con=conn,
+        if_exists='replace'
+        # index=False
+    )
 
-    # print('\nbuilding_storage_types in main = ')
-    # print(building_storage_types)
-
-    # ==============================================================
-    # Creating the battery storage cases
+    # -------------------------------------------------------------------------------------------------------------------
+    # Setting up the simulation adn plotting settings
     do_plotting = 1
     payback_type = 'simple'
     iterate = 0

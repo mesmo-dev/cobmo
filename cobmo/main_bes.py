@@ -37,8 +37,11 @@ def connect_database(
     return conn
 
 
+scenario = 'scenario_default'
+
+
 def get_building_model(
-        scenario_name='scenario_default',
+        scenario_name=scenario,
         conn=connect_database()
 ):
     building = cobmo.building.Building(conn, scenario_name)
@@ -52,27 +55,39 @@ def example():
 
     conn = connect_database()
 
-    building_storage_types = pd.read_sql(
+    # Extracting tables from the sql
+    # CAREFUL!
+    # Indexing to allow precise modification of the dataframe.
+    # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
+    building_scenarios_csv = pd.read_sql(
         """
-        select * from building_storage_types
+        select * from building_scenarios
         """,
         conn,
-        index_col='building_storage_type'
-        # Indexing to allow precise modification of the dataframe.
-        # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
+        index_col='scenario_name'
+    )
+    buildings_csv = pd.read_sql(
+        """
+        select * from buildings
+        """,
+        conn,
+        index_col='building_name'
     )
 
-    # ==============================================================
-    # Creating the battery storage cases
+    # Setting the storage type to into the building
+    # This is done to avoid changing by hand the storage type in the buildings.csv
+    building_name = building_scenarios_csv.at[scenario, 'building_name']
+    buildings_csv.at[building_name, 'building_storage_type'] = 'battery_storage_default'
 
     # Back to sql
-    building_storage_types.to_sql(
-        'building_storage_types',
+    buildings_csv.to_sql(
+        'buildings',
         con=conn,
         if_exists='replace'
         # index=False
     )
 
+    # -------------------------------------------------------------------------------------------------------------------
     # NB: All the changes to the sql need to be done BEFORE getting the building_model
     building = get_building_model(conn=conn)
 
@@ -110,9 +125,7 @@ def example():
     ) = controller.solve()
 
     # -------------------------------------------------------------------------------------------------------------------
-
     # Printing and Plotting
-
     print_on_csv = 0
     plotting = 1
     save_plot = 0

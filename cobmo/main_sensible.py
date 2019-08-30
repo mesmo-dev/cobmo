@@ -29,8 +29,11 @@ def connect_database(
     return conn
 
 
+scenario = 'scenario_default'
+
+
 def get_building_model(
-        scenario_name='scenario_default',
+        scenario_name=scenario,
         conn=connect_database()
 ):
     building = cobmo.building.Building(conn, scenario_name)
@@ -44,23 +47,39 @@ def example():
 
     conn = connect_database()
 
-    building_storage_types = pd.read_sql(
+    # Extracting tables from the sql
+    # CAREFUL!
+    # Indexing to allow precise modification of the dataframe.
+    # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
+    building_scenarios_csv = pd.read_sql(
         """
-        select * from building_storage_types
+        select * from building_scenarios
         """,
         conn,
-        index_col='building_storage_type'
-        # Indexing to allow precise modification of the dataframe.
-        # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
+        index_col='scenario_name'
+    )
+    buildings_csv = pd.read_sql(
+        """
+        select * from buildings
+        """,
+        conn,
+        index_col='building_name'
     )
 
-    building_storage_types.to_sql(
-        'building_storage_types',
+    # Setting the storage type to into the building
+    # This is done to avoid changing by hand the storage type in the buildings.csv
+    building_name = building_scenarios_csv.at[scenario, 'building_name']
+    buildings_csv.at[building_name, 'building_storage_type'] = 'sensible_thermal_storage_default'
+
+    # Back to sql
+    buildings_csv.to_sql(
+        'buildings',
         con=conn,
         if_exists='replace'
         # index=False
     )
 
+    # -------------------------------------------------------------------------------------------------------------------
     # NB: All the changes to the sql need to be done BEFORE getting the building_model
     building = get_building_model(conn=conn)
 
@@ -98,11 +117,9 @@ def example():
     ) = controller.solve()
 
     # -------------------------------------------------------------------------------------------------------------------
-
     # Printing and Plotting
-
     print_on_csv = 0
-    plotting = 0
+    plotting = 1
     save_plot = 0
 
     if storage_size is not None or storage_size != 0:
@@ -112,7 +129,6 @@ def example():
         # Calculating the savings and the payback time
         costs_without_storage = 3.834195403e+02  # [SGD/day], 14 levels
         savings_day = (costs_without_storage - optimum_obj)
-        storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
 
         if building.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
             storage_size = storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7
@@ -126,7 +142,6 @@ def example():
         (simple_payback, discounted_payback) = cobmo.utils.discounted_payback_time(
             building,
             storage_size,
-            storage_investment_per_unit,
             savings_day,
             save_plot,
             plotting

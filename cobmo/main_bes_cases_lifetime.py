@@ -15,7 +15,6 @@ import time as time
 import errno
 
 
-
 def connect_database(
         data_path=cobmo.config.data_path,
         overwrite_database=True
@@ -32,8 +31,11 @@ def connect_database(
     return conn
 
 
+scenario = 'scenario_default'
+
+
 def get_building_model(
-        scenario_name='scenario_default',
+        scenario_name=scenario,
         conn=connect_database()
 ):
     building = cobmo.building.Building(conn, scenario_name)
@@ -47,13 +49,46 @@ def example():
 
     conn = connect_database()
 
+    # Extracting tables from the sql
+    # CAREFUL!
+    # Indexing to allow precise modification of the dataframe.
+    # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
+    building_scenarios_csv = pd.read_sql(
+        """
+        select * from building_scenarios
+        """,
+        conn,
+        index_col='scenario_name'
+    )
+    buildings_csv = pd.read_sql(
+        """
+        select * from buildings
+        """,
+        conn,
+        index_col='building_name'
+    )
+
+    # Setting the storage type to into the building
+    # This is done to avoid changing by hand the storage type in the buildings.csv
+    building_name = building_scenarios_csv.at[scenario, 'building_name']
+    buildings_csv.at[building_name, 'building_storage_type'] = 'battery_storage_default'
+
+    # Back to sql
+    buildings_csv.to_sql(
+        'buildings',
+        con=conn,
+        if_exists='replace'
+        # index=False
+    )
+
+    # -------------------------------------------------------------------------------------------------------------------
     cobmo_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
     data_path = os.path.join(cobmo_path, 'data')
     cobmo_cobmo_path = os.path.join(cobmo_path, 'cobmo')
 
     # Creating the battery storage cases
     do_plotting = 1
-    simulate = 1
+    simulate = 0
 
     # Definition of the IRENA case
     # case = 'reference'
@@ -219,15 +254,15 @@ def example():
     if do_plotting == 1 and simulate == 0:  # Only plotting
 
         filepath_read = (                                                   # << INPUT BY HAND
-            'results/results_bes_cases/best/best_2019-08-30_10-47-00/best_storage_size_2019-08-30_10-47-00.csv'
+            'results/results_bes_cases/best/best_2019-08-30_11-26-57/best_storage_size_2019-08-30_11-26-57.csv'
         )
 
         save_path = (
-            'results/results_bes_cases/best/best_2019-08-30_10-47-00/'      # << INPUT BY HAND
+            'results/results_bes_cases/best/best_2019-08-30_11-26-57'      # << INPUT BY HAND
         )
 
         filename_plot = case + '_plot_' + (
-            '2019-08-30_10-47-00'                                           # << INPUT BY HAND
+            '2019-08-30_11-26-57'                                           # << INPUT BY HAND
         )
 
         cobmo.utils_bes_cases.plot_battery_cases_storage_sizes(
