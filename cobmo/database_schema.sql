@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS "building_storage_types" (
 	"tank_aspect_ratio"  REAL,
     "heat_transfer_coefficient"  REAL,
     "storage_investment_sgd_per_unit"   REAL,
+    "investment_sgd_per_X"  TEXT,
     "storage_power_installation_cost"  REAL,
     "storage_fixed_cost"  REAL,
     "storage_depth_of_discharge"  REAL,
