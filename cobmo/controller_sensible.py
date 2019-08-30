@@ -299,10 +299,21 @@ class Controller_sensible(object):
 
             # If there is storage, adding the CAPEX
             if 'storage' in building.building_scenarios['building_storage_type'][0]:
-                objective_value = objective_value + (
-                                        problem.variable_storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # fixed_storage_size
-                                        * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
-                                )
+                if building.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
+                    objective_value = (
+                            objective_value + (
+                                problem.variable_storage_size
+                                * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # TO
+                                * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                            )
+                    )
+                elif building.building_scenarios['investment_sgd_per_X'][0] == 'm3':
+                    objective_value = (
+                            objective_value + (
+                                problem.variable_storage_size
+                                * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                            )
+                    )
 
             return objective_value
 
@@ -374,10 +385,26 @@ class Controller_sensible(object):
                 )
 
         if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
-            optimum_obj = optimum_obj + (
-                                    self.problem.variable_storage_size.value * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # fixed_storage_size
-                                    * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
-                            )
+            if self.building.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
+                optimum_obj = (
+                        optimum_obj + (
+                            storage_size
+                            * 1000.0 * 4186.0 * 8.0 * 2.77778e-7
+                            * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                        )
+                )
+            elif self.building.building_scenarios['investment_sgd_per_X'][0] == 'm3':
+                optimum_obj = (
+                        optimum_obj + (
+                            storage_size
+                            * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                        )
+                )
+
+            # optimum_obj = optimum_obj + (
+            #                         self.problem.variable_storage_size.value * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # fixed_storage_size
+            #                         * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+            #                 )
 
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 
@@ -393,10 +420,25 @@ class Controller_sensible(object):
 
         # Bringing back the result in SGD/day for 14 levels
         if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
-            optimum_obj = (
+            if self.building.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
+                optimum_obj = (
+                    (
+                        optimum_obj
+                        - storage_size
+                        * 1000.0 * 4186.0 * 8.0 * 2.77778e-7
+                        * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                     ) / 260.0 / self.building.building_scenarios['storage_lifetime'][0]
+                )
+
+            elif self.building.building_scenarios['investment_sgd_per_X'][0] == 'm3':
+                optimum_obj = (
+                        (
                             optimum_obj
-                            - storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7 * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
-                          ) / 260.0 / self.building.building_scenarios['storage_lifetime'][0]
+                            - storage_size
+                            * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                        ) / 260.0 / self.building.building_scenarios['storage_lifetime'][0]
+                )
+
         else:
             optimum_obj = optimum_obj / 260.0 / self.building.building_scenarios['storage_lifetime'][0]
 

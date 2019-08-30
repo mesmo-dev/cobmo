@@ -145,22 +145,30 @@ def example():
     # Printing and Plotting
 
     print_on_csv = 0
-    plotting = 1
-    save_plot = 1
+    plotting = 0
+    save_plot = 0
 
     if storage_size is not None or storage_size != 0:
-        storage_size_kwh = storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7
         print('\n----------------------------------------------')
-        print('\n>> Storage size = %.2f m3' % storage_size)
-        print('\n>> Total opex + capex (storage)= {}'.format(format(optimum_obj, '.2f')))
+        print('\n>> Total opex (storage)= {}'.format(float(optimum_obj)))
 
         # Calculating the savings and the payback time
         costs_without_storage = 3.834195403e+02  # [SGD/day], 14 levels
         savings_day = (costs_without_storage - optimum_obj)
         storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
+
+        if building.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
+            storage_size = storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7
+            print('\n>> Storage size = %.2f kWh' % storage_size)
+        elif building.building_scenarios['investment_sgd_per_X'][0] == 'm3':
+            print('\n>> Storage size = %.2f m3' % storage_size)
+        else:
+            print('\n Please define a specific unit of the storage investment')
+            breakpoint()
+
         (simple_payback, discounted_payback) = cobmo.utils.discounted_payback_time(
             building,
-            storage_size_kwh,
+            storage_size,
             storage_investment_per_unit,
             savings_day,
             save_plot,
