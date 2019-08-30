@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS "building_storage_types" (
     "storage_fixed_cost"  REAL,
     "storage_depth_of_discharge"  REAL,
     "storage_lifetime"  REAL,
+    "peak_electric_power_building_watt"  REAL,
 	"unit_heat_transfer_coefficient"  TEXT,
 	"storage_size_unit"	TEXT,
 	"comments_storage_type_general"	TEXT
