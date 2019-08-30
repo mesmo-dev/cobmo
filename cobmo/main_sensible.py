@@ -7,7 +7,7 @@ import sqlite3
 import numpy as np
 import pandas as pd
 import cobmo.building
-import cobmo.controller
+import cobmo.controller_sensible
 import cobmo.utils
 import cobmo.config
 import datetime as dt
@@ -142,7 +142,7 @@ def example():
     # file_output_text.write(building.state_matrix)
 
     # Run controller
-    controller = cobmo.controller.Controller(
+    controller = cobmo.controller_sensible.Controller_sensible(
         conn=conn,
         building=building
     )
