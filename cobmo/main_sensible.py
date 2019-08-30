@@ -1,5 +1,5 @@
 """
-Building model main function definitions
+Use this script for single simulations of SENSIBLE storage
 """
 
 import os
