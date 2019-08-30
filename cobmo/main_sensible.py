@@ -72,21 +72,7 @@ def example():
     building = get_building_model(conn=conn)
 
     # Define initial state and control timeseries
-    state_initial = pd.Series(
-        np.concatenate([
-            26.0  # in °C
-            * np.ones(sum(building.set_states.str.contains('temperature'))),
-            100.0  # in ppm
-            * np.ones(sum(building.set_states.str.contains('co2_concentration'))),
-            0.013  # in kg(water)/kg(air)
-            * np.ones(sum(building.set_states.str.contains('absolute_humidity'))),
-            0.0  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
-            * np.ones(sum(building.set_states.str.contains('state_of_charge'))),
-            0.0  # Mass factor must be coherent with initial volume of bottom layer
-            * np.ones(sum(building.set_states.str.contains('storage_mass_factor')))
-        ]),
-        building.set_states
-    )  # TODO: Move intial state defintion to building model
+    state_initial = building.set_state_initial
     control_timeseries_simulation = pd.DataFrame(
         np.random.rand(len(building.set_timesteps), len(building.set_controls)),
         building.set_timesteps,
@@ -158,43 +144,46 @@ def example():
 
     # Printing and Plotting
 
-    print_on_csv = 0  # set to 1 to print results in csv files (not tracked by the git)
-    plotting = 1  # set 1 for plotting (to save the plot set "save_plot_on_off" to on
+    print_on_csv = 0
+    plotting = 1
+    save_plot = 1
 
-    if storage_size is not None:
+    if storage_size is not None or storage_size != 0:
         storage_size_kwh = storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7
         print('\n----------------------------------------------')
         print('\n>> Storage size = %.2f m3' % storage_size)
         print('\n>> Total opex + capex (storage)= {}'.format(format(optimum_obj, '.2f')))
 
-        if plotting == 1:
-            # Calculating the savings and the payback time
-            costs_without_storage = 3.834195403e+02  # [SGD/day], 14 levels
-            savings_day = (costs_without_storage - optimum_obj)
-            storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
-            (payback, payback_df) = cobmo.utils.discounted_payback_time(
-                building,
-                storage_size_kwh,
-                storage_investment_per_unit,
-                15.0,
-                savings_day,
-                save_plot_on_off='off'  # "on" to save the plot as .svg (not tracked by the git)
-            )
+        # Calculating the savings and the payback time
+        costs_without_storage = 3.834195403e+02  # [SGD/day], 14 levels
+        savings_day = (costs_without_storage - optimum_obj)
+        storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
+        (simple_payback, discounted_payback) = cobmo.utils.discounted_payback_time(
+            building,
+            storage_size_kwh,
+            storage_investment_per_unit,
+            savings_day,
+            save_plot,
+            plotting
+        )
 
-            print('\n>> Storage type = %s'
-                  '  |  Optimal storage size = %.2f'
-                  '  | savings year 〜= %.2f'
-                  '  | Discounted payback = %i\n'
-                  % (
-                    building.building_scenarios['building_storage_type'][0],
-                    storage_size,
-                    savings_day * 260.0,
-                    payback
-                  )
-                  )
+        print('\n>> Storage type = %s'
+              '  |  Optimal storage size = %.2f'
+              '  | savings year 〜= %.2f'
+              '  | Discounted payback = %i\n'
+              % (
+                building.building_scenarios['building_storage_type'][0],
+                storage_size,
+                savings_day * 260.0,
+                discounted_payback
+              )
+              )
     else:
-        print('\n----------------------------------------------')
-        print('\n>> Total opex (baseline)= {}\n'.format(format(optimum_obj, '.2f')))
+        if 'storage' in building.building_scenarios['building_storage_type'][0]:
+            print('\n Storage size is zero. No storage installed by the optimization.')
+        else:
+            print('\n----------------------------------------------')
+            print('\n>> Total opex (baseline)= {}\n'.format(format(optimum_obj, '.2f')))
 
     # # Outputs for debugging
     # print("-----------------------------------------------------------------------------------------------------------")

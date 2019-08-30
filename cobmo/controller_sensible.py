@@ -116,22 +116,8 @@ class Controller_sensible(object):
         # Define initial state
         self.problem.parameter_state_initial = pyo.Param(
             self.problem.set_states,
-            initialize=pd.Series(
-                np.concatenate([
-                    26.0  # in °C
-                    * np.ones(sum(self.building.set_states.str.contains('temperature'))),
-                    100.0  # in ppm
-                    * np.ones(sum(self.building.set_states.str.contains('co2_concentration'))),
-                    0.013  # in kg(water)/kg(air)
-                    * np.ones(sum(self.building.set_states.str.contains('absolute_humidity'))),
-                    0.0  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
-                    * np.ones(sum(building.set_states.str.contains('state_of_charge'))),
-                    0.0  # Mass factor must be coherent with initial volume of bottom layer
-                    * np.ones(sum(building.set_states.str.contains('storage_mass_factor')))
-                ]),
-                self.building.set_states
-            ).to_dict()
-        )  # TODO: Move intial state defintion to building model
+            initialize=self.building.set_state_initial
+        )
 
         # Define variables - they are defined as matrixes
         self.problem.variable_state_timeseries = pyo.Var(

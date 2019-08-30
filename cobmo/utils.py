@@ -148,11 +148,9 @@ def discounted_payback_time(
         building,
         storage_size,
         storage_investment_per_unit,
-        storage_lifetime,
         savings_day,
         save_plot_on_off,
-        plotting_on_off,
-        figs_path='figs/'
+        plotting_on_off
 ):
     # Activating seaborn theme
     sns.set()
@@ -163,6 +161,7 @@ def discounted_payback_time(
     working_days = np.busday_count(start_date, end_date)
 
     interest_rate = 0.06
+    storage_lifetime = building.building_scenarios['storage_lifetime'][0]
     pvaf = (1 - (1 + interest_rate) ** (-storage_lifetime)) / interest_rate  # Present value Annuity factor
 
     rt_efficiency = building.building_scenarios['storage_round_trip_efficiency'][0]
@@ -277,16 +276,15 @@ def discounted_payback_time(
 
         fig.suptitle(title)
 
-        if save_plot_on_off == 'on':
-            plt.savefig(figs_path + filename + '.svg', format='svg', dpi=1200)
+        if save_plot_on_off == 1:
+            plt.savefig('figs/' + filename + '.svg', format='svg', dpi=1200)
             # plt.savefig('figs/discounted_payback.svg', format='svg', dpi=1200)
 
         plt.show()
 
     return (
-        discounted_payback,
         simple_payback_time,
-        payback_df
+        discounted_payback,
     )
 
 
