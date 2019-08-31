@@ -37,7 +37,8 @@ def plot_battery_cases_storage_sizes(
         filepath_read,
         save_path,
         filename,
-        labels
+        labels,
+        savepdf
 ):
     """
 
@@ -69,7 +70,8 @@ def plot_battery_cases_storage_sizes(
                 x_array[y],
                 y_array[t],
                 marker='o', facecolors=colors[t], edgecolors='none',
-                s=results.iloc[t, y]*0.5 if labels == 'savings_year' else results.iloc[t, y],
+                s=(2000.0/max(results.max(axis=0)) * results.iloc[t, y] if max(results.max(axis=0)) != 0.0 else 0.0),
+                # s=results.iloc[t, y]*0.5 if labels == 'savings_year' else results.iloc[t, y],
                 alpha=0.7,
                 # label='%s' % techs[t]
             )
@@ -77,7 +79,13 @@ def plot_battery_cases_storage_sizes(
             if results.iloc[t, y] != 0.0:
                 all_techs.text(
                     x_array[y], y_array[t],
-                    format(results.iloc[t, y], '.0f'),
+                    (
+                        format(results.iloc[t, y], ('.0f' if
+                                                    labels != 'efficiency'
+                                                    and labels != 'savings_year_percentage'
+                                                    else '.2f'))
+                        + ('%' if labels == 'savings_year_percentage' else '')
+                     ),
                     # style='italic',
                     weight='bold',
                     fontsize=9,
@@ -118,16 +126,34 @@ def plot_battery_cases_storage_sizes(
 
     # Title and saving
     if labels == 'savings_year':
-        title = 'Savings per year — Case: %s — bubbles: $/year ' %  case
+        title = 'Savings per year — Case: %s — bubbles: SGD/year' % case
+
+    if labels == 'savings_year_percentage':
+        title = 'Savings per year as share — Case: %s — bubbles: %%' % case
+
     elif labels == 'storage_size':
-        title = 'Storage size — Case: %s — bubbles: kWh ' % case
+        title = 'Storage size — Case: %s — bubbles: kWh' % case
+
+    elif labels == 'simple_payback':
+        title = 'Simple Payback — Case: %s — bubbles: years' % case
+
+    elif labels == 'discounted_payback':
+        title = 'Discounted Payback — Case: %s — bubbles: years' % case
+
+    elif labels == 'efficiency':
+        title = 'Efficiency — Case: %s — bubbles: [-]' % case
+
+    elif labels == 'investment':
+        title = 'Investment — Case: %s — bubbles: SGD/kWh' % case
+
     fig2.suptitle(title)
 
     all_techs.set_aspect(aspect=0.5)
     plt.show()
 
     fig2.savefig(save_path + '/' + filename + '.svg', format='svg', dpi=1200)
-    fig2.savefig(save_path + '/' + filename + '.pdf')
+    if savepdf == 1:
+        fig2.savefig(save_path + '/' + filename + '.pdf')
 
 
 def plot_battery_cases(
@@ -387,9 +413,15 @@ def discounted_payback_time(
         yearly_discounted_savings[year] = savings_one_year * discount_factor
         cumulative_discounted_savings[year] = cumulative_discounted_savings[year - 1] + yearly_discounted_savings[year]
         # print("\nat year %i the cumulative is >> %.2f" % (year, cumulative_discounted_savings[year]))
-        if year == 70:
-            print('\nDISCOUNTED PAYBACK IS TOO HIGH! reached 70 years')
+        if year >= building.building_scenarios['storage_lifetime'][0]:
+            print('\nDiscounted payback time surpassed the technology lifetime.')
+            year = 0
             break
+
+        # if year == 70:
+        #     print('\nDISCOUNTED PAYBACK IS TOO HIGH! reached 70 years')
+        #     # year = 0
+        #     break
 
     discounted_payback = year
     years_array = np.arange(1, discounted_payback + 1)
