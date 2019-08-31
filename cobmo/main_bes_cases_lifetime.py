@@ -15,6 +15,11 @@ import time as time
 import errno
 
 
+cobmo_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
+# data_path = os.path.join(cobmo_path, 'data')
+cobmo_cobmo_path = os.path.join(cobmo_path, 'cobmo')
+
+
 def connect_database(
         data_path=cobmo.config.data_path,
         overwrite_database=True
@@ -82,13 +87,10 @@ def example():
     )
 
     # -------------------------------------------------------------------------------------------------------------------
-    cobmo_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
-    data_path = os.path.join(cobmo_path, 'data')
-    cobmo_cobmo_path = os.path.join(cobmo_path, 'cobmo')
-
     # Creating the battery storage cases
     do_plotting = 1
     simulate = 0
+    what_plotting = 'storage_size'  # either 'savings_year' or 'storage_size'
 
     # Definition of the IRENA case
     # case = 'reference'
@@ -138,6 +140,11 @@ def example():
         index=techs,
         columns=years
     )
+    savings_year_df = pd.DataFrame(
+        0.0,
+        index=techs,
+        columns=years
+    )
 
     if simulate == 1:
         time_start_cycle = time.clock()
@@ -152,22 +159,22 @@ def example():
                 # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
             )
 
-            for i in range(years.shape[0]):
+            for y in range(years.shape[0]):
                 building_storage_types.at['battery_storage_default', 'storage_round_trip_efficiency'] = (
-                    float(efficiency.iloc[techs.str.contains(t), i])
+                    float(efficiency.iloc[techs.str.contains(t), y])
                 )
                 building_storage_types.at['battery_storage_default', 'storage_depth_of_discharge'] = (
                     float(depth_of_discharge.iloc[techs.str.contains(t), 1])
                 )
 
                 building_storage_types.at['battery_storage_default', 'storage_investment_sgd_per_unit'] = (
-                    float(energy_cost.iloc[techs.str.contains(t), i])
+                    float(energy_cost.iloc[techs.str.contains(t), y])
                 )
                 building_storage_types.at['battery_storage_default', 'storage_power_installation_cost'] = (
-                    float(power_cost.iloc[techs.str.contains(t), i])
+                    float(power_cost.iloc[techs.str.contains(t), y])
                 )
                 building_storage_types.at['battery_storage_default', 'storage_lifetime'] = (
-                    float(lifetime.iloc[techs.str.contains(t), i])
+                    float(lifetime.iloc[techs.str.contains(t), y])
                 )
 
                 # Putting back into sql
@@ -192,21 +199,23 @@ def example():
                     costs_without_storage
                     - optimum_obj
                 )
+                savings_year = savings_day * 260.0
 
                 # Running discounted payback function
                 (discounted_payback, simple_payback, _) = cobmo.utils_bes_cases.discounted_payback_time(
                     building,
                     storage_size_kwh,
-                    lifetime.iloc[techs.str.contains(t), i],  # storage lifetime as input
+                    lifetime.iloc[techs.str.contains(t), y],  # storage lifetime as input
                     savings_day,
                     save_plot_on_off='off',  # "on" to save the plot as .svg (not tracked by the git)
                     plotting_on_off=0  # set 1 for plotting
                 )
 
                 # Storing results
-                simple_payback_df.iloc[techs.str.contains(t), i] = simple_payback
-                discounted_payback_df.iloc[techs.str.contains(t), i] = discounted_payback
-                storage_size_df.iloc[techs.str.contains(t), i] = format(storage_size_kwh, '.2f')
+                simple_payback_df.iloc[techs.str.contains(t), y] = simple_payback
+                discounted_payback_df.iloc[techs.str.contains(t), y] = discounted_payback
+                storage_size_df.iloc[techs.str.contains(t), y] = format(storage_size_kwh, '.2f')
+                savings_year_df.iloc[techs.str.contains(t), y] = format(savings_year, '.1f')
 
         # Printing loop time
         print("\nCase run: %s"
@@ -235,41 +244,52 @@ def example():
         filename_simple = case + '_simple_payback_' + date_hr_min_sec + '.csv'
         filename_discounted = case + '_discounted_payback_' + date_hr_min_sec + '.csv'
         filename_storage = case + '_storage_size_' + date_hr_min_sec + '.csv'
+        filename_savings_year = case + '_savings_year_' + date_hr_min_sec + '.csv'
 
         simple_payback_df.to_csv(os.path.join(save_path, filename_simple))
         discounted_payback_df.to_csv(os.path.join(save_path, filename_discounted))
         storage_size_df.to_csv(os.path.join(save_path, filename_storage))
+        savings_year_df.to_csv(os.path.join(save_path, filename_savings_year))
         
-        if do_plotting == 1:  # Simulating adn plotting at the same time
-            filepath_read = os.path.join(save_path, filename_storage)
-            filename_plot = case + '_plot_' + date_hr_min_sec
+        if do_plotting == 1:  # Simulating and plotting at the same time
+            if what_plotting == 'savings_year':
+                filepath_read = os.path.join(save_path, filename_savings_year)
+            elif what_plotting == 'storage_size':
+                filepath_read = os.path.join(save_path, filename_storage)
+
+            filename_plot = what_plotting + '_' + date_hr_min_sec
             
             cobmo.utils_bes_cases.plot_battery_cases_storage_sizes(
                 case,
                 filepath_read,
                 save_path,
-                filename_plot
+                filename_plot,
+                labels=what_plotting
             )
 
     if do_plotting == 1 and simulate == 0:  # Only plotting
 
         filepath_read = (                                                   # << INPUT BY HAND
-            'results/results_bes_cases/best/best_2019-08-30_11-26-57/best_storage_size_2019-08-30_11-26-57.csv'
+            'results/results_bes_cases/best/best_2019-08-31_11-26-09/best_'
+            + what_plotting
+            + '_2019-08-31_11-26-09'
+            + '.csv'
         )
 
         save_path = (
-            'results/results_bes_cases/best/best_2019-08-30_11-26-57'      # << INPUT BY HAND
+            'results/results_bes_cases/best/best_2019-08-31_11-26-09'       # << INPUT BY HAND
         )
 
-        filename_plot = case + '_plot_' + (
-            '2019-08-30_11-26-57'                                           # << INPUT BY HAND
+        filename_plot = what_plotting + '_' + (                             # << INPUT BY HAND
+            'best_2019-08-31_11-26-09'
         )
 
         cobmo.utils_bes_cases.plot_battery_cases_storage_sizes(
             case,
             filepath_read,
             save_path,
-            filename_plot
+            filename_plot,
+            labels=what_plotting
         )
 
 

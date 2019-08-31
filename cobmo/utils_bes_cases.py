@@ -36,7 +36,8 @@ def plot_battery_cases_storage_sizes(
         case,
         filepath_read,
         save_path,
-        filename
+        filename,
+        labels
 ):
     """
 
@@ -67,13 +68,40 @@ def plot_battery_cases_storage_sizes(
             all_techs.scatter(
                 x_array[y],
                 y_array[t],
-                marker='o', facecolors=colors[t], edgecolors='none', s=results.iloc[t, y], alpha=0.8,
+                marker='o', facecolors=colors[t], edgecolors='none',
+                s=results.iloc[t, y]*0.5 if labels == 'savings_year' else results.iloc[t, y],
+                alpha=0.7,
                 # label='%s' % techs[t]
             )
+
+            if results.iloc[t, y] != 0.0:
+                all_techs.text(
+                    x_array[y], y_array[t],
+                    format(results.iloc[t, y], '.0f'),
+                    # style='italic',
+                    weight='bold',
+                    fontsize=9,
+                    bbox={'facecolor': 'none', 'alpha': 0.5, 'pad': 1, 'edgecolor': 'none'},
+                    ha='center', va='center'
+                )
 
     # all_techs.legend(loc='upper right', fontsize=9)  # TODO: add labels per tech
     # potential solution for adding labels properly:
     # https://stackoverflow.com/questions/13588920/stop-matplotlib-repeating-labels-in-legend
+
+    # circle_x = x_array[0]
+    # circle_y = (y_array[0] + y_array[-1])/2
+    # circle = plt.Circle((circle_x, circle_y), radius=1)
+    # all_techs.add_patch(circle)
+    # all_techs.text(
+    #     circle_x, circle_x,
+    #     '%s' % labels,
+    #     # style='italic',
+    #     weight='bold',
+    #     fontsize=15,
+    #     bbox={'facecolor': 'none', 'alpha': 0.5, 'pad': 1, 'edgecolor': 'none'},
+    #     ha='center', va='center'
+    # )
 
     # Changing names in the x axis
     all_techs.set_xticks(x_array)
@@ -89,8 +117,13 @@ def plot_battery_cases_storage_sizes(
     all_techs.set_yticklabels(y_labels)
 
     # Title and saving
-    title = 'Case: %s' % case
+    if labels == 'savings_year':
+        title = 'Savings per year — Case: %s — bubbles: $/year ' %  case
+    elif labels == 'storage_size':
+        title = 'Storage size — Case: %s — bubbles: kWh ' % case
     fig2.suptitle(title)
+
+    all_techs.set_aspect(aspect=0.5)
     plt.show()
 
     fig2.savefig(save_path + '/' + filename + '.svg', format='svg', dpi=1200)
