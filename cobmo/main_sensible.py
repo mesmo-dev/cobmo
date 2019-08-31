@@ -30,13 +30,14 @@ def connect_database(
 
 
 scenario = 'scenario_default'
+pricing_method = 'wholesale_market'  # Options: 'wholesale_market' or 'retailer_peak_offpeak'
 
 
 def get_building_model(
         scenario_name=scenario,
         conn=connect_database()
 ):
-    building = cobmo.building.Building(conn, scenario_name)
+    building = cobmo.building.Building(conn, scenario_name, pricing_method=pricing_method)
     return building
 
 
@@ -119,7 +120,7 @@ def example():
     # -------------------------------------------------------------------------------------------------------------------
     # Printing and Plotting
     print_on_csv = 0
-    plotting = 1
+    plotting = 0
     save_plot = 0
 
     if storage_size is not None or storage_size != 0:

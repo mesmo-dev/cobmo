@@ -64,7 +64,7 @@ class Controller_sensible(object):
         self.problem.parameter_electricity_prices = pyo.Param(
             self.problem.set_timesteps,
             initialize=(
-                (self.building.electricity_prices['price']).to_dict()
+                (self.building.electricity_prices['price'] * 0.5).to_dict()
             )
         )
         self.problem.parameter_state_matrix = pyo.Param(
