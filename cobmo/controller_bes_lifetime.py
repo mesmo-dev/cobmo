@@ -115,12 +115,12 @@ class Controller_bes_lifetime(object):
             self.problem.set_timesteps,
             self.problem.set_outputs,
             initialize=self.building.output_constraint_timeseries_minimum.stack().to_dict()
-        )  # TODO: Transpose output_constraint_timeseries_minimum.
+        )
         self.problem.parameter_output_timeseries_maximum = pyo.Param(
             self.problem.set_timesteps,
             self.problem.set_outputs,
             initialize=self.building.output_constraint_timeseries_maximum.stack().to_dict()
-        )  # TODO: Transpose output_constraint_timeseries_maximum.
+        )
 
         # Define initial state
         self.problem.parameter_state_initial = pyo.Param(
