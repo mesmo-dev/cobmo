@@ -40,7 +40,7 @@ def connect_database(
 
 
 scenario = 'scenario_default'
-pricing_method = 'wholesale_market'  # Options: 'wholesale_market' or 'retailer_peak_offpeak'
+pricing_method = 'retailer_peak_offpeak'  # Options: 'wholesale_market' or 'retailer_peak_offpeak'
 
 
 def get_building_model(
@@ -305,7 +305,9 @@ def example():
             'results',
             'results_bes_cases',
             case,
-            case + '_' + date_hr_min_sec,
+            pricing_method,
+            # pricing_method + '_' + date_hr_min_sec,
+            case + '_' + pricing_method + '_' + date_hr_min_sec,
             # case + '_simple_payback_' + date_hr_min_sec
         )
         if not os.path.exists(save_path):
@@ -316,13 +318,13 @@ def example():
                     raise
 
         # TODO: make the filepaths smarter and dependent on "what_plotting"
-        filename_simple = case + '_simple_payback_' + date_hr_min_sec + '.csv'
-        filename_discounted = case + '_discounted_payback_' + date_hr_min_sec + '.csv'
-        filename_storage = case + '_storage_size_' + date_hr_min_sec + '.csv'
-        filename_savings_year = case + '_savings_year_' + date_hr_min_sec + '.csv'
-        filename_savings_year_percentage = case + '_savings_year_percentage_' + date_hr_min_sec + '.csv'
-        filename_efficiency = case + '_efficiency_' + date_hr_min_sec + '.csv'
-        filename_investment = case + '_investment_' + date_hr_min_sec + '.csv'
+        filename_simple = 'simple_payback_' + date_hr_min_sec + '.csv'
+        filename_discounted = 'discounted_payback_' + date_hr_min_sec + '.csv'
+        filename_storage = 'storage_size_' + date_hr_min_sec + '.csv'
+        filename_savings_year = 'savings_year_' + date_hr_min_sec + '.csv'
+        filename_savings_year_percentage = 'savings_year_percentage_' + date_hr_min_sec + '.csv'
+        filename_efficiency = 'efficiency_' + date_hr_min_sec + '.csv'
+        filename_investment = 'investment_' + date_hr_min_sec + '.csv'
 
         simple_payback_df.to_csv(os.path.join(save_path, filename_simple))
         discounted_payback_df.to_csv(os.path.join(save_path, filename_discounted))
@@ -377,28 +379,21 @@ def example():
     # ___________________________________________________________________________________________________________________
     if do_plotting == 1 and simulate == 0:  # Only plotting
 
+        datetime_path = (
+            '2019-09-01_12-56-48'           # << INPUT BY HAND
+        )
+        save_path = os.path.join(
+            cobmo_cobmo_path,
+            'results',
+            'results_bes_cases',
+            case,
+            pricing_method,
+            case + '_' + pricing_method + '_' + datetime_path,
+        )
         for what_plotting in plotting_options:
-            datetime_path = (
-                '2019-09-01_12-21-46'      # << INPUT BY HAND
-            )
-            filepath_read = (
-                'results/results_bes_cases/best/best_'
-                + datetime_path
-                + '/best_'
-                + what_plotting
-                + '_'
-                + datetime_path
-                + '.csv'
-            )
-            # De-comment this if you want to select read file with a pop-up window
-            # root = tk.Tk()
-            # root.withdraw()
-            #
-            # filepath_read = filedialog.askopenfilename()
-
-            save_path = (
-                    'results/results_bes_cases/best/best_'
-                    + datetime_path
+            read_path = os.path.join(
+                save_path,
+                what_plotting + '_' + datetime_path + '.csv'
             )
 
             save_path_plots = (
@@ -421,7 +416,7 @@ def example():
 
             cobmo.utils_bes_cases.plot_battery_cases_storage_sizes(
                 case,
-                filepath_read,
+                read_path,
                 save_path_plots,
                 filename_plot,
                 labels=what_plotting,
