@@ -355,7 +355,7 @@ class Controller_bes_lifetime(object):
                             (
                                 problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
                                 * problem.parameter_electricity_prices[timestep]
-                            ) * 14.0 * 260.0 * float(building.building_scenarios['storage_lifetime'][0])
+                            ) * 14.0 * 260.0 * float(building.building_parameters['storage_lifetime'])
                             # 14 levels * 260 working days per year * 15 years
                     )
 
@@ -387,7 +387,7 @@ class Controller_bes_lifetime(object):
         time_start = time.clock()
         self.result = self.solver.solve(
             self.problem,
-            tee=True  # Verbose solver outputs
+            tee=False  # Verbose solver outputs
         )
         print("Controller solve time: {:.2f} seconds".format(time.clock() - time_start))
 
@@ -430,6 +430,7 @@ class Controller_bes_lifetime(object):
         # fixed_storage_size = 5000.0 * 1000.0 * 3.6e+3  # to Joule  # @change
         # storage_size = fixed_storage_size
 
+        print('\n@storage_lifetime: {}'.format(self.building.building_parameters['storage_lifetime']))
         optimum_obj = 0.0
         for timestep in self.problem.set_timesteps:
             for output_power in self.problem.set_outputs_power:
@@ -437,7 +438,7 @@ class Controller_bes_lifetime(object):
                         (
                             float(self.problem.variable_output_timeseries[timestep, output_power].value)
                             * float(self.problem.parameter_electricity_prices[timestep]) / 1000 / 2
-                        ) * 14.0 * 260.0 * float(self.building.building_scenarios['storage_lifetime'][0])
+                        ) * 14.0 * 260.0 * float(self.building.building_parameters['storage_lifetime'])
                         # 14 levels * 260 working days per year * 15 years
                 )
 
@@ -451,6 +452,9 @@ class Controller_bes_lifetime(object):
                             )
 
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
+        print('>>storage type {}'.format(self.building.building_scenarios['building_storage_type'][0]))
+        if storage_size is not None:
+            print(">>Storage size = %.2f" % storage_size)
 
         # print("\nlog infesibility")
         # utls.log_infeasible_constraints(self.problem)
@@ -472,9 +476,9 @@ class Controller_bes_lifetime(object):
                                 * float(self.building.building_scenarios['peak_electric_power_building_watt'][0])
                                + float(self.building.building_scenarios['storage_fixed_cost'][0])
                                )
-                          ) / 260.0 / float(self.building.building_scenarios['storage_lifetime'][0])
+                          ) / 260.0 / float(self.building.building_parameters['storage_lifetime'])
         else:
-            optimum_obj = optimum_obj / 260.0 / float(self.building.building_scenarios['storage_lifetime'][0])
+            optimum_obj = optimum_obj / 260.0 / float(self.building.building_parameters['storage_lifetime'])
 
         return (
             control_timeseries,

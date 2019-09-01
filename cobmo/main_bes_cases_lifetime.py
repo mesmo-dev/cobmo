@@ -39,13 +39,14 @@ def connect_database(
 
 
 scenario = 'scenario_default'
+pricing_method = 'wholesale_market'  # Options: 'wholesale_market' or 'retailer_peak_offpeak'
 
 
 def get_building_model(
         scenario_name=scenario,
         conn=connect_database()
 ):
-    building = cobmo.building.Building(conn, scenario_name)
+    building = cobmo.building.Building(conn, scenario_name, pricing_method=pricing_method)
     return building
 
 
@@ -75,18 +76,21 @@ def example():
         index_col='building_name'
     )
 
+    # Importing the parameter_sets to change the storage lifetime
+    building_parameter_sets = pd.read_sql(  # TODO: put the lifetime somewhere else and do not modify the parameters
+        """
+        select * from building_parameter_sets
+        """,
+        conn,
+        # index_col='parameter_set'
+    )
+    position_lifetime = building_parameter_sets.index[
+        building_parameter_sets['parameter_name'] == 'storage_lifetime'
+    ].tolist()
+
     # Setting the storage type to into the building
     # This is done to avoid changing by hand the storage type in the buildings.csv
     building_name = building_scenarios_csv.at[scenario, 'building_name']
-    buildings_csv.at[building_name, 'building_storage_type'] = 'battery_storage_default'
-
-    # Back to sql
-    buildings_csv.to_sql(
-        'buildings',
-        con=conn,
-        if_exists='replace'
-        # index=False
-    )
 
     # ___________________________________________________________________________________________________________________
     # Creating the battery storage cases
@@ -116,17 +120,16 @@ def example():
 
     # Retrieving the tech names from either of the DataFrames (they all have the same Indexes)
     techs = battery_params_2016.index
-
-    # # Slicing for simulating on less technologies (shorter run time)
-    # techs = techs[0:2]
-    # energy_cost = energy_cost.loc[techs, :]
-    # power_cost = power_cost.loc[techs, :]
-    # lifetime = lifetime.loc[techs, :]
-    # efficiency = efficiency.loc[techs, :]
-    # depth_of_discharge = depth_of_discharge.loc[techs, :]
-
     years = pd.Index(['2016', '2020', '2025', '2030'])
-    # years = ['2016', '2020', '2025', '2030']
+
+    # Slicing for simulating on less technologies (shorter run time)
+    techs = techs[0:2]
+    years = years[-2:]
+    energy_cost = energy_cost.iloc[0:2, -2:]
+    power_cost = power_cost.iloc[0:2, -2:]
+    lifetime = lifetime.iloc[0:2, -2:]
+    efficiency = efficiency.iloc[0:2, -2:]
+    depth_of_discharge = depth_of_discharge.iloc[0:2, -2:]
 
     # Redefining columns for plotting
     efficiency.columns = years
@@ -191,7 +194,12 @@ def example():
                 building_storage_types.at['battery_storage_default', 'storage_power_installation_cost'] = (
                     float(power_cost.iloc[techs.str.contains(t), y])
                 )
+
+                # Lifetime
                 building_storage_types.at['battery_storage_default', 'storage_lifetime'] = (
+                    float(lifetime.iloc[techs.str.contains(t), y])
+                )
+                building_parameter_sets.loc[position_lifetime, 'parameter_value'] = (
                     float(lifetime.iloc[techs.str.contains(t), y])
                 )
 
@@ -203,34 +211,62 @@ def example():
                     # index=False
                 )
 
-                # Get the building model
-                building = get_building_model(conn=conn)
+                building_parameter_sets.to_sql(
+                    'building_parameter_sets',
+                    con=conn,
+                    if_exists='replace',
+                    index=False
+                )
 
-                # Run controller
+                # Run baseline scenario
+                buildings_csv.at[building_name, 'building_storage_type'] = ''
+                buildings_csv.to_sql(
+                    'buildings',
+                    con=conn,
+                    if_exists='replace'
+                    # index=False
+                )
+                print('\n\n________________________Setup @BASELINE scenario________________________')
+                building_baseline = get_building_model(conn=conn)
+                controller = cobmo.controller_bes_lifetime.Controller_bes_lifetime(conn=conn, building=building_baseline)
+                (_, _, _, _, obj_baseline) = controller.solve()  # TODO: solve this with normal controller
+
+                # Run storage scenario
+                print('\n\n________________________Setup @STORAGE scenario________________________')
+
                 # print('\n Simulation: %i/%i' % (int(counter), int(float(techs.shape[0]) * float(years.shape[0]))))
+                buildings_csv.at[building_name, 'building_storage_type'] = 'battery_storage_default'
+                buildings_csv.to_sql(
+                    'buildings',
+                    con=conn,
+                    if_exists='replace'
+                    # index=False
+                )
+                building = get_building_model(conn=conn)
                 controller = cobmo.controller_bes_lifetime.Controller_bes_lifetime(conn=conn, building=building)
-                (_, _, _, storage_size, optimum_obj) = controller.solve()
+                (_, _, _, storage_size, obj_storage) = controller.solve()
 
                 # Calculating the savings and the payback time
                 storage_size_kwh = storage_size * 3.6e-3 * 1.0e-3
-                costs_without_storage = 3.834195403e+02
-                costs_year_baseline = costs_without_storage * 260.0
-                savings_day = (
-                    costs_without_storage
-                    - optimum_obj
-                )
+                costs_year_baseline = obj_baseline * 260.0
+                savings_day = (obj_baseline - obj_storage)
                 savings_year = savings_day * 260.0
                 savings_year_percentage = float(savings_year/costs_year_baseline*100.0)
 
                 # Running discounted payback function
-                (discounted_payback, simple_payback, _) = cobmo.utils_bes_cases.discounted_payback_time(
-                    building,
-                    storage_size_kwh,
-                    lifetime.iloc[techs.str.contains(t), y],  # storage lifetime as input
-                    savings_day,
-                    save_plot_on_off='off',  # "on" to save the plot as .svg (not tracked by the git)
-                    plotting_on_off=0  # set 1 for plotting
-                )
+                print("Savings / day = %.2f" % savings_day)
+                if float(savings_day) > 0.00001:
+                    (discounted_payback, simple_payback, _) = cobmo.utils_bes_cases.discounted_payback_time(
+                        building,
+                        storage_size_kwh,
+                        lifetime.iloc[techs.str.contains(t), y],  # storage lifetime as input
+                        savings_day,
+                        save_plot_on_off='off',  # "on" to save the plot as .svg (not tracked by the git)
+                        plotting_on_off=0  # set 1 for plotting
+                    )
+                else:  # Passing over the calculation of payback
+                    discounted_payback = 0.0
+                    simple_payback = 0.0
 
                 # Storing results
                 simple_payback_df.iloc[techs.str.contains(t), y] = simple_payback
@@ -240,9 +276,8 @@ def example():
                 savings_year_percentage_df.iloc[techs.str.contains(t), y] = format(savings_year_percentage, '.1f')
 
         # Creating the mask reflecting where the payback exists
+        # and changing efficiency and investment frames to reflect the mask conditions
         mask = simple_payback_df == -0.0
-
-        # Changing efficiency and investment frames to reflect the mas conditions
         efficiency[mask] = 0.0
         energy_cost[mask] = 0.0
 
@@ -328,7 +363,8 @@ def example():
                 save_path_plots,
                 filename_plot,
                 labels=what_plotting,
-                savepdf=0
+                savepdf=0,
+                pricing_method=pricing_method
             )
 
     # ___________________________________________________________________________________________________________________
@@ -336,7 +372,7 @@ def example():
 
         for what_plotting in plotting_options:
             datetime_path = (
-                '2019-08-31_15-58-05'      # << INPUT BY HAND
+                '2019-09-01_11-52-33'      # << INPUT BY HAND
             )
             filepath_read = (
                 'results/results_bes_cases/best/best_'
@@ -347,6 +383,7 @@ def example():
                 + datetime_path
                 + '.csv'
             )
+            # De-comment this if you want to select read file with a pop-up window
             # root = tk.Tk()
             # root.withdraw()
             #
@@ -381,7 +418,8 @@ def example():
                 save_path_plots,
                 filename_plot,
                 labels=what_plotting,
-                savepdf=1
+                savepdf=1,
+                pricing_method=pricing_method
             )
 
 
