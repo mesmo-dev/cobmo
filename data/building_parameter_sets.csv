@@ -40,6 +40,7 @@ parameters_default,storage_sensible_cooling_temperature_top_layer,12,�C,
 parameters_default,storage_sensible_cooling_ambient_temperature,30,�C,
 parameters_default,storage_sensible_total_delta_temperature_layers,8,K (or �C),
 parameters_default,storage_battery_round_trip_efficiency,0.95,-,
+parameters_default,storage_lifetime,0.0,years,needed for running the baseline scenario in comparison to the storage
 constants,density_air,1.225,kg/m3,
 constants,heat_capacity_air,1211.025,J/(m3*K),
 constants,stefan_boltzmann_constant,5.67E-08,W/(m2*K4),
