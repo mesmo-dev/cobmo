@@ -13,4 +13,5 @@ To improve:
 
 - [ ] Import also inverter efficiency
 - [x] increase fixed cost as it it was in eur 
+- [ ] Include the DoD. This can be made with workaround tha the storage size is actually lower.
 
