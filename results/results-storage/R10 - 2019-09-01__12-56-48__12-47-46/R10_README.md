@@ -1,6 +1,6 @@
 # BESS
 
---> commit ****
+--> commit: **25165d9d73351c409ef3bcd7cc7f827d24a0b38a**
 
 ###Comments:
 the retailer pricing method was added and the simulations are done for both wholesale and retier model with teh same assumptions.
