@@ -38,7 +38,8 @@ def plot_battery_cases_storage_sizes(
         save_path,
         filename,
         labels,
-        savepdf
+        savepdf,
+        pricing_method
 ):
     """
 
@@ -126,27 +127,27 @@ def plot_battery_cases_storage_sizes(
 
     # Title and saving
     if labels == 'savings_year':
-        title = 'Savings per year — Case: %s — bubbles: SGD/year' % case
+        title = 'Savings per year — ' + pricing_method + ' — Case: %s — bubbles: SGD/year' % case
 
     if labels == 'savings_year_percentage':
-        title = 'Savings per year as share — Case: %s — bubbles: %%' % case
+        title = 'Savings per year as share — ' + pricing_method + ' — Case: %s — bubbles: %%' % case
 
     elif labels == 'storage_size':
-        title = 'Storage size — Case: %s — bubbles: kWh' % case
+        title = 'Storage size — ' + pricing_method + ' — Case: %s — bubbles: kWh' % case
 
     elif labels == 'simple_payback':
-        title = 'Simple Payback — Case: %s — bubbles: years' % case
+        title = 'Simple Payback — ' + pricing_method + ' — Case: %s — bubbles: years' % case
 
     elif labels == 'discounted_payback':
-        title = 'Discounted Payback — Case: %s — bubbles: years' % case
+        title = 'Discounted Payback — ' + pricing_method + ' — Case: %s — bubbles: years' % case
 
     elif labels == 'efficiency':
-        title = 'Efficiency — Case: %s — bubbles: [-]' % case
+        title = 'Efficiency — ' + pricing_method + ' — Case: %s — bubbles: [-]' % case
 
     elif labels == 'investment':
-        title = 'Investment — Case: %s — bubbles: SGD/kWh' % case
+        title = 'Investment — ' + pricing_method + ' — Case: %s — bubbles: SGD/kWh' % case
 
-    fig2.suptitle(title)
+    fig2.suptitle(title, fontsize=12)
 
     all_techs.set_aspect(aspect=0.5)
     plt.show()
