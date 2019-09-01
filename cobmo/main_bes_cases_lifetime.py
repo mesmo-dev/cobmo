@@ -15,6 +15,7 @@ import time as time
 import errno
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import messagebox
 
 
 cobmo_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
@@ -95,7 +96,7 @@ def example():
     # ___________________________________________________________________________________________________________________
     # Creating the battery storage cases
     do_plotting = 1
-    simulate = 1
+    simulate = 0
     plotting_options = [
         'savings_year', 'savings_year_percentage', 'storage_size', 'simple_payback', 'discounted_payback', 'efficiency', 'investment'
     ]
@@ -123,15 +124,15 @@ def example():
     years = pd.Index(['2016', '2020', '2025', '2030'])
 
     # ________________________________________________________________________
-    # Slicing for simulating on less technologies (shorter run time)
+    # Slicing for simulating on less technologies (shorter run time) - de-comment to use
 
-    techs = techs[0:2]
-    years = years[-2:]
-    energy_cost = energy_cost.iloc[0:2, -2:]
-    power_cost = power_cost.iloc[0:2, -2:]
-    lifetime = lifetime.iloc[0:2, -2:]
-    efficiency = efficiency.iloc[0:2, -2:]
-    depth_of_discharge = depth_of_discharge.iloc[0:2, -2:]
+    # techs = techs[0:2]
+    # years = years[-2:]
+    # energy_cost = energy_cost.iloc[0:2, -2:]
+    # power_cost = power_cost.iloc[0:2, -2:]
+    # lifetime = lifetime.iloc[0:2, -2:]
+    # efficiency = efficiency.iloc[0:2, -2:]
+    # depth_of_discharge = depth_of_discharge.iloc[0:2, -2:]
     # ________________________________________________________________________
 
     # Redefining columns for plotting
@@ -369,13 +370,16 @@ def example():
                 savepdf=0,
                 pricing_method=pricing_method
             )
+        messagebox.showinfo("Simulation status", "Simulation concluded.\nSimulations = {} x 2".format(
+            int(float(techs.shape[0]) * float(years.shape[0])))
+                            )
 
     # ___________________________________________________________________________________________________________________
     if do_plotting == 1 and simulate == 0:  # Only plotting
 
         for what_plotting in plotting_options:
             datetime_path = (
-                '2019-09-01_11-52-33'      # << INPUT BY HAND
+                '2019-09-01_12-21-46'      # << INPUT BY HAND
             )
             filepath_read = (
                 'results/results_bes_cases/best/best_'
