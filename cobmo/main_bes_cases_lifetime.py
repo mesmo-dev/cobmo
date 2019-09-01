@@ -95,7 +95,7 @@ def example():
     # ___________________________________________________________________________________________________________________
     # Creating the battery storage cases
     do_plotting = 1
-    simulate = 0
+    simulate = 1
     plotting_options = [
         'savings_year', 'savings_year_percentage', 'storage_size', 'simple_payback', 'discounted_payback', 'efficiency', 'investment'
     ]
@@ -122,7 +122,9 @@ def example():
     techs = battery_params_2016.index
     years = pd.Index(['2016', '2020', '2025', '2030'])
 
+    # ________________________________________________________________________
     # Slicing for simulating on less technologies (shorter run time)
+
     techs = techs[0:2]
     years = years[-2:]
     energy_cost = energy_cost.iloc[0:2, -2:]
@@ -130,6 +132,7 @@ def example():
     lifetime = lifetime.iloc[0:2, -2:]
     efficiency = efficiency.iloc[0:2, -2:]
     depth_of_discharge = depth_of_discharge.iloc[0:2, -2:]
+    # ________________________________________________________________________
 
     # Redefining columns for plotting
     efficiency.columns = years
