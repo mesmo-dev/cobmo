@@ -330,20 +330,9 @@ class Controller(object):
 
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 
-        # print("\nlog infesibility")
-        # utls.log_infeasible_constraints(self.problem)
-        # utls.log_infeasible_bounds(self.problem)
-
-        """
-        print("\n>> Electricity prices\n")
-        print(self.building.electricity_prices)  # price.to_string(index=True)
-        print(self.building.disturbance_timeseries)
-        """
-
         return (
             control_timeseries,
             state_timeseries,
             output_timeseries,
-            storage_size,
             optimum_obj
         )
