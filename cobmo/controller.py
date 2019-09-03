@@ -116,22 +116,8 @@ class Controller(object):
         # Define initial state
         self.problem.parameter_state_initial = pyo.Param(
             self.problem.set_states,
-            initialize=pd.Series(
-                np.concatenate([
-                    26.0  # in °C
-                    * np.ones(sum(self.building.set_states.str.contains('temperature'))),
-                    100.0  # in ppm
-                    * np.ones(sum(self.building.set_states.str.contains('co2_concentration'))),
-                    0.013  # in kg(water)/kg(air)
-                    * np.ones(sum(self.building.set_states.str.contains('absolute_humidity'))),
-                    0.0  # in all the storage units (sensible: m3 | PCM: kg | battery: kWh)
-                    * np.ones(sum(building.set_states.str.contains('state_of_charge'))),
-                    0.0  # Mass factor must be coherent with initial volume of bottom layer
-                    * np.ones(sum(building.set_states.str.contains('storage_mass_factor')))
-                ]),
-                self.building.set_states
-            ).to_dict()
-        )  # TODO: Move intial state defintion to building model
+            initialize=self.building.set_state_initial
+        )
 
         # Define variables - they are defined as matrixes
         self.problem.variable_state_timeseries = pyo.Var(
@@ -174,7 +160,7 @@ class Controller(object):
         ):
             # State equation
             state_value = 0.0
-            for state_other in problem.set_states:  # @contraint@temperature@zone
+            for state_other in problem.set_states:
                 state_value += (
                         problem.parameter_state_matrix[state, state_other]
                         * problem.variable_state_timeseries[timestep, state_other]
@@ -235,34 +221,11 @@ class Controller(object):
                 timestep,
                 output
         ):
-            if 'state_of_charge' in output:
-                return (
-                    problem.variable_output_timeseries[timestep, output]
-                    <=
-                    problem.parameter_output_timeseries_maximum[timestep, output]
-                    * problem.variable_storage_size  # fixed_storage_size
-                )
-            else:
-                return (
-                    problem.variable_output_timeseries[timestep, output]
-                    <=
-                    problem.parameter_output_timeseries_maximum[timestep, output]
-                )
-
-        def rule_maximum_ahu_electric_power(
-                problem,
-                timestep
-        ):
-            ahu_cool_electric_power_tot = 0.0
-            for output in problem.set_outputs_power:
-                if '_ahu_cool_electric_power' in output:
-                    ahu_cool_electric_power_tot += problem.variable_output_timeseries[timestep, output]
             return (
-                    ahu_cool_electric_power_tot
-                    <=
-                    20000.0
+                problem.variable_output_timeseries[timestep, output]
+                <=
+                problem.parameter_output_timeseries_maximum[timestep, output]
             )
-
 # =================================================================================================
 
 
@@ -293,30 +256,18 @@ class Controller(object):
             self.problem.set_outputs,
             rule=rule_output_maximum
         )
-        self.problem.constraint_ahu_electric_power_output_maximum = pyo.Constraint(
-            self.problem.set_timesteps,
-            rule=rule_maximum_ahu_electric_power
-        )
 
         # Define objective rule
         def objective_rule(problem):
             objective_value = 0.0
             for timestep in problem.set_timesteps:
-                for output_power in problem.set_outputs_power:  # TODO: Differentiate between thermal and electric.
+                for output_power in problem.set_outputs_power:
                     objective_value += (
                             (
                                 problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
                                 * problem.parameter_electricity_prices[timestep]
-                            ) * 14.0 * 260.0 * 15.0
-                            # 14 levels * 260 working days per year * 15 years
+                            )
                     )
-
-            # If there is storage, adding the CAPEX
-            if 'storage' in building.building_scenarios['building_storage_type'][0]:
-                objective_value = objective_value + (
-                                        problem.variable_storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # fixed_storage_size
-                                        * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
-                                )
 
             return objective_value
 
@@ -383,15 +334,8 @@ class Controller(object):
                         (
                             self.problem.variable_output_timeseries[timestep, output_power].value / 1000 / 2
                             * self.problem.parameter_electricity_prices[timestep]
-                        ) * 14.0 * 260.0 * 15.0
-                        # 14 levels * 260 working days per year * 15 years
+                        )
                 )
-
-        if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
-            optimum_obj = optimum_obj + (
-                                    self.problem.variable_storage_size.value * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # fixed_storage_size
-                                    * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
-                            )
 
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 
@@ -404,15 +348,6 @@ class Controller(object):
         print(self.building.electricity_prices)  # price.to_string(index=True)
         print(self.building.disturbance_timeseries)
         """
-
-        # Bringing back the result in SGD/day for 14 levels
-        if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
-            optimum_obj = (
-                            optimum_obj
-                            - storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7 * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
-                          ) / 260.0 / 15.0
-        else:
-            optimum_obj = optimum_obj / 260.0 / 15.0
 
         return (
             control_timeseries,
