@@ -133,7 +133,8 @@ def example():
     (
         control_timeseries_controller,
         state_timeseries_controller,
-        output_timeseries_controller
+        output_timeseries_controller,
+        obj_optimum
     ) = controller.solve()
 
     # Outputs for debugging
@@ -165,6 +166,8 @@ def example():
     print("error_summary=")
     print(error_summary)
     print("-----------------------------------------------------------------------------------------------------------")
+
+    print('\n>>Cost per day (only level 8) = %.2f' % obj_optimum)
 
 
 if __name__ == "__main__":
