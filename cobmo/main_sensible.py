@@ -12,6 +12,16 @@ import cobmo.controller_bes
 import cobmo.utils
 import cobmo.config
 import datetime as dt
+import errno
+
+cobmo_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
+# data_path = os.path.join(cobmo_path, 'data')
+cobmo_cobmo_path = os.path.join(cobmo_path, 'cobmo')
+
+date_main = dt.datetime.now()
+date_hr_min_sec = '{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+    date_main.year, date_main.month, date_main.day,
+    date_main.hour, date_main.minute, date_main.second)
 
 
 def connect_database(
@@ -31,8 +41,13 @@ def connect_database(
 
 
 scenario = 'scenario_default'
-pricing_method = 'retailer_peak_offpeak'  # Options: 'wholesale_market' or 'retailer_peak_offpeak'
-storage = 'battery'  # Options: 'sensible' or 'battery'
+pricing_method = 'wholesale_market'  # Options: 'wholesale_market' or 'retailer_peak_offpeak'
+storage = 'sensible'  # Options: 'sensible' or 'battery'
+
+print_on_csv = 0
+plotting = 1
+save_plot = 1
+
 
 print('\n________________________'
       '\nSimulation options:'
@@ -187,12 +202,7 @@ def example():
             optimum_obj_battery
         ) = controller_battery.solve()
 
-    # ____________________________________________ Payback & Plotting ______________________________________________
-
-    # Set options here
-    print_on_csv = 0
-    plotting = 1
-    save_plot = 0
+    # __________________________________________________ Payback _____________________________________________________
 
     print('\n----------------------------------------------')
     print('\n>> Total opex (storage)= {}'.format(format(optimum_obj_sensible, '.2f')))
@@ -216,12 +226,29 @@ def example():
             savings_day = (optimum_obj_baseline - optimum_obj_battery)
             storage_size = storage_size * 3.6e-3 * 1.0e-3
 
+    # __________________________________________________ Plotting _____________________________________________________
+
+        save_path = os.path.join(
+            cobmo_cobmo_path,
+            'results',
+            'results_single_simulation/',
+            storage + '/',
+            pricing_method + '/'
+        )
+        if not os.path.exists(save_path):
+            try:
+                os.makedirs(save_path)
+            except OSError as exc:  # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
+
         (simple_payback, discounted_payback) = cobmo.utils.discounted_payback_time(
             building_storage,
             storage_size,
             savings_day,
-            save_plot,
-            plotting,
+            save_plot_on_off=save_plot,
+            save_path=save_path,
+            plotting_on_off=plotting,
             storage=storage,
             pricing_method=pricing_method,
             interest_rate=0.06
