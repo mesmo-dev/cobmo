@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import cobmo.building
 import cobmo.controller_sensible
+import cobmo.controller_bes
 import cobmo.utils
 import cobmo.config
 import datetime as dt
@@ -30,7 +31,15 @@ def connect_database(
 
 
 scenario = 'scenario_default'
-pricing_method = 'wholesale_market'  # Options: 'wholesale_market' or 'retailer_peak_offpeak'
+pricing_method = 'retailer_peak_offpeak'  # Options: 'wholesale_market' or 'retailer_peak_offpeak'
+storage = 'battery'  # Options: 'sensible' or 'battery'
+
+print('\n________________________'
+      '\nSimulation options:'
+      '\n- Storage tech: *%s*'
+      '\n- Pricing Method: *%s*'
+      '\n________________________'
+      % (storage, pricing_method))
 
 
 def get_building_model(
@@ -45,6 +54,16 @@ def example():
     """
     Example script
     """
+
+    storage_tech = storage
+    storage_type = ''
+    if storage_tech == 'sensible':
+        storage_type = 'sensible_thermal_storage_default'
+    elif storage_tech == 'battery':
+        storage_type = 'battery_storage_default'
+    else:
+        print('\n{!} No valid storage technology input (storage = "%s"). Running baseline scenario against itself.\n'
+              % storage)
 
     conn = connect_database()
 
@@ -125,27 +144,48 @@ def example():
 
     # Storage scenario
     # Setting storage option for the building + getting another building + running controller again
-    buildings_csv.at[building_name, 'building_storage_type'] = 'sensible_thermal_storage_default'
+    buildings_csv.at[building_name, 'building_storage_type'] = storage_type
     buildings_csv.to_sql(
         'buildings',
         con=conn,
         if_exists='replace'
         # index=False
     )
-    building_sensible = get_building_model(conn=conn)
-    building_sensible.define_augmented_model()
+    building_storage = get_building_model(conn=conn)
+    building_storage.define_augmented_model()
 
-    controller_sensible = cobmo.controller_sensible.Controller_sensible(
-        conn=conn,
-        building=building_sensible
-    )
-    (
-        control_timeseries_controller_storage,
-        state_timeseries_controller_storage,
-        output_timeseries_controller_storage,
-        storage_size,
-        optimum_obj_storage
-    ) = controller_sensible.solve()
+    optimum_obj_sensible = optimum_obj_baseline
+    optimum_obj_battery = optimum_obj_baseline
+    storage_size = 0.0
+    control_timeseries_controller_storage = control_timeseries_controller_baseline
+    state_timeseries_controller_storage = state_timeseries_controller_baseline
+    output_timeseries_controller_storage = output_timeseries_controller_baseline
+
+    if storage_tech == 'sensible':
+        controller_sensible = cobmo.controller_sensible.Controller_sensible(
+            conn=conn,
+            building=building_storage
+        )
+        (
+            control_timeseries_controller_storage,
+            state_timeseries_controller_storage,
+            output_timeseries_controller_storage,
+            storage_size,
+            optimum_obj_sensible
+        ) = controller_sensible.solve()
+
+    elif storage_tech == 'battery':
+        controller_battery = cobmo.controller_bes.Controller_bes(
+            conn=conn,
+            building=building_storage
+        )
+        (
+            control_timeseries_controller_storage,
+            state_timeseries_controller_storage,
+            output_timeseries_controller_storage,
+            storage_size,
+            optimum_obj_battery
+        ) = controller_battery.solve()
 
     # ____________________________________________ Payback & Plotting ______________________________________________
 
@@ -155,26 +195,36 @@ def example():
     save_plot = 0
 
     print('\n----------------------------------------------')
-    print('\n>> Total opex (storage)= {}'.format(format(optimum_obj_storage, '.2f')))
+    print('\n>> Total opex (storage)= {}'.format(format(optimum_obj_sensible, '.2f')))
 
+    savings_day = 0.0
     if storage_size != 0.0:
         # Calculating the savings and the payback time
-        savings_day = (optimum_obj_baseline - optimum_obj_storage)
 
-        if building_sensible.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
-            storage_size = storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # TODO: take value from building_sensible
-            print('\n>> Storage size = %.2f kWh' % storage_size)
-        elif building_sensible.building_scenarios['investment_sgd_per_X'][0] == 'm3':
-            print('\n>> Storage size = %.2f m3' % storage_size)
-        else:
-            print('\n Please define a specific unit of the storage investment')
+        if storage == 'sensible':
+            savings_day = (optimum_obj_baseline - optimum_obj_sensible)
+            if building_storage.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
+                storage_size = storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7
+                # TODO: take value from building_sensible
+                print('\n>> Storage size = %.2f kWh' % storage_size)
+            elif building_storage.building_scenarios['investment_sgd_per_X'][0] == 'm3':
+                print('\n>> Storage size = %.2f m3' % storage_size)
+            else:
+                print('\n Please define a specific unit of the storage investment')
+
+        elif storage == 'battery':
+            savings_day = (optimum_obj_baseline - optimum_obj_battery)
+            storage_size = storage_size * 3.6e-3 * 1.0e-3
 
         (simple_payback, discounted_payback) = cobmo.utils.discounted_payback_time(
-            building_sensible,
+            building_storage,
             storage_size,
             savings_day,
             save_plot,
-            plotting
+            plotting,
+            storage=storage,
+            pricing_method=pricing_method,
+            interest_rate=0.06
         )
 
         print('\n>> Storage type = %s'
@@ -182,7 +232,7 @@ def example():
               '  | savings year 〜= %.2f'
               '  | Discounted payback = %i\n'
               % (
-                building_sensible.building_scenarios['building_storage_type'][0],
+                building_storage.building_scenarios['building_storage_type'][0],
                 storage_size,
                 savings_day * 260.0,
                 discounted_payback
@@ -195,13 +245,13 @@ def example():
     if print_on_csv == 1:
 
         # Storage scenario
-        building_sensible.state_matrix.to_csv('delete_me_storage/sensible/state_matrix_SENSIBLE.csv')
-        building_sensible.control_matrix.to_csv('delete_me_storage/sensible/control_matrix_SENSIBLE.csv')
-        building_sensible.disturbance_matrix.to_csv('delete_me_storage/sensible/disturbance_matrix_SENSIBLE.csv')
+        building_storage.state_matrix.to_csv('delete_me_storage/sensible/state_matrix_SENSIBLE.csv')
+        building_storage.control_matrix.to_csv('delete_me_storage/sensible/control_matrix_SENSIBLE.csv')
+        building_storage.disturbance_matrix.to_csv('delete_me_storage/sensible/disturbance_matrix_SENSIBLE.csv')
 
-        building_sensible.state_output_matrix.to_csv('delete_me_storage/sensible/state_output_matrix_SENSIBLE.csv')
-        building_sensible.control_output_matrix.to_csv('delete_me_storage/sensible/control_output_matrix_SENSIBLE.csv')
-        building_sensible.disturbance_output_matrix.to_csv('delete_me_storage/sensible/disturbance_output_matrix_SENSIBLE.csv')
+        building_storage.state_output_matrix.to_csv('delete_me_storage/sensible/state_output_matrix_SENSIBLE.csv')
+        building_storage.control_output_matrix.to_csv('delete_me_storage/sensible/control_output_matrix_SENSIBLE.csv')
+        building_storage.disturbance_output_matrix.to_csv('delete_me_storage/sensible/disturbance_output_matrix_SENSIBLE.csv')
 
         # state_timeseries_simulation_storage.to_csv('delete_me_storage/sensible/state_timeseries_simulation_SENSIBLE.csv')
 

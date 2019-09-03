@@ -149,12 +149,14 @@ def retrieve_battery_parameters():
 # ):
 #
 
-def discounted_payback_time_sensible(
+def discounted_payback_time(
         building,
         storage_size,
         savings_day,
         save_plot_on_off,
         plotting_on_off,
+        storage,
+        pricing_method,
         interest_rate=0.06
 ):
     # Activating seaborn theme
@@ -266,21 +268,22 @@ def discounted_payback_time_sensible(
             fontsize=9,
             bbox={'facecolor': '#0074BD', 'alpha': 0.2, 'pad': 5})
 
-        if building.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+        title = 'Neither Sensible nor battery'
+        if storage == 'sensible':
             if year == 70.0:
-                title = 'Sensible Thermal Storage | Not paying back'
+                title = 'Sensible Thermal Storage — ' + pricing_method + ' — Not paying back'
             else:
-                title = 'Sensible Thermal Storage | payback year = %i' % discounted_payback
+                title = 'Sensible Thermal Storage — ' + pricing_method + ' — payback year = %i' % discounted_payback
             filename = ('discounted_payback_STES'  # + building.building_scenarios['building_name'][0]
                         + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
                             date_main.year, date_main.month, date_main.day,
                             date_main.hour, date_main.minute, date_main.second)
                         )
-        elif building.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+        elif storage == 'battery':
             if year == 70.0:
-                title = 'Battery Storage | Not paying back'
+                title = 'Battery Storage — ' + pricing_method + ' — Not paying back'
             else:
-                title = 'Battery Storage | payback year = %i' % discounted_payback
+                title = 'Battery Storage — ' + pricing_method + ' — payback year = %i' % discounted_payback
             filename = ('discounted_payback_BES'  # + building.building_scenarios['building_name'][0]
                         + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
                             date_main.year, date_main.month, date_main.day,

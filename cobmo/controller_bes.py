@@ -354,7 +354,7 @@ class Controller_bes(object):
                             (
                                 problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
                                 * problem.parameter_electricity_prices[timestep]
-                            ) * 14.0 * 260.0 * building.building_scenarios['storage_lifetime'][0]
+                            ) * 14.0 * 260.0 * float(building.building_parameters['storage_lifetime'])
                             # 14 levels * 260 working days per year * 15 years
                     )
 
@@ -436,7 +436,7 @@ class Controller_bes(object):
                         (
                             float(self.problem.variable_output_timeseries[timestep, output_power].value)
                             * float(self.problem.parameter_electricity_prices[timestep]) / 1000 / 2
-                        ) * 14.0 * 260.0 * self.building.building_scenarios['storage_lifetime'][0]
+                        ) * 14.0 * 260.0 * float(self.building.building_parameters['storage_lifetime'])
                         # 14 levels * 260 working days per year * 15 years
                 )
 
@@ -471,9 +471,9 @@ class Controller_bes(object):
                                 * float(self.building.building_scenarios['peak_electric_power_building_watt'][0])
                                + float(self.building.building_scenarios['storage_fixed_cost'][0])
                                )
-                          ) / 260.0 / self.building.building_scenarios['storage_lifetime'][0]
+                          ) / 260.0 / float(self.building.building_parameters['storage_lifetime'])
         else:
-            optimum_obj = optimum_obj / 260.0 / self.building.building_scenarios['storage_lifetime'][0]
+            optimum_obj = optimum_obj / 260.0 / float(self.building.building_parameters['storage_lifetime'])
 
         return (
             control_timeseries,
