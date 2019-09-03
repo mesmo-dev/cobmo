@@ -155,38 +155,41 @@ def example():
     save_plot = 0
 
     print('\n----------------------------------------------')
-    print('\n>> Total opex (storage)= {}'.format(float(optimum_obj_storage)))
+    print('\n>> Total opex (storage)= {}'.format(format(optimum_obj_storage, '.2f')))
 
-    # Calculating the savings and the payback time
-    savings_day = (optimum_obj_baseline - optimum_obj_storage)
+    if storage_size != 0.0:
+        # Calculating the savings and the payback time
+        savings_day = (optimum_obj_baseline - optimum_obj_storage)
 
-    if building_sensible.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
-        storage_size = storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # TODO: take value from building_sensible
-        print('\n>> Storage size = %.2f kWh' % storage_size)
-    elif building_sensible.building_scenarios['investment_sgd_per_X'][0] == 'm3':
-        print('\n>> Storage size = %.2f m3' % storage_size)
-    else:
-        print('\n Please define a specific unit of the storage investment')
+        if building_sensible.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
+            storage_size = storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # TODO: take value from building_sensible
+            print('\n>> Storage size = %.2f kWh' % storage_size)
+        elif building_sensible.building_scenarios['investment_sgd_per_X'][0] == 'm3':
+            print('\n>> Storage size = %.2f m3' % storage_size)
+        else:
+            print('\n Please define a specific unit of the storage investment')
 
-    (simple_payback, discounted_payback) = cobmo.utils.discounted_payback_time(
-        building_sensible,
-        storage_size,
-        savings_day,
-        save_plot,
-        plotting
-    )
-
-    print('\n>> Storage type = %s'
-          '  |  Optimal storage size = %.2f'
-          '  | savings year 〜= %.2f'
-          '  | Discounted payback = %i\n'
-          % (
-            building_sensible.building_scenarios['building_storage_type'][0],
+        (simple_payback, discounted_payback) = cobmo.utils.discounted_payback_time(
+            building_sensible,
             storage_size,
-            savings_day * 260.0,
-            discounted_payback
-          )
-          )
+            savings_day,
+            save_plot,
+            plotting
+        )
+
+        print('\n>> Storage type = %s'
+              '  |  Optimal storage size = %.2f'
+              '  | savings year 〜= %.2f'
+              '  | Discounted payback = %i\n'
+              % (
+                building_sensible.building_scenarios['building_storage_type'][0],
+                storage_size,
+                savings_day * 260.0,
+                discounted_payback
+              )
+              )
+    else:
+        print('\n>> Storage size is 0.0 --> No storage is installed as it is not economically feasible.')
 
     # Printing the outputs to dedicated csv files. These are IGNORED by the git
     if print_on_csv == 1:
