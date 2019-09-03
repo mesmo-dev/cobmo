@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pyomo.environ as pyo
 import time as time
-import cobmo.utils as utls
+
 
 class Controller(object):
     """Controller object to store the model predictive control problem."""
@@ -119,7 +119,7 @@ class Controller(object):
             initialize=self.building.set_state_initial
         )
 
-        # Define variables - they are defined as matrixes
+        # Define variables
         self.problem.variable_state_timeseries = pyo.Var(
             self.problem.set_timesteps,
             self.problem.set_states,
@@ -135,12 +135,6 @@ class Controller(object):
             self.problem.set_outputs,
             domain=pyo.Reals
         )
-        self.problem.variable_storage_size = pyo.Var(
-            domain=pyo.Reals,
-            bounds=(0.0, 1e20)
-        )
-
-# =================================================================================================
 
         # Define constraint rules
         def rule_state_initial(
@@ -292,7 +286,6 @@ class Controller(object):
         print("Controller solve time: {:.2f} seconds".format(time.clock() - time_start))
 
 
-# =================================================================================================
         # Retrieve results
         time_start = time.clock()
         control_timeseries = pd.DataFrame(
@@ -325,8 +318,6 @@ class Controller(object):
                 )
 
         # Retrieving objective
-        storage_size = self.problem.variable_storage_size.value
-
         optimum_obj = 0.0
         for timestep in self.problem.set_timesteps:
             for output_power in self.problem.set_outputs_power:
