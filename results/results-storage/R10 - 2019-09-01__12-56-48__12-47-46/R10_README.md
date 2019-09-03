@@ -18,6 +18,10 @@ wholesale market one, but shows _**higher deltas**_. Hence higher savings are po
 - retailer: Keppel electric. 
     - peak price: 20.20 cSGD/kWh, 
     - off-peak 16.16 cSGD/kWh
+- IRENA: 
+    - E/P ratio = 2
+    - cycles per day = 1
+    - electricity price = 18 USD/kWh
 
 ###To improve:
 
