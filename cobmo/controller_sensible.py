@@ -64,7 +64,7 @@ class Controller_sensible(object):
         self.problem.parameter_electricity_prices = pyo.Param(
             self.problem.set_timesteps,
             initialize=(
-                (self.building.electricity_prices['price'] * 0.5).to_dict()
+                (self.building.electricity_prices['price']).to_dict()
             )
         )
         self.problem.parameter_state_matrix = pyo.Param(
@@ -106,12 +106,12 @@ class Controller_sensible(object):
             self.problem.set_timesteps,
             self.problem.set_outputs,
             initialize=self.building.output_constraint_timeseries_minimum.stack().to_dict()
-        )  # TODO: Transpose output_constraint_timeseries_minimum.
+        )
         self.problem.parameter_output_timeseries_maximum = pyo.Param(
             self.problem.set_timesteps,
             self.problem.set_outputs,
             initialize=self.building.output_constraint_timeseries_maximum.stack().to_dict()
-        )  # TODO: Transpose output_constraint_timeseries_maximum.
+        )
 
         # Define initial state
         self.problem.parameter_state_initial = pyo.Param(
@@ -293,7 +293,7 @@ class Controller_sensible(object):
                             (
                                 problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
                                 * problem.parameter_electricity_prices[timestep]
-                            ) * 14.0 * 260.0 * building.building_scenarios['storage_lifetime'][0]
+                            ) * 14.0 * 260.0 * float(building.building_parameters['storage_lifetime'])
                             # 14 levels * 260 working days per year * 15 years
                     )
 
@@ -380,7 +380,7 @@ class Controller_sensible(object):
                         (
                             self.problem.variable_output_timeseries[timestep, output_power].value / 1000 / 2
                             * self.problem.parameter_electricity_prices[timestep]
-                        ) * 14.0 * 260.0 * self.building.building_scenarios['storage_lifetime'][0]
+                        ) * 14.0 * 260.0 * float(self.building.building_parameters['storage_lifetime'])
                         # 14 levels * 260 working days per year * 15 years
                 )
 
@@ -427,7 +427,7 @@ class Controller_sensible(object):
                         - storage_size
                         * 1000.0 * 4186.0 * 8.0 * 2.77778e-7
                         * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
-                     ) / 260.0 / self.building.building_scenarios['storage_lifetime'][0]
+                     ) / 260.0 / float(self.building.building_parameters['storage_lifetime'])
                 )
 
             elif self.building.building_scenarios['investment_sgd_per_X'][0] == 'm3':
@@ -436,11 +436,11 @@ class Controller_sensible(object):
                             optimum_obj
                             - storage_size
                             * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
-                        ) / 260.0 / self.building.building_scenarios['storage_lifetime'][0]
+                        ) / 260.0 / float(self.building.building_parameters['storage_lifetime'])
                 )
 
         else:
-            optimum_obj = optimum_obj / 260.0 / self.building.building_scenarios['storage_lifetime'][0]
+            optimum_obj = optimum_obj / 260.0 / float(self.building.building_parameters['storage_lifetime'])
 
         return (
             control_timeseries,
