@@ -144,12 +144,18 @@ def retrieve_battery_parameters():
     )
 
 
-def discounted_payback_time(
+# def plot_params(
+#         parameter_df
+# ):
+#
+
+def discounted_payback_time_sensible(
         building,
         storage_size,
         savings_day,
         save_plot_on_off,
-        plotting_on_off
+        plotting_on_off,
+        interest_rate=0.06
 ):
     # Activating seaborn theme
     sns.set()
@@ -164,7 +170,6 @@ def discounted_payback_time(
     end_date = dt.date(2019, 12, 31)
     working_days = np.busday_count(start_date, end_date)
 
-    interest_rate = 0.06
     pvaf = (1 - (1 + interest_rate) ** (-storage_lifetime)) / interest_rate  # Present value Annuity factor
 
     rt_efficiency = building.building_scenarios['storage_round_trip_efficiency'][0]
@@ -217,6 +222,7 @@ def discounted_payback_time(
 
         fig, pb = plt.subplots(1, 1)
 
+        pb.axvline(x=storage_lifetime, color='b', linestyle='--', alpha=0.5, label='Storage Lifetime = %i' % int(storage_lifetime))
         pb.scatter(simple_payback_time, investment_cost, marker='o', facecolors='none', edgecolors='r', s=100,
                    label='Simple payback = %.0f' % simple_payback_time, zorder=10)
         pb.plot(years_array, investment_cost_array, linestyle='--', color='black', alpha=0.7,
@@ -233,13 +239,12 @@ def discounted_payback_time(
         pb.xaxis.set_major_formatter(FormatStrFormatter('%i'))
         pb.xaxis.set_minor_locator(MultipleLocator(1))
 
-        if building.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-            major_ticks = np.arange(years_array[0], years_array[-1]+1, 1)
-            # minor_ticks = np.arange(years_array[0], years_array[-1], 0.2)
-            pb.set_xticks(major_ticks)
-            # pb.set_xticks(minor_ticks, minor=True)
-            # pb.set_yticks(major_ticks)
-            # pb.set_yticks(minor_ticks, minor=True)
+        major_ticks = np.arange(years_array[0], years_array[-1]+1, 1)
+        # minor_ticks = np.arange(years_array[0], years_array[-1], 0.2)
+        pb.set_xticks(major_ticks)
+        # pb.set_xticks(minor_ticks, minor=True)
+        # pb.set_yticks(major_ticks)
+        # pb.set_yticks(minor_ticks, minor=True)
 
         fig.legend(loc='center right', fontsize=9)
         pb.grid(True, which='both')
@@ -248,14 +253,13 @@ def discounted_payback_time(
 
         pb.text(
             1, investment_cost*2.5/4,
-            'storage lifetime = %i'
             '\ninterest rate = %.2f'
             '\nstorage size = %.2f m3' 
             '\nefficiency = %.2f' 
             '\nsavings/year = %.1f SGD' 
             '\nstorage investment= %.1f SGD/%s'
             % (
-                storage_lifetime, interest_rate, storage_size, float(rt_efficiency),
+                interest_rate, storage_size, float(rt_efficiency),
                 savings_one_year, float(storage_investment_per_unit), SGD_per_X
                ),
             # style='italic',
