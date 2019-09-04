@@ -76,6 +76,9 @@ class Controller_bes(object):
                 (self.building.electricity_prices['price']).to_dict()
             )
         )
+        print('\nI am controller BATTERY\n')
+        # print(self.building.electricity_prices['price'])
+
         self.problem.parameter_state_matrix = pyo.Param(
             self.problem.set_states,
             self.problem.set_states,
@@ -295,7 +298,7 @@ class Controller_bes(object):
             return (
                     ahu_cool_electric_power_tot
                     <=
-                    40000.0
+                    20000.0
             )
 
 # =================================================================================================
@@ -320,7 +323,7 @@ class Controller_bes(object):
         )
         self.problem.constraint_output_minimum = pyo.Constraint(
             self.problem.set_timesteps,
-            self.problem.set_outputs_without_soc,
+            self.problem.set_outputs,
             rule=rule_output_minimum
         )
         self.problem.constraint_output_minimum_timestep_first_soc = pyo.Constraint(
