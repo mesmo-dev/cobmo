@@ -7,6 +7,7 @@ import sqlite3
 import numpy as np
 import pandas as pd
 import cobmo.building
+import cobmo.controller_baseline
 import cobmo.controller_sensible
 import cobmo.controller_bes
 import cobmo.utils
@@ -41,12 +42,12 @@ def connect_database(
 
 
 scenario = 'scenario_default'
-pricing_method = 'wholesale_market'  # Options: 'wholesale_market' or 'retailer_peak_offpeak'
-storage = 'sensible'  # Options: 'sensible' or 'battery'
+pricing_method = 'retailer_peak_offpeak'  # Options: 'wholesale_market' or 'retailer_peak_offpeak'
+storage = 'battery'  # Options: 'sensible' or 'battery'
 
 print_on_csv = 0
 plotting = 1
-save_plot = 1
+save_plot = 0
 
 
 print('\n________________________'
@@ -131,7 +132,7 @@ def example():
 
     building_name = building_scenarios_csv.at[scenario, 'building_name']
 
-    # ____________________________________________ Running the scenarios ______________________________________________
+    # ____________________________________________ Running BASELINE _________________________________________________
 
     # Baseline scenario
     buildings_csv.at[building_name, 'building_storage_type'] = ''
@@ -145,7 +146,7 @@ def example():
     building_baseline = get_building_model(conn=conn)
     building_baseline.define_augmented_model()
 
-    controller_sensible = cobmo.controller_sensible.Controller_sensible(
+    controller_sensible = cobmo.controller_baseline.ControllerBaseline(
         conn=conn,
         building=building_baseline
     )
@@ -153,11 +154,11 @@ def example():
         control_timeseries_controller_baseline,
         state_timeseries_controller_baseline,
         output_timeseries_controller_baseline,
-        _,
         optimum_obj_baseline
     ) = controller_sensible.solve()
 
-    # Storage scenario
+    # ____________________________________________ Running STORAGE _________________________________________________
+
     # Setting storage option for the building + getting another building + running controller again
     buildings_csv.at[building_name, 'building_storage_type'] = storage_type
     buildings_csv.to_sql(
@@ -272,27 +273,28 @@ def example():
     if print_on_csv == 1:
 
         # Storage scenario
-        building_storage.state_matrix.to_csv('delete_me_storage/sensible/state_matrix_SENSIBLE.csv')
-        building_storage.control_matrix.to_csv('delete_me_storage/sensible/control_matrix_SENSIBLE.csv')
-        building_storage.disturbance_matrix.to_csv('delete_me_storage/sensible/disturbance_matrix_SENSIBLE.csv')
+        building_storage.state_matrix.to_csv('delete_me_storage/' + storage + '/state_matrix-' + pricing_method + '.csv')
+        building_storage.control_matrix.to_csv('delete_me_storage/' + storage + '/control_matrix-' + pricing_method + '.csv')
+        building_storage.disturbance_matrix.to_csv('delete_me_storage/' + storage + '/disturbance_matrix-' + pricing_method + '.csv')
 
-        building_storage.state_output_matrix.to_csv('delete_me_storage/sensible/state_output_matrix_SENSIBLE.csv')
-        building_storage.control_output_matrix.to_csv('delete_me_storage/sensible/control_output_matrix_SENSIBLE.csv')
-        building_storage.disturbance_output_matrix.to_csv('delete_me_storage/sensible/disturbance_output_matrix_SENSIBLE.csv')
+        building_storage.state_output_matrix.to_csv('delete_me_storage/' + storage + '/state_output_matrix-' + pricing_method + '.csv')
+        building_storage.control_output_matrix.to_csv('delete_me_storage/' + storage + '/control_output_matrix-' + pricing_method + '.csv')
+        building_storage.disturbance_output_matrix.to_csv('delete_me_storage/' + storage + '/disturbance_output_matrix-' + pricing_method + '.csv')
 
         # state_timeseries_simulation_storage.to_csv('delete_me_storage/sensible/state_timeseries_simulation_SENSIBLE.csv')
 
-        state_timeseries_controller_storage.to_csv('delete_me_storage/sensible/state_timeseries_controller_SENSIBLE.csv')
+        state_timeseries_controller_storage.to_csv('delete_me_storage/' + storage + '/state_timeseries_controller-' + pricing_method + '.csv')
+
         date_main = dt.datetime.now()
         filename_out_controller = (
-                'output_timeseries_controller_SENSIBLE' + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+                'output_timeseries_controller-' + pricing_method + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
                     date_main.year, date_main.month, date_main.day, date_main.hour, date_main.minute,
                     date_main.second)
                 + '.csv'
         )
-        output_timeseries_controller_storage.to_csv('delete_me_storage/sensible/' + filename_out_controller)
+        output_timeseries_controller_storage.to_csv('delete_me_storage/' + storage + '/' + filename_out_controller)
 
-        control_timeseries_controller_storage.to_csv('delete_me_storage/sensible/control_timeseries_controller_SENSIBLE.csv')
+        # control_timeseries_controller_storage.to_csv('delete_me_storage/' + storage + '/control_timeseries_controller_SENSIBLE.csv')
 
         # Baseline scenario
         building_baseline.state_matrix.to_csv('delete_me/state_matrix.csv')
