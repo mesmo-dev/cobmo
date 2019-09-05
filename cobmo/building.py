@@ -46,11 +46,6 @@ class Building(object):
             """.format(scenario_name),
             conn
         )
-        # self.building_scenarios.to_csv('delete_me/building_scenarios.txt')
-
-        # print(self.building_scenarios)
-        # print('\n>> @storage_round_trip_efficiency (in building.py) = %.2f'
-        #       % float(self.building_scenarios['storage_round_trip_efficiency'][0]))
 
         self.building_parameters = pd.read_sql(
             """
