@@ -32,3 +32,7 @@ cobmo/try_outs\.py
 cobmo/results/
 
 cobmo/extras/
+
+data/storage_data/graphs
+
+data/electricity_prices_data/graphs/
