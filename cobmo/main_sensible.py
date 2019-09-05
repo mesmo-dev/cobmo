@@ -42,8 +42,12 @@ def connect_database(
 
 
 scenario = 'scenario_default'
-pricing_method = 'retailer_peak_offpeak'  # Options: 'wholesale_market' or 'retailer_peak_offpeak'
-storage = 'battery'  # Options: 'sensible' or 'battery'
+pricing_method = 'retailer_peak_offpeak'
+# Options:
+# 'wholesale_market'        | 'retailer_peak_offpeak' | 'wholesale_squeezed_20' | 'wholesale_squeezed_40'
+# 'wholesale_squeezed_60'   | 'wholesale_squeezed_80'
+
+storage = 'sensible'  # Options: 'sensible' or 'battery'
 
 print_on_csv = 0
 plotting = 1
