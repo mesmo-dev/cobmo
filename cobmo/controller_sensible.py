@@ -5,7 +5,8 @@ import pandas as pd
 import pyomo.environ as pyo
 import time as time
 import cobmo.utils as utls
-fixed_storage_size = 8.0
+
+
 class Controller_sensible(object):
     """Controller object to store the model predictive control problem."""
 
@@ -140,10 +141,10 @@ class Controller_sensible(object):
             self.problem.set_outputs,
             domain=pyo.Reals
         )
-        # self.problem.variable_storage_size = pyo.Var(
-        #     domain=pyo.Reals,
-        #     bounds=(0.0, 1e20)
-        # )
+        self.problem.variable_storage_size = pyo.Var(
+            domain=pyo.Reals,
+            bounds=(0.0, 1e20)
+        )
 
 # =================================================================================================
 
@@ -231,7 +232,7 @@ class Controller_sensible(object):
                     problem.variable_output_timeseries[timestep, output]
                     <=
                     problem.parameter_output_timeseries_maximum[timestep, output]
-                    * fixed_storage_size   # problem.variable_storage_size
+                    * problem.variable_storage_size
                 )
             else:
                 return (
@@ -310,7 +311,7 @@ class Controller_sensible(object):
                 if building.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
                     objective_value = (
                             objective_value + (
-                                fixed_storage_size # problem.variable_storage_size
+                                problem.variable_storage_size
                                 * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # TO
                                 * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
                             )
@@ -318,7 +319,7 @@ class Controller_sensible(object):
                 elif building.building_scenarios['investment_sgd_per_X'][0] == 'm3':
                     objective_value = (
                             objective_value + (
-                                fixed_storage_size # problem.variable_storage_size
+                                problem.variable_storage_size
                                 * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
                             )
                     )
@@ -381,7 +382,7 @@ class Controller_sensible(object):
                 )
 
         # Retrieving objective
-        storage_size = fixed_storage_size # self.problem.variable_storage_size.value
+        storage_size = self.problem.variable_storage_size.value
 
         optimum_obj = 0.0
         for timestep in self.problem.set_timesteps:
@@ -411,22 +412,11 @@ class Controller_sensible(object):
                         )
                 )
 
-            # optimum_obj = optimum_obj + (
-            #                         self.problem.variable_storage_size.value * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # fixed_storage_size
-            #                         * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
-            #                 )
-
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 
         # print("\nlog infesibility")
         # utls.log_infeasible_constraints(self.problem)
         # utls.log_infeasible_bounds(self.problem)
-
-        """
-        print("\n>> Electricity prices\n")
-        print(self.building.electricity_prices)  # price.to_string(index=True)
-        print(self.building.disturbance_timeseries)
-        """
 
         # Bringing back the result in SGD/day for 14 levels
         if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
