@@ -32,6 +32,65 @@ logger = logging.getLogger('pyomo.util.infeasible')
 logger.setLevel(logging.INFO)
 
 
+def plot_battery_parameters():
+    sns.set()
+    (
+        battery_params_2016,
+        battery_params_2020,
+        battery_params_2025,
+        battery_params_2030,
+        energy_cost,
+        power_cost,
+        lifetime,
+        efficiency,
+        depth_of_discharge
+    ) = retrieve_battery_parameters(
+        case='best'
+    )
+    years = pd.Index(['2016', '2020', '2025', '2030'])
+    techs = energy_cost.index
+
+    energy_cost.columns = years
+    power_cost.columns = years
+    lifetime.columns = years
+    efficiency.columns = years
+
+    x_array = np.arange(1, years.shape[0] + 1, 1)
+    # y_array = np.arange(1, techs.shape[0]+1, 1)
+
+    # print(np.array(efficiency.iloc[3, :]))
+
+    fig, figa = plt.subplots(1, 1)
+    colors = cm.rainbow(np.linspace(0, 1, techs.shape[0]))  # Paired
+    # >> Many color maps here:
+    # https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html
+
+    y = efficiency
+
+    for t in np.arange(0, techs.shape[0], 1):
+        figa.plot(x_array, np.array(y.iloc[t, :]) * 100.0, color=colors[t], label='%s' % techs[t])
+        figa.scatter(x_array, np.array(y.iloc[t, :]) * 100.0, marker='o', facecolors='none', edgecolors=colors[t], s=50)
+
+    # Changing names in the x axis
+    figa.set_xticks(x_array)
+    x_labels = [item.get_text() for item in figa.get_xticklabels()]
+    for y in np.arange(0, len(x_array), 1):
+        x_labels[y] = years[y]
+    figa.set_xticklabels(x_labels)
+
+    figa.set_ylabel('%')
+    figa.legend(loc='center left', fontsize=9)
+    figa.grid(True, which='both')
+    fig.suptitle('Efficiency')
+
+    save_path = 'data/storage_data/graphs'
+
+    # fig.savefig(save_path + 'energy_cost' + '.svg', format='svg', dpi=1200)
+    # fig.savefig(save_path + 'energy_cost' + '.pdf')
+
+    plt.show()
+
+
 def plot_battery_cases_storage_sizes(
         case,
         filepath_read,
@@ -256,10 +315,6 @@ def plot_battery_cases(
 
     filename2 = case + '_case-' + payback_type + '_payback-all_techs'
     fig2.savefig(save_path + filename2 + '.svg', format='svg', dpi=1200)
-
-
-
-
 
 
 def retrieve_battery_parameters(

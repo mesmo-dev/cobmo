@@ -144,10 +144,21 @@ def retrieve_battery_parameters():
     )
 
 
-# def plot_params(
-#         parameter_df
-# ):
-#
+def plot_params(
+        building,
+        param_name='',
+        readfile_path=''
+):
+    sns.set()
+    pricing_method = building.electricity_prices['price_type'][0]
+    prices = building.electricity_prices['price'].values
+    print(pricing_method)
+    timesteps = building.electricity_prices.index
+    print(timesteps)
+
+    fig, pr = plt.subplots(1, 1)
+    pr.plot(timesteps, prices)
+    plt.show()
 
 def discounted_payback_time(
         building,
@@ -179,8 +190,14 @@ def discounted_payback_time(
     economic_horizon = 1000
     cumulative_discounted_savings = np.zeros(economic_horizon)
     yearly_discounted_savings = np.zeros(economic_horizon)
-    savings_one_year = savings_day * working_days
-    investment_cost = float(storage_size) * float(storage_investment_per_unit)
+
+    savings_one_year = 0.0
+    investment_cost = 0.0
+    simple_payback_time = 0.0
+    if savings_day != 0.0:
+        savings_one_year = savings_day * working_days
+        investment_cost = float(storage_size) * float(storage_investment_per_unit)
+        simple_payback_time = np.ceil(investment_cost / savings_one_year)
 
     year = 0
     while cumulative_discounted_savings[year] < investment_cost:
@@ -191,6 +208,7 @@ def discounted_payback_time(
         # print("\nat year %i the cumulative is >> %.2f" % (year, cumulative_discounted_savings[year]))
         if year == 70:
             print('\nDISCOUNTED PAYBACK IS TOO HIGH! reached 70 years')
+            year = 0
             break
 
     discounted_payback = year
@@ -200,7 +218,6 @@ def discounted_payback_time(
     yearly_discounted_savings = yearly_discounted_savings[1:discounted_payback + 1]
     # discounted_total_savings_at_payback = cumulative_discounted_savings[-1]
 
-    simple_payback_time = np.ceil(investment_cost / savings_one_year)
 
     payback_df = pd.DataFrame(
         np.column_stack(
@@ -242,12 +259,13 @@ def discounted_payback_time(
         pb.xaxis.set_major_formatter(FormatStrFormatter('%i'))
         pb.xaxis.set_minor_locator(MultipleLocator(1))
 
-        major_ticks = np.arange(years_array[0], years_array[-1]+1, 1)
-        # minor_ticks = np.arange(years_array[0], years_array[-1], 0.2)
-        pb.set_xticks(major_ticks)
-        # pb.set_xticks(minor_ticks, minor=True)
-        # pb.set_yticks(major_ticks)
-        # pb.set_yticks(minor_ticks, minor=True)
+        if discounted_payback != 0:
+            major_ticks = np.arange(years_array[0], years_array[-1]+1, 1)
+            # minor_ticks = np.arange(years_array[0], years_array[-1], 0.2)
+            pb.set_xticks(major_ticks)
+            # pb.set_xticks(minor_ticks, minor=True)
+            # pb.set_yticks(major_ticks)
+            # pb.set_yticks(minor_ticks, minor=True)
 
         fig.legend(loc='center right', fontsize=9)
         pb.grid(True, which='both')
