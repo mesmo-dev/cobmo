@@ -5,7 +5,7 @@ import pandas as pd
 import pyomo.environ as pyo
 import time as time
 import cobmo.utils as utls
-
+fixed_storage_size = 8.0
 class Controller_sensible(object):
     """Controller object to store the model predictive control problem."""
 
@@ -67,6 +67,11 @@ class Controller_sensible(object):
                 (self.building.electricity_prices['price']).to_dict()
             )
         )
+
+        # print((self.building.electricity_prices['price']).to_dict())
+        # print('\nI am controller SENSIBLE\n')
+        # print(self.building.electricity_prices['price'])
+
         self.problem.parameter_state_matrix = pyo.Param(
             self.problem.set_states,
             self.problem.set_states,
@@ -135,10 +140,10 @@ class Controller_sensible(object):
             self.problem.set_outputs,
             domain=pyo.Reals
         )
-        self.problem.variable_storage_size = pyo.Var(
-            domain=pyo.Reals,
-            bounds=(0.0, 1e20)
-        )
+        # self.problem.variable_storage_size = pyo.Var(
+        #     domain=pyo.Reals,
+        #     bounds=(0.0, 1e20)
+        # )
 
 # =================================================================================================
 
@@ -226,7 +231,7 @@ class Controller_sensible(object):
                     problem.variable_output_timeseries[timestep, output]
                     <=
                     problem.parameter_output_timeseries_maximum[timestep, output]
-                    * problem.variable_storage_size  # fixed_storage_size
+                    * fixed_storage_size   # problem.variable_storage_size
                 )
             else:
                 return (
@@ -292,17 +297,20 @@ class Controller_sensible(object):
                     objective_value += (
                             (
                                 problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
-                                * problem.parameter_electricity_prices[timestep]
-                            ) * 14.0 * 260.0 * float(building.building_parameters['storage_lifetime'])
+                                * float(problem.parameter_electricity_prices[timestep])
+                            ) * 14.0
                             # 14 levels * 260 working days per year * 15 years
                     )
+
+            objective_value = objective_value  * 260.0 * float(building.building_parameters['storage_lifetime'])
+            print('\n @storage_lifetime from the parameters = {}\n'.format(float(building.building_parameters['storage_lifetime'])))
 
             # If there is storage, adding the CAPEX
             if 'storage' in building.building_scenarios['building_storage_type'][0]:
                 if building.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
                     objective_value = (
                             objective_value + (
-                                problem.variable_storage_size
+                                fixed_storage_size # problem.variable_storage_size
                                 * 1000.0 * 4186.0 * 8.0 * 2.77778e-7  # TO
                                 * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
                             )
@@ -310,10 +318,12 @@ class Controller_sensible(object):
                 elif building.building_scenarios['investment_sgd_per_X'][0] == 'm3':
                     objective_value = (
                             objective_value + (
-                                problem.variable_storage_size
+                                fixed_storage_size # problem.variable_storage_size
                                 * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
                             )
                     )
+                    print('\n@m3 : I inside the m3 IF')
+                    print('\nstorage_investment_sgd_per_unit = {}\n'.format(float(building.building_scenarios['storage_investment_sgd_per_unit'][0])))
 
             return objective_value
 
@@ -371,7 +381,7 @@ class Controller_sensible(object):
                 )
 
         # Retrieving objective
-        storage_size = self.problem.variable_storage_size.value
+        storage_size = fixed_storage_size # self.problem.variable_storage_size.value
 
         optimum_obj = 0.0
         for timestep in self.problem.set_timesteps:
