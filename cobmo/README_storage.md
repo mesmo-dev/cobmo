@@ -1,6 +1,12 @@
 # README storage
 Here are reported the main comments and notes about the several storage algorithms.
 
+## To be improved
+date: 2019-09-05
+- BESS: the BESS simulations do not take into account by now the minimum state of charge given by the depth of discharge 
+constraint. This is important to be included as batteries cannot fully discharge.
+- TESS: the sensible storage case is not running with the retailer price signal. This has to be debugged.
+
 ## Sensible Storage
 ### Losses
 
