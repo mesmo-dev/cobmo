@@ -38,15 +38,15 @@ class Controller_bes(object):
         self.problem.set_outputs = pyo.Set(
             initialize=self.building.set_outputs
         )
-        self.problem.set_outputs_without_soc = pyo.Set(
-            initialize=self.building.set_outputs[
-                ~self.building.set_outputs.str.contains('_battery_storage_state_of_charge')
-            ]
-
-        )
-        self.problem.set_outputs_state_of_charge = pyo.Set(
-            initialize=self.building.set_outputs[self.building.set_outputs.str.contains('_battery_storage_state_of_charge')]
-        )
+        # self.problem.set_outputs_without_soc = pyo.Set(
+        #     initialize=self.building.set_outputs[
+        #         ~self.building.set_outputs.str.contains('_battery_storage_state_of_charge')
+        #     ]
+        #
+        # )
+        # self.problem.set_outputs_state_of_charge = pyo.Set(
+        #     initialize=self.building.set_outputs[self.building.set_outputs.str.contains('_battery_storage_state_of_charge')]
+        # )
         self.problem.set_outputs_power = pyo.Set(
             initialize=self.building.set_outputs[self.building.set_outputs.str.contains('electric_power')]
         )
@@ -76,9 +76,6 @@ class Controller_bes(object):
                 (self.building.electricity_prices['price']).to_dict()
             )
         )
-        print('\nI am controller BATTERY\n')
-        # print(self.building.electricity_prices['price'])
-
         self.problem.parameter_state_matrix = pyo.Param(
             self.problem.set_states,
             self.problem.set_states,
@@ -326,16 +323,16 @@ class Controller_bes(object):
             self.problem.set_outputs,
             rule=rule_output_minimum
         )
-        self.problem.constraint_output_minimum_timestep_first_soc = pyo.Constraint(
-            self.problem.set_timestep_first,
-            self.problem.set_outputs_state_of_charge,
-            rule=rule_output_minimum_timestep_first_soc
-        )
-        self.problem.constraint_output_minimum_without_first_soc = pyo.Constraint(
-            self.problem.set_timesteps_without_first,
-            self.problem.set_outputs_state_of_charge,
-            rule=rule_output_minimum_without_first_soc
-        )
+        # self.problem.constraint_output_minimum_timestep_first_soc = pyo.Constraint(
+        #     self.problem.set_timestep_first,
+        #     self.problem.set_outputs_state_of_charge,
+        #     rule=rule_output_minimum_timestep_first_soc
+        # )
+        # self.problem.constraint_output_minimum_without_first_soc = pyo.Constraint(
+        #     self.problem.set_timesteps_without_first,
+        #     self.problem.set_outputs_state_of_charge,
+        #     rule=rule_output_minimum_without_first_soc
+        # )
 
         self.problem.constraint_output_maximum = pyo.Constraint(
             self.problem.set_timesteps,
