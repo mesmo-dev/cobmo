@@ -32,7 +32,7 @@ logger = logging.getLogger('pyomo.util.infeasible')
 logger.setLevel(logging.INFO)
 
 
-def plot_battery_parameters():
+def plot_battery_parameters(case):
     sns.set()
     (
         battery_params_2016,
@@ -45,10 +45,11 @@ def plot_battery_parameters():
         efficiency,
         depth_of_discharge
     ) = retrieve_battery_parameters(
-        case='best'
+        case=case
     )
     years = pd.Index(['2016', '2020', '2025', '2030'])
     techs = energy_cost.index
+    techs = techs[0:-1]
 
     energy_cost.columns = years
     power_cost.columns = years
@@ -65,11 +66,12 @@ def plot_battery_parameters():
     # >> Many color maps here:
     # https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html
 
+    legend_labels = ['Flooded LA', 'VRLA', 'NMC', 'NCA', 'LFP', 'LTO']  # , 'NaNiCl'
     y = efficiency
 
     for t in np.arange(0, techs.shape[0], 1):
-        figa.plot(x_array, np.array(y.iloc[t, :]) * 100.0, color=colors[t], label='%s' % techs[t])
-        figa.scatter(x_array, np.array(y.iloc[t, :]) * 100.0, marker='o', facecolors='none', edgecolors=colors[t], s=50)
+        figa.plot(x_array, np.array(y.iloc[t, :]), color=colors[t], label='%s' % legend_labels[t])
+        figa.scatter(x_array, np.array(y.iloc[t, :]), marker='o', facecolors='none', edgecolors=colors[t], s=50)
 
     # Changing names in the x axis
     figa.set_xticks(x_array)
@@ -78,10 +80,11 @@ def plot_battery_parameters():
         x_labels[y] = years[y]
     figa.set_xticklabels(x_labels)
 
-    figa.set_ylabel('%')
-    figa.legend(loc='center left', fontsize=9)
+    # figa.set_ylabel('$/dsdssd')
+    # figa.set_xlabel('Year')
+    # figa.legend(loc='upper right', fontsize=9)
     figa.grid(True, which='both')
-    fig.suptitle('Efficiency')
+    # figa.title.set_text('Battery Cost ($/kWh)')
 
     save_path = 'data/storage_data/graphs'
 
@@ -91,7 +94,7 @@ def plot_battery_parameters():
     plt.show()
 
 
-def plot_battery_cases_storage_sizes(
+def plot_battery_cases_bubbles(
         case,
         filepath_read,
         save_path,
@@ -110,7 +113,7 @@ def plot_battery_cases_storage_sizes(
     :return:
     """
     sns.set()
-    plt.rcParams['font.serif'] = "Palatino Linotype"
+    plt.rcParams['font.serif'] = "Arial"  # Palatino Linotype
     plt.rcParams['font.family'] = "serif"
 
     results = pd.read_csv(filepath_read, index_col='battery_technology')
@@ -178,10 +181,11 @@ def plot_battery_cases_storage_sizes(
         x_labels[y] = years[y]
     all_techs.set_xticklabels(x_labels)
 
+    legend_labels = ['Flooded LA', 'VRLA', 'LFP', 'NCA', 'NMC', 'LTO', 'NaNiCl']  # , 'NaNiCl'
     all_techs.set_yticks(y_array)
     y_labels = [item.get_text() for item in all_techs.get_yticklabels()]
     for i in np.arange(0, len(y_array), 1):
-        y_labels[i] = techs[i]
+        y_labels[i] = legend_labels[i]
     all_techs.set_yticklabels(y_labels)
 
     # Title and saving
@@ -206,7 +210,7 @@ def plot_battery_cases_storage_sizes(
     elif labels == 'investment':
         title = 'Investment — ' + pricing_method + ' — Case: %s — bubbles: SGD/kWh' % case
 
-    fig2.suptitle(title, fontsize=12)
+    all_techs.title.set_text(title)
 
     all_techs.set_aspect(aspect=0.5)
     plt.show()
