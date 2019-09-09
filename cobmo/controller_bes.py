@@ -115,12 +115,12 @@ class Controller_bes(object):
             self.problem.set_timesteps,
             self.problem.set_outputs,
             initialize=self.building.output_constraint_timeseries_minimum.stack().to_dict()
-        )  # TODO: Transpose output_constraint_timeseries_minimum.
+        )
         self.problem.parameter_output_timeseries_maximum = pyo.Param(
             self.problem.set_timesteps,
             self.problem.set_outputs,
             initialize=self.building.output_constraint_timeseries_maximum.stack().to_dict()
-        )  # TODO: Transpose output_constraint_timeseries_maximum.
+        )
 
         # Define initial state
         self.problem.parameter_state_initial = pyo.Param(
@@ -264,7 +264,6 @@ class Controller_bes(object):
                     * problem.variable_storage_size  # * fixed_storage_size
             )
 
-
         def rule_output_maximum(
                 problem,
                 timestep,
@@ -276,6 +275,7 @@ class Controller_bes(object):
                     <=
                     problem.parameter_output_timeseries_maximum[timestep, output]
                     * problem.variable_storage_size  # * fixed_storage_size
+                    * (float(building.building_scenarios['storage_depth_of_discharge'][0]))
                 )
             else:
                 return (
@@ -361,7 +361,7 @@ class Controller_bes(object):
             # If there is storage, adding the CAPEX
             if 'storage' in building.building_scenarios['building_storage_type'][0]:
                 objective_value = objective_value + (
-                                        problem.variable_storage_size * 3.6e-6  # fixed_storage_size
+                                        problem.variable_storage_size * 2.77778e-7  # fixed_storage_size
                                         * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
                                         + float(building.building_scenarios['storage_power_installation_cost'][0])
                                         * float(building.building_scenarios['peak_electric_power_building_watt'][0])
@@ -442,7 +442,7 @@ class Controller_bes(object):
 
         if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
             optimum_obj = optimum_obj + (
-                                    self.problem.variable_storage_size.value * 3.6e-6  # fixed_storage_size
+                                    self.problem.variable_storage_size.value * 2.77778e-7  # fixed_storage_size
                                     * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
                                     + float(self.building.building_scenarios['storage_power_installation_cost'][0])
                                     * float(self.building.building_scenarios['peak_electric_power_building_watt'][0])
@@ -466,7 +466,7 @@ class Controller_bes(object):
             optimum_obj = (
                             optimum_obj
                             - (storage_size
-                               * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0]) * 3.6e-6
+                               * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0]) * 2.77778e-7
                                + float(self.building.building_scenarios['storage_power_installation_cost'][0])
                                 * float(self.building.building_scenarios['peak_electric_power_building_watt'][0])
                                + float(self.building.building_scenarios['storage_fixed_cost'][0])

@@ -38,15 +38,15 @@ class Controller_bes_lifetime(object):
         self.problem.set_outputs = pyo.Set(
             initialize=self.building.set_outputs
         )
-        self.problem.set_outputs_without_soc = pyo.Set(
-            initialize=self.building.set_outputs[
-                ~self.building.set_outputs.str.contains('_battery_storage_state_of_charge')
-            ]
-
-        )
-        self.problem.set_outputs_state_of_charge = pyo.Set(
-            initialize=self.building.set_outputs[self.building.set_outputs.str.contains('_battery_storage_state_of_charge')]
-        )
+        # self.problem.set_outputs_without_soc = pyo.Set(
+        #     initialize=self.building.set_outputs[
+        #         ~self.building.set_outputs.str.contains('_battery_storage_state_of_charge')
+        #     ]
+        #
+        # )
+        # self.problem.set_outputs_state_of_charge = pyo.Set(
+        #     initialize=self.building.set_outputs[self.building.set_outputs.str.contains('_battery_storage_state_of_charge')]
+        # )
         self.problem.set_outputs_power = pyo.Set(
             initialize=self.building.set_outputs[self.building.set_outputs.str.contains('electric_power')]
         )
@@ -264,7 +264,6 @@ class Controller_bes_lifetime(object):
                     * problem.variable_storage_size  # * fixed_storage_size
             )
 
-
         def rule_output_maximum(
                 problem,
                 timestep,
@@ -276,6 +275,7 @@ class Controller_bes_lifetime(object):
                     <=
                     problem.parameter_output_timeseries_maximum[timestep, output]
                     * problem.variable_storage_size  # * fixed_storage_size
+                    * (float(building.building_scenarios['storage_depth_of_discharge'][0]))
                 )
             else:
                 return (
@@ -295,7 +295,7 @@ class Controller_bes_lifetime(object):
             return (
                     ahu_cool_electric_power_tot
                     <=
-                    40000.0
+                    20000.0
             )
 
 # =================================================================================================
@@ -320,19 +320,19 @@ class Controller_bes_lifetime(object):
         )
         self.problem.constraint_output_minimum = pyo.Constraint(
             self.problem.set_timesteps,
-            self.problem.set_outputs_without_soc,
+            self.problem.set_outputs,
             rule=rule_output_minimum
         )
-        self.problem.constraint_output_minimum_timestep_first_soc = pyo.Constraint(
-            self.problem.set_timestep_first,
-            self.problem.set_outputs_state_of_charge,
-            rule=rule_output_minimum_timestep_first_soc
-        )
-        self.problem.constraint_output_minimum_without_first_soc = pyo.Constraint(
-            self.problem.set_timesteps_without_first,
-            self.problem.set_outputs_state_of_charge,
-            rule=rule_output_minimum_without_first_soc
-        )
+        # self.problem.constraint_output_minimum_timestep_first_soc = pyo.Constraint(
+        #     self.problem.set_timestep_first,
+        #     self.problem.set_outputs_state_of_charge,
+        #     rule=rule_output_minimum_timestep_first_soc
+        # )
+        # self.problem.constraint_output_minimum_without_first_soc = pyo.Constraint(
+        #     self.problem.set_timesteps_without_first,
+        #     self.problem.set_outputs_state_of_charge,
+        #     rule=rule_output_minimum_without_first_soc
+        # )
 
         self.problem.constraint_output_maximum = pyo.Constraint(
             self.problem.set_timesteps,
@@ -344,7 +344,6 @@ class Controller_bes_lifetime(object):
             rule=rule_maximum_ahu_electric_power
         )
         self.problem.constraint_ahu_electric_power_output_maximum.activate()
-
 
         # Define objective rule
         def objective_rule(problem):
@@ -362,7 +361,7 @@ class Controller_bes_lifetime(object):
             # If there is storage, adding the CAPEX
             if 'storage' in building.building_scenarios['building_storage_type'][0]:
                 objective_value = objective_value + (
-                                        problem.variable_storage_size * 3.6e-6  # fixed_storage_size
+                                        problem.variable_storage_size * 2.77778e-7  # fixed_storage_size
                                         * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
                                         + float(building.building_scenarios['storage_power_installation_cost'][0])
                                         * float(building.building_scenarios['peak_electric_power_building_watt'][0])
@@ -378,7 +377,7 @@ class Controller_bes_lifetime(object):
         )
 
         # Print setup time for debugging
-        print("Controller setup time: {:.2f} seconds".format(time.clock() - time_start))
+        # print("Controller setup time: {:.2f} seconds".format(time.clock() - time_start))
 
     def solve(self):
         """Invoke solver on Pyomo problem."""
@@ -389,7 +388,7 @@ class Controller_bes_lifetime(object):
             self.problem,
             tee=False  # Verbose solver outputs
         )
-        print("Controller solve time: {:.2f} seconds".format(time.clock() - time_start))
+        # print("Controller solve time: {:.2f} seconds".format(time.clock() - time_start))
 
 
 # =================================================================================================
@@ -430,7 +429,6 @@ class Controller_bes_lifetime(object):
         # fixed_storage_size = 5000.0 * 1000.0 * 3.6e+3  # to Joule  # @change
         # storage_size = fixed_storage_size
 
-        print('\n@storage_lifetime: {}'.format(self.building.building_parameters['storage_lifetime']))
         optimum_obj = 0.0
         for timestep in self.problem.set_timesteps:
             for output_power in self.problem.set_outputs_power:
@@ -444,14 +442,14 @@ class Controller_bes_lifetime(object):
 
         if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
             optimum_obj = optimum_obj + (
-                                    self.problem.variable_storage_size.value * 3.6e-6  # fixed_storage_size
+                                    self.problem.variable_storage_size.value * 2.77778e-7  # fixed_storage_size
                                     * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
                                     + float(self.building.building_scenarios['storage_power_installation_cost'][0])
                                     * float(self.building.building_scenarios['peak_electric_power_building_watt'][0])
                                     + float(self.building.building_scenarios['storage_fixed_cost'][0])
                             )
 
-        print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
+        # print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
         print('>>storage type {}'.format(self.building.building_scenarios['building_storage_type'][0]))
         if storage_size is not None:
             print(">>Storage size = %.2f" % storage_size)
@@ -471,7 +469,7 @@ class Controller_bes_lifetime(object):
             optimum_obj = (
                             optimum_obj
                             - (storage_size
-                               * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0]) * 3.6e-6
+                               * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0]) * 2.77778e-7
                                + float(self.building.building_scenarios['storage_power_installation_cost'][0])
                                 * float(self.building.building_scenarios['peak_electric_power_building_watt'][0])
                                + float(self.building.building_scenarios['storage_fixed_cost'][0])
