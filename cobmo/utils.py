@@ -267,26 +267,29 @@ def discounted_payback_time(
             # pb.set_yticks(major_ticks)
             # pb.set_yticks(minor_ticks, minor=True)
 
-        fig.legend(loc='center right', fontsize=9)
+        # fig.legend(loc='center right', fontsize=9)
+
+        pb.set_ylim([0.0, 20000.0])
+
         pb.grid(True, which='both')
         pb.grid(which='minor', alpha=0.2)
         # pb.grid(which='major', alpha=0.5)
 
-        pb.text(
-            1, investment_cost*2.5/4,
-            'storage tech = %s'
-            '\ninterest rate = %.2f'
-            '\nstorage size = %.2f m3' 
-            '\nefficiency = %.2f' 
-            '\nsavings/year = %.1f SGD' 
-            '\nstorage investment= %.1f SGD/%s'
-            % (
-                building.building_scenarios['storage_technology'][0], interest_rate, storage_size, float(rt_efficiency),
-                savings_one_year, float(storage_investment_per_unit), SGD_per_X
-               ),
-            # style='italic',
-            fontsize=9,
-            bbox={'facecolor': '#0074BD', 'alpha': 0.2, 'pad': 5})
+        # pb.text(
+        #     1, investment_cost*0.7,  # *2.5/4
+        #     'storage tech = %s'
+        #     '\ninterest rate = %.2f'
+        #     '\nstorage size = %.1f'
+        #     '\nefficiency = %.2f'
+        #     '\nsavings/year = %.1f SGD'
+        #     '\nstorage investment= %.1f SGD/%s'
+        #     % (
+        #         building.building_scenarios['storage_technology'][0], interest_rate, storage_size, float(rt_efficiency),
+        #         savings_one_year, float(storage_investment_per_unit), SGD_per_X
+        #        ),
+        #     # style='italic',
+        #     fontsize=9,
+        #     bbox={'facecolor': '#0074BD', 'alpha': 0.2, 'pad': 5})
 
         title = 'Neither Sensible nor battery'
         filename = 'no_tech_specified'
@@ -313,6 +316,7 @@ def discounted_payback_time(
 
         fig.suptitle(title)
 
+        fig.set_size_inches([7, 5])
         if save_plot_on_off == 1:
             plt.savefig(save_path + filename + '.svg', format='svg', dpi=1200)
             # plt.savefig('figs/discounted_payback.svg', format='svg', dpi=1200)
