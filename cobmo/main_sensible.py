@@ -42,22 +42,22 @@ def connect_database(
 
 
 scenario = 'scenario_default'
-pricing_method = 'retailer_peak_offpeak'
+pricing_method = 'wholesale_market'
 # Options:
 # 'wholesale_market'        | 'retailer_peak_offpeak' | 'wholesale_squeezed_20' | 'wholesale_squeezed_40'
 # 'wholesale_squeezed_60'   | 'wholesale_squeezed_80'
 
 storage = 'sensible'  # Options: 'sensible' or 'battery'
 
+plotting = 0
 print_on_csv = 0
-plotting = 1
 save_plot = 0
 
 
 print('\n________________________'
       '\nSimulation options:'
       '\n- Storage tech: *%s*'
-      '\n- Pricing Method: *%s*'
+      '\n- Price signal: *%s*'
       '\n________________________'
       % (storage, pricing_method))
 
@@ -229,7 +229,7 @@ def example():
 
         elif storage == 'battery':
             savings_day = (optimum_obj_baseline - optimum_obj_battery)
-            storage_size = storage_size * 3.6e-3 * 1.0e-3
+            storage_size = storage_size * 2.77778e-7  # * 3.6e-3 * 1.0e-3
 
     # __________________________________________________ Plotting _____________________________________________________
 
@@ -277,21 +277,21 @@ def example():
     if print_on_csv == 1:
 
         # Storage scenario
-        building_storage.state_matrix.to_csv('delete_me_storage/' + storage + '/state_matrix-' + pricing_method + '.csv')
-        building_storage.control_matrix.to_csv('delete_me_storage/' + storage + '/control_matrix-' + pricing_method + '.csv')
-        building_storage.disturbance_matrix.to_csv('delete_me_storage/' + storage + '/disturbance_matrix-' + pricing_method + '.csv')
+        building_storage.state_matrix.to_csv('delete_me_storage/' + storage + '/state_matrix-'  + storage + '-' + pricing_method + '.csv')
+        building_storage.control_matrix.to_csv('delete_me_storage/' + storage + '/control_matrix-'  + storage + '-' + pricing_method + '.csv')
+        building_storage.disturbance_matrix.to_csv('delete_me_storage/' + storage + '/disturbance_matrix-'  + storage + '-' + pricing_method + '.csv')
 
-        building_storage.state_output_matrix.to_csv('delete_me_storage/' + storage + '/state_output_matrix-' + pricing_method + '.csv')
-        building_storage.control_output_matrix.to_csv('delete_me_storage/' + storage + '/control_output_matrix-' + pricing_method + '.csv')
-        building_storage.disturbance_output_matrix.to_csv('delete_me_storage/' + storage + '/disturbance_output_matrix-' + pricing_method + '.csv')
+        building_storage.state_output_matrix.to_csv('delete_me_storage/' + storage + '/state_output_matrix-'  + storage + '-' + pricing_method + '.csv')
+        building_storage.control_output_matrix.to_csv('delete_me_storage/' + storage + '/control_output_matrix-'  + storage + '-' + pricing_method + '.csv')
+        building_storage.disturbance_output_matrix.to_csv('delete_me_storage/' + storage + '/disturbance_output_matrix-'  + storage + '-' + pricing_method + '.csv')
 
         # state_timeseries_simulation_storage.to_csv('delete_me_storage/sensible/state_timeseries_simulation_SENSIBLE.csv')
 
-        state_timeseries_controller_storage.to_csv('delete_me_storage/' + storage + '/state_timeseries_controller-' + pricing_method + '.csv')
+        state_timeseries_controller_storage.to_csv('delete_me_storage/' + storage + '/state_timeseries_controller-' + storage + '-' + pricing_method + '.csv')
 
         date_main = dt.datetime.now()
         filename_out_controller = (
-                'output_timeseries_controller-' + pricing_method + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
+                'output_timeseries_controller-'  + storage + '-' + pricing_method + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
                     date_main.year, date_main.month, date_main.day, date_main.hour, date_main.minute,
                     date_main.second)
                 + '.csv'
