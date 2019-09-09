@@ -40,23 +40,37 @@ def connect_database(
 
 
 scenario = 'scenario_default'
-pricing_method = 'retailer_peak_offpeak'  # Options: 'wholesale_market' or 'retailer_peak_offpeak'
+pricing_method = 'retailer_peak_offpeak'
+# Options:
+# 'wholesale_market'        | 'retailer_peak_offpeak' | 'wholesale_squeezed_20' | 'wholesale_squeezed_40'
+# 'wholesale_squeezed_60'   | 'wholesale_squeezed_80'
 
 do_plotting = 1
 simulate = 0
 
 plotting_options = [
-    'savings_year', 'savings_year_percentage', 'storage_size', 'simple_payback', 'discounted_payback', 'efficiency', 'investment'
+    'savings_year', 'savings_year_percentage', 'storage_size', 'simple_payback',
+    'discounted_payback', 'efficiency', 'investment'
 ]
 
 # Definition of the IRENA case
-# case = 'reference'
-case = 'best'
+case = 'reference'
+# case = 'best'
+# case = 'worst'
 
-interest_rate = 0.05
+interest_rate = 0.02
 
 
 if simulate == 1:
+    print('\n________________________'
+          '\nSimulation options:'
+          '\n- Case: *%s*'
+          '\n- Price signal: *%s*'
+          '\n- Interest rate: *%.2f*'
+          '\n________________________'
+          % (case, pricing_method, interest_rate))
+
+
     def get_building_model(
             scenario_name=scenario,
             conn=connect_database()
@@ -129,15 +143,15 @@ if simulate == 1:
         years = pd.Index(['2016', '2020', '2025', '2030'])
 
         # ________________________________________________________________________
-        # Slicing for simulating on less technologies (shorter run time) - de-comment to use
+        # # @Slicing for simulating on less technologies (shorter run time) - de-comment to use
 
-        # techs = techs[0:2]
-        # years = years[-2:]
-        # energy_cost = energy_cost.iloc[0:2, -2:]
-        # power_cost = power_cost.iloc[0:2, -2:]
-        # lifetime = lifetime.iloc[0:2, -2:]
-        # efficiency = efficiency.iloc[0:2, -2:]
-        # depth_of_discharge = depth_of_discharge.iloc[0:2, -2:]
+        # techs = techs[0:-1]
+        # # years = years[-2:]
+        # energy_cost = energy_cost.iloc[0:-1, :]
+        # power_cost = power_cost.iloc[0:-1, :]
+        # lifetime = lifetime.iloc[0:-1, :]
+        # efficiency = efficiency.iloc[0:-1, :]
+        # depth_of_discharge = depth_of_discharge.iloc[0:-1, :]
         # ________________________________________________________________________
 
         # Redefining columns for plotting
@@ -176,7 +190,6 @@ if simulate == 1:
             time_start_cycle = time.clock()
             counter = 0
             for t in techs:
-                counter = counter + 1  # Needed to print the simulation number
                 building_storage_types = pd.read_sql(
                     """
                     select * from building_storage_types
@@ -188,7 +201,7 @@ if simulate == 1:
                 )
 
                 for y in range(years.shape[0]):
-                    counter = counter + y - 1
+                    counter = counter + 1
                     building_storage_types.at['battery_storage_default', 'storage_round_trip_efficiency'] = (
                         float(efficiency.iloc[techs.str.contains(t), y])
                         * 0.95  # Accounting for inverter efficiency
@@ -236,6 +249,7 @@ if simulate == 1:
                         # index=False
                     )
                     print('\n-----------------------------------------------------------------------------')
+                    print('\n>> Simulation # %i' % counter)
                     print('\n\n________________________Setup @BASELINE scenario________________________')
                     building_baseline = get_building_model(conn=conn)
                     controller = cobmo.controller_bes_lifetime.Controller_bes_lifetime(conn=conn, building=building_baseline)
@@ -257,14 +271,13 @@ if simulate == 1:
                     (_, _, _, storage_size, obj_storage) = controller.solve()
 
                     # Calculating the savings and the payback time
-                    storage_size_kwh = storage_size * 3.6e-3 * 1.0e-3
+                    storage_size_kwh = storage_size * 2.77778e-7  # * 3.6e-3 * 1.0e-3
                     costs_year_baseline = obj_baseline * 260.0
                     savings_day = (obj_baseline - obj_storage)
                     savings_year = savings_day * 260.0
-                    savings_year_percentage = float(savings_year/costs_year_baseline*100.0)
 
                     # Running discounted payback function
-                    print("Savings / day = %.2f" % savings_day)
+                    print("Savings / day = %.2f $" % savings_day)
                     if float(savings_day) > 0.00001:
                         (discounted_payback, simple_payback, _) = cobmo.utils_bes_cases.discounted_payback_time(
                             building,
@@ -279,6 +292,10 @@ if simulate == 1:
                         discounted_payback = 0.0
                         simple_payback = 0.0
 
+                    if discounted_payback == 0.0:
+                        savings_year = 0.0
+
+                    savings_year_percentage = float(savings_year / costs_year_baseline * 100.0)
                     # Storing results
                     simple_payback_df.iloc[techs.str.contains(t), y] = simple_payback
                     discounted_payback_df.iloc[techs.str.contains(t), y] = discounted_payback
@@ -288,7 +305,7 @@ if simulate == 1:
 
             # Creating the mask reflecting where the payback exists
             # and changing efficiency and investment frames to reflect the mask conditions
-            mask = simple_payback_df == -0.0
+            mask = discounted_payback_df == -0.0
             efficiency[mask] = 0.0
             energy_cost[mask] = 0.0
 
@@ -370,7 +387,7 @@ if simulate == 1:
                     except OSError as exc:  # Guard against race condition
                         if exc.errno != errno.EEXIST:
                             raise
-                cobmo.utils_bes_cases.plot_battery_cases_storage_sizes(
+                cobmo.utils_bes_cases.plot_battery_cases_bubbles(
                     case,
                     filepath_read,
                     save_path_plots,
@@ -383,15 +400,18 @@ if simulate == 1:
                 int(float(techs.shape[0]) * float(years.shape[0])))
                                 )
 
+
+    if __name__ == "__main__":
+        example()
 # ___________________________________________________________________________________________________________________
 
 
 if do_plotting == 1 and simulate == 0:  # Only plotting
 
-    inter = '5'     # << INPUT BY HAND
+    inter = '2'     # << INPUT BY HAND
     #  -->
     datetime_path = (
-        '2019-09-04_15-33-26'   # << INPUT BY HAND
+        '2019-09-06_17-17-36'   # << INPUT BY HAND
         ' - '
         + inter
         + '%'
@@ -429,7 +449,7 @@ if do_plotting == 1 and simulate == 0:  # Only plotting
                 + datetime_path
         )
 
-        cobmo.utils_bes_cases.plot_battery_cases_storage_sizes(
+        cobmo.utils_bes_cases.plot_battery_cases_bubbles(
             case,
             read_path,
             save_path_plots,
@@ -440,7 +460,5 @@ if do_plotting == 1 and simulate == 0:  # Only plotting
         )
 
 
-if __name__ == "__main__":
-    example()
 
 
