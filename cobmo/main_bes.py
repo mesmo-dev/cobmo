@@ -45,7 +45,22 @@ def get_building_model(
         scenario_name=scenario,
         conn=connect_database()
 ):
-    building = cobmo.building.Building(conn, scenario_name, pricing_method=pricing_method)
+    # Modify price_type for current scenario in the database.
+    building_scenarios = pd.read_sql(
+        """
+        select * from building_scenarios
+        """,
+        conn
+    )
+    building_scenarios.at[scenario, 'price_type'] = pricing_method
+    building_scenarios.to_sql(
+        'building_scenarios',
+        con=conn,
+        if_exists='replace',
+        index=False
+    )
+
+    building = cobmo.building.Building(conn, scenario_name)
     return building
 
 

@@ -46,7 +46,7 @@ pricing_method = 'retailer_peak_offpeak'
 # 'wholesale_squeezed_60'   | 'wholesale_squeezed_80'
 
 do_plotting = 1
-simulate = 0
+simulate = 1
 
 plotting_options = [
     'savings_year', 'savings_year_percentage', 'storage_size', 'simple_payback',
@@ -75,7 +75,22 @@ if simulate == 1:
             scenario_name=scenario,
             conn=connect_database()
     ):
-        building = cobmo.building.Building(conn, scenario_name, pricing_method=pricing_method)
+        # Modify price_type for current scenario in the database.
+        building_scenarios = pd.read_sql(
+            """
+            select * from building_scenarios
+            """,
+            conn
+        )
+        building_scenarios.at[scenario, 'price_type'] = pricing_method
+        building_scenarios.to_sql(
+            'building_scenarios',
+            con=conn,
+            if_exists='replace',
+            index=False
+        )
+
+        building = cobmo.building.Building(conn, scenario_name)
         return building
 
 

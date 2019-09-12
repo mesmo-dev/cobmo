@@ -16,14 +16,17 @@ class Building(object):
     Building scenario object to store all information
     """
 
-    def __init__(self, conn, scenario_name, pricing_method='wholesale_market'):
+    def __init__(self, conn, scenario_name):
         # Load building information from database
 
         self.electricity_prices = pd.read_sql(
             """
             select * from electricity_price_timeseries
-            where price_type='{}'
-            """.format(pricing_method),
+            where price_type=(
+                select price_type from building_scenarios
+                where scenario_name='{}' 
+            )
+            """.format(scenario_name),
             conn
         )
         self.electricity_prices.index = pd.to_datetime(self.electricity_prices['time'])

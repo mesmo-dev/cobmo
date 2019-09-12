@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS "building_scenarios" (
 	"co2_model_type"	TEXT,
 	"humidity_model_type"	TEXT,
 	"heating_cooling_session"	TEXT,
+	"price_type"	TEXT,
 	"time_start"	TEXT,
 	"time_end"	TEXT,
 	"time_step"	TEXT
