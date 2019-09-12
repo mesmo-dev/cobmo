@@ -2832,11 +2832,11 @@ class Building(object):
                 if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
                     self.control_output_matrix.at[
                         index + '_ahu_heat_electric_power',
-                        index + '_battery_storage_to_zone_electric_power'
+                        index + '_battery_storage_to_zone_heat_ahu'
                     ] = (
                             self.control_output_matrix.at[
                                 index + '_ahu_heat_electric_power',
-                                index + '_battery_storage_to_zone_electric_power'
+                                index + '_battery_storage_to_zone_heat_ahu'
                             ]
                             - 1
                     )
