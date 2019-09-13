@@ -106,38 +106,43 @@ class Building(object):
                 (self.building_scenarios['co2_model_type'][0] != '')
                 | (self.building_zones['hvac_ahu_type'] != '').any()
                 | (self.building_zones['window_type'] != '').any()
-                # | (self.building_zones['building_storage_type'] != '').any()
         )
 
-        # Define sets
-        self.set_states = pd.Index(
-            pd.concat([
+        # Define sets.
+        self.set_states = pd.Index(  # Create an series / array / set of indexes.
+            pd.concat([  # Concatenate pandas series objects along the (default) row axis.
+                # Zone temperature.
                 self.building_zones['zone_name'] + '_temperature',
+
+                # Surface temperature.
                 self.building_surfaces_adiabatic['surface_name'][
                     self.building_surfaces_adiabatic['heat_capacity'] != '0'
-                    ] + '_temperature',
+                ] + '_temperature',
                 self.building_surfaces_exterior['surface_name'][
                     self.building_surfaces_exterior['heat_capacity'] != '0'
-                    ] + '_temperature',
+                ] + '_temperature',
                 self.building_surfaces_interior['surface_name'][
                     self.building_surfaces_interior['heat_capacity'] != '0'
-                    ] + '_temperature',
-                
+                ] + '_temperature',
+
+                # Zone CO2 concentration.
                 self.building_zones['zone_name'][
                     ((self.building_zones['hvac_ahu_type'] != '') | (self.building_zones['window_type'] != ''))
                     & (self.building_scenarios['co2_model_type'][0] != '')
-                    ] + '_co2_concentration',
+                ] + '_co2_concentration',
+
+                # Zone absolute humidity.
                 self.building_zones['zone_name'][
                     (self.building_zones['hvac_ahu_type'] != '')
                     & (self.building_scenarios['humidity_model_type'][0] != '')
-                    ] + '_absolute_humidity',
+                ] + '_absolute_humidity',
 
-                # STORAGE
-                # Sensible
+                # Sensible storage state of charge.
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
-                    ] + '_sensible_thermal_storage_state_of_charge',
-                # Battery
+                ] + '_sensible_thermal_storage_state_of_charge',
+
+                # Battery storage state of charge.
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
                 ] + '_battery_storage_state_of_charge'
@@ -146,87 +151,94 @@ class Building(object):
         )
         self.set_controls = pd.Index(
             pd.concat([
+                # Generic HVAC system.
                 self.building_zones['zone_name'][
                     self.building_zones['hvac_generic_type'] != ''
-                    ] + '_generic_heat_thermal_power',
+                ] + '_generic_heat_thermal_power',
                 self.building_zones['zone_name'][
                     self.building_zones['hvac_generic_type'] != ''
-                    ] + '_generic_cool_thermal_power',
+                ] + '_generic_cool_thermal_power',
+
+                # AHU.
                 self.building_zones['zone_name'][
                     self.building_zones['hvac_ahu_type'] != ''
-                    ] + '_ahu_heat_air_flow',
+                ] + '_ahu_heat_air_flow',
                 self.building_zones['zone_name'][
                     self.building_zones['hvac_ahu_type'] != ''
-                    ] + '_ahu_cool_air_flow',
+                ] + '_ahu_cool_air_flow',
+
+                # TU.
                 self.building_zones['zone_name'][
                     self.building_zones['hvac_tu_type'] != ''
-                    ] + '_tu_heat_air_flow',
+                ] + '_tu_heat_air_flow',
                 self.building_zones['zone_name'][
                     self.building_zones['hvac_tu_type'] != ''
-                    ] + '_tu_cool_air_flow',
+                ] + '_tu_cool_air_flow',
+
+                # Windows.
                 self.building_zones['zone_name'][
                     (self.building_zones['window_type'] != '')
                 ] + '_window_air_flow',
 
-                # DISCHARGE control variables. One per zone.
-                # HEATING
-                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_ahu_heat_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
-                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_tu_heat_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
+                # Sensible storage charge.
+                self.building_scenarios['building_name'][
+                    self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default'
+                ] + '_sensible_storage_charge_heat_thermal_power',
+                self.building_scenarios['building_name'][
+                    self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default'
+                ] + '_sensible_storage_charge_cool_thermal_power',
 
-                # Battery storage
-                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_heat_ahu') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                ) else None),
-                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_heat_tu') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                ) else None),
+                # Battery storage charge.
+                self.building_scenarios['building_name'][
+                    self.building_scenarios['building_storage_type'] == 'battery_storage_default'
+                ] + '_battery_storage_charge',
 
-                # COOLING
-                # Sensible storage
-                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_ahu_cool_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
-                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_tu_cool_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
+                # Sensible storage discharge to AHU.
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_ahu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_to_zone_ahu_heat_thermal_power',
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_ahu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_to_zone_ahu_cool_thermal_power',
 
-                # Battery storage
-                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_cool_ahu') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                ) else None),
-                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_cool_tu') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                ) else None),
+                # Sensible storage discharge to TU.
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_tu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_to_zone_tu_heat_thermal_power',
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_tu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_to_zone_tu_cool_thermal_power',
 
-                # CHARGE control variables. One per building.
-                # HEATING
-                # Sensible storage
-                ((self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power') if (
-                        (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
+                # Battery storage discharge to AHU.
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_ahu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_heat_ahu',
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_ahu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_cool_ahu',
 
-                # COOLING
-                # Sensible storage
-                ((self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power') if (
-                        (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
-
-                # Battery CHARGE
-                ((self.building_scenarios['building_name'] + '_battery_storage_charge') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                ) else None)
-
-
+                # Battery storage discharge to TU.
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_tu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_heat_tu',
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_tu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_cool_tu',
             ]),
             name='control_name'
         )
-        self.set_disturbances = pd.Index(  # creating an array of indexes
-            pd.concat([  # concatenates objects along the (default) rows axes. Concatenates only 1 object
-                pd.Series([  # 1-D array
+        self.set_disturbances = pd.Index(
+            pd.concat([
+                # Weather.
+                pd.Series([
                     'ambient_air_temperature',
                     'sky_temperature',
                     'irradiation_horizontal',
@@ -234,59 +246,71 @@ class Building(object):
                     'irradiation_south',
                     'irradiation_west',
                     'irradiation_north'
-                    # 'storage_ambient_air_temperature'  # @add2
-
+                    # 'storage_ambient_air_temperature'  # TODO: Check if storage_ambient_air_temperature still needed.
                 ]),
-                pd.Series(self.building_zones['internal_gain_type'].unique() + '_occupancy'),   # part of pd.concat
-                pd.Series(self.building_zones['internal_gain_type'].unique() + '_appliances'),  # part of pd.concat
-                (pd.Series(['constant']) if self.define_constant else pd.Series([]))
+
+                # Internal gains.
+                pd.Series(self.building_zones['internal_gain_type'].unique() + '_occupancy'),
+                pd.Series(self.building_zones['internal_gain_type'].unique() + '_appliances'),
+
+                # Constant (workaround for constant model terms).
+                (pd.Series(['constant']) if self.define_constant else None)
             ]),
             name='disturbance_name'
         )
         self.set_outputs = pd.Index(
             pd.concat([
+                # Zone temperature.
                 self.building_zones['zone_name'] + '_temperature',
+
+                # Zone CO2 concentration.
                 self.building_zones['zone_name'][
                     ((self.building_zones['hvac_ahu_type'] != '') | (self.building_zones['window_type'] != ''))
                     & (self.building_scenarios['co2_model_type'][0] != '')
-                    ] + '_co2_concentration',
+                ] + '_co2_concentration',
+
+                # Zone absolute humidity.
                 self.building_zones['zone_name'][
                     (self.building_zones['hvac_ahu_type'] != '')
                     & (self.building_scenarios['humidity_model_type'][0] != '')
-                    ] + '_absolute_humidity',
+                ] + '_absolute_humidity',
+
+                # Zone fresh air flow.
                 self.building_zones['zone_name'][
                     (self.building_zones['hvac_ahu_type'] != '')
                     | (self.building_zones['window_type'] != '')
-                    ] + '_total_fresh_air_flow',
+                ] + '_total_fresh_air_flow',
                 self.building_zones['zone_name'][
                     (self.building_zones['hvac_ahu_type'] != '')
                 ] + '_ahu_fresh_air_flow',
                 self.building_zones['zone_name'][
                     (self.building_zones['window_type'] != '')
                 ] + '_window_fresh_air_flow',
-                self.building_zones['zone_name'][
-                    self.building_zones['hvac_generic_type'] != ''
-                    ] + '_generic_heat_power',
-                self.building_zones['zone_name'][
-                    self.building_zones['hvac_generic_type'] != ''
-                    ] + '_generic_cool_power',
-                self.building_zones['zone_name'][
-                    self.building_zones['hvac_ahu_type'] != ''
-                    ] + '_ahu_heat_electric_power',
-                self.building_zones['zone_name'][
-                    self.building_zones['hvac_ahu_type'] != ''
-                    ] + '_ahu_cool_electric_power_cooling_coil',
-                self.building_zones['zone_name'][
-                    self.building_zones['hvac_ahu_type'] != ''
-                    ] + '_ahu_cool_electric_power_heating_coil',
-                self.building_zones['zone_name'][
-                    self.building_zones['hvac_tu_type'] != ''
-                    ] + '_tu_heat_electric_power',
-                self.building_zones['zone_name'][
-                    self.building_zones['hvac_tu_type'] != ''
-                    ] + '_tu_cool_electric_power',
 
-                # Storage state variables in output (state of charge
+                # HVAC systems power.
+                self.building_zones['zone_name'][
+                    self.building_zones['hvac_generic_type'] != ''
+                ] + '_generic_heat_power',
+                self.building_zones['zone_name'][
+                    self.building_zones['hvac_generic_type'] != ''
+                ] + '_generic_cool_power',
+                self.building_zones['zone_name'][
+                    self.building_zones['hvac_ahu_type'] != ''
+                ] + '_ahu_heat_electric_power',
+                self.building_zones['zone_name'][
+                    self.building_zones['hvac_ahu_type'] != ''
+                ] + '_ahu_cool_electric_power_cooling_coil',
+                self.building_zones['zone_name'][
+                    self.building_zones['hvac_ahu_type'] != ''
+                ] + '_ahu_cool_electric_power_heating_coil',
+                self.building_zones['zone_name'][
+                    self.building_zones['hvac_tu_type'] != ''
+                ] + '_tu_heat_electric_power',
+                self.building_zones['zone_name'][
+                    self.building_zones['hvac_tu_type'] != ''
+                ] + '_tu_cool_electric_power',
+
+                # Storage state of charge.
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
                 ] + '_sensible_thermal_storage_state_of_charge',
@@ -294,70 +318,60 @@ class Building(object):
                     (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
                 ] + '_battery_storage_state_of_charge',
 
-                # Defining the DISCHARGE control variables also in the outputs. One per zone.
-                # TODO: delete this as it is only for tracking behaviours in teh output csv files.
-                # HEATING
-                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_ahu_heat_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
-                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_tu_heat_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
+                # Storage discharge.
+                # TODO: This is only for tracking behaviours in the output CSV files.
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_ahu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_to_zone_ahu_heat_thermal_power',
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_tu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_to_zone_tu_heat_thermal_power',
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_ahu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_heat_ahu',
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_tu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_heat_tu',
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_ahu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_to_zone_ahu_cool_thermal_power',
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_tu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_to_zone_tu_cool_thermal_power',
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_ahu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_cool_ahu',
+                self.building_zones['zone_name'][
+                    (self.building_zones['hvac_tu_type'] != '')
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_cool_tu',
 
-                # Battery storage
-                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_heat_ahu') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                ) else None),
-                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_heat_tu') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                ) else None),
-
-                # COOLING
-                # Sensible DISCHARGE
-                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_ahu_cool_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
-                ((self.building_zones['zone_name'] + '_sensible_storage_to_zone_tu_cool_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
-
-                # Battery DISCHARGE
-                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_cool_ahu') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                ) else None),
-                ((self.building_zones['zone_name'] + '_battery_storage_to_zone_cool_tu') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                ) else None),
-
-                # Defining the CHARGE control variables. One per building.
-                # HEATING
-                ((self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
-
-                # COOLING
-                # Sensible CHARGE
-                ((self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ) else None),
-
-                # Battery CHARGE
-                ((self.building_scenarios['building_name'] + '_battery_storage_charge') if (
-                    (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                ) else None),
-
-                # Electric output for storage charge
-                # AHU
-                ((self.building_scenarios['building_name'] + '_storage_charge_ahu_heat_electric_power') if (
-                        (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                        | (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                ) else None),
-
-                ((self.building_scenarios['building_name'] + '_storage_charge_ahu_cool_electric_power') if (
-                        (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                        or (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
-                ) else None),
-
+                # Storage charge.
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_charge_heat_thermal_power',
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_charge_cool_thermal_power',
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
+                ] + '_battery_storage_charge',
+                # TODO: Unbundle electric charge variables from AHU.
+                self.building_scenarios['building_name'][
+                        (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                        | (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
+                ] + '_storage_charge_ahu_heat_electric_power',
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                    | (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
+                ] + '_storage_charge_ahu_cool_electric_power'
             ]),
             name='output_name'
         )
