@@ -1,5 +1,5 @@
 """
-Building model class definition
+Building model class definition.
 """
 
 import warnings
@@ -13,99 +13,114 @@ from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
 
 class Building(object):
     """
-    Building scenario object to store all information
+    Building model object.
     """
 
     def __init__(self, conn, scenario_name):
-        # Load building information from database
+        """Initialize building model for given `scenario_name`."""
 
-        self.electricity_prices = pd.read_sql(
-            """
-            select * from electricity_price_timeseries
-            where price_type=(
-                select price_type from building_scenarios
-                where scenario_name='{}' 
+        # Load building model definition.
+        self.electricity_prices = (
+            pd.read_sql(
+                """
+                SELECT * FROM electricity_price_timeseries 
+                WHERE price_type=(
+                    SELECT price_type from building_scenarios 
+                    WHERE scenario_name='{}'
+                )
+                """.format(scenario_name),
+                conn
             )
-            """.format(scenario_name),
-            conn
         )
         self.electricity_prices.index = pd.to_datetime(self.electricity_prices['time'])
-
-        self.building_scenarios = pd.read_sql(
-            """
-            select * from building_scenarios 
-            join buildings using (building_name) 
-            join building_linearization_types using (linearization_type) 
-            left join building_storage_types using (building_storage_type)
-            where scenario_name='{}'
-            """.format(scenario_name),
-            conn
+        self.building_scenarios = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_scenarios 
+                JOIN buildings USING (building_name) 
+                JOIN building_linearization_types USING (linearization_type) 
+                LEFT JOIN building_storage_types USING (building_storage_type) 
+                WHERE scenario_name='{}'
+                """.format(scenario_name),
+                conn
+            )
         )
-
-        self.building_parameters = pd.read_sql(
-            """
-            select * from building_parameter_sets 
-            where parameter_set in ('constants', '{}')
-            """.format(self.building_scenarios['parameter_set'][0]),
-            conn
+        self.building_parameters = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_parameter_sets 
+                WHERE parameter_set IN ('constants', '{}')
+                """.format(self.building_scenarios['parameter_set'][0]),
+                conn
+            )
         )
-        self.building_parameters = pd.Series(
-            self.building_parameters['parameter_value'].values,
-            self.building_parameters['parameter_name'].values
-        )  # Convert to series for shorter indexing
-        self.building_surfaces_adiabatic = pd.read_sql(
-            """
-            select * from building_surfaces_adiabatic 
-            join building_surface_types using (surface_type) 
-            left join building_window_types using (window_type) 
-            join building_zones using (zone_name, building_name) 
-            where building_name='{}'
-            """.format(self.building_scenarios['building_name'][0]),
-            conn
+        self.building_parameters = (
+            pd.Series(  # Convert to series for shorter indexing.
+                self.building_parameters['parameter_value'].values,
+                self.building_parameters['parameter_name'].values
+            )
+        )
+        self.building_surfaces_adiabatic = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_surfaces_adiabatic 
+                JOIN building_surface_types USING (surface_type) 
+                LEFT JOIN building_window_types USING (window_type) 
+                JOIN building_zones USING (zone_name, building_name) 
+                WHERE building_name='{}'
+                """.format(self.building_scenarios['building_name'][0]),
+                conn
+            )
         )
         self.building_surfaces_adiabatic.index = self.building_surfaces_adiabatic['surface_name']
-        self.building_surfaces_exterior = pd.read_sql(
-            """
-            select * from building_surfaces_exterior 
-            join building_surface_types using (surface_type) 
-            left join building_window_types using (window_type) 
-            join building_zones using (zone_name, building_name) 
-            where building_name='{}'
-            """.format(self.building_scenarios['building_name'][0]),
-            conn
+        self.building_surfaces_exterior = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_surfaces_exterior 
+                JOIN building_surface_types USING (surface_type) 
+                LEFT JOIN building_window_types USING (window_type) 
+                JOIN building_zones USING (zone_name, building_name) 
+                WHERE building_name='{}'
+                """.format(self.building_scenarios['building_name'][0]),
+                conn
+            )
         )
         self.building_surfaces_exterior.index = self.building_surfaces_exterior['surface_name']
-        self.building_surfaces_interior = pd.read_sql(
-            """
-            select * from building_surfaces_interior 
-            join building_surface_types using (surface_type) 
-            left join building_window_types using (window_type) 
-            join building_zones using (zone_name, building_name) 
-            where building_name='{}'
-            """.format(self.building_scenarios['building_name'][0]),
-            conn
+        self.building_surfaces_interior = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_surfaces_interior 
+                JOIN building_surface_types USING (surface_type) 
+                LEFT JOIN building_window_types USING (window_type) 
+                JOIN building_zones USING (zone_name, building_name) 
+                WHERE building_name='{}'
+                """.format(self.building_scenarios['building_name'][0]),
+                conn
+            )
         )
         self.building_surfaces_interior.index = self.building_surfaces_interior['surface_name']
-        self.building_zones = pd.read_sql(
-            """
-            select * from building_zones 
-            join building_zone_types using (zone_type) 
-            join building_internal_gain_types using (internal_gain_type) 
-            left join building_blind_types using (blind_type) 
-            left join building_hvac_generic_types using (hvac_generic_type) 
-            left join building_hvac_ahu_types using (hvac_ahu_type) 
-            left join building_hvac_tu_types using (hvac_tu_type)
-            where building_name='{}'
-            """.format(self.building_scenarios['building_name'][0]),
-            conn
+        self.building_zones = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_zones 
+                JOIN building_zone_types USING (zone_type) 
+                JOIN building_internal_gain_types USING (internal_gain_type) 
+                LEFT JOIN building_blind_types USING (blind_type) 
+                LEFT JOIN building_hvac_generic_types USING (hvac_generic_type) 
+                LEFT JOIN building_hvac_ahu_types USING (hvac_ahu_type) 
+                LEFT JOIN building_hvac_tu_types USING (hvac_tu_type) 
+                WHERE building_name='{}'
+                """.format(self.building_scenarios['building_name'][0]),
+                conn
+            )
         )
         self.building_zones.index = self.building_zones['zone_name']
 
-        # Add constant timeseries in disturbance vector, if any CO2 model or HVAC or window
+        # Add constant timeseries in disturbance vector, if any CO2 model or HVAC or window.
         self.define_constant = (
-                (self.building_scenarios['co2_model_type'][0] != '')
-                | (self.building_zones['hvac_ahu_type'] != '').any()
-                | (self.building_zones['window_type'] != '').any()
+            (self.building_scenarios['co2_model_type'][0] != '')
+            | (self.building_zones['hvac_ahu_type'] != '').any()
+            | (self.building_zones['window_type'] != '').any()
         )
 
         # Define sets.
@@ -408,7 +423,7 @@ class Building(object):
             name='time'
         )
 
-        # Define model matrices
+        # Define model matrices.
         self.state_matrix = pd.DataFrame(
             0.0,
             self.set_states,
@@ -440,7 +455,7 @@ class Building(object):
             self.set_disturbances
         )
 
-        # Define heat capacity vector
+        # Define heat capacity vector.
         self.heat_capacity_vector = pd.Series(
             0.0,
             self.set_states
@@ -467,10 +482,10 @@ class Building(object):
                     * self.parse_parameter(row['heat_capacity'])
             )
 
-        # Definition of parameters / coefficients
+        # Definition of parameters / coefficients.
         self.define_heat_transfer_coefficients()
 
-        # Define heat fluxes and co2 transfers
+        # Define heat, CO2 and humidity transfers.
         self.define_heat_transfer_surfaces_exterior()
         self.define_heat_transfer_surfaces_interior()
         self.define_heat_transfer_surfaces_adiabatic()
@@ -482,11 +497,10 @@ class Building(object):
         self.define_co2_transfer_hvac_ahu()
         self.define_heat_transfer_window_air_flow()
         self.define_humidity_transfer_hvac_ahu()
-        # Storage
         self.define_sensible_storage_level()
         self.define_battery_storage_level()
 
-        # Define outputs
+        # Define outputs.
         self.define_output_zone_temperature()
         self.define_output_zone_co2_concentration()
         self.define_output_zone_humidity()
@@ -496,15 +510,14 @@ class Building(object):
         self.define_output_fresh_air_flow()
         self.define_output_window_fresh_air_flow()
         self.define_output_ahu_fresh_air_flow()
-        # Storage output
         self.define_output_storage_charge()
         self.define_output_storage_discharge()
 
-        # Define timeseries
+        # Define timeseries.
         self.load_disturbance_timeseries(conn)
         self.define_output_constraint_timeseries(conn)
 
-        # Convert to time discrete model
+        # Convert to time discrete model.
         self.discretize_model()
 
     def define_sensible_storage_level(self):
@@ -3136,9 +3149,9 @@ class Building(object):
         # Load weather timeseries
         weather_timeseries = pd.read_sql(
             """
-            select * from weather_timeseries 
-            where weather_type='{}'
-            and time between '{}' and '{}'
+            SELECT * FROM weather_timeseries 
+            WHERE weather_type='{}'
+            AND time BETWEEN '{}' AND '{}'
             """.format(
                 self.building_scenarios['weather_type'][0],
                 self.building_scenarios['time_start'][0],
@@ -3151,9 +3164,9 @@ class Building(object):
         # Load internal gain timeseries
         building_internal_gain_timeseries = pd.read_sql(
             """
-            select * from building_internal_gain_timeseries 
-            where internal_gain_type in ({})
-            and time between '{}' and '{}'
+            SELECT * FROM building_internal_gain_timeseries 
+            WHERE internal_gain_type IN ({})
+            AND time BETWEEN '{}' AND '{}'
             """.format(
                 ", ".join([
                     "'{}'".format(data_set_name) for data_set_name in self.building_zones['internal_gain_type'].unique()
@@ -3276,8 +3289,8 @@ class Building(object):
             # For each zone, select zone_constraint_profile
             building_zone_constraint_profile = pd.read_sql(
                 """
-                select * from building_zone_constraint_profiles 
-                where zone_constraint_profile='{}'
+                SELECT * FROM building_zone_constraint_profiles 
+                WHERE zone_constraint_profile='{}'
                 """.format(row_zone['zone_constraint_profile']),
                 conn
             )
