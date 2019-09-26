@@ -602,32 +602,17 @@ class Building(object):
 
     def define_battery_storage_level(self):
         if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
-            for index, row in self.building_zones.iterrows():
-                self.control_matrix.at[
-                    self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                    index + '_battery_storage_to_zone_cool_ahu',
-                ] = (
-                        self.control_matrix.at[
-                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                            index + '_battery_storage_to_zone_cool_ahu',
-                        ]
-                ) - 1.0
-
-                self.control_matrix.at[
-                    self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                    index + '_battery_storage_to_zone_cool_tu',
-                ] = (
-                        self.control_matrix.at[
-                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                            index + '_battery_storage_to_zone_cool_tu',
-                        ]
-                ) - 1.0
-
+            # Storage charge.
             self.control_matrix.at[
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                 self.building_scenarios['building_name'][0] + '_battery_storage_charge'
-            ] = + 1.0 * (self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency']))
+            ] = (
+                self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
+            )
 
+            # Storage losses.
+            # - There are no battery storage losses, but a very small loss is added to keep the state matrix
+            #   non-singular and hence invertible.
             self.state_matrix.at[
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
@@ -636,12 +621,41 @@ class Building(object):
                     self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                     self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
                 ]
-            ) - 1E-17  # TODO: make this loss dependent on the outdoor temperature
+            ) - 1E-17  # TODO: Make the battery loss dependent on the outdoor temperature.
 
+            # Output storage state of charge.
+            # TODO: Move to dedicated output definition function.
             self.state_output_matrix.at[
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
-            ] = 1
+            ] = 1.0
+
+            for zone_name, zone_data in self.building_zones.iterrows():
+                # TODO: Differentiate heating / cooling and define heating discharge.
+
+                if zone_data['hvac_ahu_type'] != '':
+                    # Storage discharge to AHU for cooling.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                        zone_name + '_battery_storage_to_zone_cool_ahu',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                            zone_name + '_battery_storage_to_zone_cool_ahu',
+                        ]
+                    ) - 1.0
+
+                if zone_data['hvac_tu_type'] != '':
+                    # Storage discharge to TU for cooling.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                        zone_name + '_battery_storage_to_zone_cool_tu',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                            zone_name + '_battery_storage_to_zone_cool_tu',
+                        ]
+                    ) - 1.0
 
     def parse_parameter(self, parameter):
         """
