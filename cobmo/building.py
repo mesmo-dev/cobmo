@@ -497,8 +497,7 @@ class Building(object):
         self.define_co2_transfer_hvac_ahu()
         self.define_heat_transfer_window_air_flow()
         self.define_humidity_transfer_hvac_ahu()
-        self.define_sensible_storage_level()
-        self.define_battery_storage_level()
+        self.define_storage_level()
 
         # Define outputs.
         self.define_output_zone_temperature()
@@ -519,143 +518,6 @@ class Building(object):
 
         # Convert to time discrete model.
         self.discretize_model()
-
-    def define_sensible_storage_level(self):
-        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-            # Storage charge.
-            self.control_matrix.at[
-                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-                self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power',
-            ] = (
-                self.control_matrix.at[
-                    self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-                    self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power',
-                ]
-            ) + (
-                1.0
-                / (
-                    self.parse_parameter('water_specific_heat')
-                    * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-                )
-                * self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
-            )
-
-            # Storage losses.
-            # - Thermal losses are considered negligible, but a very small loss is added to keep the state matrix
-            #   non-singular and hence invertible.
-            # - TODO: For detailed losses depending on the storage size see `cobmo/README_storage.md`
-            self.state_matrix.at[
-                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
-            ] = (
-                self.state_matrix.at[
-                    self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-                    self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
-                ]
-            ) - 1e-17
-
-            # Output storage state of charge.
-            # TODO: Move to dedicated output definition function.
-            self.state_output_matrix.at[
-                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
-            ] = 1.0
-
-            for zone_name, zone_data in self.building_zones.iterrows():
-                # TODO: Differentiate heating / cooling and define heating discharge.
-
-                if zone_data['hvac_ahu_type'] != '':
-                    # Storage discharge to AHU for cooling.
-                    self.control_matrix.at[
-                        self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-                        zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power',
-                    ] = (
-                        self.control_matrix.at[
-                            self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-                            zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
-                        ]
-                    ) + (
-                        - 1.0
-                        / (
-                            self.parse_parameter('water_specific_heat')
-                            * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-                        )
-                    )
-
-                if zone_data['hvac_tu_type'] != '':
-                    # Storage discharge to TU for cooling.
-                    self.control_matrix.at[
-                        self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-                        zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power',
-                    ] = (
-                        self.control_matrix.at[
-                            self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
-                            zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power',
-                        ]
-                    ) + (
-                        - 1.0
-                        / (
-                            self.parse_parameter('water_specific_heat')
-                            * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
-                        )
-                    )
-
-    def define_battery_storage_level(self):
-        if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
-            # Storage charge.
-            self.control_matrix.at[
-                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                self.building_scenarios['building_name'][0] + '_battery_storage_charge'
-            ] = (
-                self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
-            )
-
-            # Storage losses.
-            # - There are no battery storage losses, but a very small loss is added to keep the state matrix
-            #   non-singular and hence invertible.
-            self.state_matrix.at[
-                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
-            ] = (
-                self.state_matrix.at[
-                    self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                    self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
-                ]
-            ) - 1E-17  # TODO: Make the battery loss dependent on the outdoor temperature.
-
-            # Output storage state of charge.
-            # TODO: Move to dedicated output definition function.
-            self.state_output_matrix.at[
-                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
-            ] = 1.0
-
-            for zone_name, zone_data in self.building_zones.iterrows():
-                # TODO: Differentiate heating / cooling and define heating discharge.
-
-                if zone_data['hvac_ahu_type'] != '':
-                    # Storage discharge to AHU for cooling.
-                    self.control_matrix.at[
-                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                        zone_name + '_battery_storage_to_zone_cool_ahu',
-                    ] = (
-                        self.control_matrix.at[
-                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                            zone_name + '_battery_storage_to_zone_cool_ahu',
-                        ]
-                    ) - 1.0
-
-                if zone_data['hvac_tu_type'] != '':
-                    # Storage discharge to TU for cooling.
-                    self.control_matrix.at[
-                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                        zone_name + '_battery_storage_to_zone_cool_tu',
-                    ] = (
-                        self.control_matrix.at[
-                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
-                            zone_name + '_battery_storage_to_zone_cool_tu',
-                        ]
-                    ) - 1.0
 
     def parse_parameter(self, parameter):
         """
@@ -2417,6 +2279,144 @@ class Building(object):
                                     / self.parse_parameter(row['zone_height'])
                             )
                     )
+
+    def define_storage_level(self):
+        # Sensible thermal storage.
+        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            # Storage charge.
+            self.control_matrix.at[
+                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power',
+            ] = (
+                self.control_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                    self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power',
+                ]
+            ) + (
+                1.0
+                / (
+                    self.parse_parameter('water_specific_heat')
+                    * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
+                )
+                * self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
+            )
+
+            # Storage losses.
+            # - Thermal losses are considered negligible, but a very small loss is added to keep the state matrix
+            #   non-singular and hence invertible.
+            # - TODO: For detailed losses depending on the storage size see `cobmo/README_storage.md`
+            self.state_matrix.at[
+                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
+            ] = (
+                self.state_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                    self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
+                ]
+            ) - 1e-17
+
+            # Output storage state of charge.
+            # TODO: Move to dedicated output definition function.
+            self.state_output_matrix.at[
+                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
+            ] = 1.0
+
+            for zone_name, zone_data in self.building_zones.iterrows():
+                # TODO: Differentiate heating / cooling and define heating discharge.
+
+                if zone_data['hvac_ahu_type'] != '':
+                    # Storage discharge to AHU for cooling.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                        zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                            zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
+                        ]
+                    ) + (
+                        - 1.0
+                        / (
+                            self.parse_parameter('water_specific_heat')
+                            * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
+                        )
+                    )
+
+                if zone_data['hvac_tu_type'] != '':
+                    # Storage discharge to TU for cooling.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                        zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                            zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power',
+                        ]
+                    ) + (
+                        - 1.0
+                        / (
+                            self.parse_parameter('water_specific_heat')
+                            * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
+                        )
+                    )
+
+        # Battery storage.
+        if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+            # Storage charge.
+            self.control_matrix.at[
+                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_battery_storage_charge'
+            ] = (
+                self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
+            )
+
+            # Storage losses.
+            # - There are no battery storage losses, but a very small loss is added to keep the state matrix
+            #   non-singular and hence invertible.
+            self.state_matrix.at[
+                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
+            ] = (
+                self.state_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                    self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
+                ]
+            ) - 1E-17  # TODO: Make the battery loss dependent on the outdoor temperature.
+
+            # Output storage state of charge.
+            # TODO: Move to dedicated output definition function.
+            self.state_output_matrix.at[
+                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
+            ] = 1.0
+
+            for zone_name, zone_data in self.building_zones.iterrows():
+                # TODO: Differentiate heating / cooling and define heating discharge.
+
+                if zone_data['hvac_ahu_type'] != '':
+                    # Storage discharge to AHU for cooling.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                        zone_name + '_battery_storage_to_zone_cool_ahu',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                            zone_name + '_battery_storage_to_zone_cool_ahu',
+                        ]
+                    ) - 1.0
+
+                if zone_data['hvac_tu_type'] != '':
+                    # Storage discharge to TU for cooling.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                        zone_name + '_battery_storage_to_zone_cool_tu',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                            zone_name + '_battery_storage_to_zone_cool_tu',
+                        ]
+                    ) - 1.0
 
     def define_output_zone_temperature(self):
         for index, row in self.building_zones.iterrows():
