@@ -2425,45 +2425,66 @@ class Building(object):
                 index + '_temperature'
             ] = 1
 
-    def define_output_storage_discharge(self):  # per zone
-        for index, row in self.building_zones.iterrows():
+    def define_output_storage_discharge(self):
+        for zone_name, zone_data in self.building_zones.iterrows():
+            # Sensible thermal storage.
             if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-                if self.building_scenarios['heating_cooling_session'][0] == 'heating':
-                    self.control_output_matrix.at[
-                        index + '_sensible_storage_to_zone_ahu_heat_thermal_power',
-                        index + '_sensible_storage_to_zone_ahu_heat_thermal_power'
-                    ] = 1
-                    self.control_output_matrix.at[
-                        index + '_sensible_storage_to_zone_tu_heat_thermal_power',
-                        index + '_sensible_storage_to_zone_tu_heat_thermal_power'
-                    ] = 1
-                self.control_output_matrix.at[
-                    index + '_sensible_storage_to_zone_ahu_cool_thermal_power',
-                    index + '_sensible_storage_to_zone_ahu_cool_thermal_power'
-                ] = 1
-                self.control_output_matrix.at[
-                    index + '_sensible_storage_to_zone_tu_cool_thermal_power',
-                    index + '_sensible_storage_to_zone_tu_cool_thermal_power'
-                ] = 1
+                # TODO: Add consideration for sensible storage heating / cooling.
+                # if zone_data['hvac_ahu_type'] != '':
+                #     # Storage discharge to AHU for heating.
+                #     self.control_output_matrix.at[
+                #         zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power',
+                #         zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power'
+                #     ] = 1.0
+                #
+                # if zone_data['hvac_tu_type'] != '':
+                #     # Storage discharge to TU for heating.
+                #     self.control_output_matrix.at[
+                #         zone_name + '_sensible_storage_to_zone_tu_heat_thermal_power',
+                #         zone_name + '_sensible_storage_to_zone_tu_heat_thermal_power'
+                #     ] = 1.0
 
+                if zone_data['hvac_ahu_type'] != '':
+                    # Storage discharge to AHU for cooling.
+                    self.control_output_matrix.at[
+                        zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power',
+                        zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
+                    ] = 1.0
+
+                if zone_data['hvac_tu_type'] != '':
+                    # Storage discharge to TU for cooling.
+                    self.control_output_matrix.at[
+                        zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power',
+                        zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power'
+                    ] = 1.0
+
+            # Battery storage.
             if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
-                self.control_output_matrix.at[
-                    index + '_battery_storage_to_zone_cool_ahu',
-                    index + '_battery_storage_to_zone_cool_ahu'
-                ] = 1
-                self.control_output_matrix.at[
-                    index + '_battery_storage_to_zone_cool_tu',
-                    index + '_battery_storage_to_zone_cool_tu'
-                ] = 1
+                if zone_data['hvac_ahu_type'] != '':
+                    # Storage discharge to AHU.
+                    self.control_output_matrix.at[
+                        zone_name + '_battery_storage_to_zone_cool_ahu',
+                        zone_name + '_battery_storage_to_zone_cool_ahu'
+                    ] = 1.0
+
+                if zone_data['hvac_tu_type'] != '':
+                    # Storage discharge to TU.
+                    self.control_output_matrix.at[
+                        zone_name + '_battery_storage_to_zone_cool_tu',
+                        zone_name + '_battery_storage_to_zone_cool_tu'
+                    ] = 1.0
 
     def define_output_storage_charge(self):
         # Sensible thermal storage.
         if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            # Heating.
             # TODO: Add consideration for sensible storage heating / cooling.
             # self.control_output_matrix.at[
             #     self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power',
             #     self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power'
             # ] = 1.0
+
+            # Cooling.
             self.control_output_matrix.at[
                 self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power',
                 self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power'
