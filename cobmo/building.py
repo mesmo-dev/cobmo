@@ -2456,24 +2456,25 @@ class Building(object):
                     index + '_battery_storage_to_zone_cool_tu'
                 ] = 1
 
-    def define_output_storage_charge(self):  # per building
-        # No looping since charging is for the whole building and not per zone
+    def define_output_storage_charge(self):
+        # Sensible thermal storage.
         if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-            if self.building_scenarios['heating_cooling_session'][0] == 'heating':
-                self.control_output_matrix.at[
-                    self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power',
-                    self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power'
-                ] = 1
+            # TODO: Add consideration for sensible storage heating / cooling.
+            # self.control_output_matrix.at[
+            #     self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power',
+            #     self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power'
+            # ] = 1.0
             self.control_output_matrix.at[
                 self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power',
                 self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power'
-            ] = 1
+            ] = 1.0
 
+        # Battery storage.
         if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
             self.control_output_matrix.at[
                 self.building_scenarios['building_name'] + '_battery_storage_charge',
                 self.building_scenarios['building_name'] + '_battery_storage_charge'
-            ] = 1
+            ] = 1.0
 
     def define_output_zone_co2_concentration(self):
         if self.building_scenarios['co2_model_type'][0] != '':
