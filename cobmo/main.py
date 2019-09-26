@@ -73,7 +73,9 @@ def example():
             * np.ones(sum(building.set_states.str.contains('absolute_humidity'))),
         ]),
         building.set_states
-    )  # TODO: Move intial state defintion to building model
+    )
+    # TODO: Move intial state definition to building model.
+    # TODO: Consider storage in intial state.
     control_timeseries_simulation = pd.DataFrame(
         np.random.rand(len(building.set_timesteps), len(building.set_controls)),
         building.set_timesteps,
