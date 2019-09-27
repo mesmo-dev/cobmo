@@ -2459,70 +2459,6 @@ class Building(object):
                 )
 
     def define_output_hvac_ahu_electric_power(self):
-        # TODO: Consider moving storage charge outputs to `define_output_storage_charge`.
-
-        # Sensible thermal storage charge.
-        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-            # Heating.
-            # TODO: Add consideration for sensible storage heating / cooling.
-            # self.control_output_matrix.at[
-            #     self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
-            #     self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_thermal_power'
-            # ] = (
-            #     self.control_output_matrix.at[
-            #         self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
-            #         self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_thermal_power'
-            #     ]
-            #     + (
-            #         1.0
-            #         / self.parse_parameter('hvac_ahu_heating_efficiency')
-            #         * 1.0000001  # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
-            #     )
-            # )
-
-            # Cooling.
-            self.control_output_matrix.at[
-                self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
-                self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
-            ] = (
-                self.control_output_matrix.at[
-                    self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
-                    self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
-                ]
-                + (
-                    1.0
-                    / self.parse_parameter('hvac_ahu_cooling_efficiency')  # TODO: This might be a problem for CONCEPT.
-                    * 1.0000001  # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
-                )
-            )
-
-        # Battery storage charge.
-        if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
-            # Heating.
-            # TODO: Why is it necessary to split into heating / cooling for battery?
-            # self.control_output_matrix.at[
-            #     self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
-            #     self.building_scenarios['building_name'][0] + '_battery_storage_charge'
-            # ] = (
-            #     self.control_output_matrix.at[
-            #         self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
-            #         self.building_scenarios['building_name'][0] + '_battery_storage_charge'
-            #     ]
-            #     + 1.0000001   # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
-            # )
-
-            # Cooling.
-            self.control_output_matrix.at[
-                self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
-                self.building_scenarios['building_name'][0] + '_battery_storage_charge'
-            ] = (
-                self.control_output_matrix.at[
-                    self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
-                    self.building_scenarios['building_name'][0] + '_battery_storage_charge'
-                ]
-                + 1.0000001   # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
-            )
-
         for zone_name, zone_data in self.building_zones.iterrows():
             if zone_data['hvac_ahu_type'] != '':
                 # Calculate enthalpies.
@@ -3145,7 +3081,9 @@ class Building(object):
             ] = 1.0
 
     def define_output_storage_charge(self):
-        # Sensible thermal storage.
+        # TODO: Remove redundant charge ouputs.
+
+        # Sensible thermal storage charge thermal power.
         if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
             # Heating.
             # TODO: Add consideration for sensible storage heating / cooling.
@@ -3160,12 +3098,74 @@ class Building(object):
                 self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power'
             ] = 1.0
 
-        # Battery storage.
+        # Sensible thermal storage charge electric power.
+        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            # Heating.
+            # TODO: Add consideration for sensible storage heating / cooling.
+            # self.control_output_matrix.at[
+            #     self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
+            #     self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_thermal_power'
+            # ] = (
+            #     self.control_output_matrix.at[
+            #         self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
+            #         self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_thermal_power'
+            #     ]
+            #     + (
+            #         1.0
+            #         / self.parse_parameter('hvac_ahu_heating_efficiency')
+            #         * 1.0000001  # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
+            #     )
+            # )
+
+            # Cooling.
+            self.control_output_matrix.at[
+                self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
+                self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
+            ] = (
+                self.control_output_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
+                    self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
+                ]
+                + (
+                    1.0
+                    / self.parse_parameter('hvac_ahu_cooling_efficiency')  # TODO: This might be a problem for CONCEPT.
+                    * 1.0000001  # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
+                )
+            )
+
+        # Battery storage charge.
         if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
             self.control_output_matrix.at[
                 self.building_scenarios['building_name'] + '_battery_storage_charge',
                 self.building_scenarios['building_name'] + '_battery_storage_charge'
             ] = 1.0
+
+        # Battery storage charge.
+        if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+            # Heating.
+            # TODO: Why is it necessary to split into heating / cooling for battery?
+            # self.control_output_matrix.at[
+            #     self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
+            #     self.building_scenarios['building_name'][0] + '_battery_storage_charge'
+            # ] = (
+            #     self.control_output_matrix.at[
+            #         self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
+            #         self.building_scenarios['building_name'][0] + '_battery_storage_charge'
+            #     ]
+            #     + 1.0000001   # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
+            # )
+
+            # Cooling.
+            self.control_output_matrix.at[
+                self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
+                self.building_scenarios['building_name'][0] + '_battery_storage_charge'
+            ] = (
+                self.control_output_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
+                    self.building_scenarios['building_name'][0] + '_battery_storage_charge'
+                ]
+                + 1.0000001   # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
+            )
 
     def define_output_storage_discharge(self):
         for zone_name, zone_data in self.building_zones.iterrows():
