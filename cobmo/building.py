@@ -209,10 +209,11 @@ class Building(object):
                 ] + '_battery_storage_charge',
 
                 # Sensible storage discharge to AHU.
-                self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
-                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ] + '_sensible_storage_to_zone_ahu_heat_thermal_power',
+                # TODO: Add consideration for sensible storage heating / cooling.
+                # self.building_zones['zone_name'][
+                #     (self.building_zones['hvac_ahu_type'] != '')
+                #     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                # ] + '_sensible_storage_to_zone_ahu_heat_thermal_power',
                 self.building_zones['zone_name'][
                     (self.building_zones['hvac_ahu_type'] != '')
                     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
@@ -335,10 +336,11 @@ class Building(object):
 
                 # Storage discharge.
                 # TODO: This is only for tracking behaviours in the output CSV files.
-                self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
-                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
-                ] + '_sensible_storage_to_zone_ahu_heat_thermal_power',
+                # TODO: Add consideration for sensible storage heating / cooling.
+                # self.building_zones['zone_name'][
+                #     (self.building_zones['hvac_ahu_type'] != '')
+                #     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                # ] + '_sensible_storage_to_zone_ahu_heat_thermal_power',
                 self.building_zones['zone_name'][
                     (self.building_zones['hvac_tu_type'] != '')
                     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
@@ -2457,90 +2459,100 @@ class Building(object):
                 )
 
     def define_output_hvac_ahu_electric_power(self):
-        # COOLING
-        # Sensible Storage
+        # TODO: Consider moving storage charge outputs to `define_output_storage_charge`.
+
+        # Sensible thermal storage charge.
         if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            # Heating.
+            # TODO: Add consideration for sensible storage heating / cooling.
+            # self.control_output_matrix.at[
+            #     self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
+            #     self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_thermal_power'
+            # ] = (
+            #     self.control_output_matrix.at[
+            #         self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
+            #         self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_thermal_power'
+            #     ]
+            #     + (
+            #         1.0
+            #         / self.parse_parameter('hvac_ahu_heating_efficiency')
+            #         * 1.0000001  # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
+            #     )
+            # )
+
+            # Cooling.
             self.control_output_matrix.at[
                 self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
                 self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
             ] = (
-                    self.control_output_matrix.at[
-                        self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
-                        self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
-                    ]
-                    + 1.0 / self.parse_parameter('hvac_ahu_cooling_efficiency') * (1 + 0.0000001)
+                self.control_output_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
+                    self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
+                ]
+                + (
+                    1.0
+                    / self.parse_parameter('hvac_ahu_cooling_efficiency')  # TODO: This might be a problem for CONCEPT.
+                    * 1.0000001  # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
+                )
             )
 
-        # Battery storage
+        # Battery storage charge.
         if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+            # Heating.
+            # TODO: Why is it necessary to split into heating / cooling for battery?
+            # self.control_output_matrix.at[
+            #     self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
+            #     self.building_scenarios['building_name'][0] + '_battery_storage_charge'
+            # ] = (
+            #     self.control_output_matrix.at[
+            #         self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
+            #         self.building_scenarios['building_name'][0] + '_battery_storage_charge'
+            #     ]
+            #     + 1.0000001   # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
+            # )
+
+            # Cooling.
             self.control_output_matrix.at[
                 self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
                 self.building_scenarios['building_name'][0] + '_battery_storage_charge'
             ] = (
-                    self.control_output_matrix.at[
-                        self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
-                        self.building_scenarios['building_name'][0] + '_battery_storage_charge'
-                    ]
-                    + 1.0 * (1.0 + 0.0000001)
+                self.control_output_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_storage_charge_ahu_cool_electric_power',
+                    self.building_scenarios['building_name'][0] + '_battery_storage_charge'
+                ]
+                + 1.0000001   # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
             )
 
-        # HEATING
-        # Sensible storage
-        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-            self.control_output_matrix.at[
-                self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
-                self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_thermal_power'
-            ] = (
-                    self.control_output_matrix.at[
-                        self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
-                        self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_thermal_power'
-                    ]
-                    + 1 / self.parse_parameter('hvac_ahu_heating_efficiency')
-            )
-
-        # Battery storage
-        if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
-            self.control_output_matrix.at[
-                self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
-                self.building_scenarios['building_name'][0] + '_battery_storage_charge'
-            ] = (
-                    self.control_output_matrix.at[
-                        self.building_scenarios['building_name'][0] + '_storage_charge_ahu_heat_electric_power',
-                        self.building_scenarios['building_name'][0] + '_battery_storage_charge'
-                    ]
-                    + 1
-            )
-
-        for index, row in self.building_zones.iterrows():
-            if row['hvac_ahu_type'] != '':
+        for zone_name, zone_data in self.building_zones.iterrows():
+            if zone_data['hvac_ahu_type'] != '':
                 # Calculate enthalpies
                 # TODO: Remove unnecessary HVAC types
                 if (
-                        row['ahu_cooling_type'] == 'default'
-                        and row['ahu_heating_type'] == 'default'
-                        and row['ahu_dehumidification_type'] == 'default'
-                        and row['ahu_return_air_heat_recovery_type'] == 'default'
+                    zone_data['ahu_cooling_type'] == 'default'
+                    and zone_data['ahu_heating_type'] == 'default'
+                    and zone_data['ahu_dehumidification_type'] == 'default'
+                    and zone_data['ahu_return_air_heat_recovery_type'] == 'default'
                 ):
                     if (
-                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                            <= humid_air_properties(
-                                'W',
-                                'R',
-                                self.parse_parameter(row['ahu_supply_air_relative_humidity_setpoint'])
-                                / 100,
-                                'T',
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
-                                + 273.15,
-                                'P',
-                                101325
-                            )
+                        self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                        <= humid_air_properties(
+                            'W',
+                            'R',
+                            self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
+                            / 100,
+                            'T',
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
+                            + 273.15,
+                            'P',
+                            101325
+                        )
                     ):
                         delta_enthalpy_ahu_cooling = min(
                             0,
                             humid_air_properties(
                                 'H',
                                 'T',
-                                self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
+                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint'])
                                 + 273.15,
                                 'W',
                                 self.parse_parameter(
@@ -2567,7 +2579,7 @@ class Building(object):
                             humid_air_properties(
                                 'H',
                                 'T',
-                                self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
+                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint'])
                                 + 273.15,
                                 'W',
                                 self.parse_parameter(
@@ -2591,91 +2603,18 @@ class Building(object):
                         )
                         delta_enthalpy_cooling_recovery = min(
                             0,
-                            self.parse_parameter(row['ahu_return_air_heat_recovery_efficiency'])
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
                             * (
-                                    humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_temperature_heat']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
-                                    )
-                                    - humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_temperature']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
-                                    )
-                            )
-                        )
-                        delta_enthalpy_heating_recovery = max(
-                            0,
-                            self.parse_parameter(row['ahu_return_air_heat_recovery_efficiency'])
-                            * (
-                                    humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_temperature_heat']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
-                                    )
-                                    - humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_temperature']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
-                                    )
-                            )
-                        )
-                    else:
-                        delta_enthalpy_ahu_cooling = (
                                 humid_air_properties(
                                     'H',
-                                    'R',
-                                    1,
+                                    'T',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_temperature_heat']
+                                    )
+                                    + 273.15,
                                     'W',
-                                    humid_air_properties(
-                                        'W',
-                                        'T',
-                                        self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
-                                        + 273.15,
-                                        'R',
-                                        self.parse_parameter(
-                                            row['ahu_supply_air_relative_humidity_setpoint']
-                                        )
-                                        / 100,
-                                        'P',
-                                        101325
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_ambient_air_humidity_ratio']
                                     ),
                                     'P',
                                     101325
@@ -2694,269 +2633,337 @@ class Building(object):
                                     'P',
                                     101325
                                 )
+                            )
                         )
-                        delta_enthalpy_ahu_heating = (
+                        delta_enthalpy_heating_recovery = max(
+                            0,
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
+                            * (
                                 humid_air_properties(
                                     'H',
                                     'T',
-                                    self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_temperature_heat']
+                                    )
                                     + 273.15,
-                                    'R',
-                                    self.parse_parameter(row['ahu_supply_air_relative_humidity_setpoint'])
-                                    / 100,
+                                    'W',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_ambient_air_humidity_ratio']
+                                    ),
                                     'P',
                                     101325
                                 )
                                 - humid_air_properties(
                                     'H',
-                                    'R',
-                                    1,
+                                    'T',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_ambient_air_temperature']
+                                    )
+                                    + 273.15,
                                     'W',
-                                    humid_air_properties(
-                                        'W',
-                                        'T',
-                                        self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
-                                        + 273.15,
-                                        'R',
-                                        self.parse_parameter(row['ahu_supply_air_relative_humidity_setpoint'])
-                                        / 100,
-                                        'P',
-                                        101325
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_ambient_air_humidity_ratio']
                                     ),
                                     'P',
                                     101325
                                 )
+                            )
+                        )
+                    else:
+                        delta_enthalpy_ahu_cooling = (
+                            humid_air_properties(
+                                'H',
+                                'R',
+                                1,
+                                'W',
+                                humid_air_properties(
+                                    'W',
+                                    'T',
+                                    self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint'])
+                                    + 273.15,
+                                    'R',
+                                    self.parse_parameter(
+                                        zone_data['ahu_supply_air_relative_humidity_setpoint']
+                                    )
+                                    / 100,
+                                    'P',
+                                    101325
+                                ),
+                                'P',
+                                101325
+                            )
+                            - humid_air_properties(
+                                'H',
+                                'T',
+                                self.parse_parameter(
+                                    self.building_scenarios['linearization_ambient_air_temperature']
+                                )
+                                + 273.15,
+                                'W',
+                                self.parse_parameter(
+                                    self.building_scenarios['linearization_ambient_air_humidity_ratio']
+                                ),
+                                'P',
+                                101325
+                            )
+                        )
+                        delta_enthalpy_ahu_heating = (
+                            humid_air_properties(
+                                'H',
+                                'T',
+                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint'])
+                                + 273.15,
+                                'R',
+                                self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
+                                / 100,
+                                'P',
+                                101325
+                            )
+                            - humid_air_properties(
+                                'H',
+                                'R',
+                                1,
+                                'W',
+                                humid_air_properties(
+                                    'W',
+                                    'T',
+                                    self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint'])
+                                    + 273.15,
+                                    'R',
+                                    self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
+                                    / 100,
+                                    'P',
+                                    101325
+                                ),
+                                'P',
+                                101325
+                            )
                         )
                         delta_enthalpy_cooling_recovery = min(
                             0,
-                            self.parse_parameter(row['ahu_return_air_heat_recovery_efficiency'])
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
                             * (
-                                    humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_temperature_heat']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
+                                humid_air_properties(
+                                    'H',
+                                    'T',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_temperature_heat']
                                     )
-                                    - humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_temperature']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
+                                    + 273.15,
+                                    'W',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_humidity_ratio']
+                                    ),
+                                    'P',
+                                    101325
+                                )
+                                - humid_air_properties(
+                                    'H',
+                                    'T',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_ambient_air_temperature']
                                     )
+                                    + 273.15,
+                                    'W',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_humidity_ratio']
+                                    ),
+                                    'P',
+                                    101325
+                                )
                             )
                         )
                         delta_enthalpy_heating_recovery = max(
                             0,
-                            self.parse_parameter(row['ahu_return_air_heat_recovery_efficiency'])
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
                             * (
-                                    humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_temperature_heat']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
+                                humid_air_properties(
+                                    'H',
+                                    'T',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_temperature_heat']
                                     )
-                                    - humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_temperature']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
+                                    + 273.15,
+                                    'W',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_humidity_ratio']
+                                    ),
+                                    'P',
+                                    101325
+                                )
+                                - humid_air_properties(
+                                    'H',
+                                    'T',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_ambient_air_temperature']
                                     )
+                                    + 273.15,
+                                    'W',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_humidity_ratio']
+                                    ),
+                                    'P',
+                                    101325
+                                )
                             )
                         )
 
-                # Matrix entries
-
-                # HEATING
+                # AHU heating.
                 self.control_output_matrix.at[
-                    index + '_ahu_heat_electric_power',
-                    index + '_ahu_heat_air_flow'
+                    zone_name + '_ahu_heat_electric_power',
+                    zone_name + '_ahu_heat_air_flow'
                 ] = (
-                        self.control_output_matrix.at[
-                            index + '_ahu_heat_electric_power',
-                            index + '_ahu_heat_air_flow'
-                        ]
-                        + self.parse_parameter('density_air')
-                        * (
-                                (
-                                        abs(delta_enthalpy_ahu_cooling)
-                                        - abs(delta_enthalpy_cooling_recovery)
-                                )
-                                / self.parse_parameter(row['ahu_cooling_efficiency'])
-                                + (
-                                            abs(delta_enthalpy_ahu_heating)
-                                            - abs(delta_enthalpy_heating_recovery)
-                                )
-                                / self.parse_parameter(row['ahu_heating_efficiency'])
-                                + self.parse_parameter(row['ahu_fan_efficiency'])
+                    self.control_output_matrix.at[
+                        zone_name + '_ahu_heat_electric_power',
+                        zone_name + '_ahu_heat_air_flow'
+                    ]
+                    + self.parse_parameter('density_air')
+                    * (
+                        (
+                            abs(delta_enthalpy_ahu_cooling)
+                            - abs(delta_enthalpy_cooling_recovery)
                         )
+                        / self.parse_parameter(zone_data['ahu_cooling_efficiency'])
+                        + (
+                            abs(delta_enthalpy_ahu_heating)
+                            - abs(delta_enthalpy_heating_recovery)
+                        )
+                        / self.parse_parameter(zone_data['ahu_heating_efficiency'])
+                        + self.parse_parameter(zone_data['ahu_fan_efficiency'])
+                    )
                 )
 
-                # Sensible storage
-                if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
-                    self.control_output_matrix.at[
-                        index + '_ahu_heat_electric_power',
-                        index + '_sensible_storage_to_zone_ahu_heat_thermal_power'
-                    ] = (
-                            self.control_output_matrix.at[
-                                index + '_ahu_heat_electric_power',
-                                index + '_sensible_storage_to_zone_ahu_heat_thermal_power'
-                            ]
-                            - 1 / self.parse_parameter(row['ahu_heating_efficiency'])
-                    )
+                # Sensible thermal storage heating discharge.
+                # TODO: Add consideration for sensible storage heating / cooling.
+                # if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                #     self.control_output_matrix.at[
+                #         zone_name + '_ahu_heat_electric_power',
+                #         zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power'
+                #     ] = (
+                #         self.control_output_matrix.at[
+                #             zone_name + '_ahu_heat_electric_power',
+                #             zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power'
+                #         ]
+                #         - 1.0 / self.parse_parameter(zone_data['ahu_heating_efficiency'])
+                #     )
 
-                # Battery storage
+                # Battery storage heating discharge.
                 if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
                     self.control_output_matrix.at[
-                        index + '_ahu_heat_electric_power',
-                        index + '_battery_storage_to_zone_heat_ahu'
+                        zone_name + '_ahu_heat_electric_power',
+                        zone_name + '_battery_storage_to_zone_heat_ahu'
                     ] = (
-                            self.control_output_matrix.at[
-                                index + '_ahu_heat_electric_power',
-                                index + '_battery_storage_to_zone_heat_ahu'
-                            ]
-                            - 1
+                        self.control_output_matrix.at[
+                            zone_name + '_ahu_heat_electric_power',
+                            zone_name + '_battery_storage_to_zone_heat_ahu'
+                        ]
+                        - 1.0
                     )
 
-                # COOLING: cooling int eh AHU is split among cooling coil and heating coil
+                # AHU cooling.
                 self.control_output_matrix.at[
-                    index + '_ahu_cool_electric_power_cooling_coil',
-                    index + '_ahu_cool_air_flow'
+                    zone_name + '_ahu_cool_electric_power_cooling_coil',
+                    zone_name + '_ahu_cool_air_flow'
                 ] = (
-                        self.control_output_matrix.at[
-                            index + '_ahu_cool_electric_power_cooling_coil',
-                            index + '_ahu_cool_air_flow'
-                        ]
-                        + self.parse_parameter('density_air')
-                        * (
-                                (
-                                        abs(delta_enthalpy_ahu_cooling)
-                                        - abs(delta_enthalpy_cooling_recovery)
-                                )
-                                / self.parse_parameter(row['ahu_cooling_efficiency'])
+                    self.control_output_matrix.at[
+                        zone_name + '_ahu_cool_electric_power_cooling_coil',
+                        zone_name + '_ahu_cool_air_flow'
+                    ]
+                    + self.parse_parameter('density_air')
+                    * (
+                        (
+                            abs(delta_enthalpy_ahu_cooling)
+                            - abs(delta_enthalpy_cooling_recovery)
                         )
+                        / self.parse_parameter(zone_data['ahu_cooling_efficiency'])
+                    )
+                )
+                self.control_output_matrix.at[
+                    zone_name + '_ahu_cool_electric_power_heating_coil',
+                    zone_name + '_ahu_cool_air_flow'
+                ] = (
+                    self.control_output_matrix.at[
+                        zone_name + '_ahu_cool_electric_power_heating_coil',
+                        zone_name + '_ahu_cool_air_flow'
+                    ]
+                    + self.parse_parameter('density_air')
+                    * (
+                        (
+                            abs(delta_enthalpy_ahu_heating)
+                            - abs(delta_enthalpy_heating_recovery)
+                        )
+                        / self.parse_parameter(zone_data['ahu_heating_efficiency'])
+                        + self.parse_parameter(zone_data['ahu_fan_efficiency'])
+                    )
                 )
 
-                self.control_output_matrix.at[
-                    index + '_ahu_cool_electric_power_heating_coil',
-                    index + '_ahu_cool_air_flow'
-                ] = (
-                        self.control_output_matrix.at[
-                            index + '_ahu_cool_electric_power_heating_coil',
-                            index + '_ahu_cool_air_flow'
-                        ]
-                        + self.parse_parameter('density_air')
-                        * (
-                                + (
-                                        abs(delta_enthalpy_ahu_heating)
-                                        - abs(delta_enthalpy_heating_recovery)
-                                )
-                                / self.parse_parameter(row['ahu_heating_efficiency'])
-                                + self.parse_parameter(row['ahu_fan_efficiency'])
-                        )
-                )
-
-                # Sensible storage
+                # Sensible thermal storage cooling discharge.
                 if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
                     self.control_output_matrix.at[
-                        index + '_ahu_cool_electric_power_cooling_coil',
-                        index + '_sensible_storage_to_zone_ahu_cool_thermal_power'
+                        zone_name + '_ahu_cool_electric_power_cooling_coil',
+                        zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
                     ] = (
-                            self.control_output_matrix.at[
-                                index + '_ahu_cool_electric_power_cooling_coil',
-                                index + '_sensible_storage_to_zone_ahu_cool_thermal_power'
-                            ]
-                            - 1.0 / self.parse_parameter(row['ahu_cooling_efficiency'])
+                        self.control_output_matrix.at[
+                            zone_name + '_ahu_cool_electric_power_cooling_coil',
+                            zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
+                        ]
+                        - 1.0 / self.parse_parameter(zone_data['ahu_cooling_efficiency'])
                     )
+                    # TODO: Add consideration for sensible storage heating / cooling.
 
-                # Battery storage
+                # Battery storage cooling discharge.
                 if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
                     self.control_output_matrix.at[
-                        index + '_ahu_cool_electric_power_cooling_coil',
-                        index + '_battery_storage_to_zone_cool_ahu'
+                        zone_name + '_ahu_cool_electric_power_cooling_coil',
+                        zone_name + '_battery_storage_to_zone_cool_ahu'
                     ] = (
-                            self.control_output_matrix.at[
-                                index + '_ahu_cool_electric_power_cooling_coil',
-                                index + '_battery_storage_to_zone_cool_ahu'
-                            ]
-                            # - 1.0
-                            - (
-                                (
-                                    self.control_output_matrix.at[
-                                        index + '_ahu_cool_electric_power_cooling_coil',
-                                        index + '_ahu_cool_air_flow'
-                                    ]
-                                ) / (
-                                        self.control_output_matrix.at[
-                                            index + '_ahu_cool_electric_power_cooling_coil',
-                                            index + '_ahu_cool_air_flow'
-                                        ]
-                                        + self.control_output_matrix.at[
-                                            index + '_ahu_cool_electric_power_heating_coil',
-                                            index + '_ahu_cool_air_flow'
-                                        ]
-                                )
+                        self.control_output_matrix.at[
+                            zone_name + '_ahu_cool_electric_power_cooling_coil',
+                            zone_name + '_battery_storage_to_zone_cool_ahu'
+                        ]
+                        - (
+                            (
+                                self.control_output_matrix.at[
+                                    zone_name + '_ahu_cool_electric_power_cooling_coil',
+                                    zone_name + '_ahu_cool_air_flow'
+                                ]
+                            ) / (
+                                self.control_output_matrix.at[
+                                    zone_name + '_ahu_cool_electric_power_cooling_coil',
+                                    zone_name + '_ahu_cool_air_flow'
+                                ]
+                                + self.control_output_matrix.at[
+                                    zone_name + '_ahu_cool_electric_power_heating_coil',
+                                    zone_name + '_ahu_cool_air_flow'
+                                ]
                             )
-
+                        )
                     )
-
                     self.control_output_matrix.at[
-                        index + '_ahu_cool_electric_power_heating_coil',
-                        index + '_battery_storage_to_zone_cool_ahu'
+                        zone_name + '_ahu_cool_electric_power_heating_coil',
+                        zone_name + '_battery_storage_to_zone_cool_ahu'
                     ] = (
-                            self.control_output_matrix.at[
-                                index + '_ahu_cool_electric_power_heating_coil',
-                                index + '_battery_storage_to_zone_cool_ahu'
-                            ]
-                            - (
-                                    (
-                                        self.control_output_matrix.at[
-                                            index + '_ahu_cool_electric_power_heating_coil',
-                                            index + '_ahu_cool_air_flow'
-                                        ]
-                                    ) / (
-                                            self.control_output_matrix.at[
-                                                index + '_ahu_cool_electric_power_cooling_coil',
-                                                index + '_ahu_cool_air_flow'
-                                            ]
-                                            + self.control_output_matrix.at[
-                                                index + '_ahu_cool_electric_power_heating_coil',
-                                                index + '_ahu_cool_air_flow'
-                                            ]
-                                    )
+                        self.control_output_matrix.at[
+                            zone_name + '_ahu_cool_electric_power_heating_coil',
+                            zone_name + '_battery_storage_to_zone_cool_ahu'
+                        ]
+                        - (
+                            (
+                                self.control_output_matrix.at[
+                                    zone_name + '_ahu_cool_electric_power_heating_coil',
+                                    zone_name + '_ahu_cool_air_flow'
+                                ]
+                            ) / (
+                                self.control_output_matrix.at[
+                                    zone_name + '_ahu_cool_electric_power_cooling_coil',
+                                    zone_name + '_ahu_cool_air_flow'
+                                ]
+                                + self.control_output_matrix.at[
+                                    zone_name + '_ahu_cool_electric_power_heating_coil',
+                                    zone_name + '_ahu_cool_air_flow'
+                                ]
                             )
-
+                        )
                     )
 
     def define_output_hvac_tu_electric_power(self):
