@@ -1,7 +1,5 @@
 """Example run script for using the building model."""
 
-import os
-import sqlite3
 import numpy as np
 import pandas as pd
 
@@ -9,7 +7,6 @@ import cobmo.building
 import cobmo.controller
 import cobmo.database_interface
 import cobmo.utils
-import cobmo.config
 
 
 # Set `scenario_name`.
