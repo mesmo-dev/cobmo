@@ -49,29 +49,25 @@ if simulate == 1:
 
     conn = cobmo.database_interface.connect_database()
 
-    # Extracting tables from the sql
-    # CAREFUL!
-    # Indexing to allow precise modification of the dataframe.
-    # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
-    building_scenarios_csv = pd.read_sql(
+    # Load selected database tables for modification.
+    building_scenarios = pd.read_sql(
         """
-        select * from building_scenarios
+        SELECT * FROM building_scenarios
         """,
         conn,
         index_col='scenario_name'
     )
-    buildings_csv = pd.read_sql(
+    buildings = pd.read_sql(
         """
-        select * from buildings
+        SELECT * FROM buildings
         """,
         conn,
         index_col='building_name'
     )
-
     # Importing the parameter_sets to change the storage lifetime
     building_parameter_sets = pd.read_sql(  # TODO: put the lifetime somewhere else and do not modify the parameters
         """
-        select * from building_parameter_sets
+        SELECT * FROM building_parameter_sets
         """,
         conn,
         # index_col='parameter_set'
@@ -82,7 +78,15 @@ if simulate == 1:
 
     # Setting the storage type to into the building
     # This is done to avoid changing by hand the storage type in the buildings.csv
-    building_name = building_scenarios_csv.at[scenario_name, 'building_name']
+    building_name = building_scenarios.at[scenario_name, 'building_name']
+
+    # Modify `price_type` for current scenario in the database.
+    building_scenarios.at[scenario_name, 'price_type'] = pricing_method
+    building_scenarios.to_sql(
+        'building_scenarios',
+        con=conn,
+        if_exists='replace'
+    )
 
     # ___________________________________________________________________________________________________________________
     # Creating the battery storage cases
@@ -155,12 +159,10 @@ if simulate == 1:
         for t in techs:
             building_storage_types = pd.read_sql(
                 """
-                select * from building_storage_types
+                SELECT * FROM building_storage_types
                 """,
                 conn,
                 index_col='building_storage_type'
-                # Indexing to allow precise modification of the dataframe.
-                # If this is used you need to reindex as pandas when using to_sql (meaning NOT using "index=False")
             )
 
             for y in range(years.shape[0]):
@@ -193,7 +195,6 @@ if simulate == 1:
                     'building_storage_types',
                     con=conn,
                     if_exists='replace'
-                    # index=False
                 )
 
                 building_parameter_sets.to_sql(
@@ -204,12 +205,11 @@ if simulate == 1:
                 )
 
                 # Run baseline scenario
-                buildings_csv.at[building_name, 'building_storage_type'] = ''
-                buildings_csv.to_sql(
+                buildings.at[building_name, 'building_storage_type'] = ''
+                buildings.to_sql(
                     'buildings',
                     con=conn,
                     if_exists='replace'
-                    # index=False
                 )
                 print('\n-----------------------------------------------------------------------------')
                 print('\n>> Simulation # %i' % counter)
@@ -222,12 +222,11 @@ if simulate == 1:
                 print('\n\n________________________Setup @STORAGE scenario________________________')
 
                 # print('\n Simulation: %i/%i' % (int(counter), int(float(techs.shape[0]) * float(years.shape[0]))))
-                buildings_csv.at[building_name, 'building_storage_type'] = 'battery_storage_default'
-                buildings_csv.to_sql(
+                buildings.at[building_name, 'building_storage_type'] = 'battery_storage_default'
+                buildings.to_sql(
                     'buildings',
                     con=conn,
                     if_exists='replace'
-                    # index=False
                 )
                 building = cobmo.building.Building(conn, scenario_name)
                 controller = cobmo.controller_bes_lifetime.Controller_bes_lifetime(conn=conn, building=building)
