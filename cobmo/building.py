@@ -2365,7 +2365,7 @@ class Building(object):
                 self.building_scenarios['building_name'][0] + '_battery_storage_charge'
             ] = (
                 self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
-            )
+            )  # TODO: Make the battery loss dependent on the outdoor temperature.
 
             # Storage losses.
             # - There are no battery storage losses, but a very small loss is added to keep the state matrix
@@ -2378,7 +2378,7 @@ class Building(object):
                     self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                     self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
                 ]
-            ) - 1E-17  # TODO: Make the battery loss dependent on the outdoor temperature.
+            ) - 1E-17
 
             for zone_name, zone_data in self.building_zones.iterrows():
                 # TODO: Differentiate heating / cooling and define heating discharge.
