@@ -1,21 +1,4 @@
 BEGIN TRANSACTION;
-CREATE TABLE IF NOT EXISTS "battery_storage_types" (
-	"battery_technology"	TEXT,
-	"round_trip_efficiency"	REAL,
-	"depth_of_discharge"	REAL,
-	"energy_installation_cost_2016"	REAL,
-	"energy_installation_cost_2020"	REAL,
-	"energy_installation_cost_2025"	REAL,
-	"energy_installation_cost_2030"	REAL,
-	"power_installation_cost_2016"	REAL,
-	"power_installation_cost_2020"	REAL,
-	"power_installation_cost_2025"	REAL,
-	"power_installation_cost_2030"	REAL,
-	"lifetime_reference_2016"	REAL,
-	"lifetime_reference_2020"	REAL,
-	"lifetime_reference_2025"	REAL,
-	"lifetime_reference_2030"	REAL
-);
 CREATE TABLE IF NOT EXISTS "building_blind_types" (
 	"blind_type"	TEXT,
 	"blind_efficiency"	TEXT
