@@ -165,11 +165,12 @@ def discounted_payback_time(
         storage_size,
         savings_day,
         save_plot_on_off,
-        save_path,
         plotting_on_off,
         storage,
-        pricing_method,
-        interest_rate=0.06
+        pricing_method='',
+        interest_rate=0.06,
+        save_path='',
+
 ):
     # Activating seaborn theme
     sns.set()
