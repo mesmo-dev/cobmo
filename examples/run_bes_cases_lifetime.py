@@ -5,7 +5,7 @@ import errno
 import numpy as np
 import pandas as pd
 import time as time
-import tkinter
+import tkinter.messagebox
 import os
 
 import cobmo.building
@@ -20,10 +20,10 @@ cobmo_cobmo_path = os.path.join(cobmo.config.cobmo_path, 'cobmo')
 
 # Settings.
 scenario_name = 'scenario_default'
-pricing_method = 'retailer_peak_offpeak'
+pricing_method = 'wholesale_market'
 # Choices: 'wholesale_market', 'retailer_peak_offpeak', 'wholesale_squeezed_20', 'wholesale_squeezed_40',
 # 'wholesale_squeezed_60', 'wholesale_squeezed_80'
-do_plotting = 1
+do_plotting = 0
 simulate = 1
 
 plotting_options = [
@@ -32,8 +32,8 @@ plotting_options = [
 ]
 
 # Definition of the IRENA case.
-case = 'reference'
-# case = 'best'
+# case = 'reference'
+case = 'best'
 # case = 'worst'
 
 interest_rate = 0.02
@@ -214,6 +214,13 @@ if simulate == 1:
                 print('\n-----------------------------------------------------------------------------')
                 print('\n>> Simulation # %i' % counter)
                 print('\n\n________________________Setup @BASELINE scenario________________________')
+                buildings.at[building_name, 'building_storage_type'] = ''
+                buildings.to_sql(
+                    'buildings',
+                    con=conn,
+                    if_exists='replace'
+                )
+
                 building_baseline = cobmo.building.Building(conn, scenario_name)
                 controller = cobmo.controller_bes_lifetime.Controller_bes_lifetime(conn=conn, building=building_baseline)
                 (_, _, _, _, obj_baseline) = controller.solve()  # TODO: solve this with normal controller
@@ -358,9 +365,10 @@ if simulate == 1:
                 savepdf=0,
                 pricing_method=pricing_method
             )
-        tkinter.messagebox.showinfo("Simulation status", "Simulation concluded.\nSimulations = {} x 2".format(
-            int(float(techs.shape[0]) * float(years.shape[0])))
-                                    )
+
+        # tkinter.messagebox.showinfo("Simulation status", "Simulation concluded.\nSimulations = {} x 2".format(
+        #     int(float(techs.shape[0]) * float(years.shape[0])))
+        #                             )
 
 if do_plotting == 1 and simulate == 0:  # Only plotting
 
