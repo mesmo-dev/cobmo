@@ -355,13 +355,13 @@ class Controller_bes(object):
                                 problem.variable_output_timeseries[timestep, output_power] / 1000 / 2  # W --> kW
                                 * problem.parameter_electricity_prices[timestep]
                             ) * 14.0 * 260.0 * float(building.building_parameters['storage_lifetime'])
-                            # 14 levels * 260 working days per year * 15 years
+                            # 14 levels * 260 working days per year
                     )
 
             # If there is storage, adding the CAPEX
             if 'storage' in building.building_scenarios['building_storage_type'][0]:
                 objective_value = objective_value + (
-                                        problem.variable_storage_size * 2.77778e-7  # fixed_storage_size
+                                        problem.variable_storage_size * 2.77778e-7  # J --> kWh
                                         * float(building.building_scenarios['storage_investment_sgd_per_unit'][0])
                                         + float(building.building_scenarios['storage_power_installation_cost'][0])
                                         * float(building.building_scenarios['peak_electric_power_building_watt'][0])
@@ -388,7 +388,8 @@ class Controller_bes(object):
             self.problem,
             tee=True  # Verbose solver outputs
         )
-        print("Controller solve time: {:.2f} seconds".format(time.clock() - time_start))
+        print("Controller solve time: {:.2f} s"
+              "econds".format(time.clock() - time_start))
 
 
 # =================================================================================================
@@ -429,6 +430,7 @@ class Controller_bes(object):
         # fixed_storage_size = 5000.0 * 1000.0 * 3.6e+3  # to Joule  # @change
         # storage_size = fixed_storage_size
 
+        print('@storage_lifetime = {}'.format(float(self.building.building_parameters['storage_lifetime'])))
         optimum_obj = 0.0
         for timestep in self.problem.set_timesteps:
             for output_power in self.problem.set_outputs_power:
@@ -437,15 +439,17 @@ class Controller_bes(object):
                             float(self.problem.variable_output_timeseries[timestep, output_power].value)
                             * float(self.problem.parameter_electricity_prices[timestep]) / 1000 / 2
                         ) * 14.0 * 260.0 * float(self.building.building_parameters['storage_lifetime'])
-                        # 14 levels * 260 working days per year * 15 years
+                        # 14 levels * 260 working days per year
                 )
 
         if 'storage' in self.building.building_scenarios['building_storage_type'][0]:
             optimum_obj = optimum_obj + (
                                     self.problem.variable_storage_size.value * 2.77778e-7  # fixed_storage_size
                                     * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+
                                     + float(self.building.building_scenarios['storage_power_installation_cost'][0])
                                     * float(self.building.building_scenarios['peak_electric_power_building_watt'][0])
+
                                     + float(self.building.building_scenarios['storage_fixed_cost'][0])
                             )
 
@@ -467,8 +471,10 @@ class Controller_bes(object):
                             optimum_obj
                             - (storage_size
                                * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0]) * 2.77778e-7
+
                                + float(self.building.building_scenarios['storage_power_installation_cost'][0])
-                                * float(self.building.building_scenarios['peak_electric_power_building_watt'][0])
+                               * float(self.building.building_scenarios['peak_electric_power_building_watt'][0])
+
                                + float(self.building.building_scenarios['storage_fixed_cost'][0])
                                )
                           ) / 260.0 / float(self.building.building_parameters['storage_lifetime'])
