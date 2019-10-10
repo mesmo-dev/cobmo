@@ -16,16 +16,29 @@ scenario_name = 'scenario_default'
 pricing_method = 'wholesale_market'  # Choices: 'wholesale_market', 'retailer_peak_offpeak'.
 building_storage_type = 'battery_storage_default'  # Choices: 'battery_storage_default', ''.
 save_csv = 1
-plotting = 0
-save_plot = 0
+plotting = 1
+save_plot = 1
+
+# Check for valid settings.
+if building_storage_type not in ['', 'battery_storage_default']:
+    raise ValueError("No valid building_storage_type = '{}'".format(building_storage_type))
 
 # Set results path and create the directory.
-# TODO: Throw error when thermal instead of battery storage.
+if building_storage_type != '':
+    results_path = (
+        os.path.join(
+            cobmo.config.results_path,
+            'run_bes__with_storage__' + cobmo.config.timestamp
+        )
+    )
+else:
+    results_path = (
+        os.path.join(
+            cobmo.config.results_path,
+            'run_bes__without_storage__' + cobmo.config.timestamp
+        )
+    )
 if save_csv == 1:
-    if building_storage_type == 'battery_storage_default':
-        results_path = os.path.join(cobmo.config.results_path, 'run_bes__with_storage_' + cobmo.config.timestamp)
-    else:
-        results_path = os.path.join(cobmo.config.results_path, 'run_bes__without_storage_' + cobmo.config.timestamp)
     os.mkdir(results_path)
 
 # Obtain a connection to the database.
@@ -98,7 +111,7 @@ controller = cobmo.controller_bes.Controller_bes(
     optimum_obj
 ) = controller.solve()
 
-if building_storage_type == 'battery_storage_default':
+if 'battery' in building_storage_type:
     # Calculate savings and payback time.
     storage_size_kwh = storage_size * 3.6e-3 * 1.0e-3  # Ws to kWh
     costs_without_storage = 3.834195403e+02  # [SGD/day], 14 levels, for CREATE Tower. # TODO: should not be hardcoded.
@@ -108,8 +121,11 @@ if building_storage_type == 'battery_storage_default':
         storage_size_kwh,
         savings_day,
         save_plot_on_off=save_plot,
+        save_path=results_path,
         plotting_on_off=plotting,
-        storage='battery'
+        storage=building_storage_type,
+        pricing_method=pricing_method,
+        interest_rate=0.06
     )
 
     # Print results.
