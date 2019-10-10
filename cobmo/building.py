@@ -2363,7 +2363,10 @@ class Building(object):
             self.control_matrix.at[
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                 self.building_scenarios['building_name'][0] + '_battery_storage_charge'
-            ] = (
+            ] = self.control_matrix.at[
+                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_battery_storage_charge'
+            ] + (
                 self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
             )  # TODO: Make the battery loss dependent on the outdoor temperature.
 
