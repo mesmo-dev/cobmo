@@ -17,11 +17,11 @@ scenario_name = 'scenario_default'
 pricing_method = 'wholesale_market'
 # Choices: 'wholesale_market', 'retailer_peak_offpeak', 'wholesale_squeezed_20', 'wholesale_squeezed_40'
 # 'wholesale_squeezed_60', 'wholesale_squeezed_80'
-building_storage_type = 'sensible_thermal_storage_default'
+building_storage_type = 'battery_storage_default'
 # Choices: 'sensible_thermal_storage_default', 'battery_storage_default'
-plotting = 1
-save_csv = 1
-save_plot = 1
+plotting = 0
+save_csv = 0
+save_plot = 0
 
 # Check for valid settings.
 if building_storage_type not in ['sensible_thermal_storage_default', 'battery_storage_default']:
@@ -77,7 +77,7 @@ building_parameter_sets = pd.read_sql(
 # Modify `building_parameter_sets` to change the storage lifetime.
 # TODO: Change storage lifetime without using the parameters table.
 building_parameter_sets.loc['storage_lifetime', 'parameter_value'] = (
-    float(building_storage_types.at['sensible_thermal_storage_default', 'storage_lifetime'])
+    float(building_storage_types.at[building_storage_type, 'storage_lifetime'])
 )
 building_parameter_sets.to_sql(
     'building_parameter_sets',
@@ -96,6 +96,9 @@ building_scenarios.to_sql(
 #
 # Baseline case.
 #
+print('#')
+print('# Baseline case.')
+print('#')
 
 # Modify `building_storage_type` for the baseline case.
 building_name = building_scenarios.at[scenario_name, 'building_name']
@@ -110,7 +113,7 @@ buildings.to_sql(
 building_baseline = cobmo.building.Building(conn, scenario_name)
 
 # Run controller for the baseline case.
-controller_sensible = cobmo.controller_baseline.ControllerBaseline(
+controller_baseline = cobmo.controller_baseline.ControllerBaseline(
     conn=conn,
     building=building_baseline
 )
@@ -119,11 +122,14 @@ controller_sensible = cobmo.controller_baseline.ControllerBaseline(
     state_timeseries_controller_baseline,
     output_timeseries_controller_baseline,
     optimum_obj_baseline
-) = controller_sensible.solve()
-
+) = controller_baseline.solve()
+print('@optimum_obj_baseline = {}'.format(optimum_obj_baseline))
 #
 # Storage case.
 #
+print('#')
+print('# Storage case.')
+print('#')
 
 # Modify `building_storage_type` for the storage case.
 building_name = building_scenarios.at[scenario_name, 'building_name']
@@ -219,9 +225,9 @@ if save_csv == 1:
     building_baseline.control_output_matrix.to_csv(os.path.join(results_path, 'building_baseline_control_output_matrix.csv'))
     building_baseline.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_baseline_disturbance_output_matrix.csv'))
 
-    control_timeseries_controller_storage.to_csv(os.path.join(results_path, 'sttorage_control_timeseries_controller.csv'))
-    state_timeseries_controller_storage.to_csv(os.path.join(results_path, 'sttorage_state_timeseries_controller.csv'))
-    output_timeseries_controller_storage.to_csv(os.path.join(results_path, 'sttorage_output_timeseries_controller.csv'))
+    control_timeseries_controller_storage.to_csv(os.path.join(results_path, 'storage_control_timeseries_controller.csv'))
+    state_timeseries_controller_storage.to_csv(os.path.join(results_path, 'storage_state_timeseries_controller.csv'))
+    output_timeseries_controller_storage.to_csv(os.path.join(results_path, 'storage_output_timeseries_controller.csv'))
 
     building_storage.state_matrix.to_csv(os.path.join(results_path, 'building_storage_state_matrix.csv'))
     building_storage.control_matrix.to_csv(os.path.join(results_path, 'building_storage_control_matrix.csv'))
