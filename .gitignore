@@ -29,7 +29,9 @@ cobmo/cobmo results/
 
 cobmo/try_outs\.py
 
-cobmo/results/
+results/*
+
+!results/README\.md
 
 cobmo/extras/
 
