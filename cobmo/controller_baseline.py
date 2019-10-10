@@ -325,8 +325,11 @@ class ControllerBaseline(object):
                         (
                             self.problem.variable_output_timeseries[timestep, output_power].value / 1000 / 2
                             * self.problem.parameter_electricity_prices[timestep]
-                        ) * 14.0  # * 260.0 * float(self.building.building_parameters['storage_lifetime'])
+                        ) * 14.0 * 260.0 * float(self.building.building_parameters['storage_lifetime'])
                 )
+
+        # Bringing back the result in SGD/day for 14 levels
+        optimum_obj = optimum_obj / 260.0 / float(self.building.building_parameters['storage_lifetime'])
 
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 
