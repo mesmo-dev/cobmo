@@ -1,27 +1,19 @@
-"""
-Building model utility function definitions
-"""
+"""Utility function definitions."""
 
-import os
-import sqlite3
-import csv
+from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
+import datetime
+import logging
 from math import fabs
-import glob
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from matplotlib.ticker import (MultipleLocator, FormatStrFormatter, AutoMinorLocator)
+import numpy as np
+import os
 import pandas as pd
 import pvlib
-# Using CoolProp for calculating humid air properties: http://www.coolprop.org/fluid_properties/HumidAir.html
-from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
-# Import for infeasibility analysis
-from pyomo.core import Constraint, Var, value, TraversalStrategy
-import logging
-import numpy as np
-import datetime as dt
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import datetime
-import seaborn as sns
-from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
-                               AutoMinorLocator)
+from pyomo.core import Constraint, Var, value, TraversalStrategy  # Import for infeasibility analysis.
+import seaborn
+
 
 """ 
 Module with diagnostic utilities for infeasible models. 
@@ -149,7 +141,7 @@ def plot_params(
         param_name='',
         readfile_path=''
 ):
-    sns.set()
+    seaborn.set()
     pricing_method = building.electricity_prices['price_type'][0]
     prices = building.electricity_prices['price'].values
     print(pricing_method)
@@ -173,7 +165,7 @@ def discounted_payback_time(
 
 ):
     # Activating seaborn theme
-    sns.set()
+    seaborn.set()
 
     # Storage characteristics
     storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
@@ -181,8 +173,8 @@ def discounted_payback_time(
     storage_lifetime = building.building_scenarios['storage_lifetime'][0]
 
     # DISCOUNTED PAYBACK
-    start_date = dt.date(2019, 1, 1)
-    end_date = dt.date(2019, 12, 31)
+    start_date = datetime.date(2019, 1, 1)
+    end_date = datetime.date(2019, 12, 31)
     working_days = np.busday_count(start_date, end_date)
 
     pvaf = (1 - (1 + interest_rate) ** (-storage_lifetime)) / interest_rate  # Present value Annuity factor
@@ -368,52 +360,6 @@ def log_infeasible_bounds(m, tol=1E-6, logger=logger):
         if var.has_ub() and value(var - var.ub) >= tol:
             logger.info('VAR {}: {} > UB {}'.format(
                 var.name, value(var), value(var.ub)))
-
-
-def create_database(
-        sqlite_path,
-        sql_path,
-        csv_path
-):
-    """
-    Create SQLITE database from SQL (schema) file and CSV files
-    """
-    # Connect SQLITE database (creates file, if none)
-    conn = sqlite3.connect(sqlite_path)
-    cursor = conn.cursor()
-
-    # Remove old data, if any
-    cursor.executescript(""" 
-        PRAGMA writable_schema = 1; 
-        DELETE FROM sqlite_master WHERE type IN ('table', 'index', 'trigger'); 
-        PRAGMA writable_schema = 0; 
-        VACUUM; 
-        """)
-
-    # Recreate SQLITE database (schema) from SQL file
-    cursor.executescript(open(sql_path, 'r').read())
-    conn.commit()
-
-    # Import CSV files into SQLITE database
-    conn.text_factory = str  # allows utf-8 data to be stored
-    cursor = conn.cursor()
-    for file in glob.glob(os.path.join(csv_path, '*.csv')):
-        table_name = os.path.splitext(os.path.basename(file))[0]
-
-        with open(file, 'r') as file:
-            first_row = True
-            for row in csv.reader(file):
-                if first_row:
-                    cursor.execute("delete from {}".format(table_name))
-                    insert_sql_query = \
-                        "insert into {} VALUES ({})".format(table_name, ', '.join(['?' for column in row]))
-
-                    first_row = False
-                else:
-                    cursor.execute(insert_sql_query, row)
-            conn.commit()
-    cursor.close()
-    conn.close()
 
 
 def tank_geometry(
