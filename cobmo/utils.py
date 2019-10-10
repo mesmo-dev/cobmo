@@ -231,7 +231,6 @@ def discounted_payback_time(
         # usable fonts: Control Panel\Appearance and Personalization\Fonts
         plt.rcParams['font.serif'] = "Palatino Linotype"
         plt.rcParams['font.family'] = "serif"
-        date_main = datetime.datetime.now()
 
         fig, pb = plt.subplots(1, 1)
 
@@ -286,32 +285,24 @@ def discounted_payback_time(
 
         title = 'Neither Sensible nor battery'
         filename = 'no_tech_specified'
-        if storage == 'sensible':
+        if 'sensible' in storage:
             if year == 70.0:
                 title = 'Sensible Thermal Storage — ' + pricing_method + ' — Not paying back'
             else:
                 title = 'Sensible Thermal Storage — ' + pricing_method + ' — payback year = %i' % discounted_payback
-            filename = ('discounted_payback_STES'  # + building.building_scenarios['building_name'][0]
-                        + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
-                            date_main.year, date_main.month, date_main.day,
-                            date_main.hour, date_main.minute, date_main.second)
-                        )
-        elif storage == 'battery':
+            filename = 'discounted_payback_STES'
+        elif 'battery' in storage:
             if year == 70.0:
                 title = 'Battery Storage — ' + pricing_method + ' — Not paying back'
             else:
                 title = 'Battery Storage — ' + pricing_method + ' — payback year = %i' % discounted_payback
-            filename = ('discounted_payback_BES'  # + building.building_scenarios['building_name'][0]
-                        + '_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}-{:02d}'.format(
-                            date_main.year, date_main.month, date_main.day,
-                            date_main.hour, date_main.minute, date_main.second)
-                        )
+            filename = 'discounted_payback_BES'
 
         fig.suptitle(title)
 
         fig.set_size_inches([7, 5])
         if save_plot_on_off == 1:
-            plt.savefig(save_path + filename + '.svg', format='svg', dpi=1200)
+            plt.savefig(os.path.join(save_path, filename + '.svg'), format='svg', dpi=1200)
             # plt.savefig('figs/discounted_payback.svg', format='svg', dpi=1200)
 
         plt.show()
