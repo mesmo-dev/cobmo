@@ -1,6 +1,7 @@
 """Example run script for using the building model."""
 
 import numpy as np
+import os
 import pandas as pd
 
 import cobmo.building
@@ -12,13 +13,32 @@ import cobmo.utils
 # Set `scenario_name`.
 scenario_name = 'scenario_default'
 
+# Set results path and create the directory.
+results_path = os.path.join(cobmo.config.results_path, 'run_example_' + cobmo.config.timestamp)
+os.mkdir(results_path)
+
 # Obtain a connection to the database.
 conn = cobmo.database_interface.connect_database()
 
+# Define the building model (main function of the CoBMo toolbox).
+# - Generates the building model for given `scenario_name` based on the building definitions in the `data` directory.
 building = cobmo.building.Building(
     conn=conn,
     scenario_name=scenario_name
 )
+
+# Define augemented state space model matrices.
+# TODO: Check if there is any usage for the augmented state space model.
+building.define_augmented_model()
+
+# Save building model matrices to CSV for debugging.
+building.state_matrix.to_csv(os.path.join(results_path, 'building_state_matrix.csv'))
+building.control_matrix.to_csv(os.path.join(results_path, 'building_control_matrix.csv'))
+building.disturbance_matrix.to_csv(os.path.join(results_path, 'building_disturbance_matrix.csv'))
+building.state_output_matrix.to_csv(os.path.join(results_path, 'building_state_output_matrix.csv'))
+building.control_output_matrix.to_csv(os.path.join(results_path, 'building_control_output_matrix.csv'))
+building.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_disturbance_output_matrix.csv'))
+building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
 
 # Define initial state and control timeseries.
 state_initial = building.set_state_initial
@@ -27,9 +47,6 @@ control_timeseries_simulation = pd.DataFrame(
     building.set_timesteps,
     building.set_controls
 )
-
-# Define augemented state space model matrices.
-building.define_augmented_model()
 
 # Run simulation.
 (
@@ -40,38 +57,10 @@ building.define_augmented_model()
     control_timeseries=control_timeseries_simulation
 )
 
-# Outputs for debugging.
-print("-----------------------------------------------------------------------------------------------------------")
-print("building.state_matrix=")
-print(building.state_matrix)
-print("-----------------------------------------------------------------------------------------------------------")
-print("building.control_matrix=")
-print(building.control_matrix)
-print("-----------------------------------------------------------------------------------------------------------")
-print("building.disturbance_matrix=")
-print(building.disturbance_matrix)
-print("-----------------------------------------------------------------------------------------------------------")
-print("building.state_output_matrix=")
-print(building.state_output_matrix)
-print("-----------------------------------------------------------------------------------------------------------")
-print("building.control_output_matrix=")
-print(building.control_output_matrix)
-print("-----------------------------------------------------------------------------------------------------------")
-print("building.disturbance_output_matrix=")
-print(building.disturbance_output_matrix)
-print("-----------------------------------------------------------------------------------------------------------")
-print("control_timeseries_simulation=")
-print(control_timeseries_simulation)
-print("-----------------------------------------------------------------------------------------------------------")
-print("building.disturbance_timeseries=")
-print(building.disturbance_timeseries)
-print("-----------------------------------------------------------------------------------------------------------")
-print("state_timeseries_simulation=")
-print(state_timeseries_simulation)
-print("-----------------------------------------------------------------------------------------------------------")
-print("output_timeseries_simulation=")
-print(output_timeseries_simulation)
-print("-----------------------------------------------------------------------------------------------------------")
+# Save simulation timeseries to CSV for debugging.
+control_timeseries_simulation.to_csv(os.path.join(results_path, 'control_timeseries_simulation.csv'))
+state_timeseries_simulation.to_csv(os.path.join(results_path, 'state_timeseries_simulation.csv'))
+output_timeseries_simulation.to_csv(os.path.join(results_path, 'output_timeseries_simulation.csv'))
 
 # Run controller.
 controller = cobmo.controller.Controller(
@@ -85,20 +74,14 @@ controller = cobmo.controller.Controller(
     obj_optimum
 ) = controller.solve()
 
-# Outputs for debugging.
-print("-----------------------------------------------------------------------------------------------------------")
-print("control_timeseries_controller=")
-print(control_timeseries_controller)
-print("-----------------------------------------------------------------------------------------------------------")
-print("state_timeseries_controller=")
-print(state_timeseries_controller)
-print("-----------------------------------------------------------------------------------------------------------")
-print("output_timeseries_controller=")
-print(output_timeseries_controller)
-print("-----------------------------------------------------------------------------------------------------------")
+# Save controller timeseries to CSV for debugging.
+control_timeseries_controller.to_csv(os.path.join(results_path, 'control_timeseries_controller.csv'))
+state_timeseries_controller.to_csv(os.path.join(results_path, 'state_timeseries_controller.csv'))
+output_timeseries_controller.to_csv(os.path.join(results_path, 'output_timeseries_controller.csv'))
+
+# Print controller objective value for debugging.
 print("obj_optimum=")
 print(obj_optimum)
-print("-----------------------------------------------------------------------------------------------------------")
 
 # Run error calculation function.
 (
@@ -109,11 +92,13 @@ print("-------------------------------------------------------------------------
     output_timeseries_controller.loc[:, output_timeseries_controller.columns.str.contains('temperature')]
 )  # Note: These are exemplary inputs.
 
-# Outputs for debugging.
-print("-----------------------------------------------------------------------------------------------------------")
-print("error_timeseries=")
-print(error_timeseries)
-print("-----------------------------------------------------------------------------------------------------------")
+# Save error outputs to CSV for debugging.
+error_timeseries.to_csv(os.path.join(results_path, 'error_timeseries.csv'))
+error_summary.to_csv(os.path.join(results_path, 'error_summary.csv'))
+
+# Print error summary for debugging.
 print("error_summary=")
 print(error_summary)
-print("-----------------------------------------------------------------------------------------------------------")
+
+# Print results path for debugging.
+print("Results are stored in: " + results_path)
