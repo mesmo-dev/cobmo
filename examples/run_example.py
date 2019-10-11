@@ -71,7 +71,7 @@ controller = cobmo.controller.Controller(
     control_timeseries_controller,
     state_timeseries_controller,
     output_timeseries_controller,
-    obj_optimum
+    objective_value
 ) = controller.solve()
 
 # Save controller timeseries to CSV for debugging.
@@ -80,8 +80,7 @@ state_timeseries_controller.to_csv(os.path.join(results_path, 'state_timeseries_
 output_timeseries_controller.to_csv(os.path.join(results_path, 'output_timeseries_controller.csv'))
 
 # Print controller objective value for debugging.
-print("obj_optimum=")
-print(obj_optimum)
+print("objective_value = {}".format(objective_value))
 
 # Run error calculation function.
 (
@@ -97,8 +96,7 @@ error_timeseries.to_csv(os.path.join(results_path, 'error_timeseries.csv'))
 error_summary.to_csv(os.path.join(results_path, 'error_summary.csv'))
 
 # Print error summary for debugging.
-print("error_summary=")
-print(error_summary)
+print("error_summary = \n{}".format(error_summary))
 
 # Print results path for debugging.
 print("Results are stored in: " + results_path)
