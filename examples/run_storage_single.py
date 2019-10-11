@@ -14,14 +14,14 @@ import cobmo.utils
 
 # Settings.
 scenario_name = 'scenario_default'
-pricing_method = 'wholesale_market'
+price_type = 'wholesale_market'
 # Choices: 'wholesale_market', 'retailer_peak_offpeak', 'wholesale_squeezed_20', 'wholesale_squeezed_40'
 # 'wholesale_squeezed_60', 'wholesale_squeezed_80'
 building_storage_type = 'battery_storage_default'
 # Choices: 'sensible_thermal_storage_default', 'battery_storage_default'
 plotting = 0
-save_csv = 0
 save_plot = 0
+save_csv = 0
 
 # Check for valid settings.
 if building_storage_type not in ['sensible_thermal_storage_default', 'battery_storage_default']:
@@ -31,7 +31,7 @@ if building_storage_type not in ['sensible_thermal_storage_default', 'battery_st
 results_path = (
     os.path.join(
         cobmo.config.results_path,
-        'run_storage_single__' + building_storage_type + '__' + pricing_method + '__' + cobmo.config.timestamp
+        'run_storage_single__' + building_storage_type + '__' + price_type + '__' + cobmo.config.timestamp
     )
 )
 if (save_csv == 1) or (save_plot == 1):
@@ -39,7 +39,7 @@ if (save_csv == 1) or (save_plot == 1):
 
 # Print the settings.
 print("building_storage_type = {}".format(building_storage_type))
-print("pricing_method = {}".format(pricing_method))
+print("pricing_method = {}".format(price_type))
 
 # Obtain a connection to the database.
 conn = cobmo.database_interface.connect_database()
@@ -86,7 +86,7 @@ building_parameter_sets.to_sql(
 )
 
 # Modify `price_type` for current scenario in the database.
-building_scenarios.at[scenario_name, 'price_type'] = pricing_method
+building_scenarios.at[scenario_name, 'price_type'] = price_type
 building_scenarios.to_sql(
     'building_scenarios',
     con=conn,
@@ -96,13 +96,14 @@ building_scenarios.to_sql(
 #
 # Baseline case.
 #
+
+# Print status info.
 print('#')
 print('# Baseline case.')
 print('#')
 
 # Modify `building_storage_type` for the baseline case.
-building_name = building_scenarios.at[scenario_name, 'building_name']
-buildings.at[building_name, 'building_storage_type'] = ''
+buildings.at[building_scenarios.at[scenario_name, 'building_name'], 'building_storage_type'] = ''
 buildings.to_sql(
     'buildings',
     con=conn,
@@ -123,17 +124,21 @@ controller_baseline = cobmo.controller_baseline.ControllerBaseline(
     output_timeseries_controller_baseline,
     optimum_obj_baseline
 ) = controller_baseline.solve()
-print('@optimum_obj_baseline = {}'.format(optimum_obj_baseline))
+
+# Print results.
+print("optimum_obj_baseline = {}".format(optimum_obj_baseline))
+
 #
 # Storage case.
 #
+
+# Print status info.
 print('#')
 print('# Storage case.')
 print('#')
 
 # Modify `building_storage_type` for the storage case.
-building_name = building_scenarios.at[scenario_name, 'building_name']
-buildings.at[building_name, 'building_storage_type'] = building_storage_type
+buildings.at[building_scenarios.at[scenario_name, 'building_name'], 'building_storage_type'] = building_storage_type
 buildings.to_sql(
     'buildings',
     con=conn,
@@ -200,7 +205,7 @@ if storage_size != 0.0:
         save_path=results_path,
         plotting_on_off=plotting,
         storage=building_storage_type,
-        pricing_method=pricing_method,
+        pricing_method=price_type,
         interest_rate=0.06
     )
 
@@ -239,3 +244,7 @@ if save_csv == 1:
     control_timeseries_controller_baseline.to_csv(os.path.join(results_path, 'baseline_control_timeseries_controller.csv'))
     state_timeseries_controller_baseline.to_csv(os.path.join(results_path, 'baseline_state_timeseries_controller.csv'))
     output_timeseries_controller_baseline.to_csv(os.path.join(results_path, 'baseline_output_timeseries_controller.csv'))
+
+# Print results path.
+if (save_csv == 1) or (save_plot == 1):
+    print("Results are stored in: " + results_path)
