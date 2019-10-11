@@ -2398,6 +2398,17 @@ class Building(object):
                         ]
                     ) - 1.0
 
+                    # Storage discharge to AHU for heating.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                        zone_name + '_battery_storage_to_zone_heat_ahu',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                            zone_name + '_battery_storage_to_zone_heat_ahu',
+                        ]
+                    ) - 1.0
+
                 if zone_data['hvac_tu_type'] != '':
                     # Storage discharge to TU for cooling.
                     self.control_matrix.at[
@@ -2407,6 +2418,17 @@ class Building(object):
                         self.control_matrix.at[
                             self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                             zone_name + '_battery_storage_to_zone_cool_tu',
+                        ]
+                    ) - 1.0
+
+                    # Storage discharge to TU for heating.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                        zone_name + '_battery_storage_to_zone_heat_tu',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                            zone_name + '_battery_storage_to_zone_heat_tu',
                         ]
                     ) - 1.0
 
@@ -3196,11 +3218,23 @@ class Building(object):
                         zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
                     ] = 1.0
 
+                    # Storage discharge to AHU for heating.
+                    self.control_output_matrix.at[
+                        zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power',
+                        zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power'
+                    ] = 1.0
+
                 if zone_data['hvac_tu_type'] != '':
                     # Storage discharge to TU for cooling.
                     self.control_output_matrix.at[
                         zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power',
                         zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power'
+                    ] = 1.0
+
+                    # Storage discharge to TU for heating.
+                    self.control_output_matrix.at[
+                        zone_name + '_sensible_storage_to_zone_tu_heat_thermal_power',
+                        zone_name + '_sensible_storage_to_zone_tu_heat_thermal_power'
                     ] = 1.0
 
             # Battery storage.
