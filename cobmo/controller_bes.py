@@ -137,7 +137,8 @@ class Controller_bes(object):
         self.problem.variable_control_timeseries = pyo.Var(
             self.problem.set_timesteps,
             self.problem.set_controls,
-            domain=pyo.Reals
+            # domain=pyo.Reals
+            domain=pyo.NonNegativeReals
         )
         self.problem.variable_output_timeseries = pyo.Var(
             self.problem.set_timesteps,
