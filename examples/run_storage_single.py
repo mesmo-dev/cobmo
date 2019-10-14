@@ -147,7 +147,6 @@ buildings.to_sql(
 
 # Obtain building model object for the storage case.
 building_storage = cobmo.building.Building(conn, scenario_name)
-building_storage.define_augmented_model()
 
 # Run controller for the storage case.
 if 'sensible' in building_storage_type:
@@ -183,9 +182,9 @@ elif 'battery' in building_storage_type:
 if storage_size != 0.0:
     # Calculate savings and payback time.
     if 'sensible' in building_storage_type:
-        savings_day = (optimum_obj_baseline - optimum_obj_storage)
+        savings_day = optimum_obj_baseline - optimum_obj_storage
         if building_storage.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
-            storage_size = storage_size * 1000.0 * 4186.0 * 8.0 * 2.77778e-7
+            storage_size = storage_size * 1000.0 * 4186.0 * 8.0 / 3600.0 / 1000.0  # in kWh. # TODO: Temp. diff. dynamic
             # TODO: Take value from building_sensible.
             print("Storage size = {} kWh".format(round(storage_size, 2)))
         elif building_storage.building_scenarios['investment_sgd_per_X'][0] == 'm3':
@@ -194,8 +193,8 @@ if storage_size != 0.0:
             raise ValueError("No valid specific unit of the storage investment.")
 
     elif 'battery' in building_storage_type:
-        savings_day = (optimum_obj_baseline - optimum_obj_storage)
-        storage_size = storage_size * 2.77778e-7  # * 3.6e-3 * 1.0e-3 # TODO: Why?
+        savings_day = optimum_obj_baseline - optimum_obj_storage
+        storage_size = storage_size / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
 
     (simple_payback, discounted_payback) = cobmo.utils.discounted_payback_time(
         building_storage,
