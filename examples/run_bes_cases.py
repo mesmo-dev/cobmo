@@ -54,6 +54,13 @@ building_storage_types = pd.read_sql(
     conn,
     index_col='building_storage_type'
 )
+building_parameter_sets = pd.read_sql(
+    """
+    SELECT * FROM building_parameter_sets
+    """,
+    conn,
+    index_col='parameter_name'
+)
 
 # Modify `building_storage_type` for the current scenario in the database.
 building_name = building_scenarios.at[scenario_name, 'building_name']
@@ -126,6 +133,17 @@ if iterate == 1:
             )
             building_storage_types.to_sql(
                 'building_storage_types',
+                con=conn,
+                if_exists='replace'
+            )
+
+            # Modify `building_parameter_sets` to change the storage lifetime.
+            # TODO: Change storage lifetime without using the parameters table.
+            building_parameter_sets.loc['storage_lifetime', 'parameter_value'] = (
+                float(building_storage_types.at['battery_storage_default', 'storage_lifetime'])
+            )
+            building_parameter_sets.to_sql(
+                'building_parameter_sets',
                 con=conn,
                 if_exists='replace'
             )
