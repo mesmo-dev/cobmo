@@ -5,11 +5,12 @@ Building model main function definitions
 import datetime as dt
 import numpy as np
 import pyomo.environ as pyo
+import pyomo.util.infeasible
 import pandas as pd
 import time as time
 
 import cobmo.building
-import cobmo.controller
+import cobmo.controller_bes
 import cobmo.database_interface
 import cobmo.utils
 
@@ -113,7 +114,7 @@ building.define_augmented_model()
 # file_output_text.write(building.state_matrix)
 
 # Run controller
-controller = cobmo.controller.Controller(
+controller = cobmo.controller_bes.Controller_bes(
     conn=conn,
     building=building
 )
@@ -224,8 +225,8 @@ print("\nOverall Bi-level problem took: {:.2f} seconds\n".format(time.clock() - 
 
 # Printing @infeasibility
 print("\nlog infesibility:\n")
-cobmo.utils.log_infeasible_constraints(problem)
-cobmo.utils.log_infeasible_bounds(problem)
+pyomo.util.infeasible.log_infeasible_constraints(problem)
+pyomo.util.infeasible.log_infeasible_bounds(problem)
 
 # print(results)
 
