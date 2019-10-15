@@ -17,7 +17,7 @@ scenario_name = 'scenario_default'
 price_type = 'wholesale_market'
 # Choices: 'wholesale_market', 'retailer_peak_offpeak', 'wholesale_squeezed_20', 'wholesale_squeezed_40'
 # 'wholesale_squeezed_60', 'wholesale_squeezed_80'
-building_storage_type = 'battery_storage_default'
+building_storage_type = 'sensible_thermal_storage_default'
 # Choices: 'sensible_thermal_storage_default', 'battery_storage_default'
 plotting = 0
 save_plot = 0
@@ -93,14 +93,9 @@ building_scenarios.to_sql(
     if_exists='replace'
 )
 
-#
 # Baseline case.
-#
-
 # Print status info.
-print('#')
-print('# Baseline case.')
-print('#')
+print('\nStarting baseline case.')
 
 # Modify `building_storage_type` for the baseline case.
 buildings.at[building_scenarios.at[scenario_name, 'building_name'], 'building_storage_type'] = ''
@@ -128,14 +123,9 @@ controller_baseline = cobmo.controller_baseline.ControllerBaseline(
 # Print results.
 print("optimum_obj_baseline = {}".format(optimum_obj_baseline))
 
-#
 # Storage case.
-#
-
 # Print status info.
-print('#')
-print('# Storage case.')
-print('#')
+print("\nStarting storage case.")
 
 # Modify `building_storage_type` for the storage case.
 buildings.at[building_scenarios.at[scenario_name, 'building_name'], 'building_storage_type'] = building_storage_type
@@ -175,10 +165,7 @@ elif 'battery' in building_storage_type:
         optimum_obj_storage
     ) = controller_battery.solve()
 
-#
 # Outputs.
-#
-
 if storage_size != 0.0:
     # Calculate savings and payback time.
     if 'sensible' in building_storage_type:
