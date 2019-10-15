@@ -8,7 +8,8 @@ import cobmo.building
 import cobmo.config
 import cobmo.controller_bes
 import cobmo.database_interface
-import cobmo.utils_bes_cases
+import cobmo.plots
+import cobmo.utils
 
 
 # Settings.
@@ -90,7 +91,7 @@ building_scenarios.to_sql(
     lifetime,
     efficiency,
     depth_of_discharge
-) = cobmo.utils_bes_cases.retrieve_battery_parameters(
+) = cobmo.utils.retrieve_battery_parameters(
     case=case
 )
 
@@ -170,7 +171,7 @@ if iterate == 1:
                 discounted_payback,
                 simple_payback,
                 payback_df
-            ) = cobmo.utils_bes_cases.discounted_payback_time(
+            ) = cobmo.utils.discounted_payback_time(
                 building,
                 storage_size_kwh,
                 storage_lifetime,
@@ -193,7 +194,7 @@ if iterate == 1:
 if plotting == 1:
     for payback_type in ['simple', 'discounted']:
         filepath_read = os.path.join(results_path, payback_type + '_payback.csv')
-        cobmo.utils_bes_cases.plot_battery_cases(
+        cobmo.plots.plot_battery_cases(
             case,
             payback_type,
             filepath_read,

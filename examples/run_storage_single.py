@@ -183,7 +183,7 @@ if storage_size != 0.0:
         savings_day = optimum_obj_baseline - optimum_obj_storage
         storage_size = storage_size / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
 
-    (simple_payback, discounted_payback) = cobmo.utils.discounted_payback_time(
+    (simple_payback, discounted_payback) = cobmo.utils.discounted_payback_time_old(
         building_storage,
         storage_size,
         savings_day,
