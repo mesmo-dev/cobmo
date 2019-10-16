@@ -1,7 +1,6 @@
 """Utility function definitions."""
 import datetime as dt
 
-import seaborn as sns
 from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
 import datetime
 import matplotlib.pyplot as plt
@@ -18,7 +17,7 @@ def calculate_irradiation_surfaces(
         weather_type='singapore_nus',
         irradiation_model='dirint'
 ):
-    """ Calculates irradiation for surfaces oriented towards east, south, west & north.
+    """Calculates irradiation for surfaces oriented towards east, south, west & north.
 
     - Operates on the database: Updates according columns in weather_timeseries
     - Takes irradition_horizontal as measured global horizontal irradiation (ghi)
@@ -70,7 +69,7 @@ def calculate_irradiation_surfaces(
         irradiation_erbs = pvlib.irradiance.erbs(
             ghi=irradiation_ghi,
             zenith=solarposition['zenith'],
-            doy=weather_timeseries.index
+            datetime_or_doy=weather_timeseries.index
         )
         irradiation_dni = irradiation_erbs['dni']
     elif irradiation_model == 'dirint':
@@ -515,7 +514,7 @@ def discounted_payback_time(
         interest_rate=0.06
 ):
     # Activating seaborn theme
-    sns.set()
+    seaborn.set()
 
     # DISCOUNTED PAYBACK
     start_date = dt.date(2019, 1, 1)
