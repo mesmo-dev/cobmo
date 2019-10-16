@@ -19,9 +19,6 @@ price_type = 'wholesale_market'
 case = 'best'  # IRENA battery parameters case.
 # Choices: 'best', 'reference', 'worst'
 interest_rate = 0.02
-what_plotting = 'savings_year_percentage'
-# Choices: 'savings_year', 'savings_year_percentage', 'storage_size', 'simple_payback', 'discounted_payback',
-# 'efficiency', 'investment'
 plotting = 1
 simulate = 1
 
@@ -29,7 +26,7 @@ simulate = 1
 results_path = (
     os.path.join(
         cobmo.config.results_path,
-        'run_bes_cases__' + case + '__' + '{:.2f}'.format(interest_rate) + '__' + price_type + '__' + what_plotting + '__' + cobmo.config.timestamp
+        'run_bes_cases__' + case + '__' + '{:.2f}'.format(interest_rate) + '__' + price_type + '__' + cobmo.config.timestamp
     )
 )
 os.mkdir(results_path)
@@ -291,14 +288,32 @@ if simulate == 1:
 # Plots.
 if plotting == 1:
     # Please note: Change `filepath_read` manually for plotting without simulation.
-    filepath_read = os.path.join(results_path, what_plotting + '.csv')
-    filename_plot = what_plotting
-    cobmo.plots.plot_battery_cases_bubbles(
-        case,
-        filepath_read,
-        results_path,
-        filename_plot,
-        labels=what_plotting,
-        savepdf=1,
-        pricing_method=price_type
-    )
+
+    for plot_type in [
+        'savings_year',
+        'savings_year_percentage',
+        'storage_size',
+        'simple_payback',
+        'discounted_payback',
+        'efficiency'
+    ]:
+        filepath_read = os.path.join(results_path, plot_type + '.csv')
+        cobmo.plots.plot_battery_cases_bubbles(
+            case,
+            filepath_read,
+            results_path,
+            plot_type,
+            labels=plot_type,
+            savepdf=1,
+            pricing_method=price_type
+        )
+
+    for payback_type in ['simple', 'discounted']:
+        filepath_read = os.path.join(results_path, payback_type + '_payback.csv')
+        cobmo.plots.plot_battery_cases(
+            case,
+            payback_type,
+            filepath_read,
+            results_path,
+            save_plots='summary'
+        )
