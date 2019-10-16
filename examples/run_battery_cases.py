@@ -6,7 +6,7 @@ import time as time
 
 import cobmo.building
 import cobmo.config
-import cobmo.controller_bes_lifetime
+import cobmo.controller
 import cobmo.database_interface
 import cobmo.plots
 import cobmo.utils
@@ -200,13 +200,18 @@ if simulate == 1:
 
             # Run controller for the baseline case.
             # TODO: Solve baseline with normal controller.
-            controller_baseline = cobmo.controller_bes_lifetime.Controller_bes_lifetime(conn=conn, building=building_baseline)
+            controller_baseline = cobmo.controller.Controller(
+                conn=conn,
+                building=building_baseline,
+                problem_type='storage_planning'
+            )
             (
                 control_timeseries_baseline,
                 state_timeseries_baseline,
                 output_timeseries_baseline,
-                storage_size_baseline,
-                optimum_obj_baseline
+                operation_cost_baseline,
+                investment_cost_baseline,
+                storage_size_baseline
             ) = controller_baseline.solve()
 
             # Storage case.
@@ -226,19 +231,24 @@ if simulate == 1:
             building_storage = cobmo.building.Building(conn, scenario_name)
 
             # Run controller for the storage case.
-            controller_storage = cobmo.controller_bes_lifetime.Controller_bes_lifetime(conn=conn, building=building_storage)
+            controller_storage = cobmo.controller.Controller(
+                conn=conn,
+                building=building_storage,
+                problem_type='storage_planning'
+            )
             (
                 control_timeseries_storage,
                 state_timeseries_storage,
                 output_timeseries_storage,
-                storage_size_storage,
-                optimimum_obj_storage
+                operation_cost_storage,
+                investment_cost_storage,
+                storage_size_storage
             ) = controller_storage.solve()
 
             # Calculate savings and payback time
             storage_size_kwh = storage_size_storage / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
-            costs_year_baseline = optimum_obj_baseline * 260.0  # 260 working days per year.
-            savings_day = optimum_obj_baseline - optimimum_obj_storage
+            costs_year_baseline = operation_cost_baseline * 260.0  # 260 working days per year.
+            savings_day = operation_cost_baseline - operation_cost_storage
             savings_year = savings_day * 260.0  # 260 working days per year.
             storage_lifetime = lifetime.iloc[set_technologies.str.contains(technology), i_year]
             if float(savings_day) > 0.0:  # TODO: Payback function should internally manage those zero payback cases.

@@ -71,7 +71,9 @@ controller = cobmo.controller.Controller(
     control_timeseries_controller,
     state_timeseries_controller,
     output_timeseries_controller,
-    objective_value
+    operation_cost,
+    investment_cost,  # Zero when running (default) operation problem.
+    storage_size  # Zero when running (default) operation problem.
 ) = controller.solve()
 
 # Save controller timeseries to CSV for debugging.
@@ -79,8 +81,8 @@ control_timeseries_controller.to_csv(os.path.join(results_path, 'control_timeser
 state_timeseries_controller.to_csv(os.path.join(results_path, 'state_timeseries_controller.csv'))
 output_timeseries_controller.to_csv(os.path.join(results_path, 'output_timeseries_controller.csv'))
 
-# Print controller objective value for debugging.
-print("objective_value = {}".format(objective_value))
+# Print operation cost for debugging.
+print("operation_cost = {}".format(operation_cost))
 
 # Run error calculation function.
 (

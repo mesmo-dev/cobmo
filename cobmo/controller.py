@@ -11,7 +11,8 @@ class Controller(object):
     def __init__(
             self,
             conn,
-            building
+            building,
+            problem_type='operation'  # Choices: 'operation', 'storage_planning'
     ):
         """Initialize controller object based on given `building` object.
 
@@ -19,6 +20,7 @@ class Controller(object):
         """
         time_start = time.clock()
         self.building = building
+        self.problem_type = problem_type
         self.problem = pyo.ConcreteModel()
         self.solver = pyo.SolverFactory('gurobi')
         self.result = None
@@ -39,6 +41,11 @@ class Controller(object):
             self.building.set_outputs,
             domain=pyo.Reals
         )
+        if problem_type == 'storage_planning':
+            self.problem.variable_storage_size = pyo.Var(
+                [0],
+                domain=pyo.NonNegativeReals
+            )
 
         # Define constraints.
         self.problem.constraints = pyo.ConstraintList()
@@ -114,25 +121,95 @@ class Controller(object):
                 )
 
                 # Maximum.
-                self.problem.constraints.add(
-                    self.problem.variable_output_timeseries[timestep, output]
-                    <=
-                    self.building.output_constraint_timeseries_maximum.loc[timestep, output]
-                )
+                if (self.problem_type == 'storage_planning') and ('state_of_charge' in output):
+                    if 'sensible' in self.building.building_scenarios['building_storage_type'][0]:
+                        self.problem.constraints.add(
+                            self.problem.variable_output_timeseries[timestep, output]
+                            <=
+                            self.building.output_constraint_timeseries_maximum.loc[timestep, output]
+                            * self.problem.variable_storage_size[0]
+                        )
+                    elif 'battery' in self.building.building_scenarios['building_storage_type'][0]:
+                        self.problem.constraints.add(
+                            self.problem.variable_output_timeseries[timestep, output]
+                            <=
+                            self.building.output_constraint_timeseries_maximum.loc[timestep, output]
+                            * self.problem.variable_storage_size[0]
+                            * float(self.building.building_scenarios['storage_depth_of_discharge'][0])
+                        )
+                elif '_ahu_cool_electric_power' in output:
+                    # TODO: Workaround for avoiding unrealistic storage charging demand. Move this to building model.
+                    self.problem.constraints.add(
+                        self.problem.variable_output_timeseries[timestep, output]
+                        <=
+                        20000.0
+                    )
+                else:
+                    self.problem.constraints.add(
+                        self.problem.variable_output_timeseries[timestep, output]
+                        <=
+                        self.building.output_constraint_timeseries_maximum.loc[timestep, output]
+                    )
 
-        # Define objective.
-        objective_value = 0.0
+        # Define components of the objective.
+        self.operation_cost = 0.0
+        self.investment_cost = 0.0
+
+        # Operation cost factor.
+        if self.problem_type == 'storage_planning':
+            # Define operation cost factor to scale operation cost to the lifetime of storage.
+            self.operation_cost_factor = (
+                (pd.to_timedelta('1y') / pd.to_timedelta(timestep_delta))  # Theoretical number of time steps in a year.
+                / len(self.building.set_timesteps)  # Actual number of time steps.
+                * float(self.building.building_parameters['storage_lifetime'])  # Storage lifetime in years.
+                * 14.0  # 14 levels at CREATE Tower. # TODO: Check if considered properly in storage size.
+            )
+        else:
+            # No scaling needed if not running planning problem.
+            self.operation_cost_factor = 1.0
+
+        # Operation cost (OPEX).
         for timestep in self.building.set_timesteps:
             for output_power in self.building.set_outputs:
                 if 'electric_power' in output_power:
-                    objective_value += (
+                    self.operation_cost += (
                         self.problem.variable_output_timeseries[timestep, output_power]
                         * timestep_delta.seconds / 3600.0 / 1000.0  # Ws in kWh.
                         * self.building.electricity_prices.loc[timestep, 'price']
+                        * self.operation_cost_factor
                     )
 
+        # Investment cost (CAPEX).
+        if self.problem_type == 'storage_planning':
+            if 'sensible' in self.building.building_scenarios['building_storage_type'][0]:
+                if self.building.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
+                    self.investment_cost += (
+                        # TODO: Make storage temp. difference dynamic based on building model data.
+                        self.problem.variable_storage_size[0] * 1000.0 * 4186.0 * 8.0  # m^3 (water; 8 K delta) in Ws (= J)
+                        / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
+                        * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                    )
+                elif self.building.building_scenarios['investment_sgd_per_X'][0] == 'm3':
+                    self.investment_cost += (
+                        self.problem.variable_storage_size[0]
+                        * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                    )
+            elif 'battery' in self.building.building_scenarios['building_storage_type'][0]:
+                self.investment_cost += (
+                    self.problem.variable_storage_size[0] / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
+                    * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                    + float(self.building.building_scenarios['storage_power_installation_cost'][0])
+                    * float(self.building.building_scenarios['peak_electric_power_building_watt'][0])
+                    # TODO: Make peak power dynamic based on optimization problem.
+                    + float(self.building.building_scenarios['storage_fixed_cost'][0])
+                )
+            else:
+                # Workaround to ensure `variable_storage_size` is zero if building doesn't have storage defined.
+                self.investment_cost += self.problem.variable_storage_size[0]
+
+        # Define objective.
         self.problem.objective = pyo.Objective(
-            expr=objective_value,
+            expr=(self.operation_cost + self.investment_cost),
             sense=pyo.minimize
         )
 
@@ -183,8 +260,27 @@ class Controller(object):
                     self.problem.variable_output_timeseries[timestep, output].value
                 )
 
-        # Retrieve objective value.
-        objective_value = self.problem.objective()
+        # Retrieve objective / cost values.
+        if type(self.operation_cost) is float:
+            operation_cost = self.operation_cost
+        else:
+            operation_cost = pyo.value(self.operation_cost)
+        if type(self.investment_cost) is float:
+            investment_cost = self.investment_cost
+        else:
+            investment_cost = pyo.value(self.investment_cost)
+
+        # Scale back operation cost.
+        # TODO: Revise storage run scripts / payback functions to sort this out internally.
+        operation_cost /= self.operation_cost_factor
+        if self.problem_type == 'storage_planning':
+            operation_cost *= 14.0  # 14 levels at CREATE Tower. # TODO: Check if considered properly in storage size.
+
+        # Retrieve storage size.
+        if self.problem_type == 'storage_planning':
+            storage_size = self.problem.variable_storage_size[0].value
+        else:
+            storage_size = None
 
         # Print results compilation time for debugging.
         print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
@@ -193,5 +289,7 @@ class Controller(object):
             control_timeseries,
             state_timeseries,
             output_timeseries,
-            objective_value
+            operation_cost,
+            investment_cost,
+            storage_size
         )

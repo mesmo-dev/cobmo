@@ -5,9 +5,7 @@ import pandas as pd
 
 import cobmo.building
 import cobmo.config
-import cobmo.controller_baseline
-import cobmo.controller_sensible
-import cobmo.controller_bes
+import cobmo.controller
 import cobmo.database_interface
 import cobmo.utils
 
@@ -17,7 +15,7 @@ scenario_name = 'scenario_default'
 price_type = 'wholesale_market'
 # Choices: 'wholesale_market', 'retailer_peak_offpeak', 'wholesale_squeezed_20', 'wholesale_squeezed_40'
 # 'wholesale_squeezed_60', 'wholesale_squeezed_80'
-building_storage_type = 'sensible_thermal_storage_default'
+building_storage_type = 'battery_storage_default'
 # Choices: 'sensible_thermal_storage_default', 'battery_storage_default'
 plotting = 0
 save_plot = 0
@@ -109,19 +107,22 @@ buildings.to_sql(
 building_baseline = cobmo.building.Building(conn, scenario_name)
 
 # Run controller for the baseline case.
-controller_baseline = cobmo.controller_baseline.ControllerBaseline(
+controller_baseline = cobmo.controller.Controller(
     conn=conn,
-    building=building_baseline
+    building=building_baseline,
+    problem_type='storage_planning'
 )
 (
     control_timeseries_controller_baseline,
     state_timeseries_controller_baseline,
     output_timeseries_controller_baseline,
-    optimum_obj_baseline
+    operation_cost_baseline,
+    investment_cost_baseline,
+    storage_size_baseline
 ) = controller_baseline.solve()
 
 # Print results.
-print("optimum_obj_baseline = {}".format(optimum_obj_baseline))
+print("operation_cost_baseline = {}".format(operation_cost_baseline))
 
 # Storage case.
 # Print status info.
@@ -139,53 +140,41 @@ buildings.to_sql(
 building_storage = cobmo.building.Building(conn, scenario_name)
 
 # Run controller for the storage case.
-if 'sensible' in building_storage_type:
-    controller_sensible = cobmo.controller_sensible.Controller_sensible(
-        conn=conn,
-        building=building_storage
-    )
-    (
-        control_timeseries_controller_storage,
-        state_timeseries_controller_storage,
-        output_timeseries_controller_storage,
-        storage_size,
-        optimum_obj_storage
-    ) = controller_sensible.solve()
-
-elif 'battery' in building_storage_type:
-    controller_battery = cobmo.controller_bes.Controller_bes(
-        conn=conn,
-        building=building_storage
-    )
-    (
-        control_timeseries_controller_storage,
-        state_timeseries_controller_storage,
-        output_timeseries_controller_storage,
-        storage_size,
-        optimum_obj_storage
-    ) = controller_battery.solve()
+controller_storage = cobmo.controller.Controller(
+    conn=conn,
+    building=building_storage,
+    problem_type='storage_planning'
+)
+(
+    control_timeseries_controller_storage,
+    state_timeseries_controller_storage,
+    output_timeseries_controller_storage,
+    operation_cost_storage,
+    investment_cost_storage,
+    storage_size_storage
+) = controller_storage.solve()
 
 # Outputs.
-if storage_size != 0.0:
+if storage_size_storage != 0.0:
     # Calculate savings and payback time.
     if 'sensible' in building_storage_type:
-        savings_day = optimum_obj_baseline - optimum_obj_storage
+        savings_day = operation_cost_baseline - operation_cost_storage
         if building_storage.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
-            storage_size = storage_size * 1000.0 * 4186.0 * 8.0 / 3600.0 / 1000.0  # in kWh. # TODO: Temp. diff. dynamic
+            storage_size_storage = storage_size_storage * 1000.0 * 4186.0 * 8.0 / 3600.0 / 1000.0  # in kWh. # TODO: Temp. diff. dynamic
             # TODO: Take value from building_sensible.
-            print("Storage size = {} kWh".format(round(storage_size, 2)))
+            print("Storage size = {} kWh".format(round(storage_size_storage, 2)))
         elif building_storage.building_scenarios['investment_sgd_per_X'][0] == 'm3':
-            print("Storage size = {} m3".format(round(storage_size, 2)))
+            print("Storage size = {} m3".format(round(storage_size_storage, 2)))
         else:
             raise ValueError("No valid specific unit of the storage investment.")
 
     elif 'battery' in building_storage_type:
-        savings_day = optimum_obj_baseline - optimum_obj_storage
-        storage_size = storage_size / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
+        savings_day = operation_cost_baseline - operation_cost_storage
+        storage_size_storage = storage_size_storage / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
 
     (simple_payback, discounted_payback) = cobmo.utils.discounted_payback_time_old(
         building_storage,
-        storage_size,
+        storage_size_storage,
         savings_day,
         save_plot_on_off=save_plot,
         save_path=results_path,
@@ -197,15 +186,15 @@ if storage_size != 0.0:
 
     # Print results.
     print("Storage type = {}".format(building_storage_type))
-    print("Optimal storage size = {}".format(round(storage_size, 2)))
+    print("Optimal storage size = {}".format(round(storage_size_storage, 2)))
     print("Savings per year ~= {}".format(round(savings_day * 260.0, 2)))
     print("Discounted payback = {}".format(round(discounted_payback)))
-    print("Total OPEX + CAPEX with storage = {}".format(round(optimum_obj_storage, 2)))
+    print("Total OPEX + CAPEX with storage = {}".format(round(operation_cost_storage + investment_cost_storage, 2)))
 
 else:
     # Print results.
     print("No storage installed:")
-    print("Storage size = {}".format(round(storage_size, 2)))
+    print("Storage size = {}".format(round(storage_size_storage, 2)))
 
 # Save results to CSV.
 if save_csv == 1:

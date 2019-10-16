@@ -10,7 +10,7 @@ import pandas as pd
 import time as time
 
 import cobmo.building
-import cobmo.controller_bes
+import cobmo.controller
 import cobmo.database_interface
 import cobmo.utils
 
@@ -114,7 +114,7 @@ building.define_augmented_model()
 # file_output_text.write(building.state_matrix)
 
 # Run controller
-controller = cobmo.controller_bes.Controller_bes(
+controller = cobmo.controller.Controller(
     conn=conn,
     building=building
 )
@@ -166,11 +166,11 @@ problem.var_yearly_savings = pyo.Var(
 
 # Rules
 def rule_storage_size(p):
-    (_, _, _, size, _) = controller.solve()
+    (_, _, _, _, _, size) = controller.solve()
     return p.var_storage_size == size
 
 def rule_storage_yearly_opex(p):
-    (_, _, _, _, cost) = controller.solve()
+    (_, _, _, cost, _, _) = controller.solve()
     return p.var_storage_yearly_opex == cost*260.0
 
 def rule_yearly_savings(p):
