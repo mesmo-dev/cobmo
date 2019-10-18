@@ -12,6 +12,10 @@ results_path = os.path.join(cobmo_path, 'results')
 # Generate timestamp (for saving results with timestamp).
 timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
+# Optimization solver settings.
+solver_name = 'gurobi'  # Must be valid input string for Pyomo's `SolverFactory`.
+solver_output = True  # If True, activate verbose solver output.
+
 # Logger settings.
 logging_level = logging.DEBUG
 logging_handler = logging.StreamHandler()

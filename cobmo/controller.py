@@ -4,6 +4,8 @@ import pandas as pd
 import pyomo.environ as pyo
 import time as time
 
+import cobmo.config
+
 
 class Controller(object):
     """Controller object to store the model predictive control problem."""
@@ -22,7 +24,7 @@ class Controller(object):
         self.building = building
         self.problem_type = problem_type
         self.problem = pyo.ConcreteModel()
-        self.solver = pyo.SolverFactory('gurobi')
+        self.solver = pyo.SolverFactory(cobmo.config.solver_name)
         self.result = None
 
         # Define variables.
@@ -223,7 +225,7 @@ class Controller(object):
         time_start = time.clock()
         self.result = self.solver.solve(
             self.problem,
-            tee=True  # Verbose solver outputs.
+            tee=cobmo.config.solver_output  # If True, activate verbose solver output.
         )
 
         # Print solve time for debugging.
