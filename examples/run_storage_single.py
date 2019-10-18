@@ -21,10 +21,6 @@ plotting = 0
 save_plot = 0
 save_csv = 0
 
-# Check for valid settings.
-if building_storage_type not in ['sensible_thermal_storage_default', 'battery_storage_default']:
-    raise ValueError("No valid building_storage_type = '{}'".format(building_storage_type))
-
 # Set results path and create the directory.
 results_path = (
     os.path.join(
