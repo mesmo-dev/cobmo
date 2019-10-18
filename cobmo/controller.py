@@ -36,7 +36,7 @@ class Controller(object):
         self.problem.variable_control_timeseries = pyo.Var(
             self.building.set_timesteps,
             self.building.set_controls,
-            domain=pyo.Reals
+            domain=pyo.NonNegativeReals  # TODO: Workaround for proper behavior of battery storage.
         )
         self.problem.variable_output_timeseries = pyo.Var(
             self.building.set_timesteps,
