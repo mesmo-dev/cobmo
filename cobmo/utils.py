@@ -11,6 +11,8 @@ import pandas as pd
 import pvlib
 import seaborn
 
+import cobmo.config
+
 
 def calculate_irradiation_surfaces(
         conn,
@@ -19,8 +21,8 @@ def calculate_irradiation_surfaces(
 ):
     """Calculates irradiation for surfaces oriented towards east, south, west & north.
 
-    - Operates on the database: Updates according columns in weather_timeseries
-    - Takes irradition_horizontal as measured global horizontal irradiation (ghi)
+    - Operates on the database: Updates according columns in `weather_timeseries`.
+    - Takes irradition_horizontal as measured global horizontal irradiation (ghi).
     - Based on pvlib-python toolbox: https://github.com/pvlib/pvlib-python
     """
 
@@ -40,24 +42,24 @@ def calculate_irradiation_surfaces(
         conn
     )
 
-    # Set time zone (required for pvlib solar position calculations)
+    # Set time zone (required for pvlib solar position calculations).
     weather_timeseries.index = pd.to_datetime(weather_timeseries['time'])
     weather_timeseries.index = weather_timeseries.index.tz_localize(weather_types['time_zone'][0])
 
-    # Extract global horizontal irradiation (ghi) from weather data
+    # Extract global horizontal irradiation (ghi) from weather data.
     irradiation_ghi = weather_timeseries['irradiation_horizontal']
 
-    # Calculate solarposition (zenith, azimuth)
+    # Calculate solarposition (zenith, azimuth).
     solarposition = pvlib.solarposition.get_solarposition(
         time=weather_timeseries.index,
         latitude=weather_types['latitude'][0],
         longitude=weather_types['longitude'][0]
     )
 
-    # Calculate direct normal irradiation (dni) from global horizontal irradiation (ghi)
+    # Calculate direct normal irradiation (dni) from global horizontal irradiation (ghi).
     irradiation_dni = pd.Series(index=weather_timeseries.index)
     if irradiation_model == 'disc':
-        # ... via DISC model
+        # ... via DISC model.
         irradiation_disc = pvlib.irradiance.disc(
             ghi=irradiation_ghi,
             solar_zenith=solarposition['zenith'],
@@ -65,7 +67,7 @@ def calculate_irradiation_surfaces(
         )
         irradiation_dni = irradiation_disc['dni']
     elif irradiation_model == 'erbs':
-        # ... via ERBS model
+        # ... via ERBS model.
         irradiation_erbs = pvlib.irradiance.erbs(
             ghi=irradiation_ghi,
             zenith=solarposition['zenith'],
@@ -73,7 +75,7 @@ def calculate_irradiation_surfaces(
         )
         irradiation_dni = irradiation_erbs['dni']
     elif irradiation_model == 'dirint':
-        # ... via DIRINT model
+        # ... via DIRINT model.
         irradiation_dirint = pvlib.irradiance.dirint(
             ghi=irradiation_ghi,
             solar_zenith=solarposition['zenith'],
@@ -83,28 +85,28 @@ def calculate_irradiation_surfaces(
                 'T', weather_timeseries['ambient_air_temperature'].values + 273.15,
                 'W', weather_timeseries['ambient_air_humidity_ratio'].values,
                 'P', 101325
-            ) - 273.15  # Use CoolProps toolbox to calculate dew point temperature
+            ) - 273.15  # Use CoolProps toolbox to calculate dew point temperature.
         )
         irradiation_dni = irradiation_dirint
 
-    # Replace NaNs (NaN means no irradiation)
+    # Replace NaNs (NaN means no irradiation).
     irradiation_dni.loc[irradiation_dni.isna()] = 0.0
 
-    # Calculate diffuse horizontal irradiation (dhi)
+    # Calculate diffuse horizontal irradiation (dhi).
     irradiation_dhi = pd.Series(
             irradiation_ghi
             - irradiation_dni
             * pvlib.tools.cosd(solarposition['zenith']),
     )
 
-    # Define surface orientations
+    # Define surface orientations.
     surface_orientations = pd.DataFrame(
         data=[0.0, 90.0, 180.0, 270.0],
         index=['north', 'east', 'south', 'west'],
         columns=['surface_azimuth']
     )
 
-    # Calculate irradiation onto each surface
+    # Calculate irradiation onto each surface.
     for index, row in surface_orientations.iterrows():
         irradiation_surface = pvlib.irradiance.get_total_irradiance(
             surface_tilt=90.0,
@@ -119,7 +121,7 @@ def calculate_irradiation_surfaces(
         )
         weather_timeseries.loc[:, 'irradiation_' + index] = irradiation_surface['poa_global']
 
-    # Update weather_timeseries in database
+    # Update weather_timeseries in database.
     conn.cursor().execute(
         """ 
         delete from weather_timeseries  
@@ -133,12 +135,17 @@ def calculate_irradiation_surfaces(
         index=False
     )
 
-def calculate_sky_temperature(conn, weather_type='singapore_nus'):
+
+def calculate_sky_temperature(
+        conn,
+        weather_type='singapore_nus'
+):
+    """ Calculates sky temperatures from ambient air temperature for tropical weather.
+
+    - Ambient air temperature is decreased by 11K to get the sky temperature.
+    - TODO: According to ISO ???
     """
-    - Calculates sky temperatures from ambient air temperature for tropical weather
-    - ambient air temperature is decreased by 11K to get the sky temperature
-    """
-    # Load weather data
+    # Load weather data.
     weather_types = pd.read_sql(
         """ 
         select * from weather_types  
@@ -155,21 +162,20 @@ def calculate_sky_temperature(conn, weather_type='singapore_nus'):
     )
     weather_timeseries.index = pd.to_datetime(weather_timeseries['time'])
 
-    # Get temperature difference between sky and ambient
+    # Get temperature difference between sky and ambient.
     temperature_difference = weather_types['temperature_difference_sky_ambient'][0]
 
-    # Calculate sky temperature
+    # Calculate sky temperature.
     weather_timeseries.loc[:, 'sky_temperature'] = \
         weather_timeseries.loc[:, 'ambient_air_temperature'] - temperature_difference
 
-    # Update weather_timeseries in database
+    # Update weather_timeseries in database.
     conn.cursor().execute(
         """ 
         delete from weather_timeseries  
         where weather_type='{}' 
         """.format(weather_type),
     )
-
     weather_timeseries.to_sql('weather_timeseries', conn, if_exists='append', index=False)
 
 
@@ -181,6 +187,8 @@ def calculate_error(
 
     - Note: This function doesn't check if the data format is valid.
     """
+
+    # Instantiate error timeseries / summary dataframes.
     error_timeseries = pd.DataFrame(
         0.0,
         index=expected_timeseries.index,
@@ -192,12 +200,12 @@ def calculate_error(
         columns=expected_timeseries.columns
     )
 
+    # Calculate error values.
     for index, row in error_timeseries.iterrows():
         error_timeseries.loc[index, :] = (
             predicted_timeseries.loc[index, :]
             - expected_timeseries.loc[index, :]
         )
-
     for column_name, column in error_summary.iteritems():
         error_summary.loc['mean_absolute_error', column_name] = (
             error_timeseries[column_name].abs().mean()
@@ -212,10 +220,13 @@ def calculate_error(
     )
 
 
-def tank_geometry(
+def calculate_tank_diameter_height(
         volume,
         aspect_ratio
 ):
+    """Calculates diameter and height of storage tank based on volume and aspect ratio."""
+
+    # Calculations.
     diameter = (volume / aspect_ratio * 4 / np.pi) ** (1 / 3)
     height = diameter * aspect_ratio
 
@@ -241,7 +252,7 @@ def discounted_payback_time_old(
     seaborn.set()
 
     # Storage characteristics
-    storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
+    storage_investment_per_unit = building.building_scenarios['storage_energy_installation_cost'][0]
     SGD_per_X = building.building_scenarios['investment_sgd_per_X'][0]
     storage_lifetime = building.building_scenarios['storage_lifetime'][0]
 
@@ -386,124 +397,26 @@ def discounted_payback_time_old(
     )
 
 
-def retrieve_battery_parameters(
-        case='reference'
+def get_battery_parameters(
+        battery_parameters_path=(
+            os.path.join(cobmo.config.data_path, 'storage_data', 'battery_storage_parameters.csv')
+        ),
+        cost_conversion_factor=1.37  # USD to SGD (as of October 2019).
 ):
-    cobmo_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
-    data_path = os.path.join(cobmo_path, 'data')
-    storage_data_path = os.path.join(data_path, 'storage_data/')
-    file_battery_parameters = storage_data_path + 'battery_storage_types_' + case + '.csv'
+    """Load battery parameters from CSV, apply `cost_conversion_factor` to cost columns and return as dataframe."""
 
-    battery_params = pd.read_csv(file_battery_parameters, index_col=0)
-    columns = battery_params.columns
+    # Load battery parameters from CSV.
+    battery_parameters = pd.read_csv(battery_parameters_path, index_col=[0, 1, 2])
 
-    # 2016
-    bool_2016 = pd.Series(columns.str.contains('2016'))
-    columns_2016 = pd.Index(
-        pd.concat(
-            [
-                pd.Series('round_trip_efficiency'),
-                pd.Series('depth_of_discharge'),
-                pd.Series(columns[bool_2016])
-            ]
-        )
-    )
-    battery_params_2016 = battery_params.loc[:, columns_2016]
+    # Apply cost conversion factor.
+    for column in battery_parameters.columns:
+        if 'cost' in column:
+            battery_parameters[column] *= cost_conversion_factor
 
-    # 2020
-    bool_2020 = pd.Series(columns.str.contains('2020'))
-    columns_2020 = pd.Index(
-        pd.concat(
-            [
-                pd.Series('round_trip_efficiency'),
-                pd.Series('depth_of_discharge'),
-                pd.Series(columns[bool_2020])
-            ]
-        )
-    )
-    battery_params_2020 = battery_params.loc[:, columns_2020]
-
-    # 2025
-    bool_2025 = pd.Series(columns.str.contains('2025'))
-    columns_2025 = pd.Index(
-        pd.concat(
-            [
-                pd.Series('round_trip_efficiency'),
-                pd.Series('depth_of_discharge'),
-                pd.Series(columns[bool_2025])
-            ]
-        )
-    )
-    battery_params_2025 = battery_params.loc[:, columns_2025]
-
-    # 2030
-    bool_2030 = pd.Series(columns.str.contains('2030'))
-    columns_2030 = pd.Index(
-        pd.concat(
-            [
-                pd.Series('round_trip_efficiency'),
-                pd.Series('depth_of_discharge'),
-                pd.Series(columns[bool_2030])
-            ]
-        )
-    )
-    battery_params_2030 = battery_params.loc[:, columns_2030]
-
-    # Converting values from USD to SGD. Change rate of 1.39
-    # 2016
-    usd2sgd = 1.39
-    battery_params_2016.loc[:, 'energy_installation_cost_2016'] = (
-            battery_params_2016.loc[:, 'energy_installation_cost_2016'] * usd2sgd
-    )
-    battery_params_2016.loc[:, 'power_installation_cost_2016'] = (
-            battery_params_2016.loc[:, 'power_installation_cost_2016'] * usd2sgd
-    )
-
-    # 2020
-    battery_params_2020.loc[:, 'energy_installation_cost_2020'] = (
-            battery_params_2020.loc[:, 'energy_installation_cost_2020'] * usd2sgd
-    )
-    battery_params_2020.loc[:, 'power_installation_cost_2020'] = (
-            battery_params_2020.loc[:, 'power_installation_cost_2020'] * usd2sgd
-    )
-
-    # 2025
-    battery_params_2025.loc[:, 'energy_installation_cost_2025'] = (
-            battery_params_2025.loc[:, 'energy_installation_cost_2025'] * usd2sgd
-    )
-    battery_params_2025.loc[:, 'power_installation_cost_2025'] = (
-            battery_params_2025.loc[:, 'power_installation_cost_2025'] * usd2sgd
-    )
-
-    # 2030
-    battery_params_2030.loc[:, 'energy_installation_cost_2030'] = (
-            battery_params_2030.loc[:, 'energy_installation_cost_2030'] * usd2sgd
-    )
-    battery_params_2030.loc[:, 'power_installation_cost_2030'] = (
-            battery_params_2030.loc[:, 'power_installation_cost_2030'] * usd2sgd
-    )
-
-    # Energy, power and lifetime dataframes
-    energy_cost = battery_params.loc[:, columns[columns.str.contains('energy')]]
-    power_cost = battery_params.loc[:, columns[columns.str.contains('power')]]
-    lifetime = battery_params.loc[:, columns[columns.str.contains('lifetime')]]
-    efficiency = battery_params.loc[:, columns[columns.str.contains('round_trip_efficiency')]]
-    dod = battery_params.loc[:, columns[columns.str.contains('depth_of_discharge')]]
-
-    return (
-        battery_params_2016,
-        battery_params_2020,
-        battery_params_2025,
-        battery_params_2030,
-        energy_cost,
-        power_cost,
-        lifetime,
-        efficiency,
-        dod
-    )
+    return battery_parameters
 
 
-def discounted_payback_time(
+def calculate_discounted_payback_time(
         building,
         storage_size,
         storage_lifetime,
@@ -513,8 +426,7 @@ def discounted_payback_time(
         figs_path='figs/',
         interest_rate=0.06
 ):
-    # Activating seaborn theme
-    seaborn.set()
+    """Calculate discounted payback time."""
 
     # DISCOUNTED PAYBACK
     start_date = dt.date(2019, 1, 1)
@@ -524,7 +436,7 @@ def discounted_payback_time(
     pvaf = (1 - (1 + interest_rate) ** (-storage_lifetime)) / interest_rate  # Present value Annuity factor
 
     rt_efficiency = building.building_scenarios['storage_round_trip_efficiency'][0]
-    storage_investment_per_unit = building.building_scenarios['storage_investment_sgd_per_unit'][0]
+    storage_investment_per_unit = building.building_scenarios['storage_energy_installation_cost'][0]
     economic_horizon = 1000
     cumulative_discounted_savings = np.zeros(economic_horizon)
     yearly_discounted_savings = np.zeros(economic_horizon)
@@ -570,6 +482,9 @@ def discounted_payback_time(
     )
 
     if plotting_on_off == 1:
+        # Activating seaborn theme
+        seaborn.set()
+
         # Plotting
         # Change default font of plots
         # (http://jonathansoma.com/lede/data-studio/matplotlib/changing-fonts-in-matplotlib/)

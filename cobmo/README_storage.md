@@ -23,7 +23,7 @@ convection transfer coefficients. Values from the literature can be taken for `h
         )
         /
         (
-            self.tank_geometry(
+            self.calculate_tank_diameter_height(
                 self.parse_parameter(self.building_scenarios['storage_size']),
                 self.parse_parameter(self.building_scenarios['tank_aspect_ratio'])
             )

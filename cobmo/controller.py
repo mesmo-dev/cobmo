@@ -189,17 +189,17 @@ class Controller(object):
                         # TODO: Make storage temp. difference dynamic based on building model data.
                         self.problem.variable_storage_size[0] * 1000.0 * 4186.0 * 8.0  # m^3 (water; 8 K delta) in Ws (= J)
                         / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
-                        * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                        * float(self.building.building_scenarios['storage_energy_installation_cost'][0])
                     )
                 elif self.building.building_scenarios['investment_sgd_per_X'][0] == 'm3':
                     self.investment_cost += (
                         self.problem.variable_storage_size[0]
-                        * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                        * float(self.building.building_scenarios['storage_energy_installation_cost'][0])
                     )
             elif 'battery' in self.building.building_scenarios['building_storage_type'][0]:
                 self.investment_cost += (
                     self.problem.variable_storage_size[0] / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
-                    * float(self.building.building_scenarios['storage_investment_sgd_per_unit'][0])
+                    * float(self.building.building_scenarios['storage_energy_installation_cost'][0])
                     + float(self.building.building_scenarios['storage_power_installation_cost'][0])
                     * float(self.building.building_scenarios['peak_electric_power_building_watt'][0])
                     # TODO: Make peak power dynamic based on optimization problem.

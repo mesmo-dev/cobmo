@@ -1,8 +1,0 @@
-﻿battery_technology,round_trip_efficiency_2016,round_trip_efficiency_2020,round_trip_efficiency_2025,round_trip_efficiency_2030,depth_of_discharge_2016,depth_of_discharge_2020,depth_of_discharge_2025,depth_of_discharge_2030,energy_installation_cost_2016,energy_installation_cost_2020,energy_installation_cost_2025,energy_installation_cost_2030,power_installation_cost_2016,power_installation_cost_2020,power_installation_cost_2025,power_installation_cost_2030,lifetime_2016,lifetime_2020,lifetime_2025,lifetime_2030
-flooded_la,0.92,0.93,0.94,0.96,0.5,0.5,0.5,0.5,105.0,86.2,67.4,52.7,105.0,80.3,57.4,41.0,6.8,8.5,11.2,14.7
-vrla,0.92,0.93,0.94,0.96,0.5,0.5,0.5,0.5,105.0,86.2,67.4,52.7,105.0,80.3,57.4,41.0,6.8,8.5,11.2,14.7
-li_ion_lfp,0.94,0.95,0.95,0.96,1.0,1.0,1.0,1.0,199.5,152.2,108.6,77.4,105.0,80.3,57.4,41.0,20.0,22.6,26.3,30.6
-li_ion_nca,0.98,0.99,0.99,0.99,1.0,1.0,1.0,1.0,199.5,154.9,112.9,82.3,105.0,80.3,57.4,41.0,5.5,6.6,8.3,10.5
-li_ion_nmc,0.98,0.99,0.99,0.99,1.0,1.0,1.0,1.0,199.5,153.4,110.4,79.5,105.0,80.3,57.4,41.0,11.0,13.2,16.6,20.9
-li_ion_titan,0.98,0.99,0.99,0.99,1.0,1.0,1.0,1.0,472.5,377.3,284.9,215.1,105.0,80.3,57.4,41.0,20.0,22.6,26.3,30.6
-nanicl,0.92,0.93,0.94,0.95,1.0,1.0,1.0,1.0,315.0,243.2,176.0,127.4,105.0,80.3,57.4,41.0,20.5,23.1,26.8,31.1

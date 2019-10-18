@@ -89,60 +89,41 @@ if simulate == 1:
     )
 
     # Obtain battery parameters.
-    (
-        battery_params_2016,
-        battery_params_2020,
-        battery_params_2025,
-        battery_params_2030,
-        energy_cost,
-        power_cost,
-        lifetime,
-        efficiency,
-        depth_of_discharge
-    ) = cobmo.utils.retrieve_battery_parameters(
-        case=case
-    )
-
-    # Retrieving the tech names from either of the DataFrames (they all have the same Indexes)
-    # Obtain the indexes.
-    set_technologies = battery_params_2016.index  # Retrieve technology names (all dataframes have the same indexes).
-    set_years = pd.Index(['2016', '2020', '2025', '2030'])
-
-    # Redefining columns for plotting
-    efficiency.columns = set_years
-    energy_cost.columns = set_years
+    battery_parameters = cobmo.utils.get_battery_parameters()
 
     # Initialize dataframes to store results
+    set_battery_technologies = battery_parameters.index.levels[0]
+    set_years = battery_parameters.index.levels[1]
     simple_payback_df = pd.DataFrame(
         0.0,
-        index=set_technologies,
+        index=set_battery_technologies,
         columns=set_years
     )
     discounted_payback_df = pd.DataFrame(
         0.0,
-        index=set_technologies,
+        index=set_battery_technologies,
         columns=set_years
     )
     storage_size_df = pd.DataFrame(
         0.0,
-        index=set_technologies,
+        index=set_battery_technologies,
         columns=set_years
     )
     savings_year_df = pd.DataFrame(
         0.0,
-        index=set_technologies,
+        index=set_battery_technologies,
         columns=set_years
     )
     savings_year_percentage_df = pd.DataFrame(
         0.0,
-        index=set_technologies,
+        index=set_battery_technologies,
         columns=set_years
     )
 
     time_start = time.clock()
     counter = 0
-    for technology in set_technologies:
-        for year, i_year in zip(set_years, range(len(set_years))):
+    for battery_technology in set_battery_technologies:
+        for year in set_years:
             counter += 1
 
             # Print status info.
@@ -150,20 +131,20 @@ if simulate == 1:
 
             # Modify `building_storage_types` for the current scenario in the database.
             building_storage_types.at['battery_storage_default', 'storage_round_trip_efficiency'] = (
-                float(efficiency.iloc[set_technologies.str.contains(technology), i_year])
+                battery_parameters.loc[(battery_technology, year, case), 'round_trip_efficiency']
                 * 0.95  # Accounting for inverter efficiency. # TODO: Move inverter efficiency to CSV.
             )
             building_storage_types.at['battery_storage_default', 'storage_depth_of_discharge'] = (
-                float(depth_of_discharge.iloc[set_technologies.str.contains(technology), i_year])
+                battery_parameters.loc[(battery_technology, year, case), 'depth_of_discharge']
             )
-            building_storage_types.at['battery_storage_default', 'storage_investment_sgd_per_unit'] = (
-                float(energy_cost.iloc[set_technologies.str.contains(technology), i_year])
+            building_storage_types.at['battery_storage_default', 'storage_energy_installation_cost'] = (
+                battery_parameters.loc[(battery_technology, year, case), 'energy_installation_cost']
             )
             building_storage_types.at['battery_storage_default', 'storage_power_installation_cost'] = (
-                float(power_cost.iloc[set_technologies.str.contains(technology), i_year])
+                battery_parameters.loc[(battery_technology, year, case), 'power_installation_cost']
             )
             building_storage_types.at['battery_storage_default', 'storage_lifetime'] = (
-                float(lifetime.iloc[set_technologies.str.contains(technology), i_year])
+                battery_parameters.loc[(battery_technology, year, case), 'lifetime']
             )
             building_storage_types.to_sql(
                 'building_storage_types',
@@ -250,13 +231,13 @@ if simulate == 1:
             costs_year_baseline = operation_cost_baseline * 260.0  # 260 working days per year.
             savings_day = operation_cost_baseline - operation_cost_storage
             savings_year = savings_day * 260.0  # 260 working days per year.
-            storage_lifetime = lifetime.iloc[set_technologies.str.contains(technology), i_year]
+            storage_lifetime = battery_parameters.loc[(battery_technology, year, case), 'lifetime']
             if float(savings_day) > 0.0:  # TODO: Payback function should internally manage those zero payback cases.
                 (
                     discounted_payback,
                     simple_payback,
                     payback_df
-                ) = cobmo.utils.discounted_payback_time(
+                ) = cobmo.utils.calculate_discounted_payback_time(
                     building_storage,
                     storage_size_kwh,
                     storage_lifetime,
@@ -273,17 +254,20 @@ if simulate == 1:
             savings_year_percentage = float(savings_year / costs_year_baseline * 100.0)
 
             # Store results.
-            simple_payback_df.loc[technology, year] = simple_payback
-            discounted_payback_df.loc[technology, year] = discounted_payback
-            storage_size_df.loc[technology, year] = format(storage_size_kwh, '.2f')
-            savings_year_df.loc[technology, year] = format(savings_year, '.1f')
-            savings_year_percentage_df.loc[technology, year] = format(savings_year_percentage, '.1f')
+            simple_payback_df.loc[battery_technology, year] = simple_payback
+            discounted_payback_df.loc[battery_technology, year] = discounted_payback
+            storage_size_df.loc[battery_technology, year] = format(storage_size_kwh, '.2f')
+            savings_year_df.loc[battery_technology, year] = format(savings_year, '.1f')
+            savings_year_percentage_df.loc[battery_technology, year] = format(savings_year_percentage, '.1f')
 
     # Print status info.
     print("Simulation total solve time: {:.2f} minutes".format((time.clock() - time_start) / 60.0))
 
-    # Amend efficiency and investment dataframes where there is no payback.
+    # Create `efficiency` and `energy_cost` dataframes for plotting.
+    # - Only keep values where there is payback.
+    efficiency = battery_parameters['round_trip_efficiency'][:, :, case].unstack()
     efficiency[discounted_payback_df == 0.0] = 0.0
+    energy_cost = battery_parameters['energy_installation_cost'][:, :, case].unstack()
     energy_cost[discounted_payback_df == 0.0] = 0.0
 
     # Save results to CSV.
