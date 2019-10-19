@@ -3240,17 +3240,30 @@ class Building(object):
             # Battery storage.
             if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
                 if zone_data['hvac_ahu_type'] != '':
-                    # Storage discharge to AHU.
+                    # Storage discharge to AHU for cooling.
                     self.control_output_matrix.at[
                         zone_name + '_battery_storage_to_zone_cool_ahu',
                         zone_name + '_battery_storage_to_zone_cool_ahu'
                     ] = 1.0
 
+                    # Storage discharge to AHU for heating.
+                    self.control_output_matrix.at[
+                        zone_name + '_battery_storage_to_zone_heat_ahu',
+                        zone_name + '_battery_storage_to_zone_heat_ahu'
+                    ] = 1.0
+
                 if zone_data['hvac_tu_type'] != '':
-                    # Storage discharge to TU.
+                    # Storage discharge to TU for cooling.
                     self.control_output_matrix.at[
                         zone_name + '_battery_storage_to_zone_cool_tu',
                         zone_name + '_battery_storage_to_zone_cool_tu'
+                    ] = 1.0
+
+                if zone_data['hvac_tu_type'] != '':
+                    # Storage discharge to TU for heating.
+                    self.control_output_matrix.at[
+                        zone_name + '_battery_storage_to_zone_heat_tu',
+                        zone_name + '_battery_storage_to_zone_heat_tu'
                     ] = 1.0
 
     def load_disturbance_timeseries(self, conn):
