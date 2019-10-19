@@ -294,12 +294,6 @@ class Controller(object):
         else:
             investment_cost = pyo.value(self.investment_cost)
 
-        # Scale back operation cost.
-        # TODO: Revise storage run scripts / payback functions to sort this out internally.
-        operation_cost /= self.operation_cost_factor
-        if self.problem_type == 'storage_planning':
-            operation_cost *= 14.0  # 14 levels at CREATE Tower. # TODO: Check if considered properly in storage size.
-
         # Retrieve storage size.
         if self.problem_type == 'storage_planning':
             storage_size = self.problem.variable_storage_size[0].value

@@ -17,9 +17,8 @@ price_type = 'wholesale_market'
 # 'wholesale_squeezed_60', 'wholesale_squeezed_80'
 building_storage_type = 'battery_storage_default'
 # Choices: 'sensible_thermal_storage_default', 'battery_storage_default'
-plotting = 0
-save_plot = 0
-save_csv = 0
+save_plots = True
+save_csv = True
 
 # Set results path and create the directory.
 results_path = (
@@ -28,10 +27,10 @@ results_path = (
         'run_storage_single__' + building_storage_type + '__' + price_type + '__' + cobmo.config.timestamp
     )
 )
-if (save_csv == 1) or (save_plot == 1):
+if save_csv or save_plots:
     os.mkdir(results_path)
 
-# Print the settings.
+# Print settings.
 print("building_storage_type = {}".format(building_storage_type))
 print("pricing_method = {}".format(price_type))
 
@@ -89,7 +88,7 @@ building_scenarios.to_sql(
 
 # Baseline case.
 # Print status info.
-print('\nStarting baseline case.')
+print('Starting baseline case.')
 
 # Modify `building_storage_type` for the baseline case.
 buildings.at[building_scenarios.at[scenario_name, 'building_name'], 'building_storage_type'] = ''
@@ -122,7 +121,7 @@ print("operation_cost_baseline = {}".format(operation_cost_baseline))
 
 # Storage case.
 # Print status info.
-print("\nStarting storage case.")
+print("Starting storage case.")
 
 # Modify `building_storage_type` for the storage case.
 buildings.at[building_scenarios.at[scenario_name, 'building_name'], 'building_storage_type'] = building_storage_type
@@ -150,50 +149,39 @@ controller_storage = cobmo.controller.Controller(
     storage_size_storage
 ) = controller_storage.solve()
 
-# Outputs.
-if storage_size_storage != 0.0:
-    # Calculate savings and payback time.
-    if 'sensible' in building_storage_type:
-        savings_day = operation_cost_baseline - operation_cost_storage
-        if building_storage.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
-            storage_size_storage = storage_size_storage * 1000.0 * 4186.0 * 8.0 / 3600.0 / 1000.0  # in kWh. # TODO: Temp. diff. dynamic
-            # TODO: Take value from building_sensible.
-            print("Storage size = {} kWh".format(round(storage_size_storage, 2)))
-        elif building_storage.building_scenarios['investment_sgd_per_X'][0] == 'm3':
-            print("Storage size = {} m3".format(round(storage_size_storage, 2)))
-        else:
-            raise ValueError("No valid specific unit of the storage investment.")
+# Calculate savings and payback time.
+storage_lifetime = float(building_storage_types.at[building_storage_type, 'storage_lifetime'])
+operation_cost_savings_annual = (operation_cost_baseline - operation_cost_storage) / storage_lifetime
+if 'sensible' in building_storage_type:
+    storage_size_kwh = storage_size_storage * 1000.0 * 4186.0 * 8.0 / 3600.0 / 1000.0  # m^3 (water; 8 K delta) in kWh.
+    # TODO: Make storage temp. difference dynamic based on building model data.
+elif 'battery' in building_storage_type:
+    storage_size_kwh = storage_size_storage / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
+(
+    simple_payback_time,
+    discounted_payback_time
+) = cobmo.utils.calculate_discounted_payback_time(
+    storage_lifetime,
+    investment_cost_storage,
+    operation_cost_storage,
+    operation_cost_baseline,
+    interest_rate=0.06,
+    investment_type=building_storage_type,
+    save_plots=save_plots,
+    results_path=results_path,
+    file_id=''
+)
 
-    elif 'battery' in building_storage_type:
-        savings_day = operation_cost_baseline - operation_cost_storage
-        storage_size_storage = storage_size_storage / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
-
-    (simple_payback, discounted_payback) = cobmo.utils.discounted_payback_time_old(
-        building_storage,
-        storage_size_storage,
-        savings_day,
-        save_plot_on_off=save_plot,
-        save_path=results_path,
-        plotting_on_off=plotting,
-        storage=building_storage_type,
-        pricing_method=price_type,
-        interest_rate=0.06
-    )
-
-    # Print results.
-    print("Storage type = {}".format(building_storage_type))
-    print("Optimal storage size = {}".format(round(storage_size_storage, 2)))
-    print("Savings per year ~= {}".format(round(savings_day * 260.0, 2)))
-    print("Discounted payback = {}".format(round(discounted_payback)))
-    print("Total OPEX + CAPEX with storage = {}".format(round(operation_cost_storage + investment_cost_storage, 2)))
-
-else:
-    # Print results.
-    print("No storage installed:")
-    print("Storage size = {}".format(round(storage_size_storage, 2)))
+# Print results.
+print("storage_size_kwh = {}".format(storage_size_kwh))
+print("investment_cost_storage = {}".format(investment_cost_storage))
+print("operation_cost_storage = {}".format(operation_cost_storage))
+print("operation_cost_savings_annual = {}".format(operation_cost_savings_annual))
+print("storage_lifetime = {}".format(storage_lifetime))
+print("discounted_payback_time = {}".format(discounted_payback_time))
 
 # Save results to CSV.
-if save_csv == 1:
+if save_csv:
     building_baseline.state_matrix.to_csv(os.path.join(results_path, 'building_baseline_state_matrix.csv'))
     building_baseline.control_matrix.to_csv(os.path.join(results_path, 'building_baseline_control_matrix.csv'))
     building_baseline.disturbance_matrix.to_csv(os.path.join(results_path, 'building_baseline_disturbance_matrix.csv'))
@@ -217,5 +205,5 @@ if save_csv == 1:
     output_timeseries_controller_baseline.to_csv(os.path.join(results_path, 'baseline_output_timeseries_controller.csv'))
 
 # Print results path.
-if (save_csv == 1) or (save_plot == 1):
+if save_csv or save_plots:
     print("Results are stored in: " + results_path)
