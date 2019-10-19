@@ -48,6 +48,11 @@ class Controller(object):
                 [0],
                 domain=pyo.NonNegativeReals
             )
+            if 'battery' in self.building.building_scenarios['building_storage_type'][0]:
+                self.problem.variable_storage_peak_power = pyo.Var(
+                    [0],
+                    domain=pyo.NonNegativeReals
+                )
 
         # Define constraints.
         self.problem.constraints = pyo.ConstraintList()
@@ -153,6 +158,23 @@ class Controller(object):
                         self.building.output_constraint_timeseries_maximum.loc[timestep, output]
                     )
 
+        # Storage peak demand constraint.
+        # TODO: Add output variable in building to simplify this.
+        if (
+            (self.problem_type == 'storage_planning')
+            and ('battery' in self.building.building_scenarios['building_storage_type'][0])
+        ):
+            for timestep in self.building.set_timesteps:
+                self.problem.constraints.add(
+                    sum(
+                        self.problem.variable_output_timeseries[timestep, output]
+                        if 'battery_storage_to_zone' in output else 0.0
+                        for output in self.building.set_outputs
+                    )
+                    <=
+                    self.problem.variable_storage_peak_power[0]
+                )
+
         # Define components of the objective.
         self.operation_cost = 0.0
         self.investment_cost = 0.0
@@ -187,7 +209,7 @@ class Controller(object):
                 if self.building.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
                     self.investment_cost += (
                         # TODO: Make storage temp. difference dynamic based on building model data.
-                        self.problem.variable_storage_size[0] * 1000.0 * 4186.0 * 8.0  # m^3 (water; 8 K delta) in Ws (= J)
+                        self.problem.variable_storage_size[0] * 1000.0 * 4186.0 * 8.0  # m^3 (water; 8 K delta) in Ws (= J).
                         / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
                         * float(self.building.building_scenarios['storage_energy_installation_cost'][0])
                     )
@@ -200,10 +222,10 @@ class Controller(object):
                 self.investment_cost += (
                     self.problem.variable_storage_size[0] / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
                     * float(self.building.building_scenarios['storage_energy_installation_cost'][0])
-                    + float(self.building.building_scenarios['storage_power_installation_cost'][0])
-                    * float(self.building.building_scenarios['peak_electric_power_building_watt'][0])
-                    # TODO: Make peak power dynamic based on optimization problem.
-                    + float(self.building.building_scenarios['storage_fixed_cost'][0])
+                    + self.problem.variable_storage_peak_power[0] / 1000.0  # W in kW. # TODO: Check unit of power cost.
+                    * float(self.building.building_scenarios['storage_power_installation_cost'][0])
+                    # + float(self.building.building_scenarios['storage_fixed_cost'][0])
+                    # TODO: Add integer variable to consider fixed storage cost.
                 )
             else:
                 # Workaround to ensure `variable_storage_size` is zero if building doesn't have storage defined.
