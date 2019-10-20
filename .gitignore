@@ -7,11 +7,11 @@ cobmo\.egg-info/
 
 */__pycache__/
 
+*.pyc
+
 *.sqlite
 
 *.sqlite-journal
-
-*.pyc
 
 *.DS_Store
 
@@ -19,26 +19,6 @@ cobmo/default\.html
 
 docs/_build/
 
-cobmo/delete_me_storage/
-
-cobmo/delete_me/
-
-cobmo/figs/
-
-cobmo/cobmo results/
-
-cobmo/try_outs\.py
-
 results/*
 
 !results/README\.md
-
-cobmo/extras/
-
-data/storage_data/graphs
-
-data/electricity_prices_data/graphs/
-
-data/electricity_prices_data/various options for prices/
-
-data/electricity_prices_data/electricity prices singapore - EMC/
