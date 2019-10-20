@@ -310,16 +310,13 @@ def calculate_discounted_payback_time(
             cumulative_discounted_savings = cumulative_discounted_savings[1:plot_array_size + 1]
             annual_discounted_savings = annual_discounted_savings[1:plot_array_size + 1]
 
-            # Activate seaborn theme for plotting.
-            seaborn.set()
-
             # Define plot settings.
-            # - Based on: http://jonathansoma.com/lede/data-studio/matplotlib/changing-fonts-in-matplotlib/
-            plt.rcParams['font.serif'] = 'Palatino Linotype'
-            plt.rcParams['font.family'] = 'serif'  # TODO: Font family not found on Mac.
+            seaborn.set()
+            plt.rcParams['font.serif'] = 'Arial'
+            plt.rcParams['font.family'] = 'serif'
 
             # Create plot.
-            fig, ax = plt.subplots(1, 1)
+            (fig, ax) = plt.subplots(1, 1)
             if simple_payback_time is not None:
                 ax.scatter(
                     simple_payback_time,

@@ -20,7 +20,7 @@ case = 'best'  # IRENA battery parameters case.
 # Choices: 'best', 'reference', 'worst'
 interest_rate = 0.02
 save_plots = True
-run_simulation = True  # Please note: Change `filepath_read` manually for plotting without simulation.
+run_simulation = True  # Please note: Change `read_path` manually for plotting without simulation.
 
 # Set results path and create the directory.
 results_path = (
@@ -96,27 +96,27 @@ if run_simulation:
     # Initialize dataframes to store results
     set_battery_technologies = battery_parameters.index.levels[0]
     set_years = battery_parameters.index.levels[1]
-    simple_payback_df = pd.DataFrame(
+    simple_payback_time_results = pd.DataFrame(
         0.0,
         index=set_battery_technologies,
         columns=set_years
     )
-    discounted_payback_df = pd.DataFrame(
+    discounted_payback_time_results = pd.DataFrame(
         0.0,
         index=set_battery_technologies,
         columns=set_years
     )
-    storage_size_df = pd.DataFrame(
+    storage_size_results = pd.DataFrame(
         0.0,
         index=set_battery_technologies,
         columns=set_years
     )
-    savings_year_df = pd.DataFrame(
+    operation_cost_savings_annual_results = pd.DataFrame(
         0.0,
         index=set_battery_technologies,
         columns=set_years
     )
-    savings_year_percentage_df = pd.DataFrame(
+    operation_cost_savings_annual_percentage_results = pd.DataFrame(
         0.0,
         index=set_battery_technologies,
         columns=set_years
@@ -235,7 +235,7 @@ if run_simulation:
             storage_lifetime = battery_parameters.loc[(battery_technology, year, case), 'lifetime']
             operation_cost_savings = operation_cost_baseline - operation_cost_storage
             operation_cost_savings_annual = operation_cost_savings / storage_lifetime
-            operation_cost_savings_annual_percentage = float(operation_cost_savings_annual / operation_cost_baseline * 100.0)
+            operation_cost_savings_annual_percentage = operation_cost_savings_annual / operation_cost_baseline * 100.0
             (
                 simple_payback_time,
                 discounted_payback_time,
@@ -260,11 +260,21 @@ if run_simulation:
             print("discounted_payback_time = {}".format(discounted_payback_time))
 
             # Store results.
-            simple_payback_df.loc[battery_technology, year] = simple_payback_time
-            discounted_payback_df.loc[battery_technology, year] = discounted_payback_time
-            storage_size_df.loc[battery_technology, year] = format(storage_size_kwh, '.2f')
-            savings_year_df.loc[battery_technology, year] = format(operation_cost_savings_annual, '.1f')
-            savings_year_percentage_df.loc[battery_technology, year] = format(operation_cost_savings_annual_percentage, '.1f')
+            simple_payback_time_results.loc[battery_technology, year] = (
+                simple_payback_time
+            )
+            discounted_payback_time_results.loc[battery_technology, year] = (
+                discounted_payback_time
+            )
+            storage_size_results.loc[battery_technology, year] = (
+                format(storage_size_kwh, '.2f')
+            )
+            operation_cost_savings_annual_results.loc[battery_technology, year] = (
+                format(operation_cost_savings_annual, '.1f')
+            )
+            operation_cost_savings_annual_percentage_results.loc[battery_technology, year] = (
+                format(operation_cost_savings_annual_percentage, '.1f')
+            )
 
     # Print status info.
     print("Simulation total solve time: {:.2f} minutes".format((time.clock() - time_start) / 60.0))
@@ -274,49 +284,61 @@ if run_simulation:
     energy_cost = battery_parameters['energy_installation_cost'][:, :, case].unstack()
 
     # Modify entries without payback to improve plot readability.
-    efficiency[discounted_payback_df.isnull()] = 0.0
-    energy_cost[discounted_payback_df.isnull()] = 0.0
-    savings_year_df[discounted_payback_df.isnull()] = 0.0
-    savings_year_percentage_df[discounted_payback_df.isnull()] = 0.0
+    efficiency[discounted_payback_time_results.isnull()] = 0.0
+    energy_cost[discounted_payback_time_results.isnull()] = 0.0
+    operation_cost_savings_annual_results[discounted_payback_time_results.isnull()] = 0.0
+    operation_cost_savings_annual_percentage_results[discounted_payback_time_results.isnull()] = 0.0
 
     # Save results to CSV.
-    simple_payback_df.to_csv(os.path.join(results_path, 'simple_payback.csv'))
-    discounted_payback_df.to_csv(os.path.join(results_path, 'discounted_payback.csv'))
-    storage_size_df.to_csv(os.path.join(results_path, 'storage_size.csv'))
-    savings_year_df.to_csv(os.path.join(results_path, 'operation_cost_savings_annual.csv'))
-    savings_year_percentage_df.to_csv(os.path.join(results_path, 'operation_cost_savings_annual_percentage.csv'))
-    efficiency.to_csv(os.path.join(results_path, 'efficiency.csv'))
-    energy_cost.to_csv(os.path.join(results_path, 'energy_cost'))
+    simple_payback_time_results.to_csv(
+        os.path.join(results_path, 'simple_payback_time.csv')
+    )
+    discounted_payback_time_results.to_csv(
+        os.path.join(results_path, 'discounted_payback_time.csv')
+    )
+    storage_size_results.to_csv(
+        os.path.join(results_path, 'storage_size.csv')
+    )
+    efficiency.to_csv(
+        os.path.join(results_path, 'efficiency.csv')
+    )
+    energy_cost.to_csv(
+        os.path.join(results_path, 'energy_cost')
+    )
+    operation_cost_savings_annual_results.to_csv(
+        os.path.join(results_path, 'operation_cost_savings_annual.csv')
+    )
+    operation_cost_savings_annual_percentage_results.to_csv(
+        os.path.join(results_path, 'operation_cost_savings_annual_percentage.csv')
+    )
 
 # Plots.
 if save_plots:
-    # Please note: Change `filepath_read` manually for plotting without simulation.
+    # Please note: Change `read_path` manually for plotting without simulation.
 
     for plot_type in [
-        'operation_cost_savings_annual',
-        'operation_cost_savings_annual_percentage',
+        'simple_payback_time',
+        'discounted_payback_time',
         'storage_size',
-        'simple_payback',
-        'discounted_payback',
-        'efficiency'
+        'efficiency',
+        'energy_cost',
+        'operation_cost_savings_annual',
+        'operation_cost_savings_annual_percentage'
     ]:
-        filepath_read = os.path.join(results_path, plot_type + '.csv')
-        cobmo.plots.plot_battery_cases_bubbles(
-            case,
-            filepath_read,
+        read_path = os.path.join(results_path, plot_type + '.csv')
+        cobmo.plots.plot_battery_cases_comparisons_bubbles(
+            read_path,
             results_path,
-            plot_type,
-            labels=plot_type,
-            savepdf=1,
-            pricing_method=price_type
+            plot_type
         )
 
-    for payback_type in ['simple', 'discounted']:
-        filepath_read = os.path.join(results_path, payback_type + '_payback.csv')
-        cobmo.plots.plot_battery_cases(
-            case,
-            payback_type,
-            filepath_read,
+    for plot_type in ['simple_payback_time', 'discounted_payback_time']:
+        read_path = os.path.join(results_path, plot_type + '.csv')
+        cobmo.plots.plot_battery_cases_payback_comparison_lines(
+            read_path,
             results_path,
-            save_plots='summary'
+            plot_type
         )
+
+# Print results path.
+print("Results are stored in: " + results_path)
