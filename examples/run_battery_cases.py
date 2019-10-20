@@ -303,7 +303,7 @@ if run_simulation:
         os.path.join(results_path, 'efficiency.csv')
     )
     energy_cost.to_csv(
-        os.path.join(results_path, 'energy_cost')
+        os.path.join(results_path, 'energy_cost.csv')
     )
     operation_cost_savings_annual_results.to_csv(
         os.path.join(results_path, 'operation_cost_savings_annual.csv')
@@ -321,7 +321,6 @@ if save_plots:
         'discounted_payback_time',
         'storage_size',
         'efficiency',
-        'energy_cost',
         'operation_cost_savings_annual',
         'operation_cost_savings_annual_percentage'
     ]:
