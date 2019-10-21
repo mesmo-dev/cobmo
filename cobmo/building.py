@@ -20,6 +20,7 @@ class Building(object):
         """Initialize building model for given `scenario_name`."""
 
         # Load building model definition.
+        # TODO: Wrap into dedicated function and resample based on timesteps.
         self.electricity_prices = (
             pd.read_sql(
                 """
