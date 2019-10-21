@@ -408,7 +408,7 @@ class Building(object):
                 # is set to 1.0 in the sql, giving the DoD equals giving DoD*WEnergy = DoD*1.
                 # The controller will then change the energy size of the Battery storage.
 
-                # (1.0 - float(self.parse_parameter(self.building_scenarios['storage_depth_of_discharge'])))
+                # (1.0 - float(self.parse_parameter(self.building_scenarios['storage_battery_depth_of_discharge'])))
                 # * float(self.parse_parameter(self.building_scenarios['storage_size']))
                 0.0
                 * np.ones(sum(self.set_states.str.contains('_battery_storage_state_of_charge')))
@@ -2299,7 +2299,7 @@ class Building(object):
                 1.0
                 / (
                     self.parse_parameter('water_specific_heat')
-                    * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
+                    * self.parse_parameter(self.building_scenarios['storage_sensible_temperature_delta'])
                 )
                 * self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
             )
@@ -2335,7 +2335,7 @@ class Building(object):
                         - 1.0
                         / (
                             self.parse_parameter('water_specific_heat')
-                            * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
+                            * self.parse_parameter(self.building_scenarios['storage_sensible_temperature_delta'])
                         )
                     )
 
@@ -2353,7 +2353,7 @@ class Building(object):
                         - 1.0
                         / (
                             self.parse_parameter('water_specific_heat')
-                            * self.parse_parameter(self.building_scenarios['storage_sensible_total_delta_temperature_layers'])
+                            * self.parse_parameter(self.building_scenarios['storage_sensible_temperature_delta'])
                         )
                     )
 
@@ -3585,7 +3585,7 @@ class Building(object):
                         self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
                     ] = (
                         self.parse_parameter(self.building_scenarios['storage_size'])
-                        * self.parse_parameter('tank_fluid_density')  # Convert volume to mass.
+                        * self.parse_parameter('water_density')  # Convert volume to mass.
                     )
                 if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
                     self.output_constraint_timeseries_minimum.at[
@@ -3607,7 +3607,7 @@ class Building(object):
                         0.0
                         # TODO: Revise implementation of depth of discharge.
                         # + self.parse_parameter(self.building_scenarios['storage_size'])
-                        # * (1.0 - float(self.parse_parameter(self.building_scenarios['storage_depth_of_discharge'])))
+                        # * (1.0 - float(self.parse_parameter(self.building_scenarios['storage_battery_depth_of_discharge'])))
                     )
 
     def discretize_model(self):

@@ -136,13 +136,13 @@ if run_simulation:
                 battery_parameters.loc[(battery_technology, year, case), 'round_trip_efficiency']
                 * 0.95  # Accounting for inverter efficiency. # TODO: Move inverter efficiency to CSV.
             )
-            building_storage_types.at['battery_storage_default', 'storage_depth_of_discharge'] = (
+            building_storage_types.at['battery_storage_default', 'storage_battery_depth_of_discharge'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'depth_of_discharge']
             )
-            building_storage_types.at['battery_storage_default', 'storage_energy_installation_cost'] = (
+            building_storage_types.at['battery_storage_default', 'storage_planning_energy_installation_cost'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'energy_installation_cost']
             )
-            building_storage_types.at['battery_storage_default', 'storage_power_installation_cost'] = (
+            building_storage_types.at['battery_storage_default', 'storage_planning_power_installation_cost'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'power_installation_cost']
             )
             building_storage_types.at['battery_storage_default', 'storage_lifetime'] = (

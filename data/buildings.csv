@@ -4,8 +4,8 @@ create_level_8_2a,singapore_nus,
 create_level_8_3a,singapore_nus,
 create_level_8_4a,singapore_nus,
 create_level_8_4b,singapore_nus,
-create_level_8_5a,singapore_nus,battery_storage_default
-create_level_8_6a,singapore_nus,sensible_thermal_storage_default
+create_level_8_5a,singapore_nus,
+create_level_8_6a,singapore_nus,
 create_level_8_6b,singapore_nus,
 create_level_8_7a,singapore_nus,
 create_level_8_7b,singapore_nus,

@@ -142,7 +142,7 @@ class Controller(object):
                             <=
                             self.building.output_constraint_timeseries_maximum.loc[timestep, output]
                             * self.problem.variable_storage_size[0]
-                            * float(self.building.building_scenarios['storage_depth_of_discharge'][0])
+                            * float(self.building.building_scenarios['storage_battery_depth_of_discharge'][0])
                         )
                 elif '_ahu_cool_electric_power' in output:
                     # TODO: Workaround for avoiding unrealistic storage charging demand. Move this to building model.
@@ -206,25 +206,17 @@ class Controller(object):
         # Investment cost (CAPEX).
         if self.problem_type == 'storage_planning':
             if 'sensible' in self.building.building_scenarios['building_storage_type'][0]:
-                if self.building.building_scenarios['investment_sgd_per_X'][0] == 'kwh':
-                    self.investment_cost += (
-                        # TODO: Make storage temp. difference dynamic based on building model data.
-                        self.problem.variable_storage_size[0] * 1000.0 * 4186.0 * 8.0  # m^3 (water; 8 K delta) in Ws (= J).
-                        / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
-                        * float(self.building.building_scenarios['storage_energy_installation_cost'][0])
-                    )
-                elif self.building.building_scenarios['investment_sgd_per_X'][0] == 'm3':
-                    self.investment_cost += (
-                        self.problem.variable_storage_size[0]
-                        * float(self.building.building_scenarios['storage_energy_installation_cost'][0])
-                    )
+                self.investment_cost += (
+                    self.problem.variable_storage_size[0]
+                    * float(self.building.building_scenarios['storage_planning_energy_installation_cost'][0])
+                )
             elif 'battery' in self.building.building_scenarios['building_storage_type'][0]:
                 self.investment_cost += (
                     self.problem.variable_storage_size[0] / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
-                    * float(self.building.building_scenarios['storage_energy_installation_cost'][0])
+                    * float(self.building.building_scenarios['storage_planning_energy_installation_cost'][0])
                     + self.problem.variable_storage_peak_power[0] / 1000.0  # W in kW. # TODO: Check unit of power cost.
-                    * float(self.building.building_scenarios['storage_power_installation_cost'][0])
-                    # + float(self.building.building_scenarios['storage_fixed_cost'][0])
+                    * float(self.building.building_scenarios['storage_planning_power_installation_cost'][0])
+                    # + float(self.building.building_scenarios['storage_planning_fixed_installation_cost'][0])
                     # TODO: Add integer variable to consider fixed storage cost.
                 )
             else:

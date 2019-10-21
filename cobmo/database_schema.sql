@@ -81,28 +81,16 @@ CREATE TABLE IF NOT EXISTS "building_scenarios" (
 );
 CREATE TABLE IF NOT EXISTS "building_storage_types" (
 	"building_storage_type"	TEXT,
-	"storage_initial_state_of_charge"	REAL,
-	"storage_UA_external"	REAL,
-	"storage_UA_thermocline"	REAL,
-	"storage_cooling_temperature_bottom_layer"	REAL,
-	"storage_cooling_temperature_top_layer"	REAL,
-	"storage_cooling_ambient_temperature"	REAL,
-	"storage_sensible_total_delta_temperature_layers"	REAL,
-	"storage_round_trip_efficiency"	REAL,
 	"storage_size"	REAL,
-	"tank_aspect_ratio"  REAL,
-    "heat_transfer_coefficient"  REAL,
-    "storage_technology"  TEXT,
-    "storage_energy_installation_cost"   REAL,
-    "investment_sgd_per_X"  TEXT,
-    "storage_power_installation_cost"  REAL,
-    "storage_fixed_cost"  REAL,
-    "storage_depth_of_discharge"  REAL,
+	"storage_initial_state_of_charge"	REAL,
+	"storage_round_trip_efficiency"	REAL,
+    "storage_battery_depth_of_discharge"  REAL,
+	"storage_sensible_temperature_delta"	REAL,
     "storage_lifetime"  REAL,
-    "peak_electric_power_building_watt"  REAL,
-	"unit_heat_transfer_coefficient"  TEXT,
-	"storage_size_unit"	TEXT,
-	"comments_storage_type_general"	TEXT
+    "storage_planning_energy_installation_cost"   REAL,
+    "storage_planning_power_installation_cost"  REAL,
+    "storage_planning_fixed_installation_cost"  REAL,
+	"storage_comment"	TEXT
 );
 CREATE TABLE IF NOT EXISTS "building_surface_types" (
 	"surface_type"	TEXT,
