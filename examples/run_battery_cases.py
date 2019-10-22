@@ -65,15 +65,8 @@ if run_simulation:
         conn,
         index_col='building_storage_type'
     )
-    building_parameter_sets = pd.read_sql(
-        """
-        SELECT * FROM building_parameter_sets
-        """,
-        conn,
-        index_col='parameter_name'
-    )
 
-    # Modify `building_storage_type` for the current scenario in the database.
+    # Modify `buildings` to change the `building_storage_type`.
     building_name = building_scenarios.at[scenario_name, 'building_name']
     buildings.at[building_name, 'building_storage_type'] = 'battery_storage_default'
     buildings.to_sql(
@@ -82,7 +75,7 @@ if run_simulation:
         if_exists='replace'
     )
 
-    # Modify `price_type` for current scenario in the database.
+    # Modify `building_scenarios` to change the `price_type`.
     building_scenarios.at[scenario_name, 'price_type'] = price_type
     building_scenarios.to_sql(
         'building_scenarios',
@@ -131,7 +124,7 @@ if run_simulation:
             # Print status info.
             print("Starting simulation #{}.".format(counter))
 
-            # Modify `building_storage_types` for the current scenario in the database.
+            # Modify `building_storage_types`.
             building_storage_types.at['battery_storage_default', 'storage_round_trip_efficiency'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'round_trip_efficiency']
                 * 0.95  # Accounting for inverter efficiency. # TODO: Move inverter efficiency to CSV.
@@ -154,29 +147,9 @@ if run_simulation:
                 if_exists='replace'
             )
 
-            # Modify `building_parameter_sets` to change the storage lifetime.
-            # TODO: Change storage lifetime without using the parameters table.
-            building_parameter_sets.loc['storage_lifetime', 'parameter_value'] = (
-                float(building_storage_types.at['battery_storage_default', 'storage_lifetime'])
-            )
-            building_parameter_sets.to_sql(
-                'building_parameter_sets',
-                con=conn,
-                if_exists='replace'
-            )
-
             # Baseline case.
             # Print status info.
             print("Starting baseline case.")
-
-            # Modify `building_storage_type` for the baseline case.
-            building_name = building_scenarios.at[scenario_name, 'building_name']
-            buildings.at[building_name, 'building_storage_type'] = ''
-            buildings.to_sql(
-                'buildings',
-                con=conn,
-                if_exists='replace'
-            )
 
             # Obtain building model object for the baseline case.
             building_baseline = cobmo.building.Building(conn, scenario_name)
@@ -185,7 +158,7 @@ if run_simulation:
             controller_baseline = cobmo.controller.Controller(
                 conn=conn,
                 building=building_baseline,
-                problem_type='storage_planning'
+                problem_type='storage_planning_baseline'
             )
             (
                 control_timeseries_baseline,
@@ -202,15 +175,6 @@ if run_simulation:
             # Storage case.
             # Print status info.
             print("Starting storage case.")
-
-            # Modify `building_storage_type` for the storage case.
-            building_name = building_scenarios.at[scenario_name, 'building_name']
-            buildings.at[building_name, 'building_storage_type'] = 'battery_storage_default'
-            buildings.to_sql(
-                'buildings',
-                con=conn,
-                if_exists='replace'
-            )
 
             # Obtain building model object for the storage case.
             building_storage = cobmo.building.Building(conn, scenario_name)

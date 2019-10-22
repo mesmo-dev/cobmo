@@ -14,7 +14,7 @@ class Controller(object):
             self,
             conn,
             building,
-            problem_type='operation'  # Choices: 'operation', 'storage_planning'
+            problem_type='operation'  # Choices: 'operation', 'storage_planning', 'storage_planning_baseline'
     ):
         """Initialize controller object based on given `building` object.
 
@@ -181,12 +181,12 @@ class Controller(object):
         self.investment_cost = 0.0
 
         # Operation cost factor.
-        if self.problem_type == 'storage_planning':
+        if (self.problem_type == 'storage_planning') or (self.problem_type == 'storage_planning_baseline'):
             # Define operation cost factor to scale operation cost to the lifetime of storage.
             self.operation_cost_factor = (
                 (pd.to_timedelta('1y') / pd.to_timedelta(timestep_delta))  # Theoretical number of time steps in a year.
                 / len(self.building.set_timesteps)  # Actual number of time steps.
-                * self.building.building_parameters['storage_lifetime']  # Storage lifetime in years.
+                * self.building.building_scenarios['storage_lifetime'][0]  # Storage lifetime in years.
                 * 14.0  # 14 levels at CREATE Tower. # TODO: Check if considered properly in storage size.
             )
         else:
@@ -226,9 +226,6 @@ class Controller(object):
                     + self.problem.variable_storage_exists[0]  # No unit.
                     * self.building.building_scenarios['storage_planning_fixed_installation_cost'][0]  # In SGD.
                 )
-            else:
-                # Workaround to ensure `variable_storage_size` is zero if building doesn't have storage defined.
-                self.investment_cost += self.problem.variable_storage_size[0]
 
         # Define objective.
         self.problem.objective = pyo.Objective(

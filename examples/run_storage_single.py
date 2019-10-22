@@ -59,26 +59,16 @@ building_storage_types = pd.read_sql(
     conn,
     index_col='building_storage_type'
 )
-building_parameter_sets = pd.read_sql(
-    """
-    SELECT * FROM building_parameter_sets
-    """,
-    conn,
-    index_col='parameter_name'
-)
 
-# Modify `building_parameter_sets` to change the storage lifetime.
-# TODO: Change storage lifetime without using the parameters table.
-building_parameter_sets.loc['storage_lifetime', 'parameter_value'] = (
-    float(building_storage_types.at[building_storage_type, 'storage_lifetime'])
-)
-building_parameter_sets.to_sql(
-    'building_parameter_sets',
+# Modify `buildings` to change the `building_storage_type`.
+buildings.at[building_scenarios.at[scenario_name, 'building_name'], 'building_storage_type'] = building_storage_type
+buildings.to_sql(
+    'buildings',
     con=conn,
     if_exists='replace'
 )
 
-# Modify `price_type` for current scenario in the database.
+# Modify `building_scenarios` to change the `price_type`.
 building_scenarios.at[scenario_name, 'price_type'] = price_type
 building_scenarios.to_sql(
     'building_scenarios',
@@ -90,14 +80,6 @@ building_scenarios.to_sql(
 # Print status info.
 print('Starting baseline case.')
 
-# Modify `building_storage_type` for the baseline case.
-buildings.at[building_scenarios.at[scenario_name, 'building_name'], 'building_storage_type'] = ''
-buildings.to_sql(
-    'buildings',
-    con=conn,
-    if_exists='replace'
-)
-
 # Obtain building model object for the baseline case.
 building_baseline = cobmo.building.Building(conn, scenario_name)
 
@@ -105,7 +87,7 @@ building_baseline = cobmo.building.Building(conn, scenario_name)
 controller_baseline = cobmo.controller.Controller(
     conn=conn,
     building=building_baseline,
-    problem_type='storage_planning'
+    problem_type='storage_planning_baseline'
 )
 (
     control_timeseries_controller_baseline,
@@ -122,14 +104,6 @@ print("operation_cost_baseline = {}".format(operation_cost_baseline))
 # Storage case.
 # Print status info.
 print("Starting storage case.")
-
-# Modify `building_storage_type` for the storage case.
-buildings.at[building_scenarios.at[scenario_name, 'building_name'], 'building_storage_type'] = building_storage_type
-buildings.to_sql(
-    'buildings',
-    con=conn,
-    if_exists='replace'
-)
 
 # Obtain building model object for the storage case.
 building_storage = cobmo.building.Building(conn, scenario_name)
@@ -150,7 +124,7 @@ controller_storage = cobmo.controller.Controller(
 ) = controller_storage.solve()
 
 # Calculate savings and payback time.
-storage_lifetime = float(building_storage_types.at[building_storage_type, 'storage_lifetime'])
+storage_lifetime = building_storage_types.at[building_storage_type, 'storage_lifetime']
 operation_cost_savings_annual = (operation_cost_baseline - operation_cost_storage) / storage_lifetime
 if 'sensible' in building_storage_type:
     storage_size_kwh = storage_size_storage * 1000.0 * 4186.0 * 8.0 / 3600.0 / 1000.0  # m^3 (water; 8 K delta) in kWh.

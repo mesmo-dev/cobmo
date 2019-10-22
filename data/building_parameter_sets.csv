@@ -33,7 +33,6 @@ parameters_default,hvac_ahu_heating_efficiency,1,Wtherm/Welectric,
 parameters_default,hvac_ahu_return_air_heat_recovery_efficiency,0.575,Wrecovered/Wavailable,
 parameters_default,co2_generation_rate_per_person,5.2,m3/s/person*1000000,
 parameters_default,moisture_generation_rate_per_person,0.000022,kg/s/person,
-parameters_default,storage_lifetime,0.0,years,needed for running the baseline scenario in comparison to the storage
 constants,density_air,1.225,kg/m3,
 constants,heat_capacity_air,1211.025,J/(m3*K),
 constants,stefan_boltzmann_constant,5.67E-08,W/(m2*K4),
