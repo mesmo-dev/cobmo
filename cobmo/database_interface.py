@@ -1,9 +1,9 @@
 """Database interface function definitions."""
 
-import csv
 import glob
-import sqlite3
 import os
+import pandas as pd
+import sqlite3
 
 import cobmo.config
 
@@ -20,12 +20,14 @@ def create_database(
     cursor = conn.cursor()
 
     # Remove old data, if any.
-    cursor.executescript(""" 
+    cursor.executescript(
+        """ 
         PRAGMA writable_schema = 1; 
         DELETE FROM sqlite_master WHERE type IN ('table', 'index', 'trigger'); 
         PRAGMA writable_schema = 0; 
         VACUUM; 
-        """)
+        """
+    )
 
     # Recreate SQLITE database (schema) from SQL file.
     cursor.executescript(open(sql_path, 'r').read())
@@ -35,20 +37,21 @@ def create_database(
     conn.text_factory = str  # Allows utf-8 data to be stored.
     cursor = conn.cursor()
     for file in glob.glob(os.path.join(csv_path, '*.csv')):
+        # Obtain table name.
         table_name = os.path.splitext(os.path.basename(file))[0]
 
-        with open(file, 'r') as file:
-            first_row = True
-            for row in csv.reader(file):
-                if first_row:
-                    cursor.execute("delete from {}".format(table_name))
-                    insert_sql_query = \
-                        "insert into {} VALUES ({})".format(table_name, ', '.join(['?' for column in row]))
+        # Delete existing table content.
+        cursor.execute("DELETE FROM {}".format(table_name))
+        conn.commit()
 
-                    first_row = False
-                else:
-                    cursor.execute(insert_sql_query, row)
-            conn.commit()
+        # Write new table content.
+        table = pd.read_csv(file)
+        table.to_sql(
+            table_name,
+            con=conn,
+            if_exists='append',
+            index=False
+        )
     cursor.close()
     conn.close()
 

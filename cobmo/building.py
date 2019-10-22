@@ -119,9 +119,9 @@ class Building(object):
 
         # Add constant timeseries in disturbance vector, if any CO2 model or HVAC or window.
         self.define_constant = (
-            (self.building_scenarios['co2_model_type'][0] != '')
-            | (self.building_zones['hvac_ahu_type'] != '').any()
-            | (self.building_zones['window_type'] != '').any()
+            pd.notnull(self.building_scenarios['co2_model_type'][0])
+            | pd.notnull(self.building_zones['hvac_ahu_type']).any()
+            | pd.notnull(self.building_zones['window_type']).any()
         )
 
         # Define sets.
@@ -143,14 +143,14 @@ class Building(object):
 
                 # Zone CO2 concentration.
                 self.building_zones['zone_name'][
-                    ((self.building_zones['hvac_ahu_type'] != '') | (self.building_zones['window_type'] != ''))
-                    & (self.building_scenarios['co2_model_type'][0] != '')
+                    (pd.notnull(self.building_zones['hvac_ahu_type']) | pd.notnull(self.building_zones['window_type']))
+                    & pd.notnull(self.building_scenarios['co2_model_type'][0])
                 ] + '_co2_concentration',
 
                 # Zone absolute humidity.
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
-                    & (self.building_scenarios['humidity_model_type'][0] != '')
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                    & pd.notnull(self.building_scenarios['humidity_model_type'][0])
                 ] + '_absolute_humidity',
 
                 # Sensible storage state of charge.
@@ -169,31 +169,31 @@ class Building(object):
             pd.concat([
                 # Generic HVAC system.
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_generic_type'] != ''
+                    pd.notnull(self.building_zones['hvac_generic_type'])
                 ] + '_generic_heat_thermal_power',
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_generic_type'] != ''
+                    pd.notnull(self.building_zones['hvac_generic_type'])
                 ] + '_generic_cool_thermal_power',
 
                 # AHU.
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_ahu_type'] != ''
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
                 ] + '_ahu_heat_air_flow',
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_ahu_type'] != ''
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
                 ] + '_ahu_cool_air_flow',
 
                 # TU.
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_tu_type'] != ''
+                    pd.notnull(self.building_zones['hvac_tu_type'])
                 ] + '_tu_heat_air_flow',
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_tu_type'] != ''
+                    pd.notnull(self.building_zones['hvac_tu_type'])
                 ] + '_tu_cool_air_flow',
 
                 # Windows.
                 self.building_zones['zone_name'][
-                    (self.building_zones['window_type'] != '')
+                    pd.notnull(self.building_zones['window_type'])
                 ] + '_window_air_flow',
 
                 # Sensible storage charge.
@@ -212,41 +212,41 @@ class Building(object):
                 # Sensible storage discharge to AHU.
                 # TODO: Add consideration for sensible storage heating / cooling.
                 # self.building_zones['zone_name'][
-                #     (self.building_zones['hvac_ahu_type'] != '')
+                #     pd.notnull(self.building_zones['hvac_ahu_type'])
                 #     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
                 # ] + '_sensible_storage_to_zone_ahu_heat_thermal_power',
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
                 ] + '_sensible_storage_to_zone_ahu_cool_thermal_power',
 
                 # Sensible storage discharge to TU.
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_tu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_tu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
                 ] + '_sensible_storage_to_zone_tu_heat_thermal_power',
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_tu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_tu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
                 ] + '_sensible_storage_to_zone_tu_cool_thermal_power',
 
                 # Battery storage discharge to AHU.
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ] + '_battery_storage_to_zone_heat_ahu',
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ] + '_battery_storage_to_zone_cool_ahu',
 
                 # Battery storage discharge to TU.
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_tu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_tu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ] + '_battery_storage_to_zone_heat_tu',
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_tu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_tu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ] + '_battery_storage_to_zone_cool_tu',
             ]),
@@ -282,49 +282,49 @@ class Building(object):
 
                 # Zone CO2 concentration.
                 self.building_zones['zone_name'][
-                    ((self.building_zones['hvac_ahu_type'] != '') | (self.building_zones['window_type'] != ''))
-                    & (self.building_scenarios['co2_model_type'][0] != '')
+                    (pd.notnull(self.building_zones['hvac_ahu_type']) | pd.notnull(self.building_zones['window_type']))
+                    & pd.notnull(self.building_scenarios['co2_model_type'][0])
                 ] + '_co2_concentration',
 
                 # Zone absolute humidity.
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
-                    & (self.building_scenarios['humidity_model_type'][0] != '')
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                    & pd.notnull(self.building_scenarios['humidity_model_type'][0])
                 ] + '_absolute_humidity',
 
                 # Zone fresh air flow.
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
-                    | (self.building_zones['window_type'] != '')
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                    | pd.notnull(self.building_zones['window_type'])
                 ] + '_total_fresh_air_flow',
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
                 ] + '_ahu_fresh_air_flow',
                 self.building_zones['zone_name'][
-                    (self.building_zones['window_type'] != '')
+                    pd.notnull(self.building_zones['window_type'])
                 ] + '_window_fresh_air_flow',
 
                 # HVAC systems power.
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_generic_type'] != ''
+                    pd.notnull(self.building_zones['hvac_generic_type'])
                 ] + '_generic_heat_power',
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_generic_type'] != ''
+                    pd.notnull(self.building_zones['hvac_generic_type'])
                 ] + '_generic_cool_power',
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_ahu_type'] != ''
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
                 ] + '_ahu_heat_electric_power',
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_ahu_type'] != ''
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
                 ] + '_ahu_cool_electric_power_cooling_coil',
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_ahu_type'] != ''
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
                 ] + '_ahu_cool_electric_power_heating_coil',
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_tu_type'] != ''
+                    pd.notnull(self.building_zones['hvac_tu_type'])
                 ] + '_tu_heat_electric_power',
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_tu_type'] != ''
+                    pd.notnull(self.building_zones['hvac_tu_type'])
                 ] + '_tu_cool_electric_power',
 
                 # Storage state of charge.
@@ -339,35 +339,35 @@ class Building(object):
                 # TODO: This is only for tracking behaviours in the output CSV files.
                 # TODO: Add consideration for sensible storage heating / cooling.
                 # self.building_zones['zone_name'][
-                #     (self.building_zones['hvac_ahu_type'] != '')
+                #     pd.notnull(self.building_zones['hvac_ahu_type'])
                 #     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
                 # ] + '_sensible_storage_to_zone_ahu_heat_thermal_power',
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_tu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_tu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
                 ] + '_sensible_storage_to_zone_tu_heat_thermal_power',
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ] + '_battery_storage_to_zone_heat_ahu',
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_tu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_tu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ] + '_battery_storage_to_zone_heat_tu',
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
                 ] + '_sensible_storage_to_zone_ahu_cool_thermal_power',
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_tu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_tu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
                 ] + '_sensible_storage_to_zone_tu_cool_thermal_power',
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ] + '_battery_storage_to_zone_cool_ahu',
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_tu_type'] != '')
+                    pd.notnull(self.building_zones['hvac_tu_type'])
                     & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
                 ] + '_battery_storage_to_zone_cool_tu',
 
@@ -409,8 +409,8 @@ class Building(object):
                 # is set to 1.0 in the sql, giving the DoD equals giving DoD*WEnergy = DoD*1.
                 # The controller will then change the energy size of the Battery storage.
 
-                # (1.0 - float(self.parse_parameter(self.building_scenarios['storage_battery_depth_of_discharge'])))
-                # * float(self.parse_parameter(self.building_scenarios['storage_size']))
+                # (1.0 - self.parse_parameter(self.building_scenarios['storage_battery_depth_of_discharge']))
+                # * self.parse_parameter(self.building_scenarios['storage_size'])
                 0.0
                 * np.ones(sum(self.set_states.str.contains('_battery_storage_state_of_charge')))
             ]),
@@ -1901,7 +1901,7 @@ class Building(object):
 
     def define_heat_transfer_window_air_flow(self):
         for index, row in self.building_zones.iterrows():
-            if row['window_type'] != '':
+            if pd.notnull(row['window_type']):
                 self.control_matrix.at[
                     index + '_temperature',  # the "index" is the zone_name. Defined in line 87
                     index + '_window_air_flow'
@@ -1949,7 +1949,7 @@ class Building(object):
 
     def define_heat_transfer_hvac_generic(self):
         for index, row in self.building_zones.iterrows():
-            if row['hvac_generic_type'] != '':
+            if pd.notnull(row['hvac_generic_type']):
                 self.control_matrix.at[
                     index + '_temperature',
                     index + '_generic_heat_thermal_power'
@@ -1975,7 +1975,7 @@ class Building(object):
 
     def define_heat_transfer_hvac_ahu(self):
         for index, row in self.building_zones.iterrows():
-            if row['hvac_ahu_type'] != '':
+            if pd.notnull(row['hvac_ahu_type']):
                 self.control_matrix.at[
                     index + '_temperature',
                     index + '_ahu_heat_air_flow'
@@ -2013,7 +2013,7 @@ class Building(object):
 
     def define_heat_transfer_hvac_tu(self):
         for index, row in self.building_zones.iterrows():
-            if row['hvac_tu_type'] != '':
+            if pd.notnull(row['hvac_tu_type']):
                 self.control_matrix.at[
                     index + '_temperature',
                     index + '_tu_heat_air_flow'
@@ -2050,9 +2050,9 @@ class Building(object):
                 )
 
     def define_co2_transfer_hvac_ahu(self):
-        if self.building_scenarios['co2_model_type'][0] != '':
+        if pd.notnull(self.building_scenarios['co2_model_type'][0]):
             for index, row in self.building_zones.iterrows():
-                if (row['hvac_ahu_type'] != '') | (row['window_type'] != ''):
+                if pd.notnull(row['hvac_ahu_type']) | pd.notnull(row['window_type']):
                     self.state_matrix.at[
                         index + '_co2_concentration',
                         index + '_co2_concentration'
@@ -2068,7 +2068,7 @@ class Building(object):
                                     / self.parse_parameter(row['zone_height'])
                             )
                     )
-                    if row['hvac_ahu_type'] != '':
+                    if pd.notnull(row['hvac_ahu_type']):
                         self.control_matrix.at[
                             index + '_co2_concentration',
                             index + '_ahu_heat_air_flow'
@@ -2095,7 +2095,7 @@ class Building(object):
                                         / self.parse_parameter(row['zone_height'])
                                         / self.parse_parameter(row['zone_area']))
                         )
-                    if row['window_type'] != '':
+                    if pd.notnull(row['window_type']):
                         self.control_matrix.at[
                             index + '_co2_concentration',
                             index + '_window_air_flow'
@@ -2150,9 +2150,9 @@ class Building(object):
                     )
 
     def define_humidity_transfer_hvac_ahu(self):
-        if self.building_scenarios['humidity_model_type'][0] != '':
+        if pd.notnull(self.building_scenarios['humidity_model_type'][0]):
             for index, row in self.building_zones.iterrows():
-                if row['hvac_ahu_type'] != '':
+                if pd.notnull(row['hvac_ahu_type']):
                     self.state_matrix.at[
                         index + '_absolute_humidity',
                         index + '_absolute_humidity'
@@ -2218,7 +2218,7 @@ class Building(object):
                                     / self.parse_parameter(row['zone_area'])
                             )
                     )
-                    if row['window_type'] != '':
+                    if pd.notnull(row['window_type']):
                         self.control_matrix.at[
                             index + '_absolute_humidity',
                             index + '_window_air_flow'
@@ -2322,7 +2322,7 @@ class Building(object):
             for zone_name, zone_data in self.building_zones.iterrows():
                 # TODO: Differentiate heating / cooling and define heating discharge.
 
-                if zone_data['hvac_ahu_type'] != '':
+                if pd.notnull(zone_data['hvac_ahu_type']):
                     # Storage discharge to AHU for cooling.
                     self.control_matrix.at[
                         self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -2340,7 +2340,7 @@ class Building(object):
                         )
                     )
 
-                if zone_data['hvac_tu_type'] != '':
+                if pd.notnull(zone_data['hvac_tu_type']):
                     # Storage discharge to TU for cooling.
                     self.control_matrix.at[
                         self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -2387,7 +2387,7 @@ class Building(object):
             for zone_name, zone_data in self.building_zones.iterrows():
                 # TODO: Differentiate heating / cooling and define heating discharge.
 
-                if zone_data['hvac_ahu_type'] != '':
+                if pd.notnull(zone_data['hvac_ahu_type']):
                     # Storage discharge to AHU for cooling.
                     self.control_matrix.at[
                         self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
@@ -2410,7 +2410,7 @@ class Building(object):
                         ]
                     ) - 1.0
 
-                if zone_data['hvac_tu_type'] != '':
+                if pd.notnull(zone_data['hvac_tu_type']):
                     # Storage discharge to TU for cooling.
                     self.control_matrix.at[
                         self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
@@ -2441,18 +2441,18 @@ class Building(object):
             ] = 1
 
     def define_output_zone_co2_concentration(self):
-        if self.building_scenarios['co2_model_type'][0] != '':
+        if pd.notnull(self.building_scenarios['co2_model_type'][0]):
             for index, row in self.building_zones.iterrows():
-                if (row['hvac_ahu_type'] != '') | (row['window_type'] != ''):
+                if pd.notnull(row['hvac_ahu_type']) | pd.notnull(row['window_type']):
                     self.state_output_matrix.at[
                         index + '_co2_concentration',
                         index + '_co2_concentration'
                     ] = 1
 
     def define_output_zone_humidity(self):
-        if self.building_scenarios['humidity_model_type'][0] != '':
+        if pd.notnull(self.building_scenarios['humidity_model_type'][0]):
             for index, row in self.building_zones.iterrows():
-                if row['hvac_ahu_type'] != '':
+                if pd.notnull(row['hvac_ahu_type']):
                     self.state_output_matrix.at[
                         index + '_absolute_humidity',
                         index + '_absolute_humidity'
@@ -2460,7 +2460,7 @@ class Building(object):
 
     def define_output_hvac_generic_power(self):
         for index, row in self.building_zones.iterrows():
-            if row['hvac_generic_type'] != '':
+            if pd.notnull(row['hvac_generic_type']):
                 self.control_output_matrix.at[
                     index + '_generic_heat_power',
                     index + '_generic_heat_thermal_power'
@@ -2486,7 +2486,7 @@ class Building(object):
 
     def define_output_hvac_ahu_electric_power(self):
         for zone_name, zone_data in self.building_zones.iterrows():
-            if zone_data['hvac_ahu_type'] != '':
+            if pd.notnull(zone_data['hvac_ahu_type']):
                 # Calculate enthalpies.
                 # TODO: Remove unnecessary HVAC types.
                 if (
@@ -2930,7 +2930,7 @@ class Building(object):
 
     def define_output_hvac_tu_electric_power(self):
         for zone_name, zone_data in self.building_zones.iterrows():
-            if zone_data['hvac_tu_type'] != '':
+            if pd.notnull(zone_data['hvac_tu_type']):
                 # Calculate enthalpies.
                 if (
                     zone_data['tu_cooling_type'] == 'default'
@@ -3043,7 +3043,7 @@ class Building(object):
 
     def define_output_fresh_air_flow(self):
         for index, row in self.building_zones.iterrows():
-            if row['hvac_ahu_type'] != '':
+            if pd.notnull(row['hvac_ahu_type']):
                 self.control_output_matrix.at[
                     index + '_total_fresh_air_flow',
                     index + '_ahu_heat_air_flow'
@@ -3052,12 +3052,12 @@ class Building(object):
                     index + '_total_fresh_air_flow',
                     index + '_ahu_cool_air_flow'
                 ] = 1
-            if row['window_type'] != '':
+            if pd.notnull(row['window_type']):
                 self.control_output_matrix.at[
                     index + '_total_fresh_air_flow',
                     index + '_window_air_flow'
                 ] = 1
-            if (row['window_type'] != '') | (row['hvac_ahu_type'] != ''):
+            if pd.notnull(row['window_type']) | pd.notnull(row['hvac_ahu_type']):
                 self.disturbance_output_matrix.at[
                     index + '_total_fresh_air_flow',
                     'constant'
@@ -3073,7 +3073,7 @@ class Building(object):
 
     def define_output_ahu_fresh_air_flow(self):
         for index, row in self.building_zones.iterrows():
-            if row['hvac_ahu_type'] != '':
+            if pd.notnull(row['hvac_ahu_type']):
                 self.control_output_matrix.at[
                     index + '_ahu_fresh_air_flow',
                     index + '_ahu_heat_air_flow'
@@ -3085,7 +3085,7 @@ class Building(object):
 
     def define_output_window_fresh_air_flow(self):
         for index, row in self.building_zones.iterrows():
-            if row['window_type'] != '':
+            if pd.notnull(row['window_type']):
                 self.control_output_matrix.at[
                     index + '_window_fresh_air_flow',
                     index + '_window_air_flow'
@@ -3198,21 +3198,21 @@ class Building(object):
             # Sensible thermal storage.
             if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
                 # TODO: Add consideration for sensible storage heating / cooling.
-                # if zone_data['hvac_ahu_type'] != '':
+                # if pd.notnull(zone_data['hvac_ahu_type']):
                 #     # Storage discharge to AHU for heating.
                 #     self.control_output_matrix.at[
                 #         zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power',
                 #         zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power'
                 #     ] = 1.0
                 #
-                # if zone_data['hvac_tu_type'] != '':
+                # if pd.notnull(zone_data['hvac_tu_type']):
                 #     # Storage discharge to TU for heating.
                 #     self.control_output_matrix.at[
                 #         zone_name + '_sensible_storage_to_zone_tu_heat_thermal_power',
                 #         zone_name + '_sensible_storage_to_zone_tu_heat_thermal_power'
                 #     ] = 1.0
 
-                if zone_data['hvac_ahu_type'] != '':
+                if pd.notnull(zone_data['hvac_ahu_type']):
                     # Storage discharge to AHU for cooling.
                     self.control_output_matrix.at[
                         zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power',
@@ -3225,7 +3225,7 @@ class Building(object):
                         zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power'
                     ] = 1.0
 
-                if zone_data['hvac_tu_type'] != '':
+                if pd.notnull(zone_data['hvac_tu_type']):
                     # Storage discharge to TU for cooling.
                     self.control_output_matrix.at[
                         zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power',
@@ -3240,7 +3240,7 @@ class Building(object):
 
             # Battery storage.
             if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
-                if zone_data['hvac_ahu_type'] != '':
+                if pd.notnull(zone_data['hvac_ahu_type']):
                     # Storage discharge to AHU for cooling.
                     self.control_output_matrix.at[
                         zone_name + '_battery_storage_to_zone_cool_ahu',
@@ -3253,14 +3253,14 @@ class Building(object):
                         zone_name + '_battery_storage_to_zone_heat_ahu'
                     ] = 1.0
 
-                if zone_data['hvac_tu_type'] != '':
+                if pd.notnull(zone_data['hvac_tu_type']):
                     # Storage discharge to TU for cooling.
                     self.control_output_matrix.at[
                         zone_name + '_battery_storage_to_zone_cool_tu',
                         zone_name + '_battery_storage_to_zone_cool_tu'
                     ] = 1.0
 
-                if zone_data['hvac_tu_type'] != '':
+                if pd.notnull(zone_data['hvac_tu_type']):
                     # Storage discharge to TU for heating.
                     self.control_output_matrix.at[
                         zone_name + '_battery_storage_to_zone_heat_tu',
@@ -3460,9 +3460,9 @@ class Building(object):
                     ]
                 )
 
-                if (zone_data['hvac_ahu_type'] != '') | (zone_data['window_type'] != ''):
-                    if self.building_scenarios['demand_controlled_ventilation_type'][0] != '':
-                        if self.building_scenarios['co2_model_type'][0] != '':
+                if pd.notnull(zone_data['hvac_ahu_type']) | pd.notnull(zone_data['window_type']):
+                    if pd.notnull(self.building_scenarios['demand_controlled_ventilation_type'][0]):
+                        if pd.notnull(self.building_scenarios['co2_model_type'][0]):
                             self.output_constraint_timeseries_maximum.at[
                                 timestep,
                                 zone_name + '_co2_concentration'
@@ -3508,7 +3508,7 @@ class Building(object):
                                     )
                             )
                     else:
-                        if zone_data['hvac_ahu_type'] != '':
+                        if pd.notnull(zone_data['hvac_ahu_type']):
                             self.output_constraint_timeseries_minimum.at[
                                 timestep,
                                 zone_name + '_total_fresh_air_flow'
@@ -3520,7 +3520,7 @@ class Building(object):
                                 )
                                 * self.parse_parameter(zone_data['zone_area'])
                             )
-                        elif zone_data['window_type'] != '':
+                        elif pd.notnull(zone_data['window_type']):
                             self.output_constraint_timeseries_minimum.at[
                                 timestep,
                                 zone_name + '_window_fresh_air_flow'
@@ -3535,8 +3535,8 @@ class Building(object):
                 # If a ventilation system is enabled, if DCV, then CO2 or constraint on total fresh air flow.
                 # If no DCV, then constant constraint on AHU or on windows if no AHU
 
-                if self.building_scenarios['humidity_model_type'][0] != '':
-                    if zone_data['hvac_ahu_type'] != '':
+                if pd.notnull(self.building_scenarios['humidity_model_type'][0]):
+                    if pd.notnull(zone_data['hvac_ahu_type']):
                         self.output_constraint_timeseries_minimum.at[
                             timestep,
                             zone_name + '_absolute_humidity'
@@ -3608,7 +3608,7 @@ class Building(object):
                         0.0
                         # TODO: Revise implementation of depth of discharge.
                         # + self.parse_parameter(self.building_scenarios['storage_size'])
-                        # * (1.0 - float(self.parse_parameter(self.building_scenarios['storage_battery_depth_of_discharge'])))
+                        # * (1.0 - self.parse_parameter(self.building_scenarios['storage_battery_depth_of_discharge']))
                     )
 
     def discretize_model(self):
