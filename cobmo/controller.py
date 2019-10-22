@@ -43,16 +43,20 @@ class Controller(object):
             self.building.set_outputs,
             domain=pyo.Reals
         )
-        if problem_type == 'storage_planning':
+        if self.problem_type == 'storage_planning':
             self.problem.variable_storage_size = pyo.Var(
                 [0],
                 domain=pyo.NonNegativeReals
             )
-            if 'battery' in self.building.building_scenarios['building_storage_type'][0]:
-                self.problem.variable_storage_peak_power = pyo.Var(
-                    [0],
-                    domain=pyo.NonNegativeReals
-                )
+            self.problem.variable_storage_peak_power = pyo.Var(
+                [0],
+                domain=pyo.NonNegativeReals
+            )
+            # Variable to describe if storage exists (= 1) or not (= 0).
+            self.problem.variable_storage_exists = pyo.Var(
+                [0],
+                domain=pyo.Binary
+            )
 
         # Define constraints.
         self.problem.constraints = pyo.ConstraintList()
@@ -129,28 +133,20 @@ class Controller(object):
 
                 # Maximum.
                 if (self.problem_type == 'storage_planning') and ('state_of_charge' in output):
+                    # Storage planning constraints.
                     if 'sensible' in self.building.building_scenarios['building_storage_type'][0]:
                         self.problem.constraints.add(
                             self.problem.variable_output_timeseries[timestep, output]
                             <=
-                            self.building.output_constraint_timeseries_maximum.loc[timestep, output]
-                            * self.problem.variable_storage_size[0]
+                            self.problem.variable_storage_size[0]
                         )
                     elif 'battery' in self.building.building_scenarios['building_storage_type'][0]:
                         self.problem.constraints.add(
                             self.problem.variable_output_timeseries[timestep, output]
                             <=
-                            self.building.output_constraint_timeseries_maximum.loc[timestep, output]
-                            * self.problem.variable_storage_size[0]
-                            * float(self.building.building_scenarios['storage_battery_depth_of_discharge'][0])
+                            self.problem.variable_storage_size[0]
+                            * self.building.building_scenarios['storage_battery_depth_of_discharge'][0]
                         )
-                elif '_ahu_cool_electric_power' in output:
-                    # TODO: Workaround for avoiding unrealistic storage charging demand. Move this to building model.
-                    self.problem.constraints.add(
-                        self.problem.variable_output_timeseries[timestep, output]
-                        <=
-                        20000.0
-                    )
                 else:
                     self.problem.constraints.add(
                         self.problem.variable_output_timeseries[timestep, output]
@@ -158,21 +154,26 @@ class Controller(object):
                         self.building.output_constraint_timeseries_maximum.loc[timestep, output]
                     )
 
-        # Storage peak demand constraint.
-        # TODO: Add output variable in building to simplify this.
-        if (
-            (self.problem_type == 'storage_planning')
-            and ('battery' in self.building.building_scenarios['building_storage_type'][0])
-        ):
+        # Storage planning auxiliary constraints.
+        if self.problem_type == 'storage_planning':
             for timestep in self.building.set_timesteps:
+                # Storage peak demand constraint.
                 self.problem.constraints.add(
                     sum(
                         self.problem.variable_output_timeseries[timestep, output]
-                        if 'battery_storage_to_zone' in output else 0.0
+                        if ('storage_charge' in output) and ('electric_power' in output) else 0.0
                         for output in self.building.set_outputs
                     )
                     <=
                     self.problem.variable_storage_peak_power[0]
+                )
+
+                # Storage existence constraint.
+                self.problem.constraints.add(
+                    self.problem.variable_storage_size[0]
+                    <=
+                    self.problem.variable_storage_exists[0]
+                    * 1.0e100  # Large constant as replacement for infinity.
                 )
 
         # Define components of the objective.
@@ -185,7 +186,7 @@ class Controller(object):
             self.operation_cost_factor = (
                 (pd.to_timedelta('1y') / pd.to_timedelta(timestep_delta))  # Theoretical number of time steps in a year.
                 / len(self.building.set_timesteps)  # Actual number of time steps.
-                * float(self.building.building_parameters['storage_lifetime'])  # Storage lifetime in years.
+                * self.building.building_parameters['storage_lifetime']  # Storage lifetime in years.
                 * 14.0  # 14 levels at CREATE Tower. # TODO: Check if considered properly in storage size.
             )
         else:
@@ -207,17 +208,23 @@ class Controller(object):
         if self.problem_type == 'storage_planning':
             if 'sensible' in self.building.building_scenarios['building_storage_type'][0]:
                 self.investment_cost += (
-                    self.problem.variable_storage_size[0]
-                    * float(self.building.building_scenarios['storage_planning_energy_installation_cost'][0])
+                    self.problem.variable_storage_size[0]  # In m3.
+                    * self.building.building_scenarios['storage_planning_energy_installation_cost'][0]  # In SGD/m3.
+                    # TODO: Currently, power / fixed cost are set to zero for sensible thermal storage in the database.
+                    + self.problem.variable_storage_peak_power[0] / 1000.0  # W in kW.
+                    * self.building.building_scenarios['storage_planning_power_installation_cost'][0]  # In SGD/kW.
+                    + self.problem.variable_storage_exists[0]  # No unit.
+                    * self.building.building_scenarios['storage_planning_fixed_installation_cost'][0]  # In SGD.
                 )
             elif 'battery' in self.building.building_scenarios['building_storage_type'][0]:
                 self.investment_cost += (
                     self.problem.variable_storage_size[0] / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
-                    * float(self.building.building_scenarios['storage_planning_energy_installation_cost'][0])
-                    + self.problem.variable_storage_peak_power[0] / 1000.0  # W in kW. # TODO: Check unit of power cost.
-                    * float(self.building.building_scenarios['storage_planning_power_installation_cost'][0])
-                    # + float(self.building.building_scenarios['storage_planning_fixed_installation_cost'][0])
-                    # TODO: Add integer variable to consider fixed storage cost.
+                    * self.building.building_scenarios['storage_planning_energy_installation_cost'][0]
+                    # TODO: Validate unit of power cost.
+                    + self.problem.variable_storage_peak_power[0] / 1000.0  # W in kW.
+                    * self.building.building_scenarios['storage_planning_power_installation_cost'][0]  # In SGD/kW
+                    + self.problem.variable_storage_exists[0]  # No unit.
+                    * self.building.building_scenarios['storage_planning_fixed_installation_cost'][0]  # In SGD.
                 )
             else:
                 # Workaround to ensure `variable_storage_size` is zero if building doesn't have storage defined.
