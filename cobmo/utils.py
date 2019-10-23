@@ -269,7 +269,7 @@ def calculate_discounted_payback_time(
     # Calculate annual cost savings.
     operation_cost_savings_annual = (operation_cost_baseline - operation_cost) / lifetime
 
-    if operation_cost_savings_annual <= 0.0:
+    if (operation_cost_savings_annual <= 0.0) or (investment_cost == 0.0):
         # Return `None` if no savings observed.
         simple_payback_time = None
         discounted_payback_time = None

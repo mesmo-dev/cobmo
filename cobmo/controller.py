@@ -57,6 +57,9 @@ class Controller(object):
                 [0],
                 domain=pyo.Binary
             )
+        if self.problem_type == 'storage_planning_baseline':
+            # Force storage size to zero for baseline case.
+            self.problem.variable_storage_size = [0.0]
 
         # Define constraints.
         self.problem.constraints = pyo.ConstraintList()
@@ -132,13 +135,17 @@ class Controller(object):
                 )
 
                 # Maximum.
-                if (self.problem_type == 'storage_planning') and ('state_of_charge' in output):
+                if (
+                    ((self.problem_type == 'storage_planning') or (self.problem_type == 'storage_planning_baseline'))
+                    and ('state_of_charge' in output)
+                ):
                     # Storage planning constraints.
                     if 'sensible' in self.building.building_scenarios['building_storage_type'][0]:
                         self.problem.constraints.add(
                             self.problem.variable_output_timeseries[timestep, output]
                             <=
                             self.problem.variable_storage_size[0]
+                            * self.building.parse_parameter('water_density')
                         )
                     elif 'battery' in self.building.building_scenarios['building_storage_type'][0]:
                         self.problem.constraints.add(
@@ -293,6 +300,8 @@ class Controller(object):
         # Retrieve storage size.
         if self.problem_type == 'storage_planning':
             storage_size = self.problem.variable_storage_size[0].value
+        elif self.problem_type == 'storage_planning_baseline':
+            storage_size = self.problem.variable_storage_size[0]
         else:
             storage_size = None
 
