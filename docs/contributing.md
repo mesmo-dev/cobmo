@@ -47,3 +47,8 @@ Every time the `master` branch changes, a new version number is defined accordin
     - Do not use the `\` symbol for line breaks.
 - Quotes / strings:
     - Use single quotes `'...'` for parameters, indexes, pathes and use double quotes `"..."` for content, messages and docstrings.
+- Results / output files:
+    - Store results / output files only in the `results` directory.
+    - The results path should be taken from `cobmo.config` as `cobmo.config.results_path`.
+    - When saving results with timestamp, use `cobmo.config.timestamp`.
+    - The content of the `results` directory should remain local, i.e., it should be ignored by Git and should not appear in any commits to the repository.
