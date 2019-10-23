@@ -202,10 +202,10 @@ class Controller(object):
 
         # Operation cost (OPEX).
         for timestep in self.building.set_timesteps:
-            for output_power in self.building.set_outputs:
-                if 'electric_power' in output_power:
+            for output in self.building.set_outputs:
+                if ('electric_power' in output) and not ('storage_to_zone' in output):
                     self.operation_cost += (
-                        self.problem.variable_output_timeseries[timestep, output_power]
+                        self.problem.variable_output_timeseries[timestep, output]
                         * timestep_delta.seconds / 3600.0 / 1000.0  # Ws in kWh.
                         * self.building.electricity_prices.loc[timestep, 'price']
                         * self.operation_cost_factor
