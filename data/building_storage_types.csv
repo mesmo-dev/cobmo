@@ -1,3 +1,3 @@
 building_storage_type,storage_size,storage_initial_state_of_charge,storage_round_trip_efficiency,storage_battery_depth_of_discharge,storage_sensible_temperature_delta,storage_lifetime,storage_planning_energy_installation_cost,storage_planning_power_installation_cost,storage_planning_fixed_installation_cost,storage_comment
-sensible_thermal_storage_default,1,0.8,0.8,,8,15.0,420.0,,,Initial state as ratio of the usable layer mass to the total mass.
+sensible_thermal_storage_default,1,0.8,0.8,,8,15.0,420.0,0.0,0.0,Initial state as ratio of the usable layer mass to the total mass.
 battery_storage_default,1,0.5,0.8,0.8,,20.0,100.0,57.4,2700.0,

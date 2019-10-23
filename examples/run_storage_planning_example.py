@@ -127,8 +127,13 @@ controller_storage = cobmo.controller.Controller(
 storage_lifetime = building_storage_types.at[building_storage_type, 'storage_lifetime']
 operation_cost_savings_annual = (operation_cost_baseline - operation_cost_storage) / storage_lifetime
 if 'sensible' in building_storage_type:
-    storage_size_kwh = storage_size_storage * 1000.0 * 4186.0 * 8.0 / 3600.0 / 1000.0  # m^3 (water; 8 K delta) in kWh.
-    # TODO: Make storage temp. difference dynamic based on building model data.
+    storage_size_kwh = (
+            storage_size_storage
+            * 1000.0  # Density in kg/m3 (water).
+            * 4186.0  # Specific heat capacity in J/(kg*K) (water)
+            * building_storage_types.at[building_storage_type, 'storage_sensible_temperature_delta']  # Temp. dif. in K.
+            / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
+    )
 elif 'battery' in building_storage_type:
     storage_size_kwh = storage_size_storage / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
 (
