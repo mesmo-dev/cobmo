@@ -406,7 +406,7 @@ class Building(object):
                 # Battery storage charge.
                 self.building_scenarios['building_name'][
                     (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
-                ] + '_battery_storage_charge_electric_power'
+                ] + '_battery_storage_charge_electric_power',
 
                 # Validation outputs.
                 self.building_surfaces_exterior['surface_name'] + '_irradiation_gain_exterior',
