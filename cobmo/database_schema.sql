@@ -82,15 +82,13 @@ CREATE TABLE IF NOT EXISTS "building_scenarios" (
 CREATE TABLE IF NOT EXISTS "building_storage_types" (
 	"building_storage_type"	TEXT,
 	"storage_size"	REAL,
-	"storage_initial_state_of_charge"	REAL,
 	"storage_round_trip_efficiency"	REAL,
     "storage_battery_depth_of_discharge"  REAL,
 	"storage_sensible_temperature_delta"	REAL,
     "storage_lifetime"  REAL,
     "storage_planning_energy_installation_cost"   REAL,
     "storage_planning_power_installation_cost"  REAL,
-    "storage_planning_fixed_installation_cost"  REAL,
-	"storage_comment"	TEXT
+    "storage_planning_fixed_installation_cost"  REAL
 );
 CREATE TABLE IF NOT EXISTS "building_surface_types" (
 	"surface_type"	TEXT,
@@ -175,6 +173,13 @@ CREATE TABLE IF NOT EXISTS "buildings" (
 	"weather_type"	TEXT,
 	"building_storage_type"	TEXT
 );
+CREATE TABLE IF NOT EXISTS "electricity_price_timeseries" (
+	"scenario_name"  TEXT,
+	"price_type"	TEXT,
+	"time"	TEXT,
+	"price"	REAL,
+	"price_unit"	TEXT
+);
 CREATE TABLE IF NOT EXISTS "weather_timeseries" (
 	"weather_type"	TEXT,
 	"time"	TEXT,
@@ -185,15 +190,7 @@ CREATE TABLE IF NOT EXISTS "weather_timeseries" (
 	"irradiation_east"	REAL,
 	"irradiation_south"	REAL,
 	"irradiation_west"	REAL,
-	"irradiation_north"	REAL,
-	"storage_ambient_air_temperature"	REAL
-);
-CREATE TABLE IF NOT EXISTS "electricity_price_timeseries" (
-	"scenario_name"  TEXT,
-	"price_type"	TEXT,
-	"time"	TEXT,
-	"price"	REAL,
-	"price_unit"	TEXT
+	"irradiation_north"	REAL
 );
 CREATE TABLE IF NOT EXISTS "weather_types" (
 	"weather_type"	TEXT,
