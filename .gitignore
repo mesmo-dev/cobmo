@@ -7,14 +7,18 @@ cobmo\.egg-info/
 
 */__pycache__/
 
+*.pyc
+
 *.sqlite
 
 *.sqlite-journal
-
-*.pyc
 
 *.DS_Store
 
 cobmo/default\.html
 
 docs/_build/
+
+results/*
+
+!results/README\.md
