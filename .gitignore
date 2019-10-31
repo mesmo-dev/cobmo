@@ -15,8 +15,6 @@ cobmo\.egg-info/
 
 *.DS_Store
 
-cobmo/default\.html
-
 docs/_build/
 
 results/*

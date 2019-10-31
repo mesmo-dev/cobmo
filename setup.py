@@ -10,6 +10,7 @@ setup(
     py_modules=find_packages(),
     install_requires=[
         'CoolProp==6.2.1',
+        'hvplot',
         'numpy',
         'pandas',
         'pvlib',
