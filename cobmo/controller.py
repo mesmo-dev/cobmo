@@ -14,7 +14,10 @@ class Controller(object):
             self,
             conn,
             building,
-            problem_type='operation'  # Choices: 'operation', 'storage_planning', 'storage_planning_baseline'
+            problem_type='operation',  # Choices: 'operation', 'storage_planning', 'storage_planning_baseline'
+            output_timeseries_reference=None,
+            forced_flexibility_start_time=None,
+            forced_flexibility_end_time=None
     ):
         """Initialize controller object based on given `building` object.
 
@@ -23,6 +26,9 @@ class Controller(object):
         time_start = time.clock()
         self.building = building
         self.problem_type = problem_type
+        self.output_timeseries_reference = output_timeseries_reference
+        self.forced_flexibility_start_time = forced_flexibility_start_time
+        self.forced_flexibility_end_time = forced_flexibility_end_time
         self.problem = pyo.ConcreteModel()
         self.solver = pyo.SolverFactory(cobmo.config.solver_name)
         self.result = None
@@ -196,6 +202,12 @@ class Controller(object):
                 * self.building.building_scenarios['storage_lifetime'][0]  # Storage lifetime in years.
                 * 14.0  # 14 levels at CREATE Tower. # TODO: Check if considered properly in storage size.
             )
+        elif self.problem_type == 'forced_flexibility':
+            # Reduce weight of operation cost when running demand side flexibility problem.
+            # - Workaround for unrealistic demand when not considering operation cost at all.
+            # - This is a tuning parameter (has impact on demand side flexibility result).
+            # - The value is greater than 1.0, because the operation cost is numerically smaller.
+            self.operation_cost_factor = 1.0e3
         else:
             # No scaling needed if not running planning problem.
             self.operation_cost_factor = 1.0
@@ -233,6 +245,20 @@ class Controller(object):
                     + self.problem.variable_storage_exists[0]  # No unit.
                     * self.building.building_scenarios['storage_planning_fixed_installation_cost'][0]  # In SGD.
                 )
+        elif self.problem_type == 'forced_flexibility':
+            # TODO: Introduce dedicated cost for demand side flexibility indicators.
+            for timestep in self.building.set_timesteps:
+                if (
+                    (timestep >= self.forced_flexibility_start_time)
+                    and (timestep <= self.forced_flexibility_end_time)
+                ):
+                    for output in self.building.set_outputs:
+                        if ('electric_power' in output) and not ('storage_to_zone' in output):
+                            # Forced flexibility here is interpreted as decrease / reduction in demand.
+                            self.investment_cost += (
+                                self.problem.variable_output_timeseries[timestep, output]
+                                - self.output_timeseries_reference.loc[timestep, output]
+                            )
 
         # Define objective.
         self.problem.objective = pyo.Objective(
