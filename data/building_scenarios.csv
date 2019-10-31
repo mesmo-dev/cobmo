@@ -1,2 +1,5 @@
-scenario_name,building_name,parameter_set,linearization_type,demand_controlled_ventilation_type,co2_model_type,humidity_model_type,heating_cooling_session,time_start,time_end,time_step
-scenario_default,create_level_8_4a,parameters_default,linearization_default,demand_controlled_ventilation_default,co2_model_default,humidity_model_default,cooling,2017-01-01 00:00:00.000,2017-01-02 00:00:00.000,00:30:00.000
+scenario_name,building_name,parameter_set,linearization_type,demand_controlled_ventilation_type,co2_model_type,humidity_model_type,heating_cooling_session,price_type,time_start,time_end,time_step
+scenario_default,create_level_8_4a,parameters_default,linearization_default,,,,,wholesale_market,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
+scenario_full,create_level_8_4a,parameters_default,linearization_default,demand_controlled_ventilation_default,co2_model_default,humidity_model_default,cooling,wholesale_market,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
+validation_1zone_no_window_no_mass,validation_1zone_no_window_no_mass,parameters_default,linearization_default,,,,,,2017-01-01T00:00:00,2017-02-01T00:00:00,00:30:00
+validation_1zone_no_window,validation_1zone_no_window,parameters_default,linearization_default,,,,,,2017-01-01T00:00:00,2017-02-01T00:00:00,00:30:00

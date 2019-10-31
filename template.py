@@ -1,29 +1,52 @@
-"""
-Script template
+"""Script template.
 
 - This script is a template
 - It prints "Hello world!"
 """
 
-import os # Replace this with actual imports.
+import os.path  # Import like this, instead of `from os import path` or `from os.path import *`
+import pandas as pd  # Use abbreviations only for very common packages
+
+import cobmo.config  # Imports from current package should appear last.
 
 
-def template_function():
+def template_function(
+    hello_string,
+    world_string="world"
+):
+    """This is where the action happens.
+
+    - Extended description.
     """
-    This is where the action happens if it is more than a few lines in ``main``.
-    """
 
-    print('Hello world!')
+    # Multi-line operations look like this. Always use brackets for multi-line operations!
+    hello_world_string = (
+        hello_string
+        + " "
+        + world_string
+        + "!"
+    )
+
+    something_else_string = "Something else."
+
+    return (
+        hello_world_string,
+        something_else_string
+    )
 
 
 def main():
-    """
-    This is the main entry point to your script.
-    """
+    """This is the main entry point to your script."""
 
-    template_function()
+    (
+        hello_world_string,
+        something_else_string
+    ) = template_function(
+        hello_string="Hello"
+    )
+
+    print(hello_world_string)
 
 
 if __name__ == '__main__':
     main()
-

@@ -235,3 +235,13 @@ create_level_8_14a,zone11,east,surface_exterior_13,exterior_wall_curtain,12.0,4
 create_level_8_14a,zone11,south,surface_exterior_14,exterior_wall_curtain,21.87,7.29
 create_level_8_14a,zone13,south,surface_exterior_15,exterior_wall_curtain,4.704,0.98
 create_level_8_14a,zone13,west,surface_exterior_16,exterior_wall_curtain,9.408,1.96
+validation_1zone_no_window_no_mass,zone_1,south,surface_exterior_1,validation_wall_no_window_no_mass,20,5*4
+validation_1zone_no_window_no_mass,zone_1,east,surface_exterior_2,validation_wall_no_window_no_mass,20,5*4
+validation_1zone_no_window_no_mass,zone_1,north,surface_exterior_3,validation_wall_no_window_no_mass,20,5*4
+validation_1zone_no_window_no_mass,zone_1,west,surface_exterior_4,validation_wall_no_window_no_mass,20,5*4
+validation_1zone_no_window_no_mass,zone_1,horizontal,surface_roof_1,validation_roof_no_mass,25,5*5
+validation_1zone_no_window,zone_1,south,surface_exterior_1,validation_wall_no_window,20,5*4
+validation_1zone_no_window,zone_1,east,surface_exterior_2,validation_wall_no_window,20,5*4
+validation_1zone_no_window,zone_1,north,surface_exterior_3,validation_wall_no_window,20,5*4
+validation_1zone_no_window,zone_1,west,surface_exterior_4,validation_wall_no_window,20,5*4
+validation_1zone_no_window,zone_1,horizontal,surface_roof_1,validation_roof,25,5*5

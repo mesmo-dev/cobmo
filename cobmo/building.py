@@ -1,147 +1,268 @@
-"""
-Building model class definition
-"""
+"""Building model class definition."""
 
+import warnings
 import numpy as np
 import pandas as pd
-from scipy.linalg import expm
-from scipy.interpolate import interp1d
+import scipy.linalg
+import scipy.interpolate
 # Using CoolProp for calculating humid air properties: http://www.coolprop.org/fluid_properties/HumidAir.html
 from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
 
 
 class Building(object):
     """
-    Building scenario object to store all information
+    Building model object.
     """
 
     def __init__(self, conn, scenario_name):
-        # Load building information from database
-        self.building_scenarios = pd.read_sql(
-            """
-            select * from building_scenarios 
-            join buildings using (building_name) 
-            join building_linearization_types using (linearization_type) 
-            where scenario_name='{}'
-            """.format(scenario_name),
-            conn
+        # Obtain scenario name.
+        self.scenario_name = scenario_name
+        """Initialize building model for given `scenario_name`."""
+
+        # Load building model definition.
+        # TODO: Wrap into dedicated function and resample based on timesteps.
+        self.electricity_prices = (
+            pd.read_sql(
+                """
+                SELECT * FROM electricity_price_timeseries 
+                WHERE price_type=(
+                    SELECT price_type from building_scenarios 
+                    WHERE scenario_name='{}'
+                )
+                """.format(scenario_name),
+                conn
+            )
         )
-        self.building_parameters = pd.read_sql(
-            """
-            select * from building_parameter_sets 
-            where parameter_set in ('constants', '{}')
-            """.format(self.building_scenarios['parameter_set'][0]),
-            conn
+        self.electricity_prices.index = pd.to_datetime(self.electricity_prices['time'])
+        self.building_scenarios = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_scenarios 
+                JOIN buildings USING (building_name) 
+                JOIN building_linearization_types USING (linearization_type) 
+                LEFT JOIN building_storage_types USING (building_storage_type) 
+                WHERE scenario_name='{}'
+                """.format(scenario_name),
+                conn
+            )
         )
-        self.building_parameters = pd.Series(
-            self.building_parameters['parameter_value'].values,
-            self.building_parameters['parameter_name'].values
-        )  # Convert to series for shorter indexing
-        self.building_surfaces_adiabatic = pd.read_sql(
-            """
-            select * from building_surfaces_adiabatic 
-            join building_surface_types using (surface_type) 
-            left join building_window_types using (window_type) 
-            join building_zones using (zone_name, building_name) 
-            where building_name='{}'
-            """.format(self.building_scenarios['building_name'][0]),
-            conn
+        self.building_parameters = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_parameter_sets 
+                WHERE parameter_set IN ('constants', '{}')
+                """.format(self.building_scenarios['parameter_set'][0]),
+                conn
+            )
+        )
+        self.building_parameters = (
+            pd.Series(  # Convert to series for shorter indexing.
+                self.building_parameters['parameter_value'].values,
+                self.building_parameters['parameter_name'].values
+            )
+        )
+        self.building_surfaces_adiabatic = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_surfaces_adiabatic 
+                JOIN building_surface_types USING (surface_type) 
+                LEFT JOIN building_window_types USING (window_type) 
+                JOIN building_zones USING (zone_name, building_name) 
+                WHERE building_name='{}'
+                """.format(self.building_scenarios['building_name'][0]),
+                conn
+            )
         )
         self.building_surfaces_adiabatic.index = self.building_surfaces_adiabatic['surface_name']
-        self.building_surfaces_exterior = pd.read_sql(
-            """
-            select * from building_surfaces_exterior 
-            join building_surface_types using (surface_type) 
-            left join building_window_types using (window_type) 
-            join building_zones using (zone_name, building_name) 
-            where building_name='{}'
-            """.format(self.building_scenarios['building_name'][0]),
-            conn
+        self.building_surfaces_exterior = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_surfaces_exterior 
+                JOIN building_surface_types USING (surface_type) 
+                LEFT JOIN building_window_types USING (window_type) 
+                JOIN building_zones USING (zone_name, building_name) 
+                WHERE building_name='{}'
+                """.format(self.building_scenarios['building_name'][0]),
+                conn
+            )
         )
         self.building_surfaces_exterior.index = self.building_surfaces_exterior['surface_name']
-        self.building_surfaces_interior = pd.read_sql(
-            """
-            select * from building_surfaces_interior 
-            join building_surface_types using (surface_type) 
-            left join building_window_types using (window_type) 
-            join building_zones using (zone_name, building_name) 
-            where building_name='{}'
-            """.format(self.building_scenarios['building_name'][0]),
-            conn
+        self.building_surfaces_interior = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_surfaces_interior 
+                JOIN building_surface_types USING (surface_type) 
+                LEFT JOIN building_window_types USING (window_type) 
+                JOIN building_zones USING (zone_name, building_name) 
+                WHERE building_name='{}'
+                """.format(self.building_scenarios['building_name'][0]),
+                conn
+            )
         )
         self.building_surfaces_interior.index = self.building_surfaces_interior['surface_name']
-        self.building_zones = pd.read_sql(
-            """
-            select * from building_zones 
-            join building_zone_types using (zone_type) 
-            join building_internal_gain_types using (internal_gain_type) 
-            left join building_blind_types using (blind_type) 
-            left join building_hvac_generic_types using (hvac_generic_type) 
-            left join building_hvac_ahu_types using (hvac_ahu_type) 
-            left join building_hvac_tu_types using (hvac_tu_type) 
-            where building_name='{}'
-            """.format(self.building_scenarios['building_name'][0]),
-            conn
+        self.building_zones = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_zones 
+                JOIN building_zone_types USING (zone_type) 
+                JOIN building_internal_gain_types USING (internal_gain_type) 
+                LEFT JOIN building_blind_types USING (blind_type) 
+                LEFT JOIN building_hvac_generic_types USING (hvac_generic_type) 
+                LEFT JOIN building_hvac_ahu_types USING (hvac_ahu_type) 
+                LEFT JOIN building_hvac_tu_types USING (hvac_tu_type) 
+                WHERE building_name='{}'
+                """.format(self.building_scenarios['building_name'][0]),
+                conn
+            )
         )
         self.building_zones.index = self.building_zones['zone_name']
 
-        # Add constant row in disturbance vector, if any CO2 model or HVAC or window
+        # Add constant timeseries in disturbance vector, if any CO2 model or HVAC or window.
         self.define_constant = (
-                (self.building_scenarios['co2_model_type'][0] != '')
-                | (self.building_zones['hvac_ahu_type'] != '').any()
-                | (self.building_zones['window_type'] != '').any()
+            pd.notnull(self.building_scenarios['co2_model_type'][0])
+            | pd.notnull(self.building_zones['hvac_ahu_type']).any()
+            | pd.notnull(self.building_zones['window_type']).any()
         )
 
-        # Define index vectors
-        self.index_states = pd.Index(
-            pd.concat([
+        # Define sets.
+
+        # State variables.
+        self.set_states = pd.Index(  # Create an series / array / set of indexes.
+            pd.concat([  # Concatenate pandas series objects along the (default) row axis.
+                # Zone temperature.
                 self.building_zones['zone_name'] + '_temperature',
+
+                # Surface temperature.
                 self.building_surfaces_adiabatic['surface_name'][
                     self.building_surfaces_adiabatic['heat_capacity'] != '0'
-                    ] + '_temperature',
+                ] + '_temperature',
                 self.building_surfaces_exterior['surface_name'][
                     self.building_surfaces_exterior['heat_capacity'] != '0'
-                    ] + '_temperature',
+                ] + '_temperature',
                 self.building_surfaces_interior['surface_name'][
                     self.building_surfaces_interior['heat_capacity'] != '0'
-                    ] + '_temperature',
+                ] + '_temperature',
+
+                # Zone CO2 concentration.
                 self.building_zones['zone_name'][
-                    ((self.building_zones['hvac_ahu_type'] != '') | (self.building_zones['window_type'] != ''))
-                    & (self.building_scenarios['co2_model_type'][0] != '')
-                    ] + '_co2_concentration',
+                    (pd.notnull(self.building_zones['hvac_ahu_type']) | pd.notnull(self.building_zones['window_type']))
+                    & pd.notnull(self.building_scenarios['co2_model_type'][0])
+                ] + '_co2_concentration',
+
+                # Zone absolute humidity.
                 self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
-                    & (self.building_scenarios['humidity_model_type'][0] != '')
-                    ] + '_absolute_humidity'
-            ])
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                    & pd.notnull(self.building_scenarios['humidity_model_type'][0])
+                ] + '_absolute_humidity',
+
+                # Sensible storage state of charge.
+                self.building_scenarios['building_name'][
+                    self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default'
+                ] + '_sensible_thermal_storage_state_of_charge',
+
+                # Battery storage state of charge.
+                self.building_scenarios['building_name'][
+                    self.building_scenarios['building_storage_type'] == 'battery_storage_default'
+                ] + '_battery_storage_state_of_charge'
+            ]),
+            name='state_name'
         )
-        self.index_controls = pd.Index(
+
+        # Control variables.
+        self.set_controls = pd.Index(
             pd.concat([
+                # Generic HVAC system.
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_generic_type'] != ''
-                    ] + '_generic_heat_thermal_power',
+                    pd.notnull(self.building_zones['hvac_generic_type'])
+                ] + '_generic_heat_thermal_power',
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_generic_type'] != ''
-                    ] + '_generic_cool_thermal_power',
+                    pd.notnull(self.building_zones['hvac_generic_type'])
+                ] + '_generic_cool_thermal_power',
+
+                # AHU.
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_ahu_type'] != ''
-                    ] + '_ahu_heat_air_flow',
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                ] + '_ahu_heat_air_flow',
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_ahu_type'] != ''
-                    ] + '_ahu_cool_air_flow',
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                ] + '_ahu_cool_air_flow',
+
+                # TU.
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_tu_type'] != ''
-                    ] + '_tu_heat_air_flow',
+                    pd.notnull(self.building_zones['hvac_tu_type'])
+                ] + '_tu_heat_air_flow',
                 self.building_zones['zone_name'][
-                    self.building_zones['hvac_tu_type'] != ''
-                    ] + '_tu_cool_air_flow',
+                    pd.notnull(self.building_zones['hvac_tu_type'])
+                ] + '_tu_cool_air_flow',
+
+                # Windows.
                 self.building_zones['zone_name'][
-                    (self.building_zones['window_type'] != '')
-                ] + '_window_air_flow'
-            ])
+                    pd.notnull(self.building_zones['window_type'])
+                ] + '_window_air_flow',
+
+                # Sensible storage charge.
+                # TODO: Add consideration for sensible storage heating / cooling.
+                # self.building_scenarios['building_name'][
+                #     self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default'
+                # ] + '_sensible_storage_charge_heat_thermal_power',
+                self.building_scenarios['building_name'][
+                    self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default'
+                ] + '_sensible_storage_charge_cool_thermal_power',
+
+                # Battery storage charge.
+                self.building_scenarios['building_name'][
+                    self.building_scenarios['building_storage_type'] == 'battery_storage_default'
+                ] + '_battery_storage_charge_electric_power',
+
+                # Sensible storage discharge to AHU.
+                # TODO: Add consideration for sensible storage heating / cooling.
+                # self.building_zones['zone_name'][
+                #     pd.notnull(self.building_zones['hvac_ahu_type'])
+                #     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                # ] + '_sensible_storage_to_zone_ahu_heat_thermal_power',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_to_zone_ahu_cool_thermal_power',
+
+                # Sensible storage discharge to TU.
+                # TODO: Add consideration for sensible storage heating / cooling.
+                # self.building_zones['zone_name'][
+                #     pd.notnull(self.building_zones['hvac_tu_type'])
+                #     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                # ] + '_sensible_storage_to_zone_tu_heat_thermal_power',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_tu_type'])
+                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_to_zone_tu_cool_thermal_power',
+
+                # Battery storage discharge to AHU.
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_ahu_heat_electric_power',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_ahu_cool_electric_power',
+
+                # Battery storage discharge to TU.
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_tu_type'])
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_tu_heat_electric_power',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_tu_type'])
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_tu_cool_electric_power',
+            ]),
+            name='control_name'
         )
-        self.index_disturbances = pd.Index(
+
+        # Disturbance variables.
+        self.set_disturbances = pd.Index(
             pd.concat([
+                # Weather.
                 pd.Series([
                     'ambient_air_temperature',
                     'sky_temperature',
@@ -150,90 +271,222 @@ class Building(object):
                     'irradiation_south',
                     'irradiation_west',
                     'irradiation_north'
+                    # 'storage_ambient_air_temperature'  # TODO: Check if storage_ambient_air_temperature still needed.
                 ]),
+
+                # Internal gains.
                 pd.Series(self.building_zones['internal_gain_type'].unique() + '_occupancy'),
                 pd.Series(self.building_zones['internal_gain_type'].unique() + '_appliances'),
-                (pd.Series(['constant']) if self.define_constant else pd.Series([]))
-            ])
-        )
-        self.index_outputs = pd.Index(
-            pd.concat([
-                self.building_zones['zone_name'] + '_temperature',
-                self.building_zones['zone_name'][
-                    ((self.building_zones['hvac_ahu_type'] != '') | (self.building_zones['window_type'] != ''))
-                    & (self.building_scenarios['co2_model_type'][0] != '')
-                    ] + '_co2_concentration',
-                self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
-                    & (self.building_scenarios['humidity_model_type'][0] != '')
-                    ] + '_absolute_humidity',
-                self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
-                    | (self.building_zones['window_type'] != '')
-                    ] + '_total_fresh_air_flow',
-                self.building_zones['zone_name'][
-                    (self.building_zones['hvac_ahu_type'] != '')
-                ] + '_ahu_fresh_air_flow',
-                self.building_zones['zone_name'][
-                    (self.building_zones['window_type'] != '')
-                ] + '_window_fresh_air_flow',
-                self.building_zones['zone_name'][
-                    self.building_zones['hvac_generic_type'] != ''
-                    ] + '_generic_heat_power',
-                self.building_zones['zone_name'][
-                    self.building_zones['hvac_generic_type'] != ''
-                    ] + '_generic_cool_power',
-                self.building_zones['zone_name'][
-                    self.building_zones['hvac_ahu_type'] != ''
-                    ] + '_ahu_heat_electric_power',
-                self.building_zones['zone_name'][
-                    self.building_zones['hvac_ahu_type'] != ''
-                    ] + '_ahu_cool_electric_power',
-                self.building_zones['zone_name'][
-                    self.building_zones['hvac_tu_type'] != ''
-                    ] + '_tu_heat_electric_power',
-                self.building_zones['zone_name'][
-                    self.building_zones['hvac_tu_type'] != ''
-                    ] + '_tu_cool_electric_power'
-            ])
+
+                # Constant (workaround for constant model terms).
+                (pd.Series(['constant']) if self.define_constant else None)
+            ]),
+            name='disturbance_name'
         )
 
-        # Define model matrices
+        # Output variables.
+        self.set_outputs = pd.Index(
+            pd.concat([
+                # Zone temperature.
+                self.building_zones['zone_name'] + '_temperature',
+
+                # Zone CO2 concentration.
+                self.building_zones['zone_name'][
+                    (pd.notnull(self.building_zones['hvac_ahu_type']) | pd.notnull(self.building_zones['window_type']))
+                    & pd.notnull(self.building_scenarios['co2_model_type'][0])
+                ] + '_co2_concentration',
+
+                # Zone absolute humidity.
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                    & pd.notnull(self.building_scenarios['humidity_model_type'][0])
+                ] + '_absolute_humidity',
+
+                # Zone fresh air flow.
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                    | pd.notnull(self.building_zones['window_type'])
+                ] + '_total_fresh_air_flow',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                ] + '_ahu_fresh_air_flow',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['window_type'])
+                ] + '_window_fresh_air_flow',
+
+                # Generic HVAC system electric power.
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_generic_type'])
+                ] + '_generic_heat_electric_power',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_generic_type'])
+                ] + '_generic_cool_electric_power',
+
+                # AHU electric power.
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                ] + '_ahu_heat_electric_power',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                ] + '_ahu_cool_electric_power_cooling_coil',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                ] + '_ahu_cool_electric_power_heating_coil',
+
+                # TU electric power.
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_tu_type'])
+                ] + '_tu_heat_electric_power',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_tu_type'])
+                ] + '_tu_cool_electric_power',
+
+                # Sensible storage state of charge.
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                ] + '_sensible_thermal_storage_state_of_charge',
+
+                # Battery storage state of charge.
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
+                ] + '_battery_storage_state_of_charge',
+
+                # Sensible storage discharge.
+                # TODO: Add consideration for sensible storage heating / cooling.
+                # self.building_zones['zone_name'][
+                #     pd.notnull(self.building_zones['hvac_ahu_type'])
+                #     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                # ] + '_sensible_storage_to_zone_ahu_heat_thermal_power',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_tu_type'])
+                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_to_zone_tu_heat_thermal_power',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_to_zone_ahu_cool_thermal_power',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_tu_type'])
+                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_to_zone_tu_cool_thermal_power',
+
+                # Battery storage discharge.
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_ahu_heat_electric_power',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_tu_type'])
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_tu_heat_electric_power',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_ahu_cool_electric_power',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_tu_type'])
+                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                ] + '_battery_storage_to_zone_tu_cool_electric_power',
+
+                # Sensible storage charge.
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_charge_heat_thermal_power',
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                ] + '_sensible_storage_charge_cool_thermal_power',
+                # TODO: Add consideration for sensible storage heating / cooling.
+                # self.building_scenarios['building_name'][
+                #     self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default'
+                # ] + '_sensible_storage_charge_heat_electric_power',
+                self.building_scenarios['building_name'][
+                    self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default'
+                ] + '_sensible_storage_charge_cool_electric_power',
+
+                # Battery storage charge.
+                self.building_scenarios['building_name'][
+                    (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
+                ] + '_battery_storage_charge_electric_power',
+
+                # Validation outputs.
+                self.building_surfaces_exterior['surface_name'] + '_irradiation_gain_exterior',
+                self.building_surfaces_exterior['surface_name'] + '_convection_interior'
+            ]),
+            name='output_name'
+        )
+
+        # Define initial states.
+        self.set_state_initial = pd.Series(
+            np.concatenate([
+                # Zone temperature.
+                26.0  # in °C
+                * np.ones(sum(self.set_states.str.contains('temperature'))),
+
+                # CO2 concentration.
+                100.0  # in ppm
+                * np.ones(sum(self.set_states.str.contains('co2_concentration'))),
+
+                # Absolute humidity.
+                0.013  # in kg(water)/kg(air)
+                * np.ones(sum(self.set_states.str.contains('absolute_humidity'))),
+
+                # Sensible storage state of charge.
+                0.0
+                * np.ones(sum(self.set_states.str.contains('_sensible_thermal_storage_state_of_charge'))),
+
+                # Battery storage state of charge.
+                0.0
+                * np.ones(sum(self.set_states.str.contains('_battery_storage_state_of_charge')))
+            ]),
+            self.set_states
+        ).to_dict()
+
+        # Define timesteps.
+        self.set_timesteps = pd.Index(
+            pd.date_range(
+                start=pd.to_datetime(self.building_scenarios['time_start'][0]),
+                end=pd.to_datetime(self.building_scenarios['time_end'][0]),
+                freq=pd.to_timedelta(self.building_scenarios['time_step'][0])
+            ),
+            name='time'
+        )
+
+        # Instantiate empty state space model matrices.
         self.state_matrix = pd.DataFrame(
             0.0,
-            self.index_states,
-            self.index_states
+            self.set_states,
+            self.set_states
         )
         self.control_matrix = pd.DataFrame(
             0.0,
-            self.index_states,
-            self.index_controls
+            self.set_states,
+            self.set_controls
         )
         self.disturbance_matrix = pd.DataFrame(
             0.0,
-            self.index_states,
-            self.index_disturbances
+            self.set_states,
+            self.set_disturbances
         )
         self.state_output_matrix = pd.DataFrame(
             0.0,
-            self.index_outputs,
-            self.index_states
+            self.set_outputs,
+            self.set_states
         )
         self.control_output_matrix = pd.DataFrame(
             0.0,
-            self.index_outputs,
-            self.index_controls
+            self.set_outputs,
+            self.set_controls
         )
         self.disturbance_output_matrix = pd.DataFrame(
             0.0,
-            self.index_outputs,
-            self.index_disturbances
+            self.set_outputs,
+            self.set_disturbances
         )
 
-        # Define heat capacity vector
+        # Define heat capacity vector.
         self.heat_capacity_vector = pd.Series(
             0.0,
-            self.index_states
+            self.set_states
         )
         for index, row in self.building_zones.iterrows():
             self.heat_capacity_vector.at[index] = (
@@ -257,25 +510,24 @@ class Building(object):
                     * self.parse_parameter(row['heat_capacity'])
             )
 
-        # Definition of parameters / coefficients
+        # Definition of parameters / coefficients.
         self.define_heat_transfer_coefficients()
 
-        # Define heat fluxes and co2 transfers
-        self.define_heat_transfer_adjacent_surfaces_zones()
-        self.define_heat_transfer_ambient_air()
+        # Define heat, CO2 and humidity transfers.
+        self.define_heat_transfer_surfaces_exterior()
+        self.define_heat_transfer_surfaces_interior()
+        self.define_heat_transfer_surfaces_adiabatic()
         self.define_heat_transfer_infiltration()
         self.define_heat_transfer_internal_gains()
         self.define_heat_transfer_hvac_generic()
         self.define_heat_transfer_hvac_ahu()
         self.define_heat_transfer_hvac_tu()
-        self.define_heat_transfer_irradiation()
-        self.define_heat_transfer_emission_environment()
-        self.define_heat_transfer_emission_sky()
         self.define_co2_transfer_hvac_ahu()
         self.define_heat_transfer_window_air_flow()
         self.define_humidity_transfer_hvac_ahu()
+        self.define_storage_state_of_charge()
 
-        # Define outputs
+        # Define outputs.
         self.define_output_zone_temperature()
         self.define_output_zone_co2_concentration()
         self.define_output_zone_humidity()
@@ -285,24 +537,19 @@ class Building(object):
         self.define_output_fresh_air_flow()
         self.define_output_window_fresh_air_flow()
         self.define_output_ahu_fresh_air_flow()
+        self.define_output_storage_state_of_charge()
+        self.define_output_storage_charge()
+        self.define_output_storage_discharge()
 
-        # Define timeseries variables
-        self.time_vector = pd.date_range(
-            start=pd.to_datetime(self.building_scenarios['time_start'][0]),
-            end=pd.to_datetime(self.building_scenarios['time_end'][0]),
-            freq=pd.to_timedelta(self.building_scenarios['time_step'][0])
-        )
-        self.index_time = pd.Index(
-            self.time_vector
-        )
+        # Define validation outputs.
+        self.define_output_surfaces_exterior_irradiation_gain_exterior()
+        self.define_output_surfaces_exterior_convection_interior()
 
-        # Load disturbance timeseries
+        # Define timeseries.
         self.load_disturbance_timeseries(conn)
-
-        # Define output constraint timeseries
         self.define_output_constraint_timeseries(conn)
 
-        # Convert to time discrete model
+        # Convert to time discrete model.
         self.discretize_model()
 
     def parse_parameter(self, parameter):
@@ -317,547 +564,1338 @@ class Building(object):
 
     def define_heat_transfer_coefficients(self):
         # Create empty rows in dataframe
-        self.building_surfaces_exterior['heat_transfer_coefficient_surface_to_sky'] = ''
-        self.building_surfaces_exterior['heat_transfer_coefficient_surface_to_ground'] = ''
+        self.building_surfaces_exterior['heat_transfer_coefficient_surface_sky'] = ''
+        self.building_surfaces_exterior['heat_transfer_coefficient_surface_ground'] = ''
+        self.building_surfaces_exterior['heat_transfer_coefficient_window_sky'] = ''
+        self.building_surfaces_exterior['heat_transfer_coefficient_window_ground'] = ''
 
         # Calculate heat transfer coefficients
-        for index_exterior, row_exterior in self.building_surfaces_exterior.iterrows():
-            row_exterior['heat_transfer_coefficient_surface_to_sky'] = (
-                    4
+        for surface_name, surface_data in self.building_surfaces_exterior.iterrows():
+            surface_data['heat_transfer_coefficient_surface_sky'] = (
+                4.0
+                * self.parse_parameter('stefan_boltzmann_constant')
+                * self.parse_parameter(surface_data['emissivity'])
+                * self.parse_parameter(surface_data['sky_view_factor'])
+                * (
+                        self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
+                        / 2.0
+                        + self.parse_parameter(self.building_scenarios['linearization_sky_temperature'])
+                        / 2.0
+                        + 273.15
+                ) ** 3
+            )
+            surface_data['heat_transfer_coefficient_surface_ground'] = (
+                4.0
+                * self.parse_parameter('stefan_boltzmann_constant')
+                * self.parse_parameter(surface_data['emissivity'])
+                * (1.0 - self.parse_parameter(surface_data['sky_view_factor']))
+                * (
+                        self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
+                        / 2.0
+                        + self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
+                        / 2.0
+                        + 273.15
+                ) ** 3
+            )
+            surface_data['heat_transfer_coefficient_window_sky'] = (
+                    4.0
                     * self.parse_parameter('stefan_boltzmann_constant')
-                    * self.parse_parameter(row_exterior['emissivity'])
-                    * self.parse_parameter(row_exterior['sky_view_factor'])
+                    * self.parse_parameter(surface_data['emissivity_window'])
+                    * self.parse_parameter(surface_data['sky_view_factor'])
                     * (
                             self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
-                            / 2
+                            / 2.0
                             + self.parse_parameter(self.building_scenarios['linearization_sky_temperature'])
-                            / 2
+                            / 2.0
                             + 273.15
                     ) ** 3
             )
-            row_exterior['heat_transfer_coefficient_surface_to_ground'] = (
-                    4
+            surface_data['heat_transfer_coefficient_window_ground'] = (
+                    4.0
                     * self.parse_parameter('stefan_boltzmann_constant')
-                    * self.parse_parameter(row_exterior['emissivity'])
-                    * (1 - self.parse_parameter(row_exterior['sky_view_factor']))
+                    * self.parse_parameter(surface_data['emissivity_window'])
+                    * (1.0 - self.parse_parameter(surface_data['sky_view_factor']))
                     * (
                             self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
-                            / 2
+                            / 2.0
                             + self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
-                            / 2
+                            / 2.0
                             + 273.15
                     ) ** 3
             )
 
-    def define_heat_transfer_adjacent_surfaces_zones(self):
-        # Surfaces and zones
-        for building_surfaces in [
-            self.building_surfaces_adiabatic,
-            self.building_surfaces_exterior,
-            self.building_surfaces_interior
-        ]:
-            for index, row in building_surfaces.iterrows():
-                if self.parse_parameter(row['heat_capacity']) != 0:
-                    self.state_matrix.at[
-                        index + '_temperature',
-                        row['zone_name'] + '_temperature'
-                    ] = (
-                            self.state_matrix.at[index + '_temperature', row['zone_name'] + '_temperature']
-                            + 1
-                            / (
-                                    1
-                                    / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                    + self.parse_parameter(row['thermal_resistance_surface'])
-                            )
-                            * self.parse_parameter(row['surface_area'])
-                            * (1 - self.parse_parameter(row['window_wall_ratio']))
-                            / self.heat_capacity_vector[index]
-                    )
-                    self.state_matrix.at[
-                        index + '_temperature',
-                        index + '_temperature'
-                    ] = (
-                            self.state_matrix.at[index + '_temperature', index + '_temperature']
-                            - 1
-                            / (
-                                    1
-                                    / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                    + self.parse_parameter(row['thermal_resistance_surface'])
-                            )
-                            * self.parse_parameter(row['surface_area'])
-                            * (1 - self.parse_parameter(row['window_wall_ratio']))
-                            / self.heat_capacity_vector[index]
-                    )
-                    self.state_matrix.at[
-                        row['zone_name'] + '_temperature',
-                        index + '_temperature'
-                    ] = (
-                            self.state_matrix.at[
-                                row['zone_name'] + '_temperature',
-                                index + '_temperature'
+    def define_heat_transfer_surfaces_exterior(self):
+        """Thermal model: Exterior surfaces"""
+        # TODO: Rename irradiation_gain_coefficient
+        # TODO: Rename thermal_resistance_surface
+        # TODO: Exterior window transmission factor
+        for surface_name, surface_data in self.building_surfaces_exterior.iterrows():
+            # Total zone surface area for later calculating share of interior (indirect) irradiation
+            zone_surface_area = sum(
+                self.parse_parameter(zone_surface_data['surface_area'])
+                * (1 - self.parse_parameter(zone_surface_data['window_wall_ratio']))
+                for zone_surface_name, zone_surface_data in pd.concat(
+                    [
+                        self.building_surfaces_exterior[:][
+                            self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
+                            ],
+                        self.building_surfaces_interior[:][
+                            self.building_surfaces_interior['zone_name'] == surface_data['zone_name']
+                            ],
+                        self.building_surfaces_interior[:][
+                            self.building_surfaces_interior['zone_adjacent_name'] == surface_data['zone_name']
+                            ],
+                        self.building_surfaces_adiabatic[:][
+                            self.building_surfaces_adiabatic['zone_name'] == surface_data['zone_name']
                             ]
-                            + 1
-                            / (
-                                    1
-                                    / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                    + self.parse_parameter(row['thermal_resistance_surface'])
-                            )
-                            * self.parse_parameter(row['surface_area'])
-                            * (1 - self.parse_parameter(row['window_wall_ratio']))
-                            / self.heat_capacity_vector[row['zone_name']]
-                    )
-                    self.state_matrix.at[
-                        row['zone_name'] + '_temperature',
-                        row['zone_name'] + '_temperature'
-                    ] = (
-                            self.state_matrix.at[
-                                row['zone_name'] + '_temperature',
-                                row['zone_name'] + '_temperature'
-                            ]
-                            - 1
-                            / (
-                                    1
-                                    / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                    + self.parse_parameter(row['thermal_resistance_surface'])
-                            )
-                            * self.parse_parameter(row['surface_area'])
-                            * (1 - self.parse_parameter(row['window_wall_ratio']))
-                            / self.heat_capacity_vector[row['zone_name']]
-                    )
+                    ],
+                    sort=False
+                ).iterrows()  # For all surfaces adjacent to the zone
+            )
 
-        # Interior surfaces and adjacent (second) zones
-        for index, row in self.building_surfaces_interior.iterrows():
-            if self.parse_parameter(row['heat_capacity']) != 0:
-                self.state_matrix.at[
-                    index + '_temperature',
-                    row['zone_adjacent_name'] + '_temperature'
+            if self.parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
+                # Conductive heat transfer from the exterior towards the core of surface
+                self.disturbance_matrix.at[
+                    surface_name + '_temperature',
+                    'irradiation_' + surface_data['direction_name']
                 ] = (
-                        self.state_matrix.at[
-                            index + '_temperature',
-                            row['zone_adjacent_name'] + '_temperature'
+                        self.disturbance_matrix.at[
+                            surface_name + '_temperature',
+                            'irradiation_' + surface_data['direction_name']
                         ]
-                        + 1
-                        / (
-                                1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                + self.parse_parameter(row['thermal_resistance_surface'])
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * (1 - self.parse_parameter(row['window_wall_ratio']))
-                        / self.heat_capacity_vector[index]
-                )
-                self.state_matrix.at[
-                    index + '_temperature',
-                    index + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            index + '_temperature',
-                            index + '_temperature'
-                        ]
-                        - 1
-                        / (
-                                1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                + self.parse_parameter(row['thermal_resistance_surface'])
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * (1 - self.parse_parameter(row['window_wall_ratio']))
-                        / self.heat_capacity_vector[index]
-                )
-                self.state_matrix.at[
-                    row['zone_adjacent_name'] + '_temperature',
-                    index + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row['zone_adjacent_name'] + '_temperature',
-                            index + '_temperature'
-                        ]
-                        + 1
-                        / (
-                                1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                + self.parse_parameter(row['thermal_resistance_surface'])
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * (1 - self.parse_parameter(row['window_wall_ratio']))
-                        / self.heat_capacity_vector[row['zone_adjacent_name']]
-                )
-                self.state_matrix.at[
-                    row['zone_adjacent_name'] + '_temperature',
-                    row['zone_adjacent_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row['zone_adjacent_name'] + '_temperature',
-                            row['zone_adjacent_name'] + '_temperature'
-                        ]
-                        - 1
-                        / (
-                                1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                + self.parse_parameter(row['thermal_resistance_surface'])
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * (1 - self.parse_parameter(row['window_wall_ratio']))
-                        / self.heat_capacity_vector[row['zone_adjacent_name']]
-                )
-            else:
-                self.state_matrix.at[
-                    row['zone_name'] + '_temperature',
-                    row['zone_adjacent_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row['zone_name'] + '_temperature',
-                            row['zone_adjacent_name'] + '_temperature'
-                        ]
-                        + 1
-                        / (
-                                2
-                                * (
-                                        1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                        + self.parse_parameter(row['thermal_resistance_surface'])
+                ) + (
+                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
                                 )
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * (1 - self.parse_parameter(row['window_wall_ratio']))
-                        / self.heat_capacity_vector[row['zone_name']]
-                )
-                self.state_matrix.at[
-                    row['zone_name'] + '_temperature',
-                    row['zone_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row['zone_name'] + '_temperature',
-                            row['zone_name'] + '_temperature'
-                        ]
-                        - 1
-                        / (
-                                2
-                                * (
-                                        1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                        + self.parse_parameter(row['thermal_resistance_surface'])
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
                                 )
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * (1 - self.parse_parameter(row['window_wall_ratio']))
-                        / self.heat_capacity_vector[row['zone_name']]
-                )
-                self.state_matrix.at[
-                    row['zone_adjacent_name'] + '_temperature',
-                    row['zone_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row['zone_adjacent_name'] + '_temperature',
-                            row['zone_name'] + '_temperature'
-                        ]
-                        + 1
-                        / (
-                                2
-                                * (
-                                        1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                        + self.parse_parameter(row['thermal_resistance_surface'])
-                                )
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * (1 - self.parse_parameter(row['window_wall_ratio']))
-                        / self.heat_capacity_vector[row['zone_adjacent_name']]
-                )
-                self.state_matrix.at[
-                    row['zone_adjacent_name'] + '_temperature',
-                    row['zone_adjacent_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row['zone_adjacent_name'] + '_temperature',
-                            row['zone_adjacent_name'] + '_temperature'
-                        ]
-                        - 1
-                        / (
-                                2
-                                * (
-                                        1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                        + self.parse_parameter(row['thermal_resistance_surface'])
-                                )
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * (1 - self.parse_parameter(row['window_wall_ratio']))
-                        / self.heat_capacity_vector[row['zone_adjacent_name']]
-                )
-
-        # Zones and zones (through interior windows)
-        for index, row in self.building_surfaces_interior.iterrows():
-            if self.parse_parameter(row['window_wall_ratio']) != 0:
-                self.state_matrix.at[
-                    row['zone_adjacent_name'] + '_temperature',
-                    row['zone_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row['zone_adjacent_name'] + '_temperature',
-                            row['zone_name'] + '_temperature'
-                        ]
-                        + 1
-                        / (
-                                2
-                                * (
-                                        1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                        + self.parse_parameter(row['thermal_resistance_window'])
-                                )
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * self.parse_parameter(row['window_wall_ratio'])
-                        / self.heat_capacity_vector[row['zone_adjacent_name']]
-                )
-                self.state_matrix.at[
-                    row['zone_adjacent_name'] + '_temperature',
-                    row['zone_adjacent_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row['zone_adjacent_name'] + '_temperature',
-                            row['zone_adjacent_name'] + '_temperature'
-                        ]
-                        - 1
-                        / (
-                                2
-                                * (
-                                        1 / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                        + self.parse_parameter(row['thermal_resistance_window'])
-                                )
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * self.parse_parameter(row['window_wall_ratio'])
-                        / self.heat_capacity_vector[row['zone_adjacent_name']]
-                )
-                self.state_matrix.at[
-                    row['zone_name'] + '_temperature',
-                    row['zone_adjacent_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row['zone_name'] + '_temperature',
-                            row['zone_adjacent_name'] + '_temperature'
-                        ]
-                        + 1
-                        / (
-                                2
-                                * (
-                                        1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                        + self.parse_parameter(row['thermal_resistance_window'])
-                                )
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * self.parse_parameter(row['window_wall_ratio'])
-                        / self.heat_capacity_vector[row['zone_name']]
-                )
-                self.state_matrix.at[
-                    row['zone_name'] + '_temperature',
-                    row['zone_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row['zone_name'] + '_temperature',
-                            row['zone_name'] + '_temperature'
-                        ]
-                        - 1
-                        / (
-                                2
-                                * (
-                                        1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                        + self.parse_parameter(row['thermal_resistance_window'])
-                                )
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * self.parse_parameter(row['window_wall_ratio'])
-                        / self.heat_capacity_vector[row['zone_name']]
-                )
-
-    def define_heat_transfer_ambient_air(self):
-        # Ambient air and surfaces
-        for index, row in self.building_surfaces_exterior.iterrows():
-            if self.parse_parameter(row['heat_capacity']) != 0:
-                self.state_matrix.at[
-                    index + '_temperature',
-                    index + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            index + '_temperature',
-                            index + '_temperature'
-                        ]
-                        - 1
-                        / (
-                                1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                + self.parse_parameter(row['thermal_resistance_surface'])
-                                * (
-                                        1
-                                        + (
-                                                self.parse_parameter(row['heat_transfer_coefficient_surface_to_sky'])
-                                                + self.parse_parameter(
-                                                        row['heat_transfer_coefficient_surface_to_ground']
-                                                )
-                                        )
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_ambient'))
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * (1 - self.parse_parameter(row['window_wall_ratio']))
-                        / self.heat_capacity_vector[index]
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_name]
                 )
                 self.disturbance_matrix.at[
-                    index + '_temperature',
+                    surface_name + '_temperature',
                     'ambient_air_temperature'
                 ] = (
                         self.disturbance_matrix.at[
-                            index + '_temperature',
+                            surface_name + '_temperature',
                             'ambient_air_temperature'
                         ]
-                        + 1
-                        / (
-                                1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                + self.parse_parameter(row['thermal_resistance_surface'])
-                                * (
-                                        1
-                                        + (
-                                                self.parse_parameter(row['heat_transfer_coefficient_surface_to_sky'])
-                                                + self.parse_parameter(
-                                                        row['heat_transfer_coefficient_surface_to_ground']
-                                                )
-                                        )
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_ambient'))
+                ) + (
+                        (
+                                self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
                         )
-                        * self.parse_parameter(row['surface_area'])
-                        * (1 - self.parse_parameter(row['window_wall_ratio']))
-                        / self.heat_capacity_vector[index]
-                )
-            else:
-                self.state_matrix.at[
-                    row['zone_name'] + '_temperature',
-                    row['zone_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[row['zone_name'] + '_temperature', row['zone_name'] + '_temperature']
-                        - 1
-                        / (
-                                2
-                                * self.parse_parameter(row['thermal_resistance_surface'])
-                                + 1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                + 1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
                                 + (
-                                        2
-                                        * self.parse_parameter(row['thermal_resistance_surface'])
-                                        + 1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
                                 )
-                                * (
-                                        self.parse_parameter(row['heat_transfer_coefficient_surface_to_sky'])
-                                        + self.parse_parameter(row['heat_transfer_coefficient_surface_to_ground'])
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
                                 )
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * (1 - self.parse_parameter(row['window_wall_ratio']))
-                        / self.heat_capacity_vector[row['zone_name']]
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_name]
                 )
                 self.disturbance_matrix.at[
-                    row['zone_name'] + '_temperature',
-                    'ambient_air_temperature'
+                    surface_name + '_temperature',
+                    'sky_temperature'
                 ] = (
-                        self.disturbance_matrix.at[row['zone_name'] + '_temperature', 'ambient_air_temperature']
-                        + 1
-                        / (
-                                2
-                                * self.parse_parameter(row['thermal_resistance_surface'])
-                                + 1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                + 1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
+                        self.disturbance_matrix.at[
+                            surface_name + '_temperature',
+                            'sky_temperature'
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
                                 + (
-                                        2
-                                        * self.parse_parameter(row['thermal_resistance_surface'])
-                                        + 1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
                                 )
-                                * (
-                                        self.parse_parameter(row['heat_transfer_coefficient_surface_to_sky'])
-                                        + self.parse_parameter(row['heat_transfer_coefficient_surface_to_ground'])
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
                                 )
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * (1 - self.parse_parameter(row['window_wall_ratio']))
-                        / self.heat_capacity_vector[row['zone_name']]
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_name]
                 )
-
-        # Ambient air and zones (through windows)
-        for index, row in self.building_surfaces_exterior.iterrows():
-            if self.parse_parameter(row['window_wall_ratio']) != 0:
                 self.state_matrix.at[
-                    row['zone_name'] + '_temperature',
-                    row['zone_name'] + '_temperature'
+                    surface_name + '_temperature',
+                    surface_name + '_temperature'
                 ] = (
                         self.state_matrix.at[
-                            row['zone_name'] + '_temperature',
-                            row['zone_name'] + '_temperature'
+                            surface_name + '_temperature',
+                            surface_name + '_temperature'
                         ]
-                        - 1
-                        / (
-                                2
-                                * self.parse_parameter(row['thermal_resistance_window'])
-                                + 1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                + 1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
+                ) + (
+                        - 1.0
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                + 1.0
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                )
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_name]
+                )
+
+                # Conductive heat transfer from the interior towards the core of surface
+                for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                    self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
+                ].iterrows():
+                    # Interior irradiation through all exterior surfaces adjacent to the zone
+                    self.disturbance_matrix.at[
+                        surface_name + '_temperature',
+                        'irradiation_' + zone_exterior_surface_data['direction_name']
+                    ] = (
+                            self.disturbance_matrix.at[
+                                surface_name + '_temperature',
+                                'irradiation_' + zone_exterior_surface_data['direction_name']
+                            ]
+                    ) + (
+                            (
+                                    self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                    * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    / zone_surface_area
+                            )  # Considers the share at the respective surface
+                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['surface_area'])
+                            * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                            * (
+                                    1.0
+                                    + (
+                                            self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    )
+                                    / (
+                                            2.0
+                                            * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    )
+                            ) ** (- 1)
+                            / self.heat_capacity_vector[surface_name]
+                    )
+                self.state_matrix.at[
+                    surface_name + '_temperature',
+                    surface_name + '_temperature'
+                ] = (
+                        self.state_matrix.at[
+                            surface_name + '_temperature',
+                            surface_name + '_temperature'
+                        ]
+                ) + (
+                        - 1.0
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                )
+                                + 1.0
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                )
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_name]
+                )
+                self.state_matrix.at[
+                    surface_name + '_temperature',
+                    surface_data['zone_name'] + '_temperature'
+                ] = (
+                        self.state_matrix.at[
+                            surface_name + '_temperature',
+                            surface_data['zone_name'] + '_temperature'
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                )
+                                + 1.0
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                )
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_name]
+                )
+
+                # Convective heat transfer from the surface towards zone
+                for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                    self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
+                ].iterrows():
+                    # Interior irradiation through all exterior surfaces adjacent to the zone
+                    self.disturbance_matrix.at[
+                        surface_data['zone_name'] + '_temperature',
+                        'irradiation_' + zone_exterior_surface_data['direction_name']
+                    ] = (
+                            self.disturbance_matrix.at[
+                                surface_data['zone_name'] + '_temperature',
+                                'irradiation_' + zone_exterior_surface_data['direction_name']
+                            ]
+                    ) + (
+                            (
+                                    self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                    * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    / zone_surface_area
+                            )  # Considers the share at the respective surface
+                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['surface_area'])
+                            * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                            * (1.0 - (
+                                1.0
                                 + (
-                                        2
-                                        * self.parse_parameter(row['thermal_resistance_window'])
-                                        + 1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
+                                        self.parse_parameter('heat_transfer_coefficient_interior_convection')
                                 )
-                                * (
-                                        self.parse_parameter(row['heat_transfer_coefficient_surface_to_sky'])
-                                        + self.parse_parameter(row['heat_transfer_coefficient_surface_to_ground'])
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
                                 )
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                        )
-                        * self.parse_parameter(row['surface_area'])
-                        * self.parse_parameter(row['window_wall_ratio'])
-                        / self.heat_capacity_vector[row['zone_name']]
+                            ) ** (- 1))
+                            / self.heat_capacity_vector[surface_data['zone_name']]
+                    )
+                self.state_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    surface_name + '_temperature'
+                ] = (
+                        self.state_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            surface_name + '_temperature'
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                )
+                                + 1.0
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                )
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+                self.state_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    surface_data['zone_name'] + '_temperature'
+                ] = (
+                        self.state_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            surface_data['zone_name'] + '_temperature'
+                        ]
+                ) + (
+                        - 1.0
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                )
+                                + 1.0
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                )
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+            else:  # Surfaces with neglected heat capacity
+                # Complete convective heat transfer from surface to zone
+                self.disturbance_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    'irradiation_' + surface_data['direction_name']
+                ] = (
+                        self.disturbance_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            'irradiation_' + surface_data['direction_name']
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
                 )
                 self.disturbance_matrix.at[
-                    row['zone_name'] + '_temperature',
+                    surface_data['zone_name'] + '_temperature',
                     'ambient_air_temperature'
                 ] = (
                         self.disturbance_matrix.at[
-                            row['zone_name'] + '_temperature',
+                            surface_data['zone_name'] + '_temperature',
                             'ambient_air_temperature'
                         ]
-                        + 1
-                        / (
-                                2
-                                * self.parse_parameter(row['thermal_resistance_window'])
-                                + 1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                + 1
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                + (
-                                        2
-                                        * self.parse_parameter(row['thermal_resistance_window'])
-                                        +
-                                        1 / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                )
-                                * (
-                                        self.parse_parameter(row['heat_transfer_coefficient_surface_to_sky'])
-                                        + self.parse_parameter(row['heat_transfer_coefficient_surface_to_ground'])
-                                )
-                                / self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
+                ) + (
+                        (
+                                self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
                         )
-                        * self.parse_parameter(row['surface_area'])
-                        * self.parse_parameter(row['window_wall_ratio'])
-                        / self.heat_capacity_vector[row['zone_name']]
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
                 )
+                self.disturbance_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    'sky_temperature'
+                ] = (
+                        self.disturbance_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            'sky_temperature'
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+                self.state_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    surface_data['zone_name'] + '_temperature'
+                ] = (
+                        self.state_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            surface_data['zone_name'] + '_temperature'
+                        ]
+                ) + (
+                        - 1.0
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                + 1.0
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + 1.0
+                                / (self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+                for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                    self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
+                ].iterrows():
+                    # Interior irradiation through all exterior surfaces adjacent to the zone
+                    self.disturbance_matrix.at[
+                        surface_data['zone_name'] + '_temperature',
+                        'irradiation_' + zone_exterior_surface_data['direction_name']
+                    ] = (
+                            self.disturbance_matrix.at[
+                                surface_data['zone_name'] + '_temperature',
+                                'irradiation_' + zone_exterior_surface_data['direction_name']
+                            ]
+                    ) + (
+                            (
+                                    self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                    * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    / zone_surface_area
+                            )  # Considers the share at the respective surface
+                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['surface_area'])
+                            * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                            * (1.0 - (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                            ) ** (- 1))
+                            / self.heat_capacity_vector[surface_data['zone_name']]
+                    )
+
+            # Windows for each exterior surface - Modelled as surfaces with neglected heat capacity
+            if self.parse_parameter(surface_data['window_wall_ratio']) != 0.0:
+                # Complete convective heat transfer from surface to zone
+                self.disturbance_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    'irradiation_' + surface_data['direction_name']
+                ] = (
+                        self.disturbance_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            'irradiation_' + surface_data['direction_name']
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * self.parse_parameter(surface_data['window_wall_ratio'])
+                        * (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+                self.disturbance_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    'ambient_air_temperature'
+                ] = (
+                        self.disturbance_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            'ambient_air_temperature'
+                        ]
+                ) + (
+                        (
+                                self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                        )
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * self.parse_parameter(surface_data['window_wall_ratio'])
+                        * (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+                self.disturbance_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    'sky_temperature'
+                ] = (
+                        self.disturbance_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            'sky_temperature'
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * self.parse_parameter(surface_data['window_wall_ratio'])
+                        * (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+                self.state_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    surface_data['zone_name'] + '_temperature'
+                ] = (
+                        self.state_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            surface_data['zone_name'] + '_temperature'
+                        ]
+                ) + (
+                        - 1.0
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * self.parse_parameter(surface_data['window_wall_ratio'])
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                + 1.0
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + 1.0
+                                / (self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+                for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                    self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
+                ].iterrows():
+                    # Interior irradiation through all exterior surfaces adjacent to the zone
+                    self.disturbance_matrix.at[
+                        surface_data['zone_name'] + '_temperature',
+                        'irradiation_' + zone_exterior_surface_data['direction_name']
+                    ] = (
+                            self.disturbance_matrix.at[
+                                surface_data['zone_name'] + '_temperature',
+                                'irradiation_' + zone_exterior_surface_data['direction_name']
+                            ]
+                    ) + (
+                            (
+                                    self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                    * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    / zone_surface_area
+                            )  # Considers the share at the respective surface
+                            * self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                            * self.parse_parameter(surface_data['surface_area'])
+                            * self.parse_parameter(surface_data['window_wall_ratio'])
+                            * (1.0 - (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                            ) ** (- 1))
+                            / self.heat_capacity_vector[surface_data['zone_name']]
+                    )
+
+    def define_heat_transfer_surfaces_interior(self):
+        """Thermal model: Interior surfaces"""
+        for surface_name, surface_data in self.building_surfaces_interior.iterrows():
+            for zone_name in [surface_data['zone_name'], surface_data['zone_adjacent_name']]:
+                # Total zone surface area for later calculating share of interior (indirect) irradiation
+                zone_surface_area = sum(
+                    self.parse_parameter(zone_surface_data['surface_area'])
+                    * (1 - self.parse_parameter(zone_surface_data['window_wall_ratio']))
+                    for zone_surface_name, zone_surface_data in pd.concat(
+                        [
+                            self.building_surfaces_exterior[:][
+                                self.building_surfaces_exterior['zone_name'] == zone_name
+                                ],
+                            self.building_surfaces_interior[:][
+                                self.building_surfaces_interior['zone_name'] == zone_name
+                                ],
+                            self.building_surfaces_interior[:][
+                                self.building_surfaces_interior['zone_adjacent_name'] == zone_name
+                                ],
+                            self.building_surfaces_adiabatic[:][
+                                self.building_surfaces_adiabatic['zone_name'] == zone_name
+                                ]
+                        ],
+                        sort=False
+                    ).iterrows()  # For all surfaces adjacent to the zone
+                )
+
+                if self.parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
+                    # Conductive heat transfer from the interior towards the core of surface
+                    for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                        self.building_surfaces_exterior['zone_name'] == zone_name
+                    ].iterrows():
+                        # Interior irradiation through all exterior surfaces adjacent to the zone
+                        self.disturbance_matrix.at[
+                            surface_name + '_temperature',
+                            'irradiation_' + zone_exterior_surface_data['direction_name']
+                        ] = (
+                                self.disturbance_matrix.at[
+                                    surface_name + '_temperature',
+                                    'irradiation_' + zone_exterior_surface_data['direction_name']
+                                ]
+                        ) + (
+                                (
+                                        self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                        * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                        / zone_surface_area
+                                )  # Considers the share at the respective surface
+                                * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                                * self.parse_parameter(surface_data['surface_area'])
+                                * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                                * (
+                                        1.0
+                                        + self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                        / (
+                                                2.0
+                                                * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                        )
+                                ) ** (- 1)
+                                / self.heat_capacity_vector[surface_name]
+                        )
+                    self.state_matrix.at[
+                        surface_name + '_temperature',
+                        surface_name + '_temperature'
+                    ] = (
+                            self.state_matrix.at[
+                                surface_name + '_temperature',
+                                surface_name + '_temperature'
+                            ]
+                    ) + (
+                            - 1.0
+                            * self.parse_parameter(surface_data['surface_area'])
+                            * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                            * (
+                                    1.0
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + 1.0
+                                    / (
+                                            2.0
+                                            * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    )
+                            ) ** (- 1)
+                            / self.heat_capacity_vector[surface_name]
+                    )
+                    self.state_matrix.at[
+                        surface_name + '_temperature',
+                        zone_name + '_temperature'
+                    ] = (
+                            self.state_matrix.at[
+                                surface_name + '_temperature',
+                                zone_name + '_temperature'
+                            ]
+                    ) + (
+                            self.parse_parameter(surface_data['surface_area'])
+                            * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                            * (
+                                    1.0
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + 1.0
+                                    / (
+                                            2.0
+                                            * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    )
+                            ) ** (- 1)
+                            / self.heat_capacity_vector[surface_name]
+                    )
+
+                    # Convective heat transfer from the surface towards zone
+                    for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                        self.building_surfaces_exterior['zone_name'] == zone_name
+                    ].iterrows():
+                        # Interior irradiation through all exterior surfaces adjacent to the zone
+                        self.disturbance_matrix.at[
+                            zone_name + '_temperature',
+                            'irradiation_' + zone_exterior_surface_data['direction_name']
+                        ] = (
+                                self.disturbance_matrix.at[
+                                    zone_name + '_temperature',
+                                    'irradiation_' + zone_exterior_surface_data['direction_name']
+                                ]
+                        ) + (
+                                (
+                                        self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                        * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                        / zone_surface_area
+                                )  # Considers the share at the respective surface
+                                * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                                * self.parse_parameter(surface_data['surface_area'])
+                                * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                                * (1.0 - (
+                                    1.0
+                                    + self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    / (
+                                            2.0
+                                            * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    )
+                                ) ** (- 1))
+                                / self.heat_capacity_vector[zone_name]
+                        )
+                    self.state_matrix.at[
+                        zone_name + '_temperature',
+                        surface_name + '_temperature'
+                    ] = (
+                            self.state_matrix.at[
+                                zone_name + '_temperature',
+                                surface_name + '_temperature'
+                            ]
+                    ) + (
+                            self.parse_parameter(surface_data['surface_area'])
+                            * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                            * (
+                                    1.0
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + 1.0
+                                    / (
+                                            2.0
+                                            * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    )
+                            ) ** (- 1)
+                            / self.heat_capacity_vector[zone_name]
+                    )
+                    self.state_matrix.at[
+                        zone_name + '_temperature',
+                        zone_name + '_temperature'
+                    ] = (
+                            self.state_matrix.at[
+                                zone_name + '_temperature',
+                                zone_name + '_temperature'
+                            ]
+                    ) + (
+                            - 1.0
+                            * self.parse_parameter(surface_data['surface_area'])
+                            * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                            * (
+                                    1.0
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + 1.0
+                                    / (
+                                            2.0
+                                            * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    )
+                            ) ** (- 1)
+                            / self.heat_capacity_vector[zone_name]
+                    )
+                else:  # Surfaces with neglected heat capacity
+                    # Get adjacent / opposite zone_name
+                    if zone_name == surface_data['zone_name']:
+                        zone_adjacent_name = surface_data['zone_adjacent_name']
+                    else:
+                        zone_adjacent_name = surface_data['zone_name']
+
+                    # Total adjacent zone surface area for later calculating share of interior (indirect) irradiation
+                    zone_adjacent_surface_area = sum(
+                        self.parse_parameter(zone_surface_data['surface_area'])
+                        * (1 - self.parse_parameter(zone_surface_data['window_wall_ratio']))
+                        for zone_surface_name, zone_surface_data in pd.concat(
+                            [
+                                self.building_surfaces_exterior[:][
+                                    self.building_surfaces_exterior['zone_name'] == zone_adjacent_name
+                                    ],
+                                self.building_surfaces_interior[:][
+                                    self.building_surfaces_interior['zone_name'] == zone_adjacent_name
+                                    ],
+                                self.building_surfaces_interior[:][
+                                    self.building_surfaces_interior['zone_adjacent_name'] == zone_adjacent_name
+                                    ],
+                                self.building_surfaces_adiabatic[:][
+                                    self.building_surfaces_adiabatic['zone_name'] == zone_adjacent_name
+                                    ]
+                            ],
+                            sort=False
+                        ).iterrows()  # For all surfaces adjacent to the zone
+                    )
+
+                    # Complete convective heat transfer from adjacent zone to zone
+                    for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                        self.building_surfaces_exterior['zone_name'] == zone_adjacent_name
+                    ].iterrows():
+                        # Interior irradiation through all exterior surfaces adjacent to the zone
+                        self.disturbance_matrix.at[
+                            zone_name + '_temperature',
+                            'irradiation_' + zone_exterior_surface_data['direction_name']
+                        ] = (
+                                self.disturbance_matrix.at[
+                                    zone_name + '_temperature',
+                                    'irradiation_' + zone_exterior_surface_data['direction_name']
+                                ]
+                        ) + (
+                                (
+                                        self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                        * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                        / zone_adjacent_surface_area
+                                )  # Considers the share at the respective surface
+                                * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                                * self.parse_parameter(surface_data['surface_area'])
+                                * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                                * (
+                                        1.0
+                                        + self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                        / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                        + self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                        / self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                ) ** (- 1)
+                                / self.heat_capacity_vector[zone_name]
+                        )
+                    self.state_matrix.at[
+                        zone_name + '_temperature',
+                        zone_adjacent_name + '_temperature'
+                    ] = (
+                            self.state_matrix.at[
+                                zone_name + '_temperature',
+                                zone_adjacent_name + '_temperature'
+                            ]
+                    ) + (
+                            self.parse_parameter(surface_data['surface_area'])
+                            * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                            * (
+                                    1.0
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + 1.0
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + 1.0
+                                    / self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                            ) ** (- 1)
+                            / self.heat_capacity_vector[zone_name]
+                    )
+                    self.state_matrix.at[
+                        zone_name + '_temperature',
+                        zone_name + '_temperature'
+                    ] = (
+                            self.state_matrix.at[
+                                zone_name + '_temperature',
+                                zone_name + '_temperature'
+                            ]
+                    ) + (
+                            - 1.0
+                            * self.parse_parameter(surface_data['surface_area'])
+                            * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                            * (
+                                    1.0
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + 1.0
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + 1.0
+                                    / self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                            ) ** (- 1)
+                            / self.heat_capacity_vector[zone_name]
+                    )
+                    for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                        self.building_surfaces_exterior['zone_name'] == zone_name
+                    ].iterrows():
+                        # Interior irradiation through all exterior surfaces adjacent to the zone
+                        self.disturbance_matrix.at[
+                            zone_name + '_temperature',
+                            'irradiation_' + zone_exterior_surface_data['direction_name']
+                        ] = (
+                                self.disturbance_matrix.at[
+                                    zone_name + '_temperature',
+                                    'irradiation_' + zone_exterior_surface_data['direction_name']
+                                ]
+                        ) + (
+                                (
+                                        self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                        * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                        / zone_surface_area
+                                )  # Considers the share at the respective surface
+                                * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                                * self.parse_parameter(surface_data['surface_area'])
+                                * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                                * (1.0 - (
+                                    1.0
+                                    + self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    / self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                ) ** (- 1))
+                                / self.heat_capacity_vector[zone_name]
+                        )
+
+                # Windows for each interior surface - Modelled as surfaces with neglected heat capacity
+                if self.parse_parameter(surface_data['window_wall_ratio']) != 0.0:
+                    # Get adjacent / opposite zone_name
+                    if zone_name == surface_data['zone_name']:
+                        zone_adjacent_name = surface_data['zone_adjacent_name']
+                    else:
+                        zone_adjacent_name = surface_data['zone_name']
+
+                    # Total adjacent zone surface area for later calculating share of interior (indirect) irradiation
+                    zone_adjacent_surface_area = sum(
+                        self.parse_parameter(zone_surface_data['surface_area'])
+                        * (1 - self.parse_parameter(zone_surface_data['window_wall_ratio']))
+                        for zone_surface_name, zone_surface_data in pd.concat(
+                            [
+                                self.building_surfaces_exterior[:][
+                                    self.building_surfaces_exterior['zone_name'] == zone_adjacent_name
+                                    ],
+                                self.building_surfaces_interior[:][
+                                    self.building_surfaces_interior['zone_name'] == zone_adjacent_name
+                                    ],
+                                self.building_surfaces_interior[:][
+                                    self.building_surfaces_interior['zone_adjacent_name'] == zone_adjacent_name
+                                    ],
+                                self.building_surfaces_adiabatic[:][
+                                    self.building_surfaces_adiabatic['zone_name'] == zone_adjacent_name
+                                    ]
+                            ],
+                            sort=False
+                        ).iterrows()  # For all surfaces adjacent to the zone
+                    )
+
+                    # Complete convective heat transfer from adjacent zone to zone
+                    for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                        self.building_surfaces_exterior['zone_name'] == zone_adjacent_name
+                    ].iterrows():
+                        # Interior irradiation through all exterior surfaces adjacent to the zone
+                        self.disturbance_matrix.at[
+                            zone_name + '_temperature',
+                            'irradiation_' + zone_exterior_surface_data['direction_name']
+                        ] = (
+                                self.disturbance_matrix.at[
+                                    zone_name + '_temperature',
+                                    'irradiation_' + zone_exterior_surface_data['direction_name']
+                                ]
+                        ) + (
+                                (
+                                        self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                        * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                        / zone_adjacent_surface_area
+                                )  # Considers the share at the respective surface
+                                * self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                                * self.parse_parameter(surface_data['surface_area'])
+                                * self.parse_parameter(surface_data['window_wall_ratio'])
+                                * (
+                                        1.0
+                                        + self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                        / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                        + self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                        / self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1)
+                                ) ** (- 1)
+                                / self.heat_capacity_vector[zone_name]
+                        )
+                    self.state_matrix.at[
+                        zone_name + '_temperature',
+                        zone_adjacent_name + '_temperature'
+                    ] = (
+                            self.state_matrix.at[
+                                zone_name + '_temperature',
+                                zone_adjacent_name + '_temperature'
+                            ]
+                    ) + (
+                            self.parse_parameter(surface_data['surface_area'])
+                            * self.parse_parameter(surface_data['window_wall_ratio'])
+                            * (
+                                    1.0
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + 1.0
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + 1.0
+                                    / self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1)
+                            ) ** (- 1)
+                            / self.heat_capacity_vector[zone_name]
+                    )
+                    self.state_matrix.at[
+                        zone_name + '_temperature',
+                        zone_name + '_temperature'
+                    ] = (
+                            self.state_matrix.at[
+                                zone_name + '_temperature',
+                                zone_name + '_temperature'
+                            ]
+                    ) + (
+                            - 1.0
+                            * self.parse_parameter(surface_data['surface_area'])
+                            * self.parse_parameter(surface_data['window_wall_ratio'])
+                            * (
+                                    1.0
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + 1.0
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + 1.0
+                                    / self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1)
+                            ) ** (- 1)
+                            / self.heat_capacity_vector[zone_name]
+                    )
+                    for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                        self.building_surfaces_exterior['zone_name'] == zone_name
+                    ].iterrows():
+                        # Interior irradiation through all exterior surfaces adjacent to the zone
+                        self.disturbance_matrix.at[
+                            zone_name + '_temperature',
+                            'irradiation_' + zone_exterior_surface_data['direction_name']
+                        ] = (
+                                self.disturbance_matrix.at[
+                                    zone_name + '_temperature',
+                                    'irradiation_' + zone_exterior_surface_data['direction_name']
+                                ]
+                        ) + (
+                                (
+                                        self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                        * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                        / zone_surface_area
+                                )  # Considers the share at the respective surface
+                                * self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                                * self.parse_parameter(surface_data['surface_area'])
+                                * self.parse_parameter(surface_data['window_wall_ratio'])
+                                * (1.0 - (
+                                    1.0
+                                    + self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    / self.parse_parameter(surface_data['thermal_resistance_window']) ** (- 1)
+                                ) ** (- 1))
+                                / self.heat_capacity_vector[zone_name]
+                        )
+
+    def define_heat_transfer_surfaces_adiabatic(self):
+        """Thermal model: Adiabatic surfaces"""
+        for surface_name, surface_data in self.building_surfaces_adiabatic.iterrows():
+            # Total zone surface area for later calculating share of interior (indirect) irradiation
+            zone_surface_area = sum(
+                self.parse_parameter(zone_surface_data['surface_area'])
+                * (1 - self.parse_parameter(zone_surface_data['window_wall_ratio']))
+                for zone_surface_name, zone_surface_data in pd.concat(
+                    [
+                        self.building_surfaces_exterior[:][
+                            self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
+                            ],
+                        self.building_surfaces_interior[:][
+                            self.building_surfaces_interior['zone_name'] == surface_data['zone_name']
+                            ],
+                        self.building_surfaces_interior[:][
+                            self.building_surfaces_interior['zone_adjacent_name'] == surface_data['zone_name']
+                            ],
+                        self.building_surfaces_adiabatic[:][
+                            self.building_surfaces_adiabatic['zone_name'] == surface_data['zone_name']
+                            ]
+                    ],
+                    sort=False
+                ).iterrows()  # For all surfaces adjacent to the zone
+            )
+
+            if self.parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
+                # Conductive heat transfer from the interior towards the core of surface
+                for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                    self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
+                ].iterrows():
+                    # Interior irradiation through all exterior surfaces adjacent to the zone
+                    self.disturbance_matrix.at[
+                        surface_name + '_temperature',
+                        'irradiation_' + zone_exterior_surface_data['direction_name']
+                    ] = (
+                            self.disturbance_matrix.at[
+                                surface_name + '_temperature',
+                                'irradiation_' + zone_exterior_surface_data['direction_name']
+                            ]
+                    ) + (
+                            (
+                                    self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                    * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    / zone_surface_area
+                            )  # Considers the share at the respective surface
+                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['surface_area'])
+                            * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                            * (
+                                    1.0
+                                    + (
+                                            self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    )
+                                    / (
+                                            2.0
+                                            * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    )
+                            ) ** (- 1)
+                            / self.heat_capacity_vector[surface_name]
+                    )
+                self.state_matrix.at[
+                    surface_name + '_temperature',
+                    surface_name + '_temperature'
+                ] = (
+                        self.state_matrix.at[
+                            surface_name + '_temperature',
+                            surface_name + '_temperature'
+                        ]
+                ) + (
+                        - 1.0
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                )
+                                + 1.0
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                )
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_name]
+                )
+                self.state_matrix.at[
+                    surface_name + '_temperature',
+                    surface_data['zone_name'] + '_temperature'
+                ] = (
+                        self.state_matrix.at[
+                            surface_name + '_temperature',
+                            surface_data['zone_name'] + '_temperature'
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                )
+                                + 1.0
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                )
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_name]
+                )
+
+                # Convective heat transfer from the surface towards zone
+                for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                    self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
+                ].iterrows():
+                    # Interior irradiation through all exterior surfaces adjacent to the zone
+                    self.disturbance_matrix.at[
+                        surface_data['zone_name'] + '_temperature',
+                        'irradiation_' + zone_exterior_surface_data['direction_name']
+                    ] = (
+                            self.disturbance_matrix.at[
+                                surface_data['zone_name'] + '_temperature',
+                                'irradiation_' + zone_exterior_surface_data['direction_name']
+                            ]
+                    ) + (
+                            (
+                                    self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                    * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    / zone_surface_area
+                            )  # Considers the share at the respective surface
+                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['surface_area'])
+                            * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                            * (1.0 - (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                )
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                )
+                            ) ** (- 1))
+                            / self.heat_capacity_vector[surface_data['zone_name']]
+                    )
+                self.state_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    surface_name + '_temperature'
+                ] = (
+                        self.state_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            surface_name + '_temperature'
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                )
+                                + 1.0
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                )
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+                self.state_matrix.at[
+                    surface_data['zone_name'] + '_temperature',
+                    surface_data['zone_name'] + '_temperature'
+                ] = (
+                        self.state_matrix.at[
+                            surface_data['zone_name'] + '_temperature',
+                            surface_data['zone_name'] + '_temperature'
+                        ]
+                ) + (
+                        - 1.0
+                        * self.parse_parameter(surface_data['surface_area'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                )
+                                + 1.0
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                )
+                        ) ** (- 1)
+                        / self.heat_capacity_vector[surface_data['zone_name']]
+                )
+            else:  # Surfaces with neglected heat capacity
+                warnings.warn("Adiabatic surfaces with zero heat capacity have no effect: " + surface_name)
 
     def define_heat_transfer_infiltration(self):
         for index, row in self.building_zones.iterrows():
@@ -892,9 +1930,9 @@ class Building(object):
 
     def define_heat_transfer_window_air_flow(self):
         for index, row in self.building_zones.iterrows():
-            if row['window_type'] != '':
+            if pd.notnull(row['window_type']):
                 self.control_matrix.at[
-                    index + '_temperature',
+                    index + '_temperature',  # the "index" is the zone_name. Defined in line 87
                     index + '_window_air_flow'
                 ] = (
                         self.control_matrix.at[
@@ -940,7 +1978,7 @@ class Building(object):
 
     def define_heat_transfer_hvac_generic(self):
         for index, row in self.building_zones.iterrows():
-            if row['hvac_generic_type'] != '':
+            if pd.notnull(row['hvac_generic_type']):
                 self.control_matrix.at[
                     index + '_temperature',
                     index + '_generic_heat_thermal_power'
@@ -966,7 +2004,7 @@ class Building(object):
 
     def define_heat_transfer_hvac_ahu(self):
         for index, row in self.building_zones.iterrows():
-            if row['hvac_ahu_type'] != '':
+            if pd.notnull(row['hvac_ahu_type']):
                 self.control_matrix.at[
                     index + '_temperature',
                     index + '_ahu_heat_air_flow'
@@ -997,14 +2035,14 @@ class Building(object):
                                 self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
                                 - self.parse_parameter(
                                         self.building_scenarios['linearization_zone_air_temperature_cool']
-                                )
+                                )  # (20 - 25) < 0: same as TU
                         )
                         / self.heat_capacity_vector[index]
                 )
 
     def define_heat_transfer_hvac_tu(self):
         for index, row in self.building_zones.iterrows():
-            if row['hvac_tu_type'] != '':
+            if pd.notnull(row['hvac_tu_type']):
                 self.control_matrix.at[
                     index + '_temperature',
                     index + '_tu_heat_air_flow'
@@ -1035,646 +2073,15 @@ class Building(object):
                                 self.parse_parameter(row['tu_supply_air_temperature_setpoint'])
                                 - self.parse_parameter(
                                         self.building_scenarios['linearization_zone_air_temperature_cool']
-                                )
+                                )  # = (20 - 25) < 0 ==> make the temperature decrease in the room
                         )
                         / self.heat_capacity_vector[index]
                 )
 
-    def define_heat_transfer_irradiation(self):
-        for index_exterior, row_exterior in self.building_surfaces_exterior.iterrows():
-            # Direct gains (exterior surfaces)
-            if self.parse_parameter(row_exterior['heat_capacity']) != 0:
-                self.disturbance_matrix.at[
-                    index_exterior + '_temperature',
-                    'irradiation_' + row_exterior['direction_name']
-                ] = (
-                        self.disturbance_matrix.at[
-                            index_exterior + '_temperature',
-                            'irradiation_' + row_exterior['direction_name']
-                        ]
-                        + 1
-                        / (
-                                1
-                                + self.parse_parameter(row_exterior['thermal_resistance_surface'])
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['irradiation_gain_coefficient'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * (1 - self.parse_parameter(row_exterior['window_wall_ratio']))
-                        / self.heat_capacity_vector[index_exterior]
-                )
-            else:
-                self.disturbance_matrix.at[
-                    row_exterior['zone_name'] + '_temperature',
-                    'irradiation_' + row_exterior['direction_name']
-                ] = (
-                        self.disturbance_matrix.at[
-                            row_exterior['zone_name'] + '_temperature',
-                            'irradiation_' + row_exterior['direction_name']
-                        ]
-                        + 1
-                        / (
-                                1
-                                + (
-                                        2
-                                        * self.parse_parameter(row_exterior['thermal_resistance_surface'])
-                                        + 1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone'))
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['irradiation_gain_coefficient'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * (1 - self.parse_parameter(row_exterior['window_wall_ratio']))
-                        / self.heat_capacity_vector[row_exterior['zone_name']]
-                )
-
-            # Indirect gains (interior surfaces, through windows)
-            interior_surface_area_total = sum(
-                self.parse_parameter(row_interior['surface_area'])
-                * (1 - self.parse_parameter(row_interior['window_wall_ratio']))
-                for index_interior, row_interior in pd.concat([
-                    self.building_surfaces_interior[:][
-                        self.building_surfaces_interior['zone_name'] == row_exterior['zone_name']],
-                    self.building_surfaces_interior[:][
-                        self.building_surfaces_interior['zone_adjacent_name'] == row_exterior['zone_name']],
-                    self.building_surfaces_adiabatic[:][
-                        self.building_surfaces_adiabatic['zone_name'] == row_exterior['zone_name']]
-                ]).iterrows()  # For all surfaces adjacent to the zone that belongs to each exterior surface
-            )
-            for index_interior, row_interior in pd.concat([
-                # For all surfaces adjacent to the zone that belongs to each exterior surface
-                self.building_surfaces_interior[:][
-                    self.building_surfaces_interior['zone_name'] == row_exterior['zone_name']
-                ],
-                self.building_surfaces_interior[:][
-                    self.building_surfaces_interior['zone_adjacent_name'] == row_exterior['zone_name']
-                ],
-                self.building_surfaces_adiabatic[:][
-                    self.building_surfaces_adiabatic['zone_name'] == row_exterior['zone_name']
-                ]
-            ]).iterrows():
-                if self.parse_parameter(row_interior['heat_capacity']) != 0:
-                    # Received by the wall
-                    self.disturbance_matrix.at[
-                        index_interior + '_temperature',
-                        'irradiation_' + row_exterior['direction_name']
-                    ] = (
-                            self.disturbance_matrix.at[
-                                index_interior + '_temperature',
-                                'irradiation_' + row_exterior['direction_name']
-                            ]
-                            + 1
-                            / (
-                                    1
-                                    + self.parse_parameter(row_interior['thermal_resistance_surface'])
-                                    * self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                            )
-                            * self.parse_parameter(row_exterior['irradiation_transfer_coefficient'])
-                            * self.parse_parameter(row_exterior['surface_area'])
-                            * self.parse_parameter(row_exterior['window_wall_ratio'])
-                            * self.parse_parameter(row_interior['irradiation_gain_coefficient'])
-                            * self.parse_parameter(row_interior['surface_area'])
-                            * (1 - self.parse_parameter(row_interior['window_wall_ratio']))
-                            / self.heat_capacity_vector[index_interior]
-                            / interior_surface_area_total
-                    )
-                    # Received by the zone
-                    self.disturbance_matrix.at[
-                        row_interior['zone_name'] + '_temperature',
-                        'irradiation_' + row_exterior['direction_name']
-                    ] = (
-                            self.disturbance_matrix.at[
-                                row_interior['zone_name'] + '_temperature',
-                                'irradiation_' + row_exterior['direction_name']
-                            ]
-                            + (
-                                    1
-                                    - 1
-                                    / (
-                                            1
-                                            + self.parse_parameter(row_interior['thermal_resistance_surface'])
-                                            * self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                    )
-                               )
-                            * self.parse_parameter(row_exterior['irradiation_transfer_coefficient'])
-                            * self.parse_parameter(row_exterior['surface_area'])
-                            * self.parse_parameter(row_exterior['window_wall_ratio'])
-                            * self.parse_parameter(row_interior['irradiation_gain_coefficient'])
-                            * self.parse_parameter(row_interior['surface_area'])
-                            * (1 - self.parse_parameter(row_interior['window_wall_ratio']))
-                            / self.heat_capacity_vector[index_interior]
-                            / interior_surface_area_total
-                    )
-                else:
-                    self.disturbance_matrix.at[
-                        row_interior['zone_name'] + '_temperature',
-                        'irradiation_' + row_exterior['direction_name']
-                    ] = (
-                            self.disturbance_matrix.at[
-                                row_interior['zone_name'] + '_temperature',
-                                'irradiation_' + row_exterior['direction_name']
-                            ]
-                            + (
-                                    1
-                                    - 1
-                                    / (
-                                            2
-                                            * (
-                                                    1
-                                                    + self.parse_parameter(row_interior['thermal_resistance_surface'])
-                                                    * self.parse_parameter(
-                                                            'heat_transfer_coefficient_surface_to_zone'
-                                                    )
-                                            )
-                                    )
-                               )
-                            * self.parse_parameter(row_exterior['irradiation_transfer_coefficient'])
-                            * self.parse_parameter(row_exterior['surface_area'])
-                            * self.parse_parameter(row_exterior['window_wall_ratio'])
-                            * self.parse_parameter(row_interior['irradiation_gain_coefficient'])
-                            * self.parse_parameter(row_interior['surface_area'])
-                            * (1 - self.parse_parameter(row_interior['window_wall_ratio']))
-                            / self.heat_capacity_vector[row_interior['zone_name']]
-                            / interior_surface_area_total
-                    )
-            for index_interior, row_interior in pd.concat([
-                # For all surfaces adjacent to the zone that belongs to each exterior surface that are not adiabatic
-                self.building_surfaces_interior[:][
-                    self.building_surfaces_interior['zone_name'] == row_exterior['zone_name']
-                ],
-                self.building_surfaces_interior[:][
-                    self.building_surfaces_interior['zone_adjacent_name'] == row_exterior['zone_name']
-                ]
-            ]).iterrows():
-                if self.parse_parameter(row_interior['heat_capacity']) == 0:
-                    # Part of the flow is transmitted to the adjacent room
-                    self.disturbance_matrix.at[
-                        row_interior['zone_adjacent_name'] + '_temperature',
-                        'irradiation_' + row_exterior['direction_name']
-                    ] = (
-                            self.disturbance_matrix.at[
-                                row_interior['zone_adjacent_name'] + '_temperature',
-                                'irradiation_' + row_exterior['direction_name']
-                            ]
-                            + 1
-                            / (
-                                    2
-                                    * (
-                                            1
-                                            + self.parse_parameter(row_interior['thermal_resistance_surface'])
-                                            * self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                    )
-                            )
-                            * self.parse_parameter(row_exterior['irradiation_transfer_coefficient'])
-                            * self.parse_parameter(row_exterior['surface_area'])
-                            * self.parse_parameter(row_exterior['window_wall_ratio'])
-                            * self.parse_parameter(row_interior['irradiation_gain_coefficient'])
-                            * self.parse_parameter(row_interior['surface_area'])
-                            * (1 - self.parse_parameter(row_interior['window_wall_ratio']))
-                            / self.heat_capacity_vector[row_interior['zone_adjacent_name']]
-                            / interior_surface_area_total
-                    )
-            for index_interior, row_interior in pd.concat([
-                # For all surfaces adjacent to the zone that belongs to each exterior surface that are adiabatic
-                self.building_surfaces_adiabatic[:][
-                    self.building_surfaces_adiabatic['zone_name'] == row_exterior['zone_name']
-                ]
-            ]).iterrows():
-                if self.parse_parameter(row_interior['heat_capacity']) == 0:
-                    # Part of the flow is transmitted to the same room through the other side of the wall
-                    self.disturbance_matrix.at[
-                        row_interior['zone_name'] + '_temperature',
-                        'irradiation_' + row_exterior['direction_name']
-                    ] = (
-                            self.disturbance_matrix.at[
-                                row_interior['zone_name'] + '_temperature',
-                                'irradiation_' + row_exterior['direction_name']
-                            ]
-                            + 1
-                            / (
-                                    2
-                                    * (
-                                            1 + self.parse_parameter(row_interior['thermal_resistance_surface'])
-                                            * self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                    )
-                            )
-                            * self.parse_parameter(row_exterior['irradiation_transfer_coefficient'])
-                            * self.parse_parameter(row_exterior['surface_area'])
-                            * self.parse_parameter(row_exterior['window_wall_ratio'])
-                            * self.parse_parameter(row_interior['irradiation_gain_coefficient'])
-                            * self.parse_parameter(row_interior['surface_area'])
-                            * (1 - self.parse_parameter(row_interior['window_wall_ratio']))
-                            / self.heat_capacity_vector[row_interior['zone_adjacent_name']]
-                            / interior_surface_area_total
-                    )
-
-    def define_heat_transfer_emission_sky(self):
-        for index_exterior, row_exterior in self.building_surfaces_exterior.iterrows():
-            # Radiative heat exchange with the sky
-            # Windows are considered to have the same emissivity as walls (large wavelengths)
-
-            # Heat flow received by wall
-            if self.parse_parameter(row_exterior['heat_capacity']) != 0:
-                self.state_matrix.at[
-                    index_exterior + '_temperature',
-                    index_exterior + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            index_exterior + '_temperature',
-                            index_exterior + '_temperature'
-                        ]
-                        - 1
-                        / (
-                                1
-                                + self.parse_parameter(row_exterior['thermal_resistance_surface'])
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['heat_transfer_coefficient_surface_to_sky'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * (1 - self.parse_parameter(row_exterior['window_wall_ratio']))
-                        / self.heat_capacity_vector[index_exterior]
-                )
-                self.disturbance_matrix.at[
-                    index_exterior + '_temperature',
-                    'sky_temperature'
-                ] = (
-                        self.disturbance_matrix.at[
-                            index_exterior + '_temperature',
-                            'sky_temperature'
-                        ]
-                        + 1
-                        / (
-                                1
-                                + self.parse_parameter(row_exterior['thermal_resistance_surface'])
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['heat_transfer_coefficient_surface_to_sky'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * (1 - self.parse_parameter(row_exterior['window_wall_ratio']))
-                        / self.heat_capacity_vector[index_exterior]
-                )
-            # Heat flow received by zone through wall
-            else:
-                self.state_matrix.at[
-                    row_exterior['zone_name'] + '_temperature',
-                    row_exterior['zone_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row_exterior['zone_name'] + '_temperature',
-                            row_exterior['zone_name'] + '_temperature'
-                        ]
-                        - 1
-                        / (
-                                1
-                                + (
-                                        2
-                                        * self.parse_parameter(row_exterior['thermal_resistance_surface'])
-                                        + 1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone'))
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['heat_transfer_coefficient_surface_to_sky'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * (1 - self.parse_parameter(row_exterior['window_wall_ratio']))
-                        / self.heat_capacity_vector[row_exterior['zone_name']]
-                )
-                self.disturbance_matrix.at[
-                    row_exterior['zone_name'] + '_temperature',
-                    'sky_temperature'
-                ] = (
-                        self.disturbance_matrix.at[
-                            row_exterior['zone_name'] + '_temperature',
-                            'sky_temperature'
-                        ]
-                        + 1
-                        / (
-                                1
-                                + (
-                                        2
-                                        * self.parse_parameter(row_exterior['thermal_resistance_surface'])
-                                        + 1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                )
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['heat_transfer_coefficient_surface_to_sky'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * (1 - self.parse_parameter(row_exterior['window_wall_ratio']))
-                        / self.heat_capacity_vector[row_exterior['zone_name']]
-                )
-
-            # Heat flow received by zone through windows
-            if self.parse_parameter(row_exterior['window_wall_ratio']) != 0:
-                self.state_matrix.at[
-                    row_exterior['zone_name'] + '_temperature',
-                    row_exterior['zone_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row_exterior['zone_name'] + '_temperature',
-                            row_exterior['zone_name'] + '_temperature'
-                        ]
-                        - 1
-                        / (
-                                1
-                                + (
-                                        2
-                                        * self.parse_parameter(row_exterior['thermal_resistance_window'])
-                                        + 1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                )
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['heat_transfer_coefficient_surface_to_sky'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * self.parse_parameter(row_exterior['window_wall_ratio'])
-                        / self.heat_capacity_vector[row_exterior['zone_name']]
-                )
-                self.disturbance_matrix.at[
-                    row_exterior['zone_name'] + '_temperature',
-                    'sky_temperature'
-                ] = (
-                        self.disturbance_matrix.at[
-                            row_exterior['zone_name'] + '_temperature',
-                            'sky_temperature'
-                        ]
-                        + 1
-                        / (
-                                1
-                                + (
-                                        2
-                                        * self.parse_parameter(row_exterior['thermal_resistance_window'])
-                                        + 1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                )
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['heat_transfer_coefficient_surface_to_sky'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * self.parse_parameter(row_exterior['window_wall_ratio'])
-                        / self.heat_capacity_vector[row_exterior['zone_name']]
-                )
-
-    def define_heat_transfer_emission_environment(self):
-        for index_exterior, row_exterior in self.building_surfaces_exterior.iterrows():
-            # Radiative heat exchange with the environment
-            # Windows are considered to have the same emissivity as walls (large wavelengths)
-            # Environment is assumed to be at ambient air temperature
-
-            # Heat flow received by wall
-            if self.parse_parameter(row_exterior['heat_capacity']) != 0:
-                self.state_matrix.at[
-                    index_exterior + '_temperature',
-                    index_exterior + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            index_exterior + '_temperature',
-                            index_exterior + '_temperature'
-                        ]
-                        - 1
-                        / (
-                                1
-                                + self.parse_parameter(row_exterior['thermal_resistance_surface'])
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['heat_transfer_coefficient_surface_to_ground'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * (1 - self.parse_parameter(row_exterior['window_wall_ratio']))
-                        / self.heat_capacity_vector[index_exterior]
-                )
-                self.disturbance_matrix.at[
-                    index_exterior + '_temperature',
-                    'ambient_air_temperature'
-                ] = (
-                        self.disturbance_matrix.at[
-                            index_exterior + '_temperature',
-                            'ambient_air_temperature'
-                        ]
-                        + 1
-                        / (
-                                1
-                                + self.parse_parameter(row_exterior['thermal_resistance_surface'])
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['heat_transfer_coefficient_surface_to_ground'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * (1 - self.parse_parameter(row_exterior['window_wall_ratio']))
-                        / self.heat_capacity_vector[index_exterior]
-                )
-            # Heat flow received by zone through wall
-            else:
-                self.state_matrix.at[
-                    row_exterior['zone_name'] + '_temperature',
-                    row_exterior['zone_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row_exterior['zone_name'] + '_temperature',
-                            row_exterior['zone_name'] + '_temperature'
-                        ]
-                        - 1
-                        / (
-                                1
-                                + (
-                                        2
-                                        * self.parse_parameter(row_exterior['thermal_resistance_surface'])
-                                        + 1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone'))
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['heat_transfer_coefficient_surface_to_ground'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * (1 - self.parse_parameter(row_exterior['window_wall_ratio']))
-                        / self.heat_capacity_vector[row_exterior['zone_name']]
-                )
-                self.disturbance_matrix.at[
-                    row_exterior['zone_name'] + '_temperature',
-                    'ambient_air_temperature'
-                ] = (
-                        self.disturbance_matrix.at[
-                            row_exterior['zone_name'] + '_temperature',
-                            'ambient_air_temperature'
-                        ]
-                        + 1
-                        / (
-                                1
-                                + (
-                                        2
-                                        * self.parse_parameter(row_exterior['thermal_resistance_surface'])
-                                        + 1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone'))
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['heat_transfer_coefficient_surface_to_ground'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * (1 - self.parse_parameter(row_exterior['window_wall_ratio']))
-                        / self.heat_capacity_vector[row_exterior['zone_name']]
-                )
-
-            # Heat flow received by zone through windows
-            if self.parse_parameter(row_exterior['window_wall_ratio']) != 0:
-                self.state_matrix.at[
-                    row_exterior['zone_name'] + '_temperature',
-                    row_exterior['zone_name'] + '_temperature'
-                ] = (
-                        self.state_matrix.at[
-                            row_exterior['zone_name'] + '_temperature',
-                            row_exterior['zone_name'] + '_temperature'
-                        ]
-                        - 1
-                        / (
-                                1
-                                + (
-                                        2
-                                        * self.parse_parameter(row_exterior['thermal_resistance_window'])
-                                        + 1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone'))
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['heat_transfer_coefficient_surface_to_ground'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * self.parse_parameter(row_exterior['window_wall_ratio'])
-                        / self.heat_capacity_vector[row_exterior['zone_name']]
-                )
-                self.disturbance_matrix.at[
-                    row_exterior['zone_name'] + '_temperature',
-                    'ambient_air_temperature'
-                ] = (
-                        self.disturbance_matrix.at[
-                            row_exterior['zone_name'] + '_temperature',
-                            'ambient_air_temperature'
-                        ]
-                        + 1
-                        / (
-                                1
-                                + (
-                                        2
-                                        * self.parse_parameter(row_exterior['thermal_resistance_window'])
-                                        + 1
-                                        / self.parse_parameter('heat_transfer_coefficient_surface_to_zone')
-                                )
-                                * (
-                                        self.parse_parameter('heat_transfer_coefficient_surface_to_ambient')
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_ground']
-                                        )
-                                        + self.parse_parameter(
-                                                row_exterior['heat_transfer_coefficient_surface_to_sky']
-                                        )
-                                )
-                        )
-                        * self.parse_parameter(row_exterior['heat_transfer_coefficient_surface_to_ground'])
-                        * self.parse_parameter(row_exterior['surface_area'])
-                        * self.parse_parameter(row_exterior['window_wall_ratio'])
-                        / self.heat_capacity_vector[row_exterior['zone_name']]
-                )
-
     def define_co2_transfer_hvac_ahu(self):
-        if self.building_scenarios['co2_model_type'][0] != '':
+        if pd.notnull(self.building_scenarios['co2_model_type'][0]):
             for index, row in self.building_zones.iterrows():
-                if (row['hvac_ahu_type'] != '') | (row['window_type'] != ''):
+                if pd.notnull(row['hvac_ahu_type']) | pd.notnull(row['window_type']):
                     self.state_matrix.at[
                         index + '_co2_concentration',
                         index + '_co2_concentration'
@@ -1690,7 +2097,7 @@ class Building(object):
                                     / self.parse_parameter(row['zone_height'])
                             )
                     )
-                    if row['hvac_ahu_type'] != '':
+                    if pd.notnull(row['hvac_ahu_type']):
                         self.control_matrix.at[
                             index + '_co2_concentration',
                             index + '_ahu_heat_air_flow'
@@ -1717,7 +2124,7 @@ class Building(object):
                                         / self.parse_parameter(row['zone_height'])
                                         / self.parse_parameter(row['zone_area']))
                         )
-                    if row['window_type'] != '':
+                    if pd.notnull(row['window_type']):
                         self.control_matrix.at[
                             index + '_co2_concentration',
                             index + '_window_air_flow'
@@ -1772,9 +2179,9 @@ class Building(object):
                     )
 
     def define_humidity_transfer_hvac_ahu(self):
-        if self.building_scenarios['humidity_model_type'][0] != '':
+        if pd.notnull(self.building_scenarios['humidity_model_type'][0]):
             for index, row in self.building_zones.iterrows():
-                if row['hvac_ahu_type'] != '':
+                if pd.notnull(row['hvac_ahu_type']):
                     self.state_matrix.at[
                         index + '_absolute_humidity',
                         index + '_absolute_humidity'
@@ -1840,7 +2247,7 @@ class Building(object):
                                     / self.parse_parameter(row['zone_area'])
                             )
                     )
-                    if row['window_type'] != '':
+                    if pd.notnull(row['window_type']):
                         self.control_matrix.at[
                             index + '_absolute_humidity',
                             index + '_window_air_flow'
@@ -1906,6 +2313,155 @@ class Building(object):
                             )
                     )
 
+    def define_storage_state_of_charge(self):
+        # Sensible thermal storage.
+        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            # Storage charge.
+            self.control_matrix.at[
+                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power',
+            ] = (
+                self.control_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                    self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power',
+                ]
+            ) + (
+                1.0
+                / (
+                    self.parse_parameter('water_specific_heat')
+                    * self.parse_parameter(self.building_scenarios['storage_sensible_temperature_delta'])
+                )
+                * self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
+            )
+
+            # Storage losses.
+            # - Thermal losses are considered negligible, but a very small loss is added to keep the state matrix
+            #   non-singular and hence invertible.
+            # - TODO: For detailed losses depending on the storage size see `cobmo/README_storage.md`
+            self.state_matrix.at[
+                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
+            ] = (
+                self.state_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                    self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
+                ]
+            ) - 1e-17
+
+            for zone_name, zone_data in self.building_zones.iterrows():
+                # TODO: Differentiate heating / cooling and define heating discharge.
+
+                if pd.notnull(zone_data['hvac_ahu_type']):
+                    # Storage discharge to AHU for cooling.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                        zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                            zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
+                        ]
+                    ) + (
+                        - 1.0
+                        / (
+                            self.parse_parameter('water_specific_heat')
+                            * self.parse_parameter(self.building_scenarios['storage_sensible_temperature_delta'])
+                        )
+                    )
+
+                if pd.notnull(zone_data['hvac_tu_type']):
+                    # Storage discharge to TU for cooling.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                        zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                            zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power',
+                        ]
+                    ) + (
+                        - 1.0
+                        / (
+                            self.parse_parameter('water_specific_heat')
+                            * self.parse_parameter(self.building_scenarios['storage_sensible_temperature_delta'])
+                        )
+                    )
+
+        # Battery storage.
+        if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+            # Storage charge.
+            self.control_matrix.at[
+                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_battery_storage_charge_electric_power'
+            ] = self.control_matrix.at[
+                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_battery_storage_charge_electric_power'
+            ] + (
+                self.parse_parameter(self.building_scenarios['storage_round_trip_efficiency'])
+            )  # TODO: Make the battery loss dependent on the outdoor temperature.
+
+            # Storage losses.
+            # - There are no battery storage losses, but a very small loss is added to keep the state matrix
+            #   non-singular and hence invertible.
+            self.state_matrix.at[
+                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
+            ] = (
+                self.state_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                    self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
+                ]
+            ) - 1E-17
+
+            for zone_name, zone_data in self.building_zones.iterrows():
+                # TODO: Differentiate heating / cooling and define heating discharge.
+
+                if pd.notnull(zone_data['hvac_ahu_type']):
+                    # Storage discharge to AHU for cooling.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                        zone_name + '_battery_storage_to_zone_ahu_cool_electric_power',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                            zone_name + '_battery_storage_to_zone_ahu_cool_electric_power',
+                        ]
+                    ) - 1.0
+
+                    # Storage discharge to AHU for heating.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                        zone_name + '_battery_storage_to_zone_ahu_heat_electric_power',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                            zone_name + '_battery_storage_to_zone_ahu_heat_electric_power',
+                        ]
+                    ) - 1.0
+
+                if pd.notnull(zone_data['hvac_tu_type']):
+                    # Storage discharge to TU for cooling.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                        zone_name + '_battery_storage_to_zone_tu_cool_electric_power',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                            zone_name + '_battery_storage_to_zone_tu_cool_electric_power',
+                        ]
+                    ) - 1.0
+
+                    # Storage discharge to TU for heating.
+                    self.control_matrix.at[
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                        zone_name + '_battery_storage_to_zone_tu_heat_electric_power',
+                    ] = (
+                        self.control_matrix.at[
+                            self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                            zone_name + '_battery_storage_to_zone_tu_heat_electric_power',
+                        ]
+                    ) - 1.0
+
     def define_output_zone_temperature(self):
         for index, row in self.building_zones.iterrows():
             self.state_output_matrix.at[
@@ -1914,18 +2470,18 @@ class Building(object):
             ] = 1
 
     def define_output_zone_co2_concentration(self):
-        if self.building_scenarios['co2_model_type'][0] != '':
+        if pd.notnull(self.building_scenarios['co2_model_type'][0]):
             for index, row in self.building_zones.iterrows():
-                if (row['hvac_ahu_type'] != '') | (row['window_type'] != ''):
+                if pd.notnull(row['hvac_ahu_type']) | pd.notnull(row['window_type']):
                     self.state_output_matrix.at[
                         index + '_co2_concentration',
                         index + '_co2_concentration'
                     ] = 1
 
     def define_output_zone_humidity(self):
-        if self.building_scenarios['humidity_model_type'][0] != '':
+        if pd.notnull(self.building_scenarios['humidity_model_type'][0]):
             for index, row in self.building_zones.iterrows():
-                if row['hvac_ahu_type'] != '':
+                if pd.notnull(row['hvac_ahu_type']):
                     self.state_output_matrix.at[
                         index + '_absolute_humidity',
                         index + '_absolute_humidity'
@@ -1933,24 +2489,24 @@ class Building(object):
 
     def define_output_hvac_generic_power(self):
         for index, row in self.building_zones.iterrows():
-            if row['hvac_generic_type'] != '':
+            if pd.notnull(row['hvac_generic_type']):
                 self.control_output_matrix.at[
-                    index + '_generic_heat_power',
+                    index + '_generic_heat_electric_power',
                     index + '_generic_heat_thermal_power'
                 ] = (
                         self.control_output_matrix.at[
-                            index + '_generic_heat_power',
+                            index + '_generic_heat_electric_power',
                             index + '_generic_heat_thermal_power'
                         ]
                         + 1
                         / self.parse_parameter(row['generic_heating_efficiency'])
                 )
                 self.control_output_matrix.at[
-                    index + '_generic_cool_power',
+                    index + '_generic_cool_electric_power',
                     index + '_generic_cool_thermal_power'
                 ] = (
                         self.control_output_matrix.at[
-                            index + '_generic_cool_power',
+                            index + '_generic_cool_electric_power',
                             index + '_generic_cool_thermal_power'
                         ]
                         + 1
@@ -1958,36 +2514,36 @@ class Building(object):
                 )
 
     def define_output_hvac_ahu_electric_power(self):
-        for index, row in self.building_zones.iterrows():
-            if row['hvac_ahu_type'] != '':
-                # Calculate enthalpies
-                # TODO: Remove unnecessary HVAC types
+        for zone_name, zone_data in self.building_zones.iterrows():
+            if pd.notnull(zone_data['hvac_ahu_type']):
+                # Calculate enthalpies.
+                # TODO: Remove unnecessary HVAC types.
                 if (
-                        row['ahu_cooling_type'] == 'default'
-                        and row['ahu_heating_type'] == 'default'
-                        and row['ahu_dehumidification_type'] == 'default'
-                        and row['ahu_return_air_heat_recovery_type'] == 'default'
+                    zone_data['ahu_cooling_type'] == 'default'
+                    and zone_data['ahu_heating_type'] == 'default'
+                    and zone_data['ahu_dehumidification_type'] == 'default'
+                    and zone_data['ahu_return_air_heat_recovery_type'] == 'default'
                 ):
                     if (
-                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                            <= humid_air_properties(
-                                'W',
-                                'R',
-                                self.parse_parameter(row['ahu_supply_air_relative_humidity_setpoint'])
-                                / 100,
-                                'T',
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
-                                + 273.15,
-                                'P',
-                                101325
-                            )
+                        self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                        <= humid_air_properties(
+                            'W',
+                            'R',
+                            self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
+                            / 100,
+                            'T',
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
+                            + 273.15,
+                            'P',
+                            101325
+                        )
                     ):
                         delta_enthalpy_ahu_cooling = min(
                             0,
                             humid_air_properties(
                                 'H',
                                 'T',
-                                self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
+                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint'])
                                 + 273.15,
                                 'W',
                                 self.parse_parameter(
@@ -2014,7 +2570,7 @@ class Building(object):
                             humid_air_properties(
                                 'H',
                                 'T',
-                                self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
+                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint'])
                                 + 273.15,
                                 'W',
                                 self.parse_parameter(
@@ -2038,90 +2594,18 @@ class Building(object):
                         )
                         delta_enthalpy_cooling_recovery = min(
                             0,
-                            self.parse_parameter(row['ahu_return_air_heat_recovery_efficiency'])
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
                             * (
-                                    humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_temperature_heat']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
-                                    )
-                                    - humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_temperature']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
-                                    )
-                            )
-                        )
-                        delta_enthalpy_heating_recovery = max(
-                            0,
-                            self.parse_parameter(row['ahu_return_air_heat_recovery_efficiency'])
-                            * (
-                                    humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_temperature_heat']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
-                                    )
-                                    - humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_temperature']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_humidity_ratio']),
-                                        'P',
-                                        101325
-                                    )
-                            )
-                        )
-                    else:
-                        delta_enthalpy_ahu_cooling = (
                                 humid_air_properties(
                                     'H',
-                                    'R',
-                                    1,
+                                    'T',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_temperature_heat']
+                                    )
+                                    + 273.15,
                                     'W',
-                                    humid_air_properties(
-                                        'W',
-                                        'T',
-                                        self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
-                                        + 273.15,
-                                        'R',
-                                        self.parse_parameter(
-                                            row['ahu_supply_air_relative_humidity_setpoint']
-                                        )
-                                        / 100,
-                                        'P',
-                                        101325
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_ambient_air_humidity_ratio']
                                     ),
                                     'P',
                                     101325
@@ -2140,217 +2624,455 @@ class Building(object):
                                     'P',
                                     101325
                                 )
+                            )
                         )
-                        delta_enthalpy_ahu_heating = (
+                        delta_enthalpy_heating_recovery = max(
+                            0,
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
+                            * (
                                 humid_air_properties(
                                     'H',
                                     'T',
-                                    self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_temperature_heat']
+                                    )
                                     + 273.15,
-                                    'R',
-                                    self.parse_parameter(row['ahu_supply_air_relative_humidity_setpoint'])
-                                    / 100,
+                                    'W',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_ambient_air_humidity_ratio']
+                                    ),
                                     'P',
                                     101325
                                 )
                                 - humid_air_properties(
                                     'H',
-                                    'R',
-                                    1,
+                                    'T',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_ambient_air_temperature']
+                                    )
+                                    + 273.15,
                                     'W',
-                                    humid_air_properties(
-                                        'W',
-                                        'T',
-                                        self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
-                                        + 273.15,
-                                        'R',
-                                        self.parse_parameter(row['ahu_supply_air_relative_humidity_setpoint'])
-                                        / 100,
-                                        'P',
-                                        101325
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_ambient_air_humidity_ratio']
                                     ),
                                     'P',
                                     101325
                                 )
+                            )
+                        )
+                    else:
+                        delta_enthalpy_ahu_cooling = (
+                            humid_air_properties(
+                                'H',
+                                'R',
+                                1,
+                                'W',
+                                humid_air_properties(
+                                    'W',
+                                    'T',
+                                    self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint'])
+                                    + 273.15,
+                                    'R',
+                                    self.parse_parameter(
+                                        zone_data['ahu_supply_air_relative_humidity_setpoint']
+                                    )
+                                    / 100,
+                                    'P',
+                                    101325
+                                ),
+                                'P',
+                                101325
+                            )
+                            - humid_air_properties(
+                                'H',
+                                'T',
+                                self.parse_parameter(
+                                    self.building_scenarios['linearization_ambient_air_temperature']
+                                )
+                                + 273.15,
+                                'W',
+                                self.parse_parameter(
+                                    self.building_scenarios['linearization_ambient_air_humidity_ratio']
+                                ),
+                                'P',
+                                101325
+                            )
+                        )
+                        delta_enthalpy_ahu_heating = (
+                            humid_air_properties(
+                                'H',
+                                'T',
+                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint'])
+                                + 273.15,
+                                'R',
+                                self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
+                                / 100,
+                                'P',
+                                101325
+                            )
+                            - humid_air_properties(
+                                'H',
+                                'R',
+                                1,
+                                'W',
+                                humid_air_properties(
+                                    'W',
+                                    'T',
+                                    self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint'])
+                                    + 273.15,
+                                    'R',
+                                    self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
+                                    / 100,
+                                    'P',
+                                    101325
+                                ),
+                                'P',
+                                101325
+                            )
                         )
                         delta_enthalpy_cooling_recovery = min(
                             0,
-                            self.parse_parameter(row['ahu_return_air_heat_recovery_efficiency'])
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
                             * (
-                                    humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_temperature_heat']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
+                                humid_air_properties(
+                                    'H',
+                                    'T',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_temperature_heat']
                                     )
-                                    - humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_temperature']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
+                                    + 273.15,
+                                    'W',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_humidity_ratio']
+                                    ),
+                                    'P',
+                                    101325
+                                )
+                                - humid_air_properties(
+                                    'H',
+                                    'T',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_ambient_air_temperature']
                                     )
+                                    + 273.15,
+                                    'W',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_humidity_ratio']
+                                    ),
+                                    'P',
+                                    101325
+                                )
                             )
                         )
                         delta_enthalpy_heating_recovery = max(
                             0,
-                            self.parse_parameter(row['ahu_return_air_heat_recovery_efficiency'])
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
                             * (
-                                    humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_temperature_heat']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
+                                humid_air_properties(
+                                    'H',
+                                    'T',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_temperature_heat']
                                     )
-                                    - humid_air_properties(
-                                        'H',
-                                        'T',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_ambient_air_temperature']
-                                        )
-                                        + 273.15,
-                                        'W',
-                                        self.parse_parameter(
-                                            self.building_scenarios['linearization_zone_air_humidity_ratio']
-                                        ),
-                                        'P',
-                                        101325
+                                    + 273.15,
+                                    'W',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_humidity_ratio']
+                                    ),
+                                    'P',
+                                    101325
+                                )
+                                - humid_air_properties(
+                                    'H',
+                                    'T',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_ambient_air_temperature']
                                     )
+                                    + 273.15,
+                                    'W',
+                                    self.parse_parameter(
+                                        self.building_scenarios['linearization_zone_air_humidity_ratio']
+                                    ),
+                                    'P',
+                                    101325
+                                )
                             )
                         )
 
-                # Matrix entries
+                # AHU heating.
                 self.control_output_matrix.at[
-                    index + '_ahu_heat_electric_power',
-                    index + '_ahu_heat_air_flow'
+                    zone_name + '_ahu_heat_electric_power',
+                    zone_name + '_ahu_heat_air_flow'
                 ] = (
-                        self.control_output_matrix.at[
-                            index + '_ahu_heat_electric_power',
-                            index + '_ahu_heat_air_flow'
-                        ]
-                        + self.parse_parameter('density_air')
-                        * (
-                                (
-                                        abs(delta_enthalpy_ahu_cooling)
-                                        - abs(delta_enthalpy_cooling_recovery)
-                                )
-                                / self.parse_parameter(row['ahu_cooling_efficiency'])
-                                + (
-                                            abs(delta_enthalpy_ahu_heating)
-                                            - abs(delta_enthalpy_heating_recovery)
-                                )
-                                / self.parse_parameter(row['ahu_heating_efficiency'])
-                                + self.parse_parameter(row['ahu_fan_efficiency'])
+                    self.control_output_matrix.at[
+                        zone_name + '_ahu_heat_electric_power',
+                        zone_name + '_ahu_heat_air_flow'
+                    ]
+                    + self.parse_parameter('density_air')
+                    * (
+                        (
+                            abs(delta_enthalpy_ahu_cooling)
+                            - abs(delta_enthalpy_cooling_recovery)
                         )
+                        / self.parse_parameter(zone_data['ahu_cooling_efficiency'])
+                        + (
+                            abs(delta_enthalpy_ahu_heating)
+                            - abs(delta_enthalpy_heating_recovery)
+                        )
+                        / self.parse_parameter(zone_data['ahu_heating_efficiency'])
+                        + self.parse_parameter(zone_data['ahu_fan_efficiency'])
+                    )
+                )
+
+                # Sensible thermal storage heating discharge.
+                # TODO: Add consideration for sensible storage heating / cooling.
+                # if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                #     self.control_output_matrix.at[
+                #         zone_name + '_ahu_heat_electric_power',
+                #         zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power'
+                #     ] = (
+                #         self.control_output_matrix.at[
+                #             zone_name + '_ahu_heat_electric_power',
+                #             zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power'
+                #         ]
+                #         - 1.0 / self.parse_parameter(zone_data['ahu_heating_efficiency'])
+                #     )
+
+                # Battery storage heating discharge.
+                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                    self.control_output_matrix.at[
+                        zone_name + '_ahu_heat_electric_power',
+                        zone_name + '_battery_storage_to_zone_ahu_heat_electric_power'
+                    ] = (
+                        self.control_output_matrix.at[
+                            zone_name + '_ahu_heat_electric_power',
+                            zone_name + '_battery_storage_to_zone_ahu_heat_electric_power'
+                        ]
+                        - 1.0
+                    )
+
+                # AHU cooling.
+                self.control_output_matrix.at[
+                    zone_name + '_ahu_cool_electric_power_cooling_coil',
+                    zone_name + '_ahu_cool_air_flow'
+                ] = (
+                    self.control_output_matrix.at[
+                        zone_name + '_ahu_cool_electric_power_cooling_coil',
+                        zone_name + '_ahu_cool_air_flow'
+                    ]
+                    + self.parse_parameter('density_air')
+                    * (
+                        (
+                            abs(delta_enthalpy_ahu_cooling)
+                            - abs(delta_enthalpy_cooling_recovery)
+                        )
+                        / self.parse_parameter(zone_data['ahu_cooling_efficiency'])
+                    )
                 )
                 self.control_output_matrix.at[
-                    index + '_ahu_cool_electric_power',
-                    index + '_ahu_cool_air_flow'
+                    zone_name + '_ahu_cool_electric_power_heating_coil',
+                    zone_name + '_ahu_cool_air_flow'
                 ] = (
-                        self.control_output_matrix.at[
-                            index + '_ahu_cool_electric_power',
-                            index + '_ahu_cool_air_flow'
-                        ]
-                        + self.parse_parameter('density_air')
-                        * (
-                                (
-                                        abs(delta_enthalpy_ahu_cooling)
-                                        - abs(delta_enthalpy_cooling_recovery)
-                                )
-                                / self.parse_parameter(row['ahu_cooling_efficiency'])
-                                + (
-                                        abs(delta_enthalpy_ahu_heating)
-                                        - abs(delta_enthalpy_heating_recovery)
-                                )
-                                / self.parse_parameter(row['ahu_heating_efficiency'])
-                                + self.parse_parameter(row['ahu_fan_efficiency'])
+                    self.control_output_matrix.at[
+                        zone_name + '_ahu_cool_electric_power_heating_coil',
+                        zone_name + '_ahu_cool_air_flow'
+                    ]
+                    + self.parse_parameter('density_air')
+                    * (
+                        (
+                            abs(delta_enthalpy_ahu_heating)
+                            - abs(delta_enthalpy_heating_recovery)
                         )
+                        / self.parse_parameter(zone_data['ahu_heating_efficiency'])
+                        + self.parse_parameter(zone_data['ahu_fan_efficiency'])
+                    )
                 )
+
+                # Sensible thermal storage cooling discharge.
+                if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                    self.control_output_matrix.at[
+                        zone_name + '_ahu_cool_electric_power_cooling_coil',
+                        zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
+                    ] = (
+                        self.control_output_matrix.at[
+                            zone_name + '_ahu_cool_electric_power_cooling_coil',
+                            zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
+                        ]
+                        - 1.0 / self.parse_parameter(zone_data['ahu_cooling_efficiency'])
+                    )
+                    # TODO: Add consideration for sensible storage heating / cooling.
+
+                # Battery storage cooling discharge.
+                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                    self.control_output_matrix.at[
+                        zone_name + '_ahu_cool_electric_power_cooling_coil',
+                        zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
+                    ] = (
+                        self.control_output_matrix.at[
+                            zone_name + '_ahu_cool_electric_power_cooling_coil',
+                            zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
+                        ]
+                        - (
+                            (
+                                self.control_output_matrix.at[
+                                    zone_name + '_ahu_cool_electric_power_cooling_coil',
+                                    zone_name + '_ahu_cool_air_flow'
+                                ]
+                            ) / (
+                                self.control_output_matrix.at[
+                                    zone_name + '_ahu_cool_electric_power_cooling_coil',
+                                    zone_name + '_ahu_cool_air_flow'
+                                ]
+                                + self.control_output_matrix.at[
+                                    zone_name + '_ahu_cool_electric_power_heating_coil',
+                                    zone_name + '_ahu_cool_air_flow'
+                                ]
+                            )
+                        )
+                    )
+                    self.control_output_matrix.at[
+                        zone_name + '_ahu_cool_electric_power_heating_coil',
+                        zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
+                    ] = (
+                        self.control_output_matrix.at[
+                            zone_name + '_ahu_cool_electric_power_heating_coil',
+                            zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
+                        ]
+                        - (
+                            (
+                                self.control_output_matrix.at[
+                                    zone_name + '_ahu_cool_electric_power_heating_coil',
+                                    zone_name + '_ahu_cool_air_flow'
+                                ]
+                            ) / (
+                                self.control_output_matrix.at[
+                                    zone_name + '_ahu_cool_electric_power_cooling_coil',
+                                    zone_name + '_ahu_cool_air_flow'
+                                ]
+                                + self.control_output_matrix.at[
+                                    zone_name + '_ahu_cool_electric_power_heating_coil',
+                                    zone_name + '_ahu_cool_air_flow'
+                                ]
+                            )
+                        )
+                    )
 
     def define_output_hvac_tu_electric_power(self):
-        for index, row in self.building_zones.iterrows():
-            if row['hvac_tu_type'] != '':
-                # Calculate enthalpies
+        for zone_name, zone_data in self.building_zones.iterrows():
+            if pd.notnull(zone_data['hvac_tu_type']):
+                # Calculate enthalpies.
                 if (
-                        row['tu_cooling_type'] == 'default'
-                        and row['tu_heating_type'] == 'default'
+                    zone_data['tu_cooling_type'] == 'default'
+                    and zone_data['tu_heating_type'] == 'default'
                 ):
-                    if row['tu_air_intake_type'] == 'zone':
+                    if zone_data['tu_air_intake_type'] == 'zone':
                         delta_enthalpy_tu_cooling = self.parse_parameter('heat_capacity_air') * (
-                                self.parse_parameter(self.building_scenarios['linearization_zone_air_temperature_cool'])
-                                - self.parse_parameter(row['tu_supply_air_temperature_setpoint'])
+                            self.parse_parameter(self.building_scenarios['linearization_zone_air_temperature_cool'])
+                            - self.parse_parameter(zone_data['tu_supply_air_temperature_setpoint'])
                         )
                         delta_enthalpy_tu_heating = self.parse_parameter('heat_capacity_air') * (
-                                self.parse_parameter(self.building_scenarios['linearization_zone_air_temperature_heat'])
-                                - self.parse_parameter(row['tu_supply_air_temperature_setpoint'])
+                            self.parse_parameter(self.building_scenarios['linearization_zone_air_temperature_heat'])
+                            - self.parse_parameter(zone_data['tu_supply_air_temperature_setpoint'])
                         )
-                    elif row['tu_air_intake_type'] == 'ahu':
+                    elif zone_data['tu_air_intake_type'] == 'ahu':
                         delta_enthalpy_tu_cooling = self.parse_parameter('heat_capacity_air') * (
-                                self.parse_parameter(self.building_scenarios['ahu_supply_air_temperature_setpoint'])
-                                - self.parse_parameter(row['tu_supply_air_temperature_setpoint'])
+                            self.parse_parameter(self.building_scenarios['ahu_supply_air_temperature_setpoint'])
+                            - self.parse_parameter(zone_data['tu_supply_air_temperature_setpoint'])
                         )
                         delta_enthalpy_tu_heating = self.parse_parameter('heat_capacity_air') * (
-                                self.parse_parameter(self.building_scenarios['ahu_supply_air_temperature_setpoint'])
-                                - self.parse_parameter(row['tu_supply_air_temperature_setpoint'])
+                            self.parse_parameter(self.building_scenarios['ahu_supply_air_temperature_setpoint'])
+                            - self.parse_parameter(zone_data['tu_supply_air_temperature_setpoint'])
                         )
 
-                # Matrix entries
+                # TU heating.
                 self.control_output_matrix.at[
-                    index + '_tu_heat_electric_power',
-                    index + '_tu_heat_air_flow'
+                    zone_name + '_tu_heat_electric_power',
+                    zone_name + '_tu_heat_air_flow'
                 ] = (
+                    self.control_output_matrix.at[
+                        zone_name + '_tu_heat_electric_power',
+                        zone_name + '_tu_heat_air_flow'
+                    ]
+                    + self.parse_parameter('density_air')
+                    * (
+                        abs(delta_enthalpy_tu_heating)
+                        / self.parse_parameter(zone_data['tu_heating_efficiency'])
+                        + self.parse_parameter(zone_data['tu_fan_efficiency'])
+                    )
+                )
+
+                # Sensible thermal storage heating discharge.
+                # TODO: Add consideration for sensible storage heating / cooling.
+                # if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                #     self.control_output_matrix.at[
+                #         zone_name + '_tu_heat_electric_power',
+                #         zone_name + '_sensible_storage_to_zone_tu_heat_thermal_power'
+                #     ] = (
+                #         self.control_output_matrix.at[
+                #             zone_name + '_tu_heat_electric_power',
+                #             zone_name + '_sensible_storage_to_zone_tu_heat_thermal_power'
+                #         ]
+                #         - 1.0 / self.parse_parameter(zone_data['tu_heating_efficiency'])
+                #     )
+
+                # Battery storage heating discharge.
+                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                    self.control_output_matrix.at[
+                        zone_name + '_tu_heat_electric_power',
+                        zone_name + '_battery_storage_to_zone_tu_heat_electric_power'
+                    ] = (
                         self.control_output_matrix.at[
-                            index + '_tu_heat_electric_power',
-                            index + '_tu_heat_air_flow'
+                            zone_name + '_tu_heat_electric_power',
+                            zone_name + '_battery_storage_to_zone_tu_heat_electric_power'
                         ]
-                        + self.parse_parameter('density_air')
-                        * (
-                                abs(delta_enthalpy_tu_heating)
-                                / self.parse_parameter(row['tu_heating_efficiency'])
-                                + self.parse_parameter(row['tu_fan_efficiency'])
-                        )
-                )
+                        - 1.0
+                    )
+
+                # TU cooling.
                 self.control_output_matrix.at[
-                    index + '_tu_cool_electric_power',
-                    index + '_tu_cool_air_flow'
+                    zone_name + '_tu_cool_electric_power',
+                    zone_name + '_tu_cool_air_flow'
                 ] = (
-                        self.control_output_matrix.at[
-                            index + '_tu_cool_electric_power',
-                            index + '_tu_cool_air_flow']
-                        + self.parse_parameter('density_air')
-                        * (
-                                abs(delta_enthalpy_tu_cooling)
-                                / self.parse_parameter(row['tu_cooling_efficiency'])
-                                + self.parse_parameter(row['tu_fan_efficiency'])
-                        )
+                    self.control_output_matrix.at[
+                        zone_name + '_tu_cool_electric_power',
+                        zone_name + '_tu_cool_air_flow']
+                    + self.parse_parameter('density_air')
+                    * (
+                        abs(delta_enthalpy_tu_cooling)
+                        / self.parse_parameter(zone_data['tu_cooling_efficiency'])
+                        + self.parse_parameter(zone_data['tu_fan_efficiency'])
+                    )
                 )
+
+                # Sensible thermal storage cooling discharge.
+                if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                    self.control_output_matrix.at[
+                        zone_name + '_tu_cool_electric_power',
+                        zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power'
+                    ] = (
+                        self.control_output_matrix.at[
+                            zone_name + '_tu_cool_electric_power',
+                            zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power'
+                        ]
+                        - 1.0 / self.parse_parameter(zone_data['tu_cooling_efficiency'])
+                    )
+
+                # Battery storage cooling discharge.
+                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                    self.control_output_matrix.at[
+                        zone_name + '_tu_cool_electric_power',
+                        zone_name + '_battery_storage_to_zone_tu_cool_electric_power'
+                    ] = (
+                        self.control_output_matrix.at[
+                            zone_name + '_tu_cool_electric_power',
+                            zone_name + '_battery_storage_to_zone_tu_cool_electric_power'
+                        ]
+                        - 1.0
+                    )
 
     def define_output_fresh_air_flow(self):
         for index, row in self.building_zones.iterrows():
-            if row['hvac_ahu_type'] != '':
+            if pd.notnull(row['hvac_ahu_type']):
                 self.control_output_matrix.at[
                     index + '_total_fresh_air_flow',
                     index + '_ahu_heat_air_flow'
@@ -2359,12 +3081,12 @@ class Building(object):
                     index + '_total_fresh_air_flow',
                     index + '_ahu_cool_air_flow'
                 ] = 1
-            if row['window_type'] != '':
+            if pd.notnull(row['window_type']):
                 self.control_output_matrix.at[
                     index + '_total_fresh_air_flow',
                     index + '_window_air_flow'
                 ] = 1
-            if (row['window_type'] != '') | (row['hvac_ahu_type'] != ''):
+            if pd.notnull(row['window_type']) | pd.notnull(row['hvac_ahu_type']):
                 self.disturbance_output_matrix.at[
                     index + '_total_fresh_air_flow',
                     'constant'
@@ -2380,7 +3102,7 @@ class Building(object):
 
     def define_output_ahu_fresh_air_flow(self):
         for index, row in self.building_zones.iterrows():
-            if row['hvac_ahu_type'] != '':
+            if pd.notnull(row['hvac_ahu_type']):
                 self.control_output_matrix.at[
                     index + '_ahu_fresh_air_flow',
                     index + '_ahu_heat_air_flow'
@@ -2392,19 +3114,447 @@ class Building(object):
 
     def define_output_window_fresh_air_flow(self):
         for index, row in self.building_zones.iterrows():
-            if row['window_type'] != '':
+            if pd.notnull(row['window_type']):
                 self.control_output_matrix.at[
                     index + '_window_fresh_air_flow',
                     index + '_window_air_flow'
                 ] = 1
 
+    def define_output_storage_state_of_charge(self):
+        # Sensible thermal storage.
+        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            self.state_output_matrix.at[
+                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
+            ] = 1.0
+
+        # Battery storage.
+        if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+            self.state_output_matrix.at[
+                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
+                self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
+            ] = 1.0
+
+    def define_output_storage_charge(self):
+        # TODO: Remove redundant charge ouputs.
+
+        # Sensible thermal storage charge thermal power.
+        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            # Heating.
+            # TODO: Add consideration for sensible storage heating / cooling.
+            # self.control_output_matrix.at[
+            #     self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power',
+            #     self.building_scenarios['building_name'] + '_sensible_storage_charge_heat_thermal_power'
+            # ] = 1.0
+
+            # Cooling.
+            self.control_output_matrix.at[
+                self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power',
+                self.building_scenarios['building_name'] + '_sensible_storage_charge_cool_thermal_power'
+            ] = 1.0
+
+        # Sensible thermal storage charge electric power.
+        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            # Heating.
+            # TODO: Add consideration for sensible storage heating / cooling.
+            # self.control_output_matrix.at[
+            #     self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_electric_power',
+            #     self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_thermal_power'
+            # ] = (
+            #     self.control_output_matrix.at[
+            #         self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_electric_power',
+            #         self.building_scenarios['building_name'][0] + '_sensible_storage_charge_heat_thermal_power'
+            #     ]
+            #     + (
+            #         1.0
+            #         / self.parse_parameter('hvac_ahu_heating_efficiency')
+            #         * 1.0000001  # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
+            #     )
+            # )
+
+            # Cooling.
+            self.control_output_matrix.at[
+                self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_electric_power',
+                self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
+            ] = (
+                self.control_output_matrix.at[
+                    self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_electric_power',
+                    self.building_scenarios['building_name'][0] + '_sensible_storage_charge_cool_thermal_power'
+                ]
+                + (
+                    1.0
+                    / self.parse_parameter('hvac_ahu_cooling_efficiency')  # TODO: This might be a problem for CONCEPT.
+                    * 1.0000001  # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
+                )
+            )
+
+        # Battery storage charge.
+        if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+            self.control_output_matrix.at[
+                self.building_scenarios['building_name'] + '_battery_storage_charge_electric_power',
+                self.building_scenarios['building_name'] + '_battery_storage_charge_electric_power'
+            ] = 1.0
+
+    def define_output_storage_discharge(self):
+        for zone_name, zone_data in self.building_zones.iterrows():
+            # Sensible thermal storage.
+            if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                # TODO: Add consideration for sensible storage heating / cooling.
+                # if pd.notnull(zone_data['hvac_ahu_type']):
+                #     # Storage discharge to AHU for heating.
+                #     self.control_output_matrix.at[
+                #         zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power',
+                #         zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power'
+                #     ] = 1.0
+                #
+                # if pd.notnull(zone_data['hvac_tu_type']):
+                #     # Storage discharge to TU for heating.
+                #     self.control_output_matrix.at[
+                #         zone_name + '_sensible_storage_to_zone_tu_heat_thermal_power',
+                #         zone_name + '_sensible_storage_to_zone_tu_heat_thermal_power'
+                #     ] = 1.0
+
+                if pd.notnull(zone_data['hvac_ahu_type']):
+                    # Storage discharge to AHU for cooling.
+                    self.control_output_matrix.at[
+                        zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power',
+                        zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
+                    ] = 1.0
+
+                    # Storage discharge to AHU for heating.
+                    self.control_output_matrix.at[
+                        zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power',
+                        zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power'
+                    ] = 1.0
+
+                if pd.notnull(zone_data['hvac_tu_type']):
+                    # Storage discharge to TU for cooling.
+                    self.control_output_matrix.at[
+                        zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power',
+                        zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power'
+                    ] = 1.0
+
+                    # Storage discharge to TU for heating.
+                    self.control_output_matrix.at[
+                        zone_name + '_sensible_storage_to_zone_tu_heat_thermal_power',
+                        zone_name + '_sensible_storage_to_zone_tu_heat_thermal_power'
+                    ] = 1.0
+
+            # Battery storage.
+            if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                if pd.notnull(zone_data['hvac_ahu_type']):
+                    # Storage discharge to AHU for cooling.
+                    self.control_output_matrix.at[
+                        zone_name + '_battery_storage_to_zone_ahu_cool_electric_power',
+                        zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
+                    ] = 1.0
+
+                    # Storage discharge to AHU for heating.
+                    self.control_output_matrix.at[
+                        zone_name + '_battery_storage_to_zone_ahu_heat_electric_power',
+                        zone_name + '_battery_storage_to_zone_ahu_heat_electric_power'
+                    ] = 1.0
+
+                if pd.notnull(zone_data['hvac_tu_type']):
+                    # Storage discharge to TU for cooling.
+                    self.control_output_matrix.at[
+                        zone_name + '_battery_storage_to_zone_tu_cool_electric_power',
+                        zone_name + '_battery_storage_to_zone_tu_cool_electric_power'
+                    ] = 1.0
+
+                if pd.notnull(zone_data['hvac_tu_type']):
+                    # Storage discharge to TU for heating.
+                    self.control_output_matrix.at[
+                        zone_name + '_battery_storage_to_zone_tu_heat_electric_power',
+                        zone_name + '_battery_storage_to_zone_tu_heat_electric_power'
+                    ] = 1.0
+
+    def define_output_surfaces_exterior_irradiation_gain_exterior(self):
+        for surface_name, surface_data in self.building_surfaces_exterior.iterrows():
+            if self.parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
+                self.disturbance_output_matrix.at[
+                    surface_name + '_irradiation_gain_exterior',
+                    'irradiation_' + surface_data['direction_name']
+                ] = (
+                        self.disturbance_output_matrix.at[
+                            surface_name + '_irradiation_gain_exterior',
+                            'irradiation_' + surface_data['direction_name']
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                )
+            else:  # Surfaces with neglected heat capacity
+                self.disturbance_output_matrix.at[
+                    surface_data['surface_name'] + '_irradiation_gain_exterior',
+                    'irradiation_' + surface_data['direction_name']
+                ] = (
+                        self.disturbance_output_matrix.at[
+                            surface_data['surface_name'] + '_irradiation_gain_exterior',
+                            'irradiation_' + surface_data['direction_name']
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                )
+
+    def define_output_surfaces_exterior_convection_interior(self):
+        for surface_name, surface_data in self.building_surfaces_exterior.iterrows():
+            # Total zone surface area for later calculating share of interior (indirect) irradiation
+            zone_surface_area = sum(
+                self.parse_parameter(zone_surface_data['surface_area'])
+                * (1 - self.parse_parameter(zone_surface_data['window_wall_ratio']))
+                for zone_surface_name, zone_surface_data in pd.concat(
+                    [
+                        self.building_surfaces_exterior[:][
+                            self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
+                            ],
+                        self.building_surfaces_interior[:][
+                            self.building_surfaces_interior['zone_name'] == surface_data['zone_name']
+                            ],
+                        self.building_surfaces_interior[:][
+                            self.building_surfaces_interior['zone_adjacent_name'] == surface_data['zone_name']
+                            ],
+                        self.building_surfaces_adiabatic[:][
+                            self.building_surfaces_adiabatic['zone_name'] == surface_data['zone_name']
+                            ]
+                    ],
+                    sort=False
+                ).iterrows()  # For all surfaces adjacent to the zone
+            )
+
+            if self.parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
+                # Convective heat transfer from the surface towards zone
+                for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                    self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
+                ].iterrows():
+                    # Interior irradiation through all exterior surfaces adjacent to the zone
+                    self.disturbance_output_matrix.at[
+                        surface_data['surface_name'] + '_convection_interior',
+                        'irradiation_' + zone_exterior_surface_data['direction_name']
+                    ] = (
+                            self.disturbance_output_matrix.at[
+                                surface_data['surface_name'] + '_convection_interior',
+                                'irradiation_' + zone_exterior_surface_data['direction_name']
+                            ]
+                    ) + (
+                            (
+                                    self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                    * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    / zone_surface_area
+                            )  # Considers the share at the respective surface
+                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                            * (1.0 - (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                )
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                )
+                            ) ** (- 1))
+                    )
+                self.state_output_matrix.at[
+                    surface_data['surface_name'] + '_convection_interior',
+                    surface_name + '_temperature'
+                ] = (
+                        self.state_output_matrix.at[
+                            surface_data['surface_name'] + '_convection_interior',
+                            surface_name + '_temperature'
+                        ]
+                ) + (
+                        (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                )
+                                + 1.0
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                )
+                        ) ** (- 1)
+                )
+                self.state_output_matrix.at[
+                    surface_data['surface_name'] + '_convection_interior',
+                    surface_data['zone_name'] + '_temperature'
+                ] = (
+                        self.state_output_matrix.at[
+                            surface_data['surface_name'] + '_convection_interior',
+                            surface_data['zone_name'] + '_temperature'
+                        ]
+                ) + (
+                        - 1.0
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                )
+                                + 1.0
+                                / (
+                                        2.0
+                                        * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                )
+                        ) ** (- 1)
+                )
+            else:  # Surfaces with neglected heat capacity
+                # Complete convective heat transfer from surface to zone
+                self.disturbance_output_matrix.at[
+                    surface_data['surface_name'] + '_convection_interior',
+                    'irradiation_' + surface_data['direction_name']
+                ] = (
+                        self.disturbance_output_matrix.at[
+                            surface_data['surface_name'] + '_convection_interior',
+                            'irradiation_' + surface_data['direction_name']
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                        ) ** (- 1)
+                )
+                self.disturbance_output_matrix.at[
+                    surface_data['surface_name'] + '_convection_interior',
+                    'ambient_air_temperature'
+                ] = (
+                        self.disturbance_output_matrix.at[
+                            surface_data['surface_name'] + '_convection_interior',
+                            'ambient_air_temperature'
+                        ]
+                ) + (
+                        (
+                                self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                        )
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                        ) ** (- 1)
+                )
+                self.disturbance_output_matrix.at[
+                    surface_data['surface_name'] + '_convection_interior',
+                    'sky_temperature'
+                ] = (
+                        self.disturbance_output_matrix.at[
+                            surface_data['surface_name'] + '_convection_interior',
+                            'sky_temperature'
+                        ]
+                ) + (
+                        self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                        ) ** (- 1)
+                )
+                self.state_output_matrix.at[
+                    surface_data['surface_name'] + '_convection_interior',
+                    surface_data['zone_name'] + '_temperature'
+                ] = (
+                        self.state_output_matrix.at[
+                            surface_data['surface_name'] + '_convection_interior',
+                            surface_data['zone_name'] + '_temperature'
+                        ]
+                ) + (
+                        - 1.0
+                        * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                        * (
+                                1.0
+                                / (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                + 1.0
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + 1.0
+                                / (self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                        ) ** (- 1)
+                )
+                for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
+                    self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
+                ].iterrows():
+                    # Interior irradiation through all exterior surfaces adjacent to the zone
+                    self.disturbance_output_matrix.at[
+                        surface_data['surface_name'] + '_convection_interior',
+                        'irradiation_' + zone_exterior_surface_data['direction_name']
+                    ] = (
+                            self.disturbance_output_matrix.at[
+                                surface_data['surface_name'] + '_convection_interior',
+                                'irradiation_' + zone_exterior_surface_data['direction_name']
+                            ]
+                    ) + (
+                            (
+                                    self.parse_parameter(zone_exterior_surface_data['surface_area'])
+                                    * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    / zone_surface_area
+                            )  # Considers the share at the respective surface
+                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
+                            * (1.0 - (
+                                1.0
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / self.parse_parameter('heat_transfer_coefficient_interior_convection')
+                                + (
+                                        self.parse_parameter('heat_transfer_coefficient_exterior_convection')
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                                        + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                )
+                                / (self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                            ) ** (- 1))
+                    )
+
     def load_disturbance_timeseries(self, conn):
         # Load weather timeseries
         weather_timeseries = pd.read_sql(
             """
-            select * from weather_timeseries 
-            where weather_type='{}'
-            and time between '{}' and '{}'
+            SELECT * FROM weather_timeseries 
+            WHERE weather_type='{}'
+            AND time BETWEEN '{}' AND '{}'
             """.format(
                 self.building_scenarios['weather_type'][0],
                 self.building_scenarios['time_start'][0],
@@ -2417,9 +3567,9 @@ class Building(object):
         # Load internal gain timeseries
         building_internal_gain_timeseries = pd.read_sql(
             """
-            select * from building_internal_gain_timeseries 
-            where internal_gain_type in ({})
-            and time between '{}' and '{}'
+            SELECT * FROM building_internal_gain_timeseries 
+            WHERE internal_gain_type IN ({})
+            AND time BETWEEN '{}' AND '{}'
             """.format(
                 ", ".join([
                     "'{}'".format(data_set_name) for data_set_name in self.building_zones['internal_gain_type'].unique()
@@ -2456,7 +3606,8 @@ class Building(object):
         )
         building_internal_gain_timeseries.index = pd.to_datetime(building_internal_gain_timeseries.index)
 
-        # Reindex and construct full disturbance timeseries
+        # Reindex, interpolate and construct full disturbance timeseries
+        # TODO: Initialize disturbance_timeseries in _init_
         self.disturbance_timeseries = pd.concat(
             [
                 weather_timeseries[[
@@ -2467,59 +3618,64 @@ class Building(object):
                     'irradiation_south',
                     'irradiation_west',
                     'irradiation_north'
+                    # 'storage_ambient_air_temperature'  # @add2
                 ]].reindex(
-                    index=self.time_vector, method='nearest'
+                    self.set_timesteps
+                ).interpolate(
+                    'quadratic'
                 ),
                 building_internal_gain_timeseries.reindex(
-                    index=self.time_vector, method='nearest'
+                    self.set_timesteps
+                ).interpolate(
+                    'quadratic'
+                ),
+                (
+                    pd.DataFrame(
+                        1.0,
+                        self.set_timesteps,
+                        ['constant']
+                    ) if self.define_constant else pd.DataFrame([])  # Append constant only when needed.
                 )
             ],
-            axis='columns'
-        )
-
-        # Append constant (only when it should be considered)
-        if self.define_constant:
-            self.disturbance_timeseries = pd.concat(
-                [
-                    self.disturbance_timeseries,
-                    pd.Series(
-                        1.0,
-                        self.time_vector,
-                        name='constant'
-                    )
-                ],
-                axis='columns'
-            )
-
-        # Transpose to get correct orientation for matrix multiplication with disturbance_matrix
-        self.disturbance_timeseries = self.disturbance_timeseries.transpose()
+            axis='columns',
+        ).rename_axis('disturbance_name', axis='columns')
 
     def define_output_constraint_timeseries(self, conn):
         """
-        - Generate minimum/maximum constraint timeseries based on `building_zone_constraint_profiles`
-        - TODO: Make construction / interpolation simpler and more efficient
+        - Generate minimum/maximum constraint timeseries based on `building_zone_constraint_profiles`.
         """
-        # Initialise constraint timeseries as +/- infinity
+        # TODO: Make construction / interpolation simpler and more efficient.
+
+        # Initialise constraint timeseries as +/- infinity.
         self.output_constraint_timeseries_maximum = pd.DataFrame(
             1.0 * np.infty,
-            self.index_time,
-            self.index_outputs
+            self.set_timesteps,
+            self.set_outputs
         )
         self.output_constraint_timeseries_minimum = -self.output_constraint_timeseries_maximum
-
-        # Outputs that are some kind of power can only be positive (greater than zero)
+        # Minimum bound for "power" outputs.
         self.output_constraint_timeseries_minimum.loc[
             :,
             [column for column in self.output_constraint_timeseries_minimum.columns if '_power' in column]
-        ] = 0
+        ] = 0.0
 
-        # Outputs that are some kind of flow can only be positive (greater than zero)
+        # Minimum bound for "flow" outputs.
         self.output_constraint_timeseries_minimum.loc[
             :,
             [column for column in self.output_constraint_timeseries_minimum.columns if '_flow' in column]
-        ] = 0
+        ] = 0.0
 
-        # If a heating/cooling session is defined, the heating/cooling air flow is forced to 0
+        # Minimum bound for storage charge and discharge outputs.
+        self.output_constraint_timeseries_minimum.loc[
+            :,
+            [column for column in self.output_constraint_timeseries_minimum.columns if '_storage_charge' in column]
+        ] = 0.0
+        self.output_constraint_timeseries_minimum.loc[
+            :,
+            [column for column in self.output_constraint_timeseries_minimum.columns if '_storage_to_zone' in column]
+        ] = 0.0
+
+        # If a heating/cooling session is defined, the cooling/heating air flow is forced to 0.
         # Comment: The cooling or heating coil may still be working, because of the dehumidification,
         # however it would not appear explicitly in the output.
         if self.building_scenarios['heating_cooling_session'][0] == 'heating':
@@ -2531,145 +3687,146 @@ class Building(object):
                 :, [column for column in self.output_constraint_timeseries_minimum.columns if '_heat' in column]
             ] = 0
 
-        for index_zone, row_zone in self.building_zones.iterrows():
-            # For each zone, select zone_constraint_profile
+        for zone_name, zone_data in self.building_zones.iterrows():
+            # Load zone_constraint_profile for each zone.
             building_zone_constraint_profile = pd.read_sql(
                 """
-                select * from building_zone_constraint_profiles 
-                where zone_constraint_profile='{}'
-                """.format(row_zone['zone_constraint_profile']),
+                SELECT * FROM building_zone_constraint_profiles 
+                WHERE zone_constraint_profile='{}'
+                """.format(zone_data['zone_constraint_profile']),
                 conn
             )
 
-            # Create index function for `from_weekday` (mapping from `row_time.weekday()` to `from_weekday`)
-            constraint_profile_index_day = interp1d(
+            # Create index function for `from_weekday` (mapping from `timestep.weekday()` to `from_weekday`).
+            constraint_profile_index_day = scipy.interpolate.interp1d(
                 building_zone_constraint_profile['from_weekday'],
                 building_zone_constraint_profile['from_weekday'],
                 kind='zero',
                 fill_value='extrapolate'
             )
-            for row_time in self.time_vector:
-                # Create index function for `from_time` (mapping `row_time.timestamp` to `from_time`)
-                constraint_profile_index_time = interp1d(
+            for timestep in self.set_timesteps:
+                # Create index function for `from_time` (mapping `timestep.timestamp` to `from_time`).
+                constraint_profile_index_time = scipy.interpolate.interp1d(
                     pd.to_datetime(
-                        str(row_time.date())
+                        str(timestep.date())
                         + ' '
                         + building_zone_constraint_profile['from_time'][
                             building_zone_constraint_profile['from_weekday']
-                            == constraint_profile_index_day(row_time.weekday())
+                            == constraint_profile_index_day(timestep.weekday())
                         ]
                     ).view('int64'),
                     building_zone_constraint_profile.index[
                         building_zone_constraint_profile['from_weekday']
-                        == constraint_profile_index_day(row_time.weekday())
+                        == constraint_profile_index_day(timestep.weekday())
                         ].values,
                     kind='zero',
                     fill_value='extrapolate'
                 )
 
-                # Select constraint values
+                # Select constraint values.
                 self.output_constraint_timeseries_minimum.at[
-                    row_time,
-                    index_zone + '_temperature'
+                    timestep,
+                    zone_name + '_temperature'
                 ] = self.parse_parameter(
                     building_zone_constraint_profile['minimum_air_temperature'][
-                        int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
+                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
                     ]
                 )
                 self.output_constraint_timeseries_maximum.at[
-                    row_time,
-                    index_zone + '_temperature'
+                    timestep,
+                    zone_name + '_temperature'
                 ] = self.parse_parameter(
                     building_zone_constraint_profile['maximum_air_temperature'][
-                        int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
+                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
                     ]
                 )
-                if (row_zone['hvac_ahu_type'] != '') | (row_zone['window_type'] != ''):
-                    if self.building_scenarios['demand_controlled_ventilation_type'][0] != '':
-                        if self.building_scenarios['co2_model_type'][0] != '':
+
+                if pd.notnull(zone_data['hvac_ahu_type']) | pd.notnull(zone_data['window_type']):
+                    if pd.notnull(self.building_scenarios['demand_controlled_ventilation_type'][0]):
+                        if pd.notnull(self.building_scenarios['co2_model_type'][0]):
                             self.output_constraint_timeseries_maximum.at[
-                                row_time,
-                                index_zone + '_co2_concentration'
+                                timestep,
+                                zone_name + '_co2_concentration'
                             ] = (
                                 self.parse_parameter(
                                     building_zone_constraint_profile['maximum_co2_concentration'][
-                                        int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
+                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
                                     ]
                                 )
                             )
                             self.output_constraint_timeseries_minimum.at[
-                                row_time,
-                                index_zone + '_total_fresh_air_flow'
+                                timestep,
+                                zone_name + '_total_fresh_air_flow'
                             ] = (
-                                    self.parse_parameter(
-                                        building_zone_constraint_profile['minimum_fresh_air_flow_per_area'][
-                                            int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
-                                        ]
-                                    )
-                                    * self.parse_parameter(row_zone['zone_area'])
+                                self.parse_parameter(
+                                    building_zone_constraint_profile['minimum_fresh_air_flow_per_area'][
+                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                    ]
+                                )
+                                * self.parse_parameter(zone_data['zone_area'])
                             )
                         else:
                             self.output_constraint_timeseries_minimum.at[
-                                row_time, index_zone + '_total_fresh_air_flow'
+                                timestep, zone_name + '_total_fresh_air_flow'
                             ] = (
                                     self.parse_parameter(
                                         building_zone_constraint_profile['minimum_fresh_air_flow_per_person'][
-                                            int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
+                                            int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
                                         ]
                                     )
                                     * (
-                                            self.disturbance_timeseries.transpose()[
-                                                self.building_zones["internal_gain_type"].loc[index_zone] + "_occupancy"
-                                            ].loc[row_time] * self.parse_parameter(row_zone['zone_area'])
-                                            + self.parse_parameter(
-                                                building_zone_constraint_profile['minimum_fresh_air_flow_per_area'][
-                                                    int(constraint_profile_index_time(
-                                                        row_time.to_datetime64().astype('int64')
-                                                    ))
-                                                ]
-                                            )
-                                            * self.parse_parameter(row_zone['zone_area'])
+                                        self.disturbance_timeseries[
+                                            self.building_zones["internal_gain_type"].loc[zone_name] + "_occupancy"
+                                        ].loc[timestep] * self.parse_parameter(zone_data['zone_area'])
+                                        + self.parse_parameter(
+                                            building_zone_constraint_profile['minimum_fresh_air_flow_per_area'][
+                                                int(constraint_profile_index_time(
+                                                    timestep.to_datetime64().astype('int64')
+                                                ))
+                                            ]
+                                        )
+                                        * self.parse_parameter(zone_data['zone_area'])
                                     )
                             )
                     else:
-                        if row_zone['hvac_ahu_type'] != '':
+                        if pd.notnull(zone_data['hvac_ahu_type']):
                             self.output_constraint_timeseries_minimum.at[
-                                row_time,
-                                index_zone + '_total_fresh_air_flow'
+                                timestep,
+                                zone_name + '_total_fresh_air_flow'
                             ] = (
-                                    self.parse_parameter(
-                                        building_zone_constraint_profile['minimum_fresh_air_flow_per_area_no_dcv'][
-                                            int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
-                                        ]
-                                    )
-                                    * self.parse_parameter(row_zone['zone_area'])
+                                self.parse_parameter(
+                                    building_zone_constraint_profile['minimum_fresh_air_flow_per_area_no_dcv'][
+                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                    ]
+                                )
+                                * self.parse_parameter(zone_data['zone_area'])
                             )
-                        elif row_zone['window_type'] != '':
+                        elif pd.notnull(zone_data['window_type']):
                             self.output_constraint_timeseries_minimum.at[
-                                row_time,
-                                index_zone + '_window_fresh_air_flow'
+                                timestep,
+                                zone_name + '_window_fresh_air_flow'
                             ] = (
-                                    self.parse_parameter(
-                                        building_zone_constraint_profile['minimum_fresh_air_flow_per_area_no_dcv'][
-                                            int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
-                                        ]
-                                    )
-                                    * self.parse_parameter(row_zone['zone_area'])
+                                self.parse_parameter(
+                                    building_zone_constraint_profile['minimum_fresh_air_flow_per_area_no_dcv'][
+                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                    ]
+                                )
+                                * self.parse_parameter(zone_data['zone_area'])
                             )
                 # If a ventilation system is enabled, if DCV, then CO2 or constraint on total fresh air flow.
                 # If no DCV, then constant constraint on AHU or on windows if no AHU
 
-                if self.building_scenarios['humidity_model_type'][0] != '':
-                    if row_zone['hvac_ahu_type'] != '':
+                if pd.notnull(self.building_scenarios['humidity_model_type'][0]):
+                    if pd.notnull(zone_data['hvac_ahu_type']):
                         self.output_constraint_timeseries_minimum.at[
-                            row_time,
-                            index_zone + '_absolute_humidity'
+                            timestep,
+                            zone_name + '_absolute_humidity'
                         ] = humid_air_properties(
                             'W',
                             'R',
                             self.parse_parameter(
                                 building_zone_constraint_profile['minimum_relative_humidity'][
-                                    int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
+                                    int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
                                 ]
                             )
                             / 100,
@@ -2682,14 +3839,14 @@ class Building(object):
                             101325
                         )
                         self.output_constraint_timeseries_maximum.at[
-                            row_time,
-                            index_zone + '_absolute_humidity'
+                            timestep,
+                            zone_name + '_absolute_humidity'
                         ] = humid_air_properties(
                             'W',
                             'R',
                             self.parse_parameter(
                                 building_zone_constraint_profile['maximum_relative_humidity'][
-                                    int(constraint_profile_index_time(row_time.to_datetime64().astype('int64')))
+                                    int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
                                 ]
                             )
                             / 100,
@@ -2702,19 +3859,50 @@ class Building(object):
                             101325
                         )
 
-        # Transpose to align with result of state space output matrix equation
-        self.output_constraint_timeseries_minimum = self.output_constraint_timeseries_minimum.transpose()
-        self.output_constraint_timeseries_maximum = self.output_constraint_timeseries_maximum.transpose()
+                # Storage state of charge constraints.
+                # Sensible thermal storage.
+                if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                    self.output_constraint_timeseries_maximum.at[
+                        timestep,
+                        self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
+                    ] = (
+                        self.parse_parameter(self.building_scenarios['storage_size'])
+                        * self.parse_parameter('water_density')  # Convert volume to mass.
+                    )
+                if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                    self.output_constraint_timeseries_minimum.at[
+                        timestep,
+                        self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
+                    ] = 0.0
+
+                # Battery storage.
+                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                    self.output_constraint_timeseries_maximum.at[
+                        timestep,
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
+                    ] = self.parse_parameter(self.building_scenarios['storage_size'])
+                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                    self.output_constraint_timeseries_minimum.at[
+                        timestep,
+                        self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
+                    ] = (
+                        0.0
+                        # TODO: Revise implementation of depth of discharge.
+                        # + self.parse_parameter(self.building_scenarios['storage_size'])
+                        # * (1.0 - self.parse_parameter(self.building_scenarios['storage_battery_depth_of_discharge']))
+                    )
 
     def discretize_model(self):
         """
         - Discretization assuming zero order hold
         - Source: https://en.wikipedia.org/wiki/Discretization#Discretization_of_linear_state_space_models
         """
-        state_matrix_discrete = expm(
+
+        state_matrix_discrete = scipy.linalg.expm(
             self.state_matrix.values
             * pd.to_timedelta(self.building_scenarios['time_step'][0]).seconds
         )
+
         control_matrix_discrete = (
             np.linalg.matrix_power(
                 self.state_matrix.values,
@@ -2753,3 +3941,146 @@ class Building(object):
             index=self.disturbance_matrix.index,
             columns=self.disturbance_matrix.columns
         )
+
+    def define_augmented_model(self):
+        """Define augmented state space model matrices.
+
+        - Based on Oldewurtel 2011: https://doi.org/10.3929/ethz-a-007157625%0A
+        - Construct augmented state space matrices based on 'normal' state space matrices.
+        - Augmented state space matrices are stored in the build model (not returned).
+        - TODO: Validate matrices.
+        - TODO: Check alternatives for np.block(), which is slow for a large number of time steps.
+        """
+        # Create local numpy.array copies of state space matrices for speed
+        state_matrix = self.state_matrix.values
+        control_matrix = self.control_matrix.values
+        disturbance_matrix = self.disturbance_matrix.values
+        state_output_matrix = self.state_output_matrix.values
+        control_output_matrix = self.control_output_matrix.values
+        disturbance_output_matrix = self.disturbance_output_matrix.values
+
+        # Construct first column, i.e., rows, of augmented matrices.
+        state_matrix_augmented_rows = [np.eye(state_matrix.shape[0])]
+        control_matrix_augmented_rows = [np.zeros_like(control_matrix)]
+        disturbance_matrix_augmented_rows = [np.zeros_like(disturbance_matrix)]
+        state_output_matrix_augmented_rows = [state_output_matrix]
+        control_output_matrix_augmented_rows = [control_output_matrix]
+        disturbance_output_matrix_augmented_rows = [disturbance_output_matrix]
+        for timestep in range(1, len(self.set_timesteps)):
+            state_matrix_augmented_rows.append(
+                state_matrix ** timestep
+            )
+            control_matrix_augmented_rows.append(
+                (state_matrix ** (timestep - 1)).dot(control_matrix)
+            )
+            disturbance_matrix_augmented_rows.append(
+                (state_matrix ** (timestep - 1)).dot(disturbance_matrix)
+            )
+            state_output_matrix_augmented_rows.append(
+                state_output_matrix.dot(state_matrix_augmented_rows[-1])
+            )
+            control_output_matrix_augmented_rows.append(
+                state_output_matrix.dot(control_matrix_augmented_rows[-1])
+            )
+            disturbance_output_matrix_augmented_rows.append(
+                state_output_matrix.dot(disturbance_matrix_augmented_rows[-1])
+            )
+
+        # Construct remaining columns of augmented matrices (except state and state_output).
+        control_matrix_augmented_cols = [control_matrix_augmented_rows]
+        disturbance_matrix_augmented_cols = [disturbance_matrix_augmented_rows]
+        control_output_matrix_augmented_cols = [control_output_matrix_augmented_rows]
+        disturbance_output_matrix_augmented_cols = [disturbance_output_matrix_augmented_rows]
+        for timestep in range(1, len(self.set_timesteps)):
+            control_matrix_augmented_cols.append(
+                [np.zeros(control_matrix.shape)] * timestep
+                + control_matrix_augmented_rows[:-timestep]
+            )
+            disturbance_matrix_augmented_cols.append(
+                [np.zeros(disturbance_matrix.shape)] * timestep
+                + disturbance_matrix_augmented_rows[:-timestep]
+            )
+            control_output_matrix_augmented_cols.append(
+                [np.zeros(control_output_matrix.shape)] * timestep
+                + control_output_matrix_augmented_rows[:-timestep]
+            )
+            disturbance_output_matrix_augmented_cols.append(
+                [np.zeros(disturbance_output_matrix.shape)] * timestep
+                + disturbance_output_matrix_augmented_rows[:-timestep]
+            )
+
+        # Construct full augmented matrices.
+        self.state_matrix_augmented = np.zeros(
+            (state_matrix.shape[0] * len(self.set_timesteps), state_matrix.shape[0])
+        )
+        self.control_matrix_augmented = np.zeros(
+            (control_matrix.shape[0] * len(self.set_timesteps),) * 2
+        )
+        self.disturbance_matrix_augmented = np.zeros(
+            (disturbance_matrix.shape[0] * len(self.set_timesteps),) * 2
+        )
+        self.state_output_matrix_augmented = np.zeros(
+            (state_output_matrix.shape[0] * len(self.set_timesteps), state_output_matrix.shape[0])
+        )
+        self.control_output_matrix_augmented = np.zeros(
+            (control_output_matrix.shape[0] * len(self.set_timesteps),) * 2
+        )
+        self.disturbance_output_matrix_augmented = np.zeros(
+            (disturbance_output_matrix.shape[0] * len(self.set_timesteps),) * 2
+        )
+        self.state_matrix_augmented = np.vstack(state_matrix_augmented_rows)
+        self.control_matrix_augmented = np.block(control_matrix_augmented_cols).transpose()
+        self.disturbance_matrix_augmented = np.block(disturbance_matrix_augmented_cols).transpose()
+        self.state_output_matrix_augmented = np.vstack(state_output_matrix_augmented_rows)
+        self.control_output_matrix_augmented = np.block(control_output_matrix_augmented_cols).transpose()
+        self.disturbance_output_matrix_augmented = np.block(disturbance_output_matrix_augmented_cols).transpose()
+
+    def simulate(
+            self,
+            state_initial,
+            control_timeseries,
+            disturbance_timeseries=None
+    ):
+        """Simulate building model with given initial state and control timeseries.
+
+        - Time horizon is derived from scenario definition in database.
+        - Disturbance timeseries is derived from database.
+        - TODO: Automatically create initial state from database.
+        """
+        # Default values
+        if disturbance_timeseries is None:
+            disturbance_timeseries = self.disturbance_timeseries
+
+        # Initialize state and output timeseries
+        state_timeseries = pd.DataFrame(
+            np.nan,
+            self.set_timesteps,
+            self.set_states
+        )
+        state_timeseries.iloc[0, :] = state_initial
+        output_timeseries = pd.DataFrame(
+            np.nan,
+            self.set_timesteps,
+            self.set_outputs
+        )
+
+        # Iterative simulation of state space equations
+        for timestep in range(len(self.set_timesteps) - 1):
+            state_timeseries.iloc[timestep + 1, :] = (
+                    np.dot(self.state_matrix.values, state_timeseries.iloc[timestep, :].values)
+                    + np.dot(self.control_matrix.values, control_timeseries.iloc[timestep, :].values)
+                    + np.dot(self.disturbance_matrix.values, disturbance_timeseries.iloc[timestep, :].values)
+            )
+        for timestep in range(1, len(self.set_timesteps)):
+            # TODO: Check `timestep - 1` (This was added to match with EnergyPlus outputs)
+            output_timeseries.iloc[timestep - 1, :] = (
+                    np.dot(self.state_output_matrix.values, state_timeseries.iloc[timestep, :].values)
+                    + np.dot(self.control_output_matrix.values, control_timeseries.iloc[timestep, :].values)
+                    + np.dot(self.disturbance_output_matrix.values, disturbance_timeseries.iloc[timestep, :].values)
+            )
+
+        return (
+            state_timeseries,
+            output_timeseries
+        )
+

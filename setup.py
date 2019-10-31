@@ -9,9 +9,12 @@ setup(
     version='0.1',
     py_modules=find_packages(),
     install_requires=[
+        'CoolProp==6.2.1',
+        'hvplot',
         'numpy',
         'pandas',
-        'CoolProp',
+        'pvlib',
+        'pyomo',
         'scipy',
-        'pvlib'
+        'seaborn'
     ])
