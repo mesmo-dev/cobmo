@@ -547,7 +547,7 @@ class Building(object):
 
         # Define timeseries.
         self.load_disturbance_timeseries(conn)
-        # self.define_output_constraint_timeseries(conn)
+        self.define_output_constraint_timeseries(conn)
 
         # Convert to time discrete model.
         self.discretize_model()
@@ -3283,18 +3283,6 @@ class Building(object):
                 ) + (
                         self.parse_parameter(surface_data['irradiation_gain_coefficient'])
                         * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
-                        # * (
-                        #         1.0
-                        #         + (
-                        #                 self.parse_parameter('heat_transfer_coefficient_exterior_convection')
-                        #                 + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                        #                 + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
-                        #         )
-                        #         / (
-                        #                 2.0
-                        #                 * self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
-                        #         )
-                        # ) ** (- 1)
                 )
             else:  # Surfaces with neglected heat capacity
                 self.disturbance_output_matrix.at[
@@ -3308,21 +3296,6 @@ class Building(object):
                 ) + (
                         self.parse_parameter(surface_data['irradiation_gain_coefficient'])
                         * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
-                        # * (
-                        #         1.0
-                        #         + (
-                        #                 self.parse_parameter('heat_transfer_coefficient_exterior_convection')
-                        #                 + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                        #                 + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
-                        #         )
-                        #         / self.parse_parameter('heat_transfer_coefficient_interior_convection')
-                        #         + (
-                        #                 self.parse_parameter('heat_transfer_coefficient_exterior_convection')
-                        #                 + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                        #                 + self.parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
-                        #         )
-                        #         / (self.parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
-                        # ) ** (- 1)
                 )
 
     def define_output_surfaces_exterior_convection_interior(self):

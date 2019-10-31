@@ -70,7 +70,7 @@ output_timeseries_simulation.to_csv(os.path.join(results_path, 'output_timeserie
 # Load validation data.
 output_timeseries_validation = pd.read_csv(
     os.path.join(
-        os.path.dirname(os.path.normpath(__file__)), '..', 'data', 'validation', building.scenario_name + '.csv'
+        os.path.dirname(os.path.normpath(__file__)), '..', 'data', 'validation', scenario_name + '.csv'
     ),
     index_col='time',
     parse_dates=True,
