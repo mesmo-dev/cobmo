@@ -2,6 +2,7 @@
 
 import hvplot
 import hvplot.pandas
+import numpy as np
 import os
 import pandas as pd
 
@@ -59,73 +60,112 @@ control_timeseries_baseline.to_csv(os.path.join(results_path, 'control_timeserie
 state_timeseries_baseline.to_csv(os.path.join(results_path, 'state_timeseries_baseline.csv'))
 output_timeseries_baseline.to_csv(os.path.join(results_path, 'output_timeseries_baseline.csv'))
 
-# Run controller for forced flexibility case.
-controller_forced_flexibility = cobmo.controller.Controller(
-    conn=conn,
-    building=building,
-    problem_type='forced_flexibility',
-    output_timeseries_reference=output_timeseries_baseline,
-    forced_flexibility_start_time=pd.to_datetime('2017-01-02T012:00:00'),
-    forced_flexibility_end_time=pd.to_datetime('2017-01-02T012:00:00') + pd.to_timedelta('3h')
+# Instantiate forced flexibility iteration variables.
+set_time_duration = (
+    pd.Index([
+        pd.to_timedelta('{}h'.format(time_duration))
+        for time_duration in np.arange(0.5, 12.5, 0.5)
+    ])
 )
-(
-    control_timeseries_forced_flexibility,
-    state_timeseries_forced_flexibility,
-    output_timeseries_forced_flexibility,
-    operation_cost_forced_flexibility,
-    investment_cost_forced_flexibility,  # Zero when running (default) operation problem.
-    storage_size_forced_flexibility  # Zero when running (default) operation problem.
-) = controller_forced_flexibility.solve()
-
-# Print investment cost for debugging.
-print("investment_cost_forced_flexibility = {}".format(investment_cost_forced_flexibility))
-
-# Save controller timeseries to CSV for debugging.
-control_timeseries_forced_flexibility.to_csv(os.path.join(results_path, 'control_timeseries_forced_flexibility.csv'))
-state_timeseries_forced_flexibility.to_csv(os.path.join(results_path, 'state_timeseries_forced_flexibility.csv'))
-output_timeseries_forced_flexibility.to_csv(os.path.join(results_path, 'output_timeseries_forced_flexibility.csv'))
-
-# Plot demand comparison for debugging.
-electric_power_comparison = pd.concat(
-    [
-        output_timeseries_baseline.loc[:, output_timeseries_baseline.columns.str.contains('electric_power')].sum(axis=1),
-        output_timeseries_forced_flexibility.loc[:, output_timeseries_forced_flexibility.columns.str.contains('electric_power')].sum(axis=1),
-    ],
-    keys=[
-        'baseline',
-        'forced_flexibility',
-    ],
-    names=[
-        'type'
-    ],
-    axis=1
+set_timesteps = building.set_timesteps
+forced_flexibility_results = pd.DataFrame(
+    None,
+    set_timesteps,
+    set_time_duration
 )
 
-# Hvplot has no default options.
-# Workaround: Pass this dict to every new plot.
-hvplot_default_options = dict(width=1500, height=300)
+for time_duration in set_time_duration:
+    for timestep in set_timesteps:
+        if (timestep + time_duration) > building.set_timesteps[-1]:
+            break
+        else:
+            # Print status info.
+            print("Calculate forced flexibility for: time_duration = {} / timestep = {}".format(time_duration, timestep))
 
-electric_power_plot = (
-    electric_power_comparison.stack().rename('electric_power').reset_index()
-).hvplot.line(
-    x='time',
-    y='electric_power',
-    by=['type'],
-    **hvplot_default_options
-)
+            # Run controller for forced flexibility case.
+            controller_forced_flexibility = cobmo.controller.Controller(
+                conn=conn,
+                building=building,
+                problem_type='forced_flexibility',
+                output_timeseries_reference=output_timeseries_baseline,
+                forced_flexibility_start_time=timestep,
+                forced_flexibility_end_time=timestep + time_duration
+            )
+            (
+                control_timeseries_forced_flexibility,
+                state_timeseries_forced_flexibility,
+                output_timeseries_forced_flexibility,
+                operation_cost_forced_flexibility,
+                investment_cost_forced_flexibility,  # Represents forced flexibility.
+                storage_size_forced_flexibility
+            ) = controller_forced_flexibility.solve()
 
-# Define layout and labels / render plots.
-hvplot.show(
-    (
-        electric_power_plot
-    ).redim.label(
-        time="Date / time",
-        electric_power="Electric power [W]",
-    ),
-    # ).cols(1),
-    # Plots open in browser and are also stored in results directory.
-    filename=os.path.join(results_path, 'plots.html')
-)
+            # Print investment cost for debugging.
+            print("investment_cost_forced_flexibility = {}".format(investment_cost_forced_flexibility))
+
+            # # Save controller timeseries to CSV for debugging.
+            # control_timeseries_forced_flexibility.to_csv(os.path.join(results_path, 'control_timeseries_forced_flexibility.csv'))
+            # state_timeseries_forced_flexibility.to_csv(os.path.join(results_path, 'state_timeseries_forced_flexibility.csv'))
+            # output_timeseries_forced_flexibility.to_csv(os.path.join(results_path, 'output_timeseries_forced_flexibility.csv'))
+            #
+            # # Plot demand comparison for debugging.
+            # electric_power_comparison = pd.concat(
+            #     [
+            #         output_timeseries_baseline.loc[:, output_timeseries_baseline.columns.str.contains('electric_power')].sum(axis=1),
+            #         output_timeseries_forced_flexibility.loc[:, output_timeseries_forced_flexibility.columns.str.contains('electric_power')].sum(axis=1),
+            #     ],
+            #     keys=[
+            #         'baseline',
+            #         'forced_flexibility',
+            #     ],
+            #     names=[
+            #         'type'
+            #     ],
+            #     axis=1
+            # )
+            #
+            # # Hvplot has no default options.
+            # # Workaround: Pass this dict to every new plot.
+            # hvplot_default_options = dict(width=1500, height=300)
+            #
+            # electric_power_plot = (
+            #     electric_power_comparison.stack().rename('electric_power').reset_index()
+            # ).hvplot.line(
+            #     x='time',
+            #     y='electric_power',
+            #     by=['type'],
+            #     **hvplot_default_options
+            # )
+            #
+            # # Define layout and labels / render plots.
+            # hvplot.show(
+            #     (
+            #         electric_power_plot
+            #     ).redim.label(
+            #         time="Date / time",
+            #         electric_power="Electric power [W]",
+            #     ),
+            #     # ).cols(1),
+            #     # Plots open in browser and are also stored in results directory.
+            #     filename=os.path.join(results_path, 'plots.html')
+            # )
+
+            # Store results.
+            forced_flexibility_results.at[timestep, time_duration] = (
+                investment_cost_forced_flexibility  # Forced flexibility in kWh.
+                / (time_duration.total_seconds() / 3600.0)  # Convert kWh in kW.
+            )
+
+# Aggregate forced flexibility results.
+forced_flexibility_results_mean = forced_flexibility_results.mean()
+
+# Print forced flexibility results for debugging.
+print("forced_flexibility_results = \n{}".format(forced_flexibility_results))
+print("forced_flexibility_results_mean = \n{}".format(forced_flexibility_results_mean))
+
+# Save results to CSV.
+forced_flexibility_results.to_csv(os.path.join(results_path, 'forced_flexibility_results.csv'))
+forced_flexibility_results_mean.to_csv(os.path.join(results_path, 'forced_flexibility_results_mean.csv'))
 
 # Print results path for debugging.
 print("Results are stored in: " + results_path)

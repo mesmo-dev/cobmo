@@ -203,11 +203,10 @@ class Controller(object):
                 * 14.0  # 14 levels at CREATE Tower. # TODO: Check if considered properly in storage size.
             )
         elif self.problem_type == 'forced_flexibility':
-            # Reduce weight of operation cost when running demand side flexibility problem.
+            # Adjust weight of operation cost when running forced flexibility problem.
             # - Workaround for unrealistic demand when not considering operation cost at all.
-            # - This is a tuning parameter (has impact on demand side flexibility result).
-            # - The value is greater than 1.0, because the operation cost is numerically smaller.
-            self.operation_cost_factor = 1.0e3
+            # - This is a tuning parameter (has impact on forced flexibility result).
+            self.operation_cost_factor = 1.0e-1
         else:
             # No scaling needed if not running planning problem.
             self.operation_cost_factor = 1.0
@@ -256,8 +255,11 @@ class Controller(object):
                         if ('electric_power' in output) and not ('storage_to_zone' in output):
                             # Forced flexibility here is interpreted as decrease / reduction in demand.
                             self.investment_cost += (
-                                self.problem.variable_output_timeseries[timestep, output]
-                                - self.output_timeseries_reference.loc[timestep, output]
+                                (
+                                    self.problem.variable_output_timeseries[timestep, output]
+                                    - self.output_timeseries_reference.loc[timestep, output]
+                                )
+                                * timestep_delta.seconds / 3600.0 / 1000.0  # Ws in kWh.
                             )
 
         # Define objective.
