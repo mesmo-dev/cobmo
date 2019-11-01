@@ -18,6 +18,7 @@ scenario_name = 'scenario_default'
 # Set results path and create the directory.
 results_path = os.path.join(cobmo.config.results_path, 'run_demand_side_flexibility_' + cobmo.config.timestamp)
 os.mkdir(results_path)
+os.mkdir(os.path.join(results_path, 'plots'))
 
 # Obtain a connection to the database.
 conn = cobmo.database_interface.connect_database()
@@ -120,48 +121,50 @@ for time_duration in set_time_duration:
             # control_timeseries_forced_flexibility.to_csv(os.path.join(results_path, 'control_timeseries_forced_flexibility.csv'))
             # state_timeseries_forced_flexibility.to_csv(os.path.join(results_path, 'state_timeseries_forced_flexibility.csv'))
             # output_timeseries_forced_flexibility.to_csv(os.path.join(results_path, 'output_timeseries_forced_flexibility.csv'))
-            #
-            # # Plot demand comparison for debugging.
-            # electric_power_comparison = pd.concat(
-            #     [
-            #         output_timeseries_baseline.loc[:, output_timeseries_baseline.columns.str.contains('electric_power')].sum(axis=1),
-            #         output_timeseries_forced_flexibility.loc[:, output_timeseries_forced_flexibility.columns.str.contains('electric_power')].sum(axis=1),
-            #     ],
-            #     keys=[
-            #         'baseline',
-            #         'forced_flexibility',
-            #     ],
-            #     names=[
-            #         'type'
-            #     ],
-            #     axis=1
-            # )
-            #
-            # # Hvplot has no default options.
-            # # Workaround: Pass this dict to every new plot.
-            # hvplot_default_options = dict(width=1500, height=300)
-            #
-            # electric_power_plot = (
-            #     electric_power_comparison.stack().rename('electric_power').reset_index()
-            # ).hvplot.line(
-            #     x='time',
-            #     y='electric_power',
-            #     by=['type'],
-            #     **hvplot_default_options
-            # )
-            #
-            # # Define layout and labels / render plots.
-            # hvplot.show(
-            #     (
-            #         electric_power_plot
-            #     ).redim.label(
-            #         time="Date / time",
-            #         electric_power="Electric power [W]",
-            #     ),
-            #     # ).cols(1),
-            #     # Plots open in browser and are also stored in results directory.
-            #     filename=os.path.join(results_path, 'plots.html')
-            # )
+
+            # Plot demand comparison for debugging.
+            electric_power_comparison = pd.concat(
+                [
+                    output_timeseries_baseline.loc[:, output_timeseries_baseline.columns.str.contains('electric_power')].sum(axis=1),
+                    output_timeseries_forced_flexibility.loc[:, output_timeseries_forced_flexibility.columns.str.contains('electric_power')].sum(axis=1),
+                ],
+                keys=[
+                    'baseline',
+                    'forced_flexibility',
+                ],
+                names=[
+                    'type'
+                ],
+                axis=1
+            )
+
+            # Hvplot has no default options.
+            # Workaround: Pass this dict to every new plot.
+            hvplot_default_options = dict(width=1500, height=300)
+
+            electric_power_plot = (
+                electric_power_comparison.stack().rename('electric_power').reset_index()
+            ).hvplot.line(
+                x='time',
+                y='electric_power',
+                by=['type'],
+                **hvplot_default_options
+            )
+
+            # Define layout and labels / render plots.
+            hvplot.save(
+                (
+                    electric_power_plot
+                ).redim.label(
+                    time="Date / time",
+                    electric_power="Electric power [W]",
+                ),
+                # ).cols(1),
+                # Plots open in are also stored in results directory.
+                filename=os.path.join(
+                    results_path, 'plots', '{} - {}.html'.format(time_duration, timestep).replace(':', '-')
+                )
+            )
 
             # Calculate results.
             # TODO: Move timestep_delta into building model.
