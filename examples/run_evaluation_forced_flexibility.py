@@ -68,12 +68,23 @@ set_time_duration = (
     ])
 )
 set_timesteps = building.set_timesteps
-forced_flexibility_results = pd.DataFrame(
+forced_flexibility_energy_results = pd.DataFrame(
+    None,
+    set_timesteps,
+    set_time_duration
+)
+forced_flexibility_power_results = pd.DataFrame(
+    None,
+    set_timesteps,
+    set_time_duration
+)
+forced_flexibility_percent_results = pd.DataFrame(
     None,
     set_timesteps,
     set_time_duration
 )
 
+# Iterate forced flexibility calculation.
 for time_duration in set_time_duration:
     for timestep in set_timesteps:
         if (timestep + time_duration) > building.set_timesteps[-1]:
@@ -104,9 +115,6 @@ for time_duration in set_time_duration:
                 investment_cost_forced_flexibility,  # Represents forced flexibility.
                 storage_size_forced_flexibility
             ) = controller_forced_flexibility.solve()
-
-            # Print investment cost for debugging.
-            print("investment_cost_forced_flexibility = {}".format(investment_cost_forced_flexibility))
 
             # # Save controller timeseries to CSV for debugging.
             # control_timeseries_forced_flexibility.to_csv(os.path.join(results_path, 'control_timeseries_forced_flexibility.csv'))
@@ -155,22 +163,53 @@ for time_duration in set_time_duration:
             #     filename=os.path.join(results_path, 'plots.html')
             # )
 
-            # Store results.
-            forced_flexibility_results.at[timestep, time_duration] = (
-                investment_cost_forced_flexibility  # Forced flexibility in kWh.
-                / (time_duration.total_seconds() / 3600.0)  # Convert kWh in kW.
+            # Calculate results.
+            # TODO: Move timestep_delta into building model.
+            timestep_delta = building.set_timesteps[1] - building.set_timesteps[0]
+            baseline_energy = (
+                output_timeseries_baseline.loc[
+                    timestep:(timestep + time_duration),
+                    output_timeseries_baseline.columns.str.contains('electric_power')
+                ].sum().sum()
+                * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
+            )
+            forced_flexibility_energy = abs(investment_cost_forced_flexibility)  # in kWh.
+            forced_flexibility_power = (
+                forced_flexibility_energy
+                / (time_duration.total_seconds() / 3600.0)  # kWh in kW.
+            )
+            forced_flexibility_percent = (
+                forced_flexibility_energy
+                / baseline_energy
+                * 100.0
             )
 
+            # Print results.
+            print("forced_flexibility_energy = {}".format(forced_flexibility_energy))
+            print("forced_flexibility_power = {}".format(forced_flexibility_power))
+            print("forced_flexibility_percent = {}".format(forced_flexibility_percent))
+
+            # Store results.
+            forced_flexibility_energy_results.at[timestep, time_duration] = forced_flexibility_energy
+            forced_flexibility_power_results.at[timestep, time_duration] = forced_flexibility_power
+            forced_flexibility_percent_results.at[timestep, time_duration] = forced_flexibility_percent
+
 # Aggregate forced flexibility results.
-forced_flexibility_results_mean = forced_flexibility_results.mean()
+forced_flexibility_energy_mean = forced_flexibility_energy_results.mean()
+forced_flexibility_power_mean = forced_flexibility_power_results.mean()
+forced_flexibility_percent_mean = forced_flexibility_percent_results.mean()
 
 # Print forced flexibility results for debugging.
-print("forced_flexibility_results = \n{}".format(forced_flexibility_results))
-print("forced_flexibility_results_mean = \n{}".format(forced_flexibility_results_mean))
+print("forced_flexibility_percent_results = \n{}".format(forced_flexibility_percent_results))
+print("forced_flexibility_percent_mean = \n{}".format(forced_flexibility_percent_mean))
 
 # Save results to CSV.
-forced_flexibility_results.to_csv(os.path.join(results_path, 'forced_flexibility_results.csv'))
-forced_flexibility_results_mean.to_csv(os.path.join(results_path, 'forced_flexibility_results_mean.csv'))
+forced_flexibility_energy_results.to_csv(os.path.join(results_path, 'forced_flexibility_energy_results.csv'))
+forced_flexibility_power_results.to_csv(os.path.join(results_path, 'forced_flexibility_power_results.csv'))
+forced_flexibility_percent_results.to_csv(os.path.join(results_path, 'forced_flexibility_percent_results.csv'))
+forced_flexibility_energy_mean.to_csv(os.path.join(results_path, 'forced_flexibility_energy_mean.csv'))
+forced_flexibility_power_mean.to_csv(os.path.join(results_path, 'forced_flexibility_power_mean.csv'))
+forced_flexibility_percent_mean.to_csv(os.path.join(results_path, 'forced_flexibility_percent_mean.csv'))
 
 # Print results path for debugging.
 print("Results are stored in: " + results_path)
