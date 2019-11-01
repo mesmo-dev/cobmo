@@ -64,7 +64,7 @@ output_timeseries_baseline.to_csv(os.path.join(results_path, 'output_timeseries_
 set_time_duration = (
     pd.Index([
         pd.to_timedelta('{}h'.format(time_duration))
-        for time_duration in np.arange(0.5, 12.5, 0.5)
+        for time_duration in np.arange(0.5, 6.5, 0.5)
     ])
 )
 set_timesteps = building.set_timesteps
@@ -77,7 +77,12 @@ forced_flexibility_results = pd.DataFrame(
 for time_duration in set_time_duration:
     for timestep in set_timesteps:
         if (timestep + time_duration) > building.set_timesteps[-1]:
-            break
+            break  # Interrupt loop if end time goes beyond building model time horizon.
+        elif (
+            output_timeseries_baseline.loc[timestep, output_timeseries_baseline.columns.str.contains('electric_power')]
+            == 0.0
+        ).all():
+            continue  # Skip loop if there is no baseline demand in the start timestep (no reduction possible).
         else:
             # Print status info.
             print("Calculate forced flexibility for: time_duration = {} / timestep = {}".format(time_duration, timestep))
