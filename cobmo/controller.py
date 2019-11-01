@@ -217,7 +217,7 @@ class Controller(object):
                 if ('electric_power' in output) and not ('storage_to_zone' in output):
                     self.operation_cost += (
                         self.problem.variable_output_timeseries[timestep, output]
-                        * timestep_delta.seconds / 3600.0 / 1000.0  # Ws in kWh.
+                        * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
                         * self.building.electricity_prices.loc[timestep, 'price']
                         * self.operation_cost_factor
                     )
@@ -259,7 +259,7 @@ class Controller(object):
                                     self.problem.variable_output_timeseries[timestep, output]
                                     - self.output_timeseries_reference.loc[timestep, output]
                                 )
-                                * timestep_delta.seconds / 3600.0 / 1000.0  # Ws in kWh.
+                                * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
                             )
 
         # Define objective.
