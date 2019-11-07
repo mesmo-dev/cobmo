@@ -1,4 +1,4 @@
-"""Run script for generating demand side flexibility indicators."""
+"""Run script for evaluating demand side flexibility in terms of load reduction."""
 
 import hvplot
 import hvplot.pandas
