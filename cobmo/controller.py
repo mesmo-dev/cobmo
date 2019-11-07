@@ -15,10 +15,13 @@ class Controller(object):
             conn,
             building,
             problem_type='operation',
-            # Choices: 'operation', 'storage_planning', 'storage_planning_baseline', 'load_reduction'
+            # Choices: 'operation', 'storage_planning', 'storage_planning_baseline', 'load_reduction',
+            # 'price_sensitivity'
             output_timeseries_reference=None,
             load_reduction_start_time=None,
-            load_reduction_end_time=None
+            load_reduction_end_time=None,
+            price_sensitivity_factor=None,
+            price_sensitivity_timestep=None,
     ):
         """Initialize controller object based on given `building` object.
 
@@ -30,6 +33,9 @@ class Controller(object):
         self.output_timeseries_reference = output_timeseries_reference
         self.load_reduction_start_time = load_reduction_start_time
         self.load_reduction_end_time = load_reduction_end_time
+        self.price_sensitivity_factor = price_sensitivity_factor
+        self.price_sensitivity_timestep = price_sensitivity_timestep
+
         self.problem = pyo.ConcreteModel()
         self.solver = pyo.SolverFactory(cobmo.config.solver_name)
         self.result = None
@@ -241,6 +247,10 @@ class Controller(object):
         else:
             # No scaling needed if not running planning problem.
             self.operation_cost_factor = 1.0
+
+        # Modify price for price sensitivity evaluation.
+        if self.problem_type == 'price_sensitivity':
+            self.building.electricity_prices.at[self.price_sensitivity_timestep, 'price'] *= self.price_sensitivity_factor
 
         # Operation cost (OPEX).
         for timestep in self.building.set_timesteps:
