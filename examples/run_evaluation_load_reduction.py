@@ -16,7 +16,7 @@ import cobmo.utils
 scenario_name = 'scenario_default'
 
 # Set results path and create the directory.
-results_path = os.path.join(cobmo.config.results_path, 'run_demand_side_flexibility_' + cobmo.config.timestamp)
+results_path = os.path.join(cobmo.config.results_path, 'run_evaluation_load_reduction' + cobmo.config.timestamp)
 os.mkdir(results_path)
 os.mkdir(os.path.join(results_path, 'plots'))
 
@@ -61,7 +61,7 @@ control_timeseries_baseline.to_csv(os.path.join(results_path, 'control_timeserie
 state_timeseries_baseline.to_csv(os.path.join(results_path, 'state_timeseries_baseline.csv'))
 output_timeseries_baseline.to_csv(os.path.join(results_path, 'output_timeseries_baseline.csv'))
 
-# Instantiate forced flexibility iteration variables.
+# Instantiate load reduction iteration variables.
 set_time_duration = (
     pd.Index([
         pd.to_timedelta('{}h'.format(time_duration))
@@ -69,23 +69,23 @@ set_time_duration = (
     ])
 )
 set_timesteps = building.set_timesteps
-forced_flexibility_energy_results = pd.DataFrame(
+load_reduction_energy_results = pd.DataFrame(
     None,
     set_timesteps,
     set_time_duration
 )
-forced_flexibility_power_results = pd.DataFrame(
+load_reduction_power_results = pd.DataFrame(
     None,
     set_timesteps,
     set_time_duration
 )
-forced_flexibility_percent_results = pd.DataFrame(
+load_reduction_percent_results = pd.DataFrame(
     None,
     set_timesteps,
     set_time_duration
 )
 
-# Iterate forced flexibility calculation.
+# Iterate load reduction calculation.
 for time_duration in set_time_duration:
     for timestep in set_timesteps:
         if (timestep + time_duration) > building.set_timesteps[-1]:
@@ -97,40 +97,40 @@ for time_duration in set_time_duration:
             continue  # Skip loop if there is no baseline demand in the start timestep (no reduction possible).
         else:
             # Print status info.
-            print("Calculate forced flexibility for: time_duration = {} / timestep = {}".format(time_duration, timestep))
+            print("Calculate load reduction for: time_duration = {} / timestep = {}".format(time_duration, timestep))
 
-            # Run controller for forced flexibility case.
-            controller_forced_flexibility = cobmo.controller.Controller(
+            # Run controller for load reduction case.
+            controller_load_reduction = cobmo.controller.Controller(
                 conn=conn,
                 building=building,
-                problem_type='forced_flexibility',
+                problem_type='load_reduction',
                 output_timeseries_reference=output_timeseries_baseline,
-                forced_flexibility_start_time=timestep,
-                forced_flexibility_end_time=timestep + time_duration
+                load_reduction_start_time=timestep,
+                load_reduction_end_time=timestep + time_duration
             )
             (
-                control_timeseries_forced_flexibility,
-                state_timeseries_forced_flexibility,
-                output_timeseries_forced_flexibility,
-                operation_cost_forced_flexibility,
-                investment_cost_forced_flexibility,  # Represents forced flexibility.
-                storage_size_forced_flexibility
-            ) = controller_forced_flexibility.solve()
+                control_timeseries_load_reduction,
+                state_timeseries_load_reduction,
+                output_timeseries_load_reduction,
+                operation_cost_load_reduction,
+                investment_cost_load_reduction,  # Represents load reduction.
+                storage_size_load_reduction
+            ) = controller_load_reduction.solve()
 
             # # Save controller timeseries to CSV for debugging.
-            # control_timeseries_forced_flexibility.to_csv(os.path.join(results_path, 'control_timeseries_forced_flexibility.csv'))
-            # state_timeseries_forced_flexibility.to_csv(os.path.join(results_path, 'state_timeseries_forced_flexibility.csv'))
-            # output_timeseries_forced_flexibility.to_csv(os.path.join(results_path, 'output_timeseries_forced_flexibility.csv'))
+            # control_timeseries_load_reduction.to_csv(os.path.join(results_path, 'control_timeseries_load_reduction.csv'))
+            # state_timeseries_load_reduction.to_csv(os.path.join(results_path, 'state_timeseries_load_reduction.csv'))
+            # output_timeseries_load_reduction.to_csv(os.path.join(results_path, 'output_timeseries_load_reduction.csv'))
 
             # Plot demand comparison for debugging.
             electric_power_comparison = pd.concat(
                 [
                     output_timeseries_baseline.loc[:, output_timeseries_baseline.columns.str.contains('electric_power')].sum(axis=1),
-                    output_timeseries_forced_flexibility.loc[:, output_timeseries_forced_flexibility.columns.str.contains('electric_power')].sum(axis=1),
+                    output_timeseries_load_reduction.loc[:, output_timeseries_load_reduction.columns.str.contains('electric_power')].sum(axis=1),
                 ],
                 keys=[
                     'baseline',
-                    'forced_flexibility',
+                    'load_reduction',
                 ],
                 names=[
                     'type'
@@ -176,42 +176,42 @@ for time_duration in set_time_duration:
                 ].sum().sum()
                 * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
             )
-            forced_flexibility_percent = - investment_cost_forced_flexibility  # In percent.
-            forced_flexibility_energy = (
-                (forced_flexibility_percent / 100.0)
+            load_reduction_percent = - investment_cost_load_reduction  # In percent.
+            load_reduction_energy = (
+                (load_reduction_percent / 100.0)
                 * baseline_energy
             )  # in kWh.
-            forced_flexibility_power = (
-                forced_flexibility_energy
+            load_reduction_power = (
+                load_reduction_energy
                 / (time_duration.total_seconds() / 3600.0)  # kWh in kW.
             )
 
             # Print results.
-            print("forced_flexibility_energy = {}".format(forced_flexibility_energy))
-            print("forced_flexibility_power = {}".format(forced_flexibility_power))
-            print("forced_flexibility_percent = {}".format(forced_flexibility_percent))
+            print("load_reduction_energy = {}".format(load_reduction_energy))
+            print("load_reduction_power = {}".format(load_reduction_power))
+            print("load_reduction_percent = {}".format(load_reduction_percent))
 
             # Store results.
-            forced_flexibility_energy_results.at[timestep, time_duration] = forced_flexibility_energy
-            forced_flexibility_power_results.at[timestep, time_duration] = forced_flexibility_power
-            forced_flexibility_percent_results.at[timestep, time_duration] = forced_flexibility_percent
+            load_reduction_energy_results.at[timestep, time_duration] = load_reduction_energy
+            load_reduction_power_results.at[timestep, time_duration] = load_reduction_power
+            load_reduction_percent_results.at[timestep, time_duration] = load_reduction_percent
 
-# Aggregate forced flexibility results.
-forced_flexibility_energy_mean = forced_flexibility_energy_results.mean()
-forced_flexibility_power_mean = forced_flexibility_power_results.mean()
-forced_flexibility_percent_mean = forced_flexibility_percent_results.mean()
+# Aggregate load reduction results.
+load_reduction_energy_mean = load_reduction_energy_results.mean()
+load_reduction_power_mean = load_reduction_power_results.mean()
+load_reduction_percent_mean = load_reduction_percent_results.mean()
 
-# Print forced flexibility results for debugging.
-print("forced_flexibility_percent_results = \n{}".format(forced_flexibility_percent_results))
-print("forced_flexibility_percent_mean = \n{}".format(forced_flexibility_percent_mean))
+# Print load reduction results for debugging.
+print("load_reduction_percent_results = \n{}".format(load_reduction_percent_results))
+print("load_reduction_percent_mean = \n{}".format(load_reduction_percent_mean))
 
 # Save results to CSV.
-forced_flexibility_energy_results.to_csv(os.path.join(results_path, 'forced_flexibility_energy_results.csv'))
-forced_flexibility_power_results.to_csv(os.path.join(results_path, 'forced_flexibility_power_results.csv'))
-forced_flexibility_percent_results.to_csv(os.path.join(results_path, 'forced_flexibility_percent_results.csv'))
-forced_flexibility_energy_mean.to_csv(os.path.join(results_path, 'forced_flexibility_energy_mean.csv'))
-forced_flexibility_power_mean.to_csv(os.path.join(results_path, 'forced_flexibility_power_mean.csv'))
-forced_flexibility_percent_mean.to_csv(os.path.join(results_path, 'forced_flexibility_percent_mean.csv'))
+load_reduction_energy_results.to_csv(os.path.join(results_path, 'load_reduction_energy_results.csv'))
+load_reduction_power_results.to_csv(os.path.join(results_path, 'load_reduction_power_results.csv'))
+load_reduction_percent_results.to_csv(os.path.join(results_path, 'load_reduction_percent_results.csv'))
+load_reduction_energy_mean.to_csv(os.path.join(results_path, 'load_reduction_energy_mean.csv'))
+load_reduction_power_mean.to_csv(os.path.join(results_path, 'load_reduction_power_mean.csv'))
+load_reduction_percent_mean.to_csv(os.path.join(results_path, 'load_reduction_percent_mean.csv'))
 
 # Print results path for debugging.
 print("Results are stored in: " + results_path)

@@ -14,10 +14,11 @@ class Controller(object):
             self,
             conn,
             building,
-            problem_type='operation',  # Choices: 'operation', 'storage_planning', 'storage_planning_baseline'
+            problem_type='operation',
+            # Choices: 'operation', 'storage_planning', 'storage_planning_baseline', 'load_reduction'
             output_timeseries_reference=None,
-            forced_flexibility_start_time=None,
-            forced_flexibility_end_time=None
+            load_reduction_start_time=None,
+            load_reduction_end_time=None
     ):
         """Initialize controller object based on given `building` object.
 
@@ -27,8 +28,8 @@ class Controller(object):
         self.building = building
         self.problem_type = problem_type
         self.output_timeseries_reference = output_timeseries_reference
-        self.forced_flexibility_start_time = forced_flexibility_start_time
-        self.forced_flexibility_end_time = forced_flexibility_end_time
+        self.load_reduction_start_time = load_reduction_start_time
+        self.load_reduction_end_time = load_reduction_end_time
         self.problem = pyo.ConcreteModel()
         self.solver = pyo.SolverFactory(cobmo.config.solver_name)
         self.result = None
@@ -66,7 +67,7 @@ class Controller(object):
         if self.problem_type == 'storage_planning_baseline':
             # Force storage size to zero for baseline case.
             self.problem.variable_storage_size = [0.0]
-        if self.problem_type == 'forced_flexibility':
+        if self.problem_type == 'load_reduction':
             self.problem.variable_load_reduction = pyo.Var(
                 [0],
                 domain=pyo.NonNegativeReals
@@ -195,11 +196,11 @@ class Controller(object):
                 )
 
         # Demand side flexibility auxiliary constraints.
-        elif self.problem_type == 'forced_flexibility':
+        elif self.problem_type == 'load_reduction':
             for timestep in self.building.set_timesteps:
                 if (
-                    (timestep >= self.forced_flexibility_start_time)
-                    and (timestep < self.forced_flexibility_end_time)
+                    (timestep >= self.load_reduction_start_time)
+                    and (timestep < self.load_reduction_end_time)
                 ):
                     # TODO: Introduce total electric demand in building outputs.
                     self.problem.constraints.add(
@@ -232,10 +233,10 @@ class Controller(object):
                 * self.building.building_scenarios['storage_lifetime'][0]  # Storage lifetime in years.
                 * 14.0  # 14 levels at CREATE Tower. # TODO: Check if considered properly in storage size.
             )
-        elif self.problem_type == 'forced_flexibility':
-            # Adjust weight of operation cost when running forced flexibility problem.
+        elif self.problem_type == 'load_reduction':
+            # Adjust weight of operation cost when running load reduction problem.
             # - Workaround for unrealistic demand when not considering operation cost at all.
-            # - This is a tuning parameter (has impact on forced flexibility result).
+            # - This is a tuning parameter (has impact on load reduction result).
             self.operation_cost_factor = 1.0e-6
         else:
             # No scaling needed if not running planning problem.
@@ -274,7 +275,7 @@ class Controller(object):
                     + self.problem.variable_storage_exists[0]  # No unit.
                     * self.building.building_scenarios['storage_planning_fixed_installation_cost'][0]  # In SGD.
                 )
-        elif self.problem_type == 'forced_flexibility':
+        elif self.problem_type == 'load_reduction':
             # TODO: Introduce dedicated cost for demand side flexibility indicators.
             self.investment_cost -= self.problem.variable_load_reduction[0]  # In percent.
 
