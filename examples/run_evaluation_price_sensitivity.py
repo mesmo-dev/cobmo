@@ -62,7 +62,7 @@ state_timeseries_baseline.to_csv(os.path.join(results_path, 'state_timeseries_ba
 output_timeseries_baseline.to_csv(os.path.join(results_path, 'output_timeseries_baseline.csv'))
 
 # Instantiate load reduction iteration variables.
-set_price_factors = pd.Index(np.arange(2.0, 2.1, 0.1))
+set_price_factors = pd.Index(np.arange(0.0, 10.0, 0.2))
 set_timesteps = building.set_timesteps
 load_change_percent_results = pd.DataFrame(
     None,
@@ -135,7 +135,7 @@ for price_factor in set_price_factors:
             )
 
             # Define layout and labels / render plots.
-            hvplot.show(
+            hvplot.save(
                 (
                     electric_power_plot
                 ).redim.label(
