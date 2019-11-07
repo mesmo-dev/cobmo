@@ -144,7 +144,7 @@ for time_duration in set_time_duration:
 
             electric_power_plot = (
                 electric_power_comparison.stack().rename('electric_power').reset_index()
-            ).hvplot.line(
+            ).hvplot.step(
                 x='time',
                 y='electric_power',
                 by=['type'],
@@ -176,15 +176,14 @@ for time_duration in set_time_duration:
                 ].sum().sum()
                 * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
             )
-            forced_flexibility_energy = abs(investment_cost_forced_flexibility)  # in kWh.
+            forced_flexibility_percent = - investment_cost_forced_flexibility  # In percent.
+            forced_flexibility_energy = (
+                (forced_flexibility_percent / 100.0)
+                * baseline_energy
+            )  # in kWh.
             forced_flexibility_power = (
                 forced_flexibility_energy
                 / (time_duration.total_seconds() / 3600.0)  # kWh in kW.
-            )
-            forced_flexibility_percent = (
-                forced_flexibility_energy
-                / baseline_energy
-                * 100.0
             )
 
             # Print results.

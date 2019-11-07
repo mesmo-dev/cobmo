@@ -66,6 +66,11 @@ class Controller(object):
         if self.problem_type == 'storage_planning_baseline':
             # Force storage size to zero for baseline case.
             self.problem.variable_storage_size = [0.0]
+        if self.problem_type == 'forced_flexibility':
+            self.problem.variable_load_reduction = pyo.Var(
+                [0],
+                domain=pyo.NonNegativeReals
+            )
 
         # Define constraints.
         self.problem.constraints = pyo.ConstraintList()
@@ -189,6 +194,31 @@ class Controller(object):
                     * 1.0e100  # Large constant as replacement for infinity.
                 )
 
+        # Demand side flexibility auxiliary constraints.
+        elif self.problem_type == 'forced_flexibility':
+            for timestep in self.building.set_timesteps:
+                if (
+                    (timestep >= self.forced_flexibility_start_time)
+                    and (timestep < self.forced_flexibility_end_time)
+                ):
+                    # TODO: Introduce total electric demand in building outputs.
+                    self.problem.constraints.add(
+                        sum(
+                            self.problem.variable_output_timeseries[timestep, output]
+                            if (('electric_power' in output) and not ('storage_to_zone' in output)) else 0.0
+                            for output in self.building.set_outputs
+                        )
+                        ==
+                        (
+                            (1.0 - (self.problem.variable_load_reduction[0] / 100.0))
+                            * sum(
+                                self.output_timeseries_reference.loc[timestep, output]
+                                if (('electric_power' in output) and not ('storage_to_zone' in output)) else 0.0
+                                for output in self.building.set_outputs
+                            )
+                        )
+                    )
+
         # Define components of the objective.
         self.operation_cost = 0.0
         self.investment_cost = 0.0
@@ -206,7 +236,7 @@ class Controller(object):
             # Adjust weight of operation cost when running forced flexibility problem.
             # - Workaround for unrealistic demand when not considering operation cost at all.
             # - This is a tuning parameter (has impact on forced flexibility result).
-            self.operation_cost_factor = 1.0e-1
+            self.operation_cost_factor = 1.0e-6
         else:
             # No scaling needed if not running planning problem.
             self.operation_cost_factor = 1.0
@@ -246,21 +276,7 @@ class Controller(object):
                 )
         elif self.problem_type == 'forced_flexibility':
             # TODO: Introduce dedicated cost for demand side flexibility indicators.
-            for timestep in self.building.set_timesteps:
-                if (
-                    (timestep >= self.forced_flexibility_start_time)
-                    and (timestep <= self.forced_flexibility_end_time)
-                ):
-                    for output in self.building.set_outputs:
-                        if ('electric_power' in output) and not ('storage_to_zone' in output):
-                            # Forced flexibility here is interpreted as decrease / reduction in demand.
-                            self.investment_cost += (
-                                (
-                                    self.problem.variable_output_timeseries[timestep, output]
-                                    - self.output_timeseries_reference.loc[timestep, output]
-                                )
-                                * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
-                            )
+            self.investment_cost -= self.problem.variable_load_reduction[0]  # In percent.
 
         # Define objective.
         self.problem.objective = pyo.Objective(
