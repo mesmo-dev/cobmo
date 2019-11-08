@@ -174,11 +174,9 @@ CREATE TABLE IF NOT EXISTS "buildings" (
 	"building_storage_type"	TEXT
 );
 CREATE TABLE IF NOT EXISTS "electricity_price_timeseries" (
-	"scenario_name"  TEXT,
 	"price_type"	TEXT,
 	"time"	TEXT,
-	"price"	REAL,
-	"price_unit"	TEXT
+	"price"	REAL
 );
 CREATE TABLE IF NOT EXISTS "weather_timeseries" (
 	"weather_type"	TEXT,
