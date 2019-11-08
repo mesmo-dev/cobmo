@@ -16,9 +16,10 @@ import cobmo.utils
 scenario_name = 'scenario_default'
 
 # Set results path and create the directory.
-results_path = os.path.join(cobmo.config.results_path, 'run_evaluation_price_sensitivity' + cobmo.config.timestamp)
+results_path = os.path.join(cobmo.config.results_path, 'run_evaluation_price_sensitivity_' + cobmo.config.timestamp)
 os.mkdir(results_path)
 os.mkdir(os.path.join(results_path, 'plots'))
+os.mkdir(os.path.join(results_path, 'details'))
 
 # Obtain a connection to the database.
 conn = cobmo.database_interface.connect_database()
@@ -62,7 +63,7 @@ state_timeseries_baseline.to_csv(os.path.join(results_path, 'state_timeseries_ba
 output_timeseries_baseline.to_csv(os.path.join(results_path, 'output_timeseries_baseline.csv'))
 
 # Instantiate load reduction iteration variables.
-set_price_factors = pd.Index(np.arange(0.0, 10.0, 0.2))
+set_price_factors = pd.Index(np.concatenate([np.arange(0.0, 1.0, 0.2), np.arange(1.0, 105.0, 5.0)]))
 set_timesteps = building.set_timesteps
 load_change_percent_results = pd.DataFrame(
     None,
@@ -100,10 +101,16 @@ for price_factor in set_price_factors:
                 storage_size_price_sensitivity
             ) = controller_price_sensitivity.solve()
 
-            # # Save controller timeseries to CSV for debugging.
-            # control_timeseries_price_sensitivity.to_csv(os.path.join(results_path, 'control_timeseries_price_sensitivity.csv'))
-            # state_timeseries_price_sensitivity.to_csv(os.path.join(results_path, 'state_timeseries_price_sensitivity.csv'))
-            # output_timeseries_price_sensitivity.to_csv(os.path.join(results_path, 'output_timeseries_price_sensitivity.csv'))
+            # Save controller timeseries to CSV for debugging.
+            control_timeseries_price_sensitivity.to_csv(os.path.join(
+                results_path, 'details', '{} - {} control_timeseries.csv'.format(price_factor, timestep).replace(':', '-')
+            ))
+            state_timeseries_price_sensitivity.to_csv(os.path.join(
+                results_path, 'details', '{} - {} state_timeseries.csv'.format(price_factor, timestep).replace(':', '-')
+            ))
+            output_timeseries_price_sensitivity.to_csv(os.path.join(
+                results_path, 'details', '{} - {} output_timeseriesd.csv'.format(price_factor, timestep).replace(':', '-')
+            ))
 
             # Plot demand comparison for debugging.
             electric_power_comparison = pd.concat(
@@ -159,7 +166,7 @@ for price_factor in set_price_factors:
             price_sensitivity_power = (
                 output_timeseries_price_sensitivity.loc[
                     timestep,
-                    output_timeseries_baseline.columns.str.contains('electric_power')
+                    output_timeseries_price_sensitivity.columns.str.contains('electric_power')
                 ].sum()
             )
             load_change_percent = (
@@ -169,7 +176,7 @@ for price_factor in set_price_factors:
             )  # In percent.
 
             # Print results.
-            print("price_sensitivity = {}".format(load_change_percent))
+            print("load_change_percent = {}".format(load_change_percent))
 
             # Store results.
             load_change_percent_results.at[timestep, price_factor] = load_change_percent

@@ -16,9 +16,10 @@ import cobmo.utils
 scenario_name = 'scenario_default'
 
 # Set results path and create the directory.
-results_path = os.path.join(cobmo.config.results_path, 'run_evaluation_load_reduction' + cobmo.config.timestamp)
+results_path = os.path.join(cobmo.config.results_path, 'run_evaluation_load_reduction_' + cobmo.config.timestamp)
 os.mkdir(results_path)
 os.mkdir(os.path.join(results_path, 'plots'))
+os.mkdir(os.path.join(results_path, 'details'))
 
 # Obtain a connection to the database.
 conn = cobmo.database_interface.connect_database()
@@ -117,10 +118,16 @@ for time_duration in set_time_duration:
                 storage_size_load_reduction
             ) = controller_load_reduction.solve()
 
-            # # Save controller timeseries to CSV for debugging.
-            # control_timeseries_load_reduction.to_csv(os.path.join(results_path, 'control_timeseries_load_reduction.csv'))
-            # state_timeseries_load_reduction.to_csv(os.path.join(results_path, 'state_timeseries_load_reduction.csv'))
-            # output_timeseries_load_reduction.to_csv(os.path.join(results_path, 'output_timeseries_load_reduction.csv'))
+            # Save controller timeseries to CSV for debugging.
+            control_timeseries_load_reduction.to_csv(os.path.join(
+                results_path, 'details', '{} - {} control_timeseries.csv'.format(time_duration, timestep).replace(':', '-')
+            ))
+            control_timeseries_load_reduction.to_csv(os.path.join(
+                results_path, 'details', '{} - {} state_timeseries.csv'.format(time_duration, timestep).replace(':', '-')
+            ))
+            control_timeseries_load_reduction.to_csv(os.path.join(
+                results_path, 'details', '{} - {} output_timeseriesd.csv'.format(time_duration, timestep).replace(':', '-')
+            ))
 
             # Plot demand comparison for debugging.
             electric_power_comparison = pd.concat(
