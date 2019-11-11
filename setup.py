@@ -1,13 +1,11 @@
-"""
-Building model installation script
-"""
+"""Installation script."""
 
-from setuptools import setup, find_packages
+import setuptools
 
-setup(
+setuptools.setup(
     name='cobmo',
-    version='0.1',
-    py_modules=find_packages(),
+    version='0.3.0',
+    py_modules=setuptools.find_packages(),
     install_requires=[
         'CoolProp==6.2.1',
         'hvplot',
