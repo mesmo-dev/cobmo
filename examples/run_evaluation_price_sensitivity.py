@@ -13,7 +13,7 @@ import cobmo.utils
 
 
 # Set `scenario_name`.
-scenario_name = 'scenario_default'
+scenario_name = 'paper_pesgm_2020'
 
 # Set results path and create the directory.
 results_path = os.path.join(cobmo.config.results_path, 'run_evaluation_price_sensitivity_' + cobmo.config.timestamp)
