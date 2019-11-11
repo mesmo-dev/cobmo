@@ -63,7 +63,7 @@ state_timeseries_baseline.to_csv(os.path.join(results_path, 'state_timeseries_ba
 output_timeseries_baseline.to_csv(os.path.join(results_path, 'output_timeseries_baseline.csv'))
 
 # Instantiate load reduction iteration variables.
-set_price_factors = pd.Index(np.concatenate([np.arange(0.0, 1.0, 0.2), np.arange(1.0, 105.0, 5.0)]))
+set_price_factors = pd.Index(np.concatenate([np.arange(0.0, 1.0, 0.25), np.arange(1.0, 25.0, 5.0)]))
 set_timesteps = building.set_timesteps
 load_change_percent_results = pd.DataFrame(
     None,
