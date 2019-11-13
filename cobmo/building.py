@@ -99,6 +99,7 @@ class Building(object):
                 JOIN building_internal_gain_types USING (internal_gain_type) 
                 LEFT JOIN building_blind_types USING (blind_type) 
                 LEFT JOIN building_hvac_generic_types USING (hvac_generic_type) 
+                LEFT JOIN building_hvac_radiator_types USING (hvac_radiator_type) 
                 LEFT JOIN building_hvac_ahu_types USING (hvac_ahu_type) 
                 LEFT JOIN building_hvac_tu_types USING (hvac_tu_type) 
                 WHERE building_name='{}'
