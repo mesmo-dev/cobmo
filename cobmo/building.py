@@ -512,6 +512,7 @@ class Building(object):
         self.define_heat_transfer_infiltration()
         self.define_heat_transfer_internal_gains()
         self.define_heat_transfer_hvac_generic()
+        self.define_heat_transfer_hvac_radiator()
         self.define_heat_transfer_hvac_ahu()
         self.define_heat_transfer_hvac_tu()
         self.define_co2_transfer_hvac_ahu()
@@ -524,6 +525,7 @@ class Building(object):
         self.define_output_zone_co2_concentration()
         self.define_output_zone_humidity()
         self.define_output_hvac_generic_power()
+        self.define_output_hvac_radiator_power()
         self.define_output_hvac_ahu_electric_power()
         self.define_output_hvac_tu_electric_power()
         self.define_output_fresh_air_flow()
@@ -1995,6 +1997,9 @@ class Building(object):
                         / self.heat_capacity_vector[index]
                 )
 
+    def define_heat_transfer_hvac_radiator(self):
+        pass
+
     def define_heat_transfer_hvac_ahu(self):
         for index, row in self.building_zones.iterrows():
             if pd.notnull(row['hvac_ahu_type']):
@@ -2505,6 +2510,9 @@ class Building(object):
                         + 1
                         / self.parse_parameter(row['generic_cooling_efficiency'])
                 )
+
+    def define_output_hvac_radiator_power(self):
+        pass
 
     def define_output_hvac_ahu_electric_power(self):
         for zone_name, zone_data in self.building_zones.iterrows():
