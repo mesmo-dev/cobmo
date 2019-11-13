@@ -15,25 +15,16 @@ class Building(object):
     """
 
     def __init__(self, conn, scenario_name):
-        # Obtain scenario name.
-        self.scenario_name = scenario_name
         """Initialize building model for given `scenario_name`."""
 
+        # Obtain scenario name.
+        self.scenario_name = scenario_name
+
+        # Instantiate model variables.
+        self.disturbance_timeseries = pd.DataFrame()
+        self.electricity_price_timeseries = pd.DataFrame()
+
         # Load building model definition.
-        # TODO: Wrap into dedicated function and resample based on timesteps.
-        self.electricity_prices = (
-            pd.read_sql(
-                """
-                SELECT * FROM electricity_price_timeseries 
-                WHERE price_type=(
-                    SELECT price_type from building_scenarios 
-                    WHERE scenario_name='{}'
-                )
-                """.format(scenario_name),
-                conn
-            )
-        )
-        self.electricity_prices.index = pd.to_datetime(self.electricity_prices['time'])
         self.building_scenarios = (
             pd.read_sql(
                 """
@@ -42,7 +33,7 @@ class Building(object):
                 JOIN building_linearization_types USING (linearization_type) 
                 LEFT JOIN building_storage_types USING (building_storage_type) 
                 WHERE scenario_name='{}'
-                """.format(scenario_name),
+                """.format(self.scenario_name),
                 conn
             )
         )
@@ -547,6 +538,7 @@ class Building(object):
 
         # Define timeseries.
         self.load_disturbance_timeseries(conn)
+        self.load_electricity_price_timeseries(conn)
         self.define_output_constraint_timeseries(conn)
 
         # Convert to time discrete model.
@@ -3639,6 +3631,39 @@ class Building(object):
             ],
             axis='columns',
         ).rename_axis('disturbance_name', axis='columns')
+
+    def load_electricity_price_timeseries(self, conn):
+        if pd.isnull(self.building_scenarios['price_type'][0]):
+            # If no price_type defined, generate a flat price signal.
+            self.electricity_price_timeseries = (
+                pd.DataFrame(
+                    [[None, 1.0]],
+                    columns=['price_type', 'price'],
+                    index=self.set_timesteps
+                )
+            )
+        else:
+            self.electricity_price_timeseries = (
+                pd.read_sql(
+                    """
+                    SELECT * FROM electricity_price_timeseries 
+                    WHERE price_type=(
+                        SELECT price_type from building_scenarios 
+                        WHERE scenario_name='{}'
+                    )
+                    """.format(self.scenario_name),
+                    conn,
+                    index_col='time',
+                    parse_dates=['time']
+                )
+            )
+
+            # Reindex / interpolate to match set_timesteps.
+            self.electricity_price_timeseries.reindex(
+                self.set_timesteps
+            ).interpolate(
+                'quadratic'
+            )
 
     def define_output_constraint_timeseries(self, conn):
         """

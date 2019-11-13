@@ -35,6 +35,7 @@ author = 'TUMCREATE'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx_markdown_tables',  # TODO: `sphinx_markdown_tables` doesn't support Readthedocs PDF properly.
     'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax'

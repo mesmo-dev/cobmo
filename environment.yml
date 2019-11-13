@@ -2,31 +2,51 @@ name: cobmo
 channels:
   - defaults
 dependencies:
-  - certifi=2019.6.16=py36_0
-  - pip=19.1.1=py36_0
-  - python=3.6.8=h9f7ef89_7
-  - setuptools=41.0.1=py36_0
-  - sqlite=3.29.0=he774522_0
+  - ca-certificates=2019.10.16=0
+  - certifi=2019.9.11=py37_0
+  - openssl=1.1.1d=he774522_3
+  - pip=19.3.1=py37_0
+  - python=3.7.5=h8c8aaf0_0
+  - setuptools=41.6.0=py37_0
+  - sqlite=3.30.1=he774522_0
   - vc=14.1=h0510ff6_4
-  - vs2015_runtime=14.15.26706=h3a45250_4
-  - wheel=0.33.4=py36_0
-  - wincertstore=0.2=py36h7fe50ca_0
+  - vs2015_runtime=14.16.27012=hf0eaf9b_0
+  - wheel=0.33.6=py37_0
+  - wincertstore=0.2=py37_0
   - pip:
     - appdirs==1.4.3
+    - bokeh==1.4.0
     - chardet==3.0.4
+    - colorcet==2.0.2
     - coolprop==6.2.1
+    - cycler==0.10.0
+    - holoviews==1.12.6
+    - hvplot==0.5.2
     - idna==2.8
+    - jinja2==2.10.3
+    - kiwisolver==1.1.0
+    - markupsafe==1.1.1
+    - matplotlib==3.1.1
     - nose==1.3.7
-    - numpy==1.16.4
-    - pandas==0.24.2
+    - numpy==1.17.4
+    - packaging==19.2
+    - pandas==0.25.3
+    - param==1.9.2
+    - pillow==6.2.1
     - ply==3.11
     - pvlib==0.6.3
-    - pyomo==5.6.6
-    - python-dateutil==2.8.0
-    - pytz==2019.1
-    - pyutilib==5.7.1
+    - pyct==0.4.6
+    - pyomo==5.6.7
+    - pyparsing==2.4.5
+    - python-dateutil==2.8.1
+    - pytz==2019.3
+    - pyutilib==5.7.2
+    - pyviz-comms==0.7.2
+    - pyyaml==5.1.2
     - requests==2.22.0
-    - scipy==1.3.0
-    - six==1.12.0
-    - urllib3==1.25.3
+    - scipy==1.3.2
+    - seaborn==0.9.0
+    - six==1.13.0
+    - tornado==6.0.3
+    - urllib3==1.25.6
 

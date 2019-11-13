@@ -14,7 +14,14 @@ class Controller(object):
             self,
             conn,
             building,
-            problem_type='operation'  # Choices: 'operation', 'storage_planning', 'storage_planning_baseline'
+            problem_type='operation',
+            # Choices: 'operation', 'storage_planning', 'storage_planning_baseline', 'load_reduction',
+            # 'price_sensitivity'
+            output_timeseries_reference=None,
+            load_reduction_start_time=None,
+            load_reduction_end_time=None,
+            price_sensitivity_factor=None,
+            price_sensitivity_timestep=None,
     ):
         """Initialize controller object based on given `building` object.
 
@@ -23,6 +30,15 @@ class Controller(object):
         time_start = time.clock()
         self.building = building
         self.problem_type = problem_type
+        self.output_timeseries_reference = output_timeseries_reference
+        self.load_reduction_start_time = load_reduction_start_time
+        self.load_reduction_end_time = load_reduction_end_time
+        self.price_sensitivity_factor = price_sensitivity_factor
+        self.price_sensitivity_timestep = price_sensitivity_timestep
+
+        # Copy `electricity_price_timeseries` to allow local modifications.
+        self.electricity_price_timeseries = self.building.electricity_price_timeseries.copy()
+
         self.problem = pyo.ConcreteModel()
         self.solver = pyo.SolverFactory(cobmo.config.solver_name)
         self.result = None
@@ -60,6 +76,11 @@ class Controller(object):
         if self.problem_type == 'storage_planning_baseline':
             # Force storage size to zero for baseline case.
             self.problem.variable_storage_size = [0.0]
+        if self.problem_type == 'load_reduction':
+            self.problem.variable_load_reduction = pyo.Var(
+                [0],
+                domain=pyo.NonNegativeReals
+            )
 
         # Define constraints.
         self.problem.constraints = pyo.ConstraintList()
@@ -183,6 +204,31 @@ class Controller(object):
                     * 1.0e100  # Large constant as replacement for infinity.
                 )
 
+        # Demand side flexibility auxiliary constraints.
+        elif self.problem_type == 'load_reduction':
+            for timestep in self.building.set_timesteps:
+                if (
+                    (timestep >= self.load_reduction_start_time)
+                    and (timestep < self.load_reduction_end_time)
+                ):
+                    # TODO: Introduce total electric demand in building outputs.
+                    self.problem.constraints.add(
+                        sum(
+                            self.problem.variable_output_timeseries[timestep, output]
+                            if (('electric_power' in output) and not ('storage_to_zone' in output)) else 0.0
+                            for output in self.building.set_outputs
+                        )
+                        ==
+                        (
+                            (1.0 - (self.problem.variable_load_reduction[0] / 100.0))
+                            * sum(
+                                self.output_timeseries_reference.loc[timestep, output]
+                                if (('electric_power' in output) and not ('storage_to_zone' in output)) else 0.0
+                                for output in self.building.set_outputs
+                            )
+                        )
+                    )
+
         # Define components of the objective.
         self.operation_cost = 0.0
         self.investment_cost = 0.0
@@ -196,9 +242,20 @@ class Controller(object):
                 * self.building.building_scenarios['storage_lifetime'][0]  # Storage lifetime in years.
                 * 14.0  # 14 levels at CREATE Tower. # TODO: Check if considered properly in storage size.
             )
+        elif self.problem_type == 'load_reduction':
+            # Adjust weight of operation cost when running load reduction problem.
+            # - Workaround for unrealistic demand when not considering operation cost at all.
+            # - This is a tuning parameter (has impact on load reduction result).
+            self.operation_cost_factor = 1.0e-6
         else:
             # No scaling needed if not running planning problem.
             self.operation_cost_factor = 1.0
+
+        # Modify price for price sensitivity evaluation.
+        if self.problem_type == 'price_sensitivity':
+            self.electricity_price_timeseries.at[self.price_sensitivity_timestep, 'price'] *= (
+                self.price_sensitivity_factor
+            )
 
         # Operation cost (OPEX).
         for timestep in self.building.set_timesteps:
@@ -206,8 +263,8 @@ class Controller(object):
                 if ('electric_power' in output) and not ('storage_to_zone' in output):
                     self.operation_cost += (
                         self.problem.variable_output_timeseries[timestep, output]
-                        * timestep_delta.seconds / 3600.0 / 1000.0  # Ws in kWh.
-                        * self.building.electricity_prices.loc[timestep, 'price']
+                        * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
+                        * self.electricity_price_timeseries.loc[timestep, 'price']
                         * self.operation_cost_factor
                     )
 
@@ -233,6 +290,9 @@ class Controller(object):
                     + self.problem.variable_storage_exists[0]  # No unit.
                     * self.building.building_scenarios['storage_planning_fixed_installation_cost'][0]  # In SGD.
                 )
+        elif self.problem_type == 'load_reduction':
+            # TODO: Introduce dedicated cost for demand side flexibility indicators.
+            self.investment_cost -= self.problem.variable_load_reduction[0]  # In percent.
 
         # Define objective.
         self.problem.objective = pyo.Objective(

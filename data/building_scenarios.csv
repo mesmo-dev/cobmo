@@ -3,3 +3,4 @@ scenario_default,create_level_8_4a,parameters_default,linearization_default,,,,,
 scenario_full,create_level_8_4a,parameters_default,linearization_default,demand_controlled_ventilation_default,co2_model_default,humidity_model_default,cooling,wholesale_market,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 validation_1zone_no_window_no_mass,validation_1zone_no_window_no_mass,parameters_default,linearization_default,,,,,,2017-01-01T00:00:00,2017-02-01T00:00:00,00:30:00
 validation_1zone_no_window,validation_1zone_no_window,parameters_default,linearization_default,,,,,,2017-01-01T00:00:00,2017-02-01T00:00:00,00:30:00
+paper_pesgm_2020,create_level_8_4a,parameters_default,linearization_default,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
