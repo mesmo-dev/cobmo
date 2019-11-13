@@ -36,6 +36,9 @@ class Controller(object):
         self.price_sensitivity_factor = price_sensitivity_factor
         self.price_sensitivity_timestep = price_sensitivity_timestep
 
+        # Copy `electricity_price_timeseries` to allow local modifications.
+        self.electricity_price_timeseries = self.building.electricity_price_timeseries.copy()
+
         self.problem = pyo.ConcreteModel()
         self.solver = pyo.SolverFactory(cobmo.config.solver_name)
         self.result = None
@@ -250,7 +253,9 @@ class Controller(object):
 
         # Modify price for price sensitivity evaluation.
         if self.problem_type == 'price_sensitivity':
-            self.building.electricity_price_timeseries.at[self.price_sensitivity_timestep, 'price'] *= self.price_sensitivity_factor
+            self.electricity_price_timeseries.at[self.price_sensitivity_timestep, 'price'] *= (
+                self.price_sensitivity_factor
+            )
 
         # Operation cost (OPEX).
         for timestep in self.building.set_timesteps:
@@ -259,7 +264,7 @@ class Controller(object):
                     self.operation_cost += (
                         self.problem.variable_output_timeseries[timestep, output]
                         * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
-                        * self.building.electricity_price_timeseries.loc[timestep, 'price']
+                        * self.electricity_price_timeseries.loc[timestep, 'price']
                         * self.operation_cost_factor
                     )
 
