@@ -504,6 +504,7 @@ class Building(object):
 
         # Definition of parameters / coefficients.
         self.define_heat_transfer_coefficients()
+        self.calculate_coefficients_radiator()
 
         # Define heat, CO2 and humidity transfers.
         self.define_heat_transfer_surfaces_exterior()
@@ -619,6 +620,48 @@ class Building(object):
                         + 273.15
                     ) ** 3
                 )
+
+    def calculate_coefficients_radiator(self):
+        """Calculate heat transfer coefficients for the radiator model."""
+
+        if pd.notnull(self.building_zones['hvac_radiator_type']).any():
+            # Instantiate columns for heat transfer coefficients.
+            self.building_zones['heat_capacitance_hull'] = None
+            self.building_zones['heat_capacitance_water'] = None
+            self.building_zones['thermal_resistance_radiator_front_zone'] = None
+            self.building_zones['thermal_resistance_radiator_front_surfaces'] = None
+            self.building_zones['thermal_resistance_radiator_front_zone_surfaces'] = None
+            self.building_zones['thermal_resistance_radiator_rear_zone'] = None
+            self.building_zones['thermal_resistance_radiator_rear_surfaces'] = None
+            self.building_zones['thermal_resistance_radiator_rear_zone_surfaces'] = None
+
+            # Calculate heat transfer coefficients.
+            for zone_name, zone_data in self.building_zones.iterrows():
+                if pd.notnull(zone_data['hvac_radiator_type']):
+                    thickness_water_layer = (
+                        self.parse_parameter(zone_data['radiator_water_volume'])
+                        / self.parse_parameter(zone_data['radiator_panel_area'])
+                    )
+                    thickness_hull_layer = (
+                        # Thickness for hull on one side of the panel.
+                        0.5 * (
+                            self.parse_parameter(zone_data['radiator_panel_thickness'])
+                            - thickness_water_layer
+                        )
+                    )
+                    radiator_hull_volume = (
+                        # Volume for hull on one side of the panel.
+                        thickness_hull_layer
+                        * self.parse_parameter(zone_data['radiator_panel_area'])
+                    )
+                    self.building_zones['heat_capacitance_hull'] = (
+                        radiator_hull_volume
+                        * self.parse_parameter(zone_data['radiator_hull_heat_capacity'])
+                    )
+                    self.building_zones['heat_capacitance_water'] = (
+                        self.parse_parameter(zone_data['radiator_water_volume'])
+                        * self.parse_parameter('water_specific_heat')
+                    )
 
     def define_heat_transfer_surfaces_exterior(self):
         """Thermal model: Exterior surfaces"""
