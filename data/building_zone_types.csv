@@ -2,3 +2,4 @@ zone_type,heat_capacity,base_surface_type,ceiling_surface_type,infiltration_rate
 validation_zone_empty,heat_capacity_zone,,,infiltration_rate,internal_gain_default,,,hvac_generic_default,,,,zone_constraint_default
 create_level_8_open_plan_office,heat_capacity_zone,base_ceiling,base_ceiling,infiltration_rate,internal_gain_default,,,,,hvac_ahu_default,,zone_constraint_default
 create_level_8_group_office,heat_capacity_zone,base_ceiling,base_ceiling,infiltration_rate,internal_gain_default,,,,,hvac_ahu_default,,zone_constraint_default
+wtp_office,47142.9,,,2.565e-05,cea_office,,,,,wtp_ahu,,cea_office
