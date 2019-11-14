@@ -126,13 +126,13 @@ class Building(object):
 
                 # Surface temperature.
                 self.building_surfaces_adiabatic['surface_name'][
-                    self.building_surfaces_adiabatic['heat_capacity'] != '0'
+                    self.building_surfaces_adiabatic['heat_capacity'].apply(self.parse_parameter) != 0.0
                 ] + '_temperature',
                 self.building_surfaces_exterior['surface_name'][
-                    self.building_surfaces_exterior['heat_capacity'] != '0'
+                    self.building_surfaces_exterior['heat_capacity'].apply(self.parse_parameter) != 0.0
                 ] + '_temperature',
                 self.building_surfaces_interior['surface_name'][
-                    self.building_surfaces_interior['heat_capacity'] != '0'
+                    self.building_surfaces_interior['heat_capacity'].apply(self.parse_parameter) != 0.0
                 ] + '_temperature',
 
                 # Zone CO2 concentration.
