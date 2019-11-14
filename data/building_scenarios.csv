@@ -4,7 +4,6 @@ scenario_full,create_level_8_4a,parameters_default,linearization_default,demand_
 validation_1zone_no_window_no_mass,validation_1zone_no_window_no_mass,parameters_default,linearization_default,,,,,,2017-01-01T00:00:00,2017-02-01T00:00:00,00:30:00
 validation_1zone_no_window,validation_1zone_no_window,parameters_default,linearization_default,,,,,,2017-01-01T00:00:00,2017-02-01T00:00:00,00:30:00
 paper_pesgm_2020,create_level_8_4a,parameters_default,linearization_default,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-wtp_mix_medium_density_0,wtp_mix_medium_density_0,parameters_default,linearization_default,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 wtp_mix_medium_density_1,wtp_mix_medium_density_1,parameters_default,linearization_default,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 wtp_mix_medium_density_2,wtp_mix_medium_density_2,parameters_default,linearization_default,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 wtp_mix_medium_density_3,wtp_mix_medium_density_3,parameters_default,linearization_default,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
@@ -26,3 +25,4 @@ wtp_mix_medium_density_18,wtp_mix_medium_density_18,parameters_default,lineariza
 wtp_mix_medium_density_19,wtp_mix_medium_density_19,parameters_default,linearization_default,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 wtp_mix_medium_density_20,wtp_mix_medium_density_20,parameters_default,linearization_default,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 wtp_mix_medium_density_21,wtp_mix_medium_density_21,parameters_default,linearization_default,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
+wtp_mix_medium_density_22,wtp_mix_medium_density_22,parameters_default,linearization_default,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
