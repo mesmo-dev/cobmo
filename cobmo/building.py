@@ -558,13 +558,13 @@ class Building(object):
             return self.building_parameters[parameter]
 
     def define_heat_transfer_coefficients(self):
-        # Create empty rows in dataframe
-        self.building_surfaces_exterior['heat_transfer_coefficient_surface_sky'] = ''
-        self.building_surfaces_exterior['heat_transfer_coefficient_surface_ground'] = ''
-        self.building_surfaces_exterior['heat_transfer_coefficient_window_sky'] = ''
-        self.building_surfaces_exterior['heat_transfer_coefficient_window_ground'] = ''
+        # Instantiate columns for heat transfer coefficients.
+        self.building_surfaces_exterior['heat_transfer_coefficient_surface_sky'] = None
+        self.building_surfaces_exterior['heat_transfer_coefficient_surface_ground'] = None
+        self.building_surfaces_exterior['heat_transfer_coefficient_window_sky'] = None
+        self.building_surfaces_exterior['heat_transfer_coefficient_window_ground'] = None
 
-        # Calculate heat transfer coefficients
+        # Calculate heat transfer coefficients.
         for surface_name, surface_data in self.building_surfaces_exterior.iterrows():
             surface_data['heat_transfer_coefficient_surface_sky'] = (
                 4.0
@@ -572,11 +572,11 @@ class Building(object):
                 * self.parse_parameter(surface_data['emissivity'])
                 * self.parse_parameter(surface_data['sky_view_factor'])
                 * (
-                        self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
-                        / 2.0
-                        + self.parse_parameter(self.building_scenarios['linearization_sky_temperature'])
-                        / 2.0
-                        + 273.15
+                    self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
+                    / 2.0
+                    + self.parse_parameter(self.building_scenarios['linearization_sky_temperature'])
+                    / 2.0
+                    + 273.15
                 ) ** 3
             )
             surface_data['heat_transfer_coefficient_surface_ground'] = (
@@ -585,39 +585,40 @@ class Building(object):
                 * self.parse_parameter(surface_data['emissivity'])
                 * (1.0 - self.parse_parameter(surface_data['sky_view_factor']))
                 * (
-                        self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
-                        / 2.0
-                        + self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
-                        / 2.0
-                        + 273.15
+                    self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
+                    / 2.0
+                    + self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
+                    / 2.0
+                    + 273.15
                 ) ** 3
             )
-            surface_data['heat_transfer_coefficient_window_sky'] = (
+            if pd.notnull(surface_data['window_type']):
+                surface_data['heat_transfer_coefficient_window_sky'] = (
                     4.0
                     * self.parse_parameter('stefan_boltzmann_constant')
                     * self.parse_parameter(surface_data['emissivity_window'])
                     * self.parse_parameter(surface_data['sky_view_factor'])
                     * (
-                            self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
-                            / 2.0
-                            + self.parse_parameter(self.building_scenarios['linearization_sky_temperature'])
-                            / 2.0
-                            + 273.15
+                        self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
+                        / 2.0
+                        + self.parse_parameter(self.building_scenarios['linearization_sky_temperature'])
+                        / 2.0
+                        + 273.15
                     ) ** 3
-            )
-            surface_data['heat_transfer_coefficient_window_ground'] = (
+                )
+                surface_data['heat_transfer_coefficient_window_ground'] = (
                     4.0
                     * self.parse_parameter('stefan_boltzmann_constant')
                     * self.parse_parameter(surface_data['emissivity_window'])
                     * (1.0 - self.parse_parameter(surface_data['sky_view_factor']))
                     * (
-                            self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
-                            / 2.0
-                            + self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
-                            / 2.0
-                            + 273.15
+                        self.parse_parameter(self.building_scenarios['linearization_exterior_surface_temperature'])
+                        / 2.0
+                        + self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature'])
+                        / 2.0
+                        + 273.15
                     ) ** 3
-            )
+                )
 
     def define_heat_transfer_surfaces_exterior(self):
         """Thermal model: Exterior surfaces"""
