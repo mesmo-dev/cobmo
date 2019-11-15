@@ -43,7 +43,7 @@ building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_dist
 # Define initial state and control timeseries.
 state_initial = building.set_state_initial
 control_timeseries_simulation = pd.DataFrame(
-    np.random.rand(len(building.set_timesteps), len(building.set_controls)),
+    np.ones((len(building.set_timesteps), len(building.set_controls))),
     building.set_timesteps,
     building.set_controls
 )
