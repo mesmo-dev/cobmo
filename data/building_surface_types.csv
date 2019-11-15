@@ -11,3 +11,5 @@ validation_floor,190471.40,0.0586839441,0.65,0.9,interior_window,0,
 validation_roof_no_mass,0,5.456,0.75,0.9,interior_window,0,1
 validation_wall_no_window,1904.7140,2.290965,0.75,0.9,interior_window,0,0.5
 validation_roof,1904.7140,5.456,0.75,0.9,interior_window,0,1
+wtp_wall,0.0,0.00127183,0.6,0.95,wtp_window,0.29,0.5
+wtp_roof,0.0,0.748398,0.6,0.94,,0.0,1.0

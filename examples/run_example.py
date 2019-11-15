@@ -43,7 +43,7 @@ building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_dist
 # Define initial state and control timeseries.
 state_initial = building.set_state_initial
 control_timeseries_simulation = pd.DataFrame(
-    np.random.rand(len(building.set_timesteps), len(building.set_controls)),
+    np.ones((len(building.set_timesteps), len(building.set_controls))),
     building.set_timesteps,
     building.set_controls
 )
@@ -99,6 +99,28 @@ error_summary.to_csv(os.path.join(results_path, 'error_summary.csv'))
 
 # Print error summary for debugging.
 print("error_summary = \n{}".format(error_summary))
+
+# Calculate total demand for benchmarking.
+total_demand = (
+    output_timeseries_controller.loc[:, output_timeseries_controller.columns.str.contains('electric_power')].sum().sum()
+    * pd.to_timedelta(building.set_timesteps[1] - building.set_timesteps[0]).seconds / 3600.0 / 1000.0  # W in kWh.
+)
+total_demand_year = (
+    total_demand
+    * (pd.to_timedelta('1y') / pd.to_timedelta(building.set_timesteps[1] - building.set_timesteps[0]))
+    # Theoretical number of time steps in a year.
+    / len(building.set_timesteps)
+    # Actual number of time steps.
+)
+total_demand_year_per_area = (
+    total_demand_year
+    / building.building_zones['zone_area'].apply(building.parse_parameter).sum()  # kWh to kWh/m2.
+)
+
+# Print total demand for benchmarking.
+print("total_demand = {}".format(total_demand))
+print("total_demand_year = {}".format(total_demand_year))
+print("total_demand_year_per_area = {}".format(total_demand_year_per_area))
 
 # Print results path for debugging.
 print("Results are stored in: " + results_path)

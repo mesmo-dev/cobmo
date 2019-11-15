@@ -12,6 +12,61 @@ import seaborn
 import cobmo.config
 
 
+def calculate_absolute_humidity_humid_air(
+        temperature,  # In °C.
+        relative_humidity  # In percent.
+):
+    absolute_humidity = (
+        humid_air_properties(
+            'W',
+            'T', temperature + 273.15,  # In K.
+            'R', relative_humidity / 100.0,  # In percent/100.
+            'P', 101325.0  # In Pa.
+        )
+    )
+    return absolute_humidity  # In kg(water)/kg(air).
+
+
+def calculate_enthalpy_humid_air(
+        temperature,  # In °C.
+        absolute_humidity  # In kg(water)/kg(air).
+):
+    enthalpy = (
+        humid_air_properties(
+            'H',
+            'T', temperature + 273.15,  # In K.
+            'W', absolute_humidity,  # In kg(water)/kg(air).
+            'P', 101325.0  # In Pa.
+        )
+    )
+    return enthalpy  # In J/kg.
+
+
+def calculate_dew_point_enthalpy_humid_air(
+        temperature,  # In °C.
+        relative_humidity  # In percent.
+):
+    enthalpy = (
+        humid_air_properties(
+            'H',
+            'T',
+            humid_air_properties(
+                'D',
+                'T', temperature + 273.15,  # In K.
+                'R', relative_humidity / 100.0,  # In percent/100.
+                'P', 101325.0  # In Pa.
+            ),
+            'W',
+            calculate_absolute_humidity_humid_air(
+                temperature,  # In °C.
+                relative_humidity  # In percent.
+            ),
+            'P', 101325.0  # In Pa.
+        )
+    )
+    return enthalpy  # In J/kg.
+
+
 def calculate_irradiation_surfaces(
         conn,
         weather_type='singapore_nus',
