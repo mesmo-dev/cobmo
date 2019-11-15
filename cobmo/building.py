@@ -444,11 +444,12 @@ class Building(object):
         ).to_dict()
 
         # Define timesteps.
+        self.timestep_delta = pd.to_timedelta(self.building_scenarios['time_step'][0])
         self.set_timesteps = pd.Index(
             pd.date_range(
                 start=pd.to_datetime(self.building_scenarios['time_start'][0]),
                 end=pd.to_datetime(self.building_scenarios['time_end'][0]),
-                freq=pd.to_timedelta(self.building_scenarios['time_step'][0])
+                freq=self.timestep_delta
             ),
             name='time'
         )
@@ -3443,16 +3444,24 @@ class Building(object):
                     'irradiation_south',
                     'irradiation_west',
                     'irradiation_north'
-                    # 'storage_ambient_air_temperature'  # @add2
+                    # 'storage_ambient_air_temperature'  # TODO: Cleanup `storage_ambient_air_temperature`.
                 ]].reindex(
                     self.set_timesteps
                 ).interpolate(
                     'quadratic'
+                ).bfill(
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+                ).ffill(
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
                 ),
                 building_internal_gain_timeseries.reindex(
                     self.set_timesteps
                 ).interpolate(
                     'quadratic'
+                ).bfill(
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+                ).ffill(
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
                 ),
                 (
                     pd.DataFrame(
@@ -3496,6 +3505,10 @@ class Building(object):
                 self.set_timesteps
             ).interpolate(
                 'quadratic'
+            ).bfill(
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+            ).ffill(
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
             )
 
     def define_output_constraint_timeseries(self, conn):
