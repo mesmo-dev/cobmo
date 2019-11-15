@@ -421,7 +421,7 @@ class Building(object):
         self.set_state_initial = pd.Series(
             np.concatenate([
                 # Zone temperature.
-                26.0  # in °C
+                21.0  # in °C
                 * np.ones(sum(self.set_states.str.contains('temperature'))),
 
                 # CO2 concentration.
