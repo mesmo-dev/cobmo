@@ -2007,12 +2007,8 @@ class Building(object):
                 self.control_matrix.at[
                     index + '_temperature',
                     index + '_ahu_heat_air_flow'
-                ] = (
-                        self.control_matrix.at[
-                            index + '_temperature',
-                            index + '_ahu_heat_air_flow'
-                        ]
-                        + self.parse_parameter('heat_capacity_air')
+                ] += (
+                        self.parse_parameter('heat_capacity_air')
                         * (
                                 self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
                                 - self.parse_parameter(
@@ -2024,12 +2020,8 @@ class Building(object):
                 self.control_matrix.at[
                     index + '_temperature',
                     index + '_ahu_cool_air_flow'
-                ] = (
-                        self.control_matrix.at[
-                            index + '_temperature',
-                            index + '_ahu_cool_air_flow'
-                        ]
-                        + self.parse_parameter('heat_capacity_air')
+                ] += (
+                        self.parse_parameter('heat_capacity_air')
                         * (
                                 self.parse_parameter(row['ahu_supply_air_temperature_setpoint'])
                                 - self.parse_parameter(
@@ -2805,12 +2797,8 @@ class Building(object):
                 self.control_output_matrix.at[
                     zone_name + '_ahu_heat_electric_power',
                     zone_name + '_ahu_heat_air_flow'
-                ] = (
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_heat_electric_power',
-                        zone_name + '_ahu_heat_air_flow'
-                    ]
-                    + self.parse_parameter('density_air')
+                ] += (
+                    self.parse_parameter('density_air')
                     * (
                         (
                             abs(delta_enthalpy_ahu_cooling)
@@ -2832,11 +2820,7 @@ class Building(object):
                 #     self.control_output_matrix.at[
                 #         zone_name + '_ahu_heat_electric_power',
                 #         zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power'
-                #     ] = (
-                #         self.control_output_matrix.at[
-                #             zone_name + '_ahu_heat_electric_power',
-                #             zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power'
-                #         ]
+                #     ] += (
                 #         - 1.0 / self.parse_parameter(zone_data['ahu_heating_efficiency'])
                 #     )
 
@@ -2845,11 +2829,7 @@ class Building(object):
                     self.control_output_matrix.at[
                         zone_name + '_ahu_heat_electric_power',
                         zone_name + '_battery_storage_to_zone_ahu_heat_electric_power'
-                    ] = (
-                        self.control_output_matrix.at[
-                            zone_name + '_ahu_heat_electric_power',
-                            zone_name + '_battery_storage_to_zone_ahu_heat_electric_power'
-                        ]
+                    ] += (
                         - 1.0
                     )
 
@@ -2857,12 +2837,8 @@ class Building(object):
                 self.control_output_matrix.at[
                     zone_name + '_ahu_cool_electric_power_cooling_coil',
                     zone_name + '_ahu_cool_air_flow'
-                ] = (
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_cool_electric_power_cooling_coil',
-                        zone_name + '_ahu_cool_air_flow'
-                    ]
-                    + self.parse_parameter('density_air')
+                ] += (
+                    self.parse_parameter('density_air')
                     * (
                         (
                             abs(delta_enthalpy_ahu_cooling)
@@ -2874,12 +2850,8 @@ class Building(object):
                 self.control_output_matrix.at[
                     zone_name + '_ahu_cool_electric_power_heating_coil',
                     zone_name + '_ahu_cool_air_flow'
-                ] = (
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_cool_electric_power_heating_coil',
-                        zone_name + '_ahu_cool_air_flow'
-                    ]
-                    + self.parse_parameter('density_air')
+                ] += (
+                    self.parse_parameter('density_air')
                     * (
                         (
                             abs(delta_enthalpy_ahu_heating)
@@ -2895,11 +2867,7 @@ class Building(object):
                     self.control_output_matrix.at[
                         zone_name + '_ahu_cool_electric_power_cooling_coil',
                         zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
-                    ] = (
-                        self.control_output_matrix.at[
-                            zone_name + '_ahu_cool_electric_power_cooling_coil',
-                            zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
-                        ]
+                    ] += (
                         - 1.0 / self.parse_parameter(zone_data['ahu_cooling_efficiency'])
                     )
                     # TODO: Add consideration for sensible storage heating / cooling.
@@ -2909,53 +2877,43 @@ class Building(object):
                     self.control_output_matrix.at[
                         zone_name + '_ahu_cool_electric_power_cooling_coil',
                         zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
-                    ] = (
-                        self.control_output_matrix.at[
-                            zone_name + '_ahu_cool_electric_power_cooling_coil',
-                            zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
-                        ]
-                        - (
-                            (
-                                self.control_output_matrix.at[
-                                    zone_name + '_ahu_cool_electric_power_cooling_coil',
-                                    zone_name + '_ahu_cool_air_flow'
-                                ]
-                            ) / (
-                                self.control_output_matrix.at[
-                                    zone_name + '_ahu_cool_electric_power_cooling_coil',
-                                    zone_name + '_ahu_cool_air_flow'
-                                ]
-                                + self.control_output_matrix.at[
-                                    zone_name + '_ahu_cool_electric_power_heating_coil',
-                                    zone_name + '_ahu_cool_air_flow'
-                                ]
-                            )
+                    ] += (
+                        - 1.0
+                        * (
+                            self.control_output_matrix.at[
+                                zone_name + '_ahu_cool_electric_power_cooling_coil',
+                                zone_name + '_ahu_cool_air_flow'
+                            ]
+                        ) / (
+                            self.control_output_matrix.at[
+                                zone_name + '_ahu_cool_electric_power_cooling_coil',
+                                zone_name + '_ahu_cool_air_flow'
+                            ]
+                            + self.control_output_matrix.at[
+                                zone_name + '_ahu_cool_electric_power_heating_coil',
+                                zone_name + '_ahu_cool_air_flow'
+                            ]
                         )
                     )
                     self.control_output_matrix.at[
                         zone_name + '_ahu_cool_electric_power_heating_coil',
                         zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
-                    ] = (
-                        self.control_output_matrix.at[
-                            zone_name + '_ahu_cool_electric_power_heating_coil',
-                            zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
-                        ]
-                        - (
-                            (
-                                self.control_output_matrix.at[
-                                    zone_name + '_ahu_cool_electric_power_heating_coil',
-                                    zone_name + '_ahu_cool_air_flow'
-                                ]
-                            ) / (
-                                self.control_output_matrix.at[
-                                    zone_name + '_ahu_cool_electric_power_cooling_coil',
-                                    zone_name + '_ahu_cool_air_flow'
-                                ]
-                                + self.control_output_matrix.at[
-                                    zone_name + '_ahu_cool_electric_power_heating_coil',
-                                    zone_name + '_ahu_cool_air_flow'
-                                ]
-                            )
+                    ] += (
+                        - 1.0
+                        * (
+                            self.control_output_matrix.at[
+                                zone_name + '_ahu_cool_electric_power_heating_coil',
+                                zone_name + '_ahu_cool_air_flow'
+                            ]
+                        ) / (
+                            self.control_output_matrix.at[
+                                zone_name + '_ahu_cool_electric_power_cooling_coil',
+                                zone_name + '_ahu_cool_air_flow'
+                            ]
+                            + self.control_output_matrix.at[
+                                zone_name + '_ahu_cool_electric_power_heating_coil',
+                                zone_name + '_ahu_cool_air_flow'
+                            ]
                         )
                     )
 
