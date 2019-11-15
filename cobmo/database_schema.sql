@@ -21,6 +21,9 @@ CREATE TABLE IF NOT EXISTS "building_hvac_generic_types" (
     "generic_heating_efficiency" TEXT,
     "generic_cooling_efficiency" TEXT
 );
+CREATE TABLE IF NOT EXISTS "building_hvac_radiator_types" (
+    "hvac_radiator_type" TEXT
+);
 CREATE TABLE IF NOT EXISTS "building_hvac_tu_types" (
     "hvac_tu_type" TEXT,
     "tu_cooling_type" TEXT,
@@ -156,6 +159,7 @@ CREATE TABLE IF NOT EXISTS "building_zone_types" (
     "window_type" TEXT,
     "blind_type" TEXT,
     "hvac_generic_type" TEXT,
+    "hvac_radiator_type" TEXT,
     "hvac_ahu_type" TEXT,
     "hvac_tu_type" TEXT,
     "zone_constraint_profile" TEXT

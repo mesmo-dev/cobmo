@@ -41,6 +41,12 @@ Generic HVAC system characteristics.
 | `generic_heating_efficiency` | - | Heating efficiency (thermal power / electric power). |
 | `generic_cooling_efficiency` | - | Cooling efficiency (thermal power / electric power). |
 
+## `building_hvac_radiator_types`
+
+| Column | Unit | Description |
+| --- |:---:| --- |
+| `hvac_radiator_type` | | Unique type identifier. |
+
 ## `building_hvac_tu_types`
 
 Terminal unit (TU) set points and characteristics.
@@ -250,6 +256,7 @@ Zone type characteristics.
 | `window_type` | | Type identifier as defined in `building_window_types`. |
 | `blind_type` | | Type identifier as defined in `building_blind_types`. *Currently not used.* |
 | `hvac_generic_type` | | Type identifier as defined in `building_hvac_generic_types`. |
+| `hvac_radiator_type` | | Type identifier as defined in `building_hvac_radiator_types`. |
 | `hvac_ahu_type` | | Type identifier as defined in `building_hvac_ahu_types`. |
 | `hvac_tu_type` | | Type identifier as defined in `building_hvac_tu_types`. |
 | `zone_constraint_profile` | | Constraint profile identifier as defined in `building_zone_constraint_profiles`. |
