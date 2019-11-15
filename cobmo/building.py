@@ -327,6 +327,14 @@ class Building(object):
                     pd.notnull(self.building_zones['hvac_ahu_type'])
                 ] + '_ahu_cool_electric_power_heating',
 
+                # AHU thermal power.
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                ] + '_ahu_cool_thermal_power_cooling',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_ahu_type'])
+                ] + '_ahu_cool_thermal_power_heating',
+
                 # TU electric power.
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_tu_type'])
@@ -2629,6 +2637,7 @@ class Building(object):
                 # TODO: Revise code to remove `abs(delta_enthalpy...)` and invert `ahu_cooling_efficiency`.
 
                 # AHU heating.
+                # TODO: Split heat outputs into heating / cooling and add thermal power outputs.
                 self.control_output_matrix.at[
                     zone_name + '_ahu_heat_electric_power',
                     zone_name + '_ahu_heat_air_flow'
@@ -2683,6 +2692,16 @@ class Building(object):
                     )
                 )
                 self.control_output_matrix.at[
+                    zone_name + '_ahu_cool_thermal_power_cooling',
+                    zone_name + '_ahu_cool_air_flow'
+                ] += (
+                    self.parse_parameter('density_air')
+                    * (
+                        abs(delta_enthalpy_ahu_cooling)
+                        - abs(delta_enthalpy_ahu_recovery_cooling)
+                    )
+                )
+                self.control_output_matrix.at[
                     zone_name + '_ahu_cool_electric_power_heating',
                     zone_name + '_ahu_cool_air_flow'
                 ] += (
@@ -2693,10 +2712,21 @@ class Building(object):
                             - abs(delta_enthalpy_ahu_recovery_heating)
                         )
                         / self.parse_parameter(zone_data['ahu_heating_efficiency'])
-                        + self.parse_parameter(zone_data['ahu_fan_efficiency'])
+                        + self.parse_parameter(zone_data['ahu_fan_efficiency'])  # TODO: Split off fan power.
+                    )
+                )
+                self.control_output_matrix.at[
+                    zone_name + '_ahu_cool_thermal_power_heating',
+                    zone_name + '_ahu_cool_air_flow'
+                ] += (
+                    self.parse_parameter('density_air')
+                    * (
+                        abs(delta_enthalpy_ahu_heating)
+                        - abs(delta_enthalpy_ahu_recovery_heating)
                     )
                 )
 
+                # TODO: Add thermal power for storage.
                 # Sensible thermal storage cooling discharge.
                 if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
                     self.control_output_matrix.at[
