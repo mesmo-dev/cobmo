@@ -322,10 +322,10 @@ class Building(object):
                 ] + '_ahu_heat_electric_power',
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_ahu_type'])
-                ] + '_ahu_cool_electric_power_cooling_coil',
+                ] + '_ahu_cool_electric_power_cooling',
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_ahu_type'])
-                ] + '_ahu_cool_electric_power_heating_coil',
+                ] + '_ahu_cool_electric_power_heating',
 
                 # TU electric power.
                 self.building_zones['zone_name'][
@@ -2670,7 +2670,7 @@ class Building(object):
 
                 # AHU cooling.
                 self.control_output_matrix.at[
-                    zone_name + '_ahu_cool_electric_power_cooling_coil',
+                    zone_name + '_ahu_cool_electric_power_cooling',
                     zone_name + '_ahu_cool_air_flow'
                 ] += (
                     self.parse_parameter('density_air')
@@ -2683,7 +2683,7 @@ class Building(object):
                     )
                 )
                 self.control_output_matrix.at[
-                    zone_name + '_ahu_cool_electric_power_heating_coil',
+                    zone_name + '_ahu_cool_electric_power_heating',
                     zone_name + '_ahu_cool_air_flow'
                 ] += (
                     self.parse_parameter('density_air')
@@ -2700,7 +2700,7 @@ class Building(object):
                 # Sensible thermal storage cooling discharge.
                 if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
                     self.control_output_matrix.at[
-                        zone_name + '_ahu_cool_electric_power_cooling_coil',
+                        zone_name + '_ahu_cool_electric_power_cooling',
                         zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
                     ] += (
                         - 1.0 / self.parse_parameter(zone_data['ahu_cooling_efficiency'])
@@ -2710,43 +2710,43 @@ class Building(object):
                 # Battery storage cooling discharge.
                 if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
                     self.control_output_matrix.at[
-                        zone_name + '_ahu_cool_electric_power_cooling_coil',
+                        zone_name + '_ahu_cool_electric_power_cooling',
                         zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
                     ] += (
                         - 1.0
                         * (
                             self.control_output_matrix.at[
-                                zone_name + '_ahu_cool_electric_power_cooling_coil',
+                                zone_name + '_ahu_cool_electric_power_cooling',
                                 zone_name + '_ahu_cool_air_flow'
                             ]
                         ) / (
                             self.control_output_matrix.at[
-                                zone_name + '_ahu_cool_electric_power_cooling_coil',
+                                zone_name + '_ahu_cool_electric_power_cooling',
                                 zone_name + '_ahu_cool_air_flow'
                             ]
                             + self.control_output_matrix.at[
-                                zone_name + '_ahu_cool_electric_power_heating_coil',
+                                zone_name + '_ahu_cool_electric_power_heating',
                                 zone_name + '_ahu_cool_air_flow'
                             ]
                         )
                     )
                     self.control_output_matrix.at[
-                        zone_name + '_ahu_cool_electric_power_heating_coil',
+                        zone_name + '_ahu_cool_electric_power_heating',
                         zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
                     ] += (
                         - 1.0
                         * (
                             self.control_output_matrix.at[
-                                zone_name + '_ahu_cool_electric_power_heating_coil',
+                                zone_name + '_ahu_cool_electric_power_heating',
                                 zone_name + '_ahu_cool_air_flow'
                             ]
                         ) / (
                             self.control_output_matrix.at[
-                                zone_name + '_ahu_cool_electric_power_cooling_coil',
+                                zone_name + '_ahu_cool_electric_power_cooling',
                                 zone_name + '_ahu_cool_air_flow'
                             ]
                             + self.control_output_matrix.at[
-                                zone_name + '_ahu_cool_electric_power_heating_coil',
+                                zone_name + '_ahu_cool_electric_power_heating',
                                 zone_name + '_ahu_cool_air_flow'
                             ]
                         )
