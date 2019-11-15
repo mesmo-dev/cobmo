@@ -11,7 +11,7 @@ import cobmo.utils
 
 
 # Set `scenario_name`.
-scenario_name = 'scenario_default'
+scenario_name = 'wtp_mix_medium_density_1'
 
 # Set results path and create the directory.
 results_path = os.path.join(cobmo.config.results_path, 'run_example_' + cobmo.config.timestamp)
@@ -27,9 +27,9 @@ building = cobmo.building.Building(
     scenario_name=scenario_name
 )
 
-# Define augemented state space model matrices.
-# TODO: Check if there is any usage for the augmented state space model.
-building.define_augmented_model()
+# # Define augemented state space model matrices.
+# # TODO: Check if there is any usage for the augmented state space model.
+# building.define_augmented_model()
 
 # Save building model matrices to CSV for debugging.
 building.state_matrix.to_csv(os.path.join(results_path, 'building_state_matrix.csv'))
@@ -48,19 +48,19 @@ control_timeseries_simulation = pd.DataFrame(
     building.set_controls
 )
 
-# Run simulation.
-(
-    state_timeseries_simulation,
-    output_timeseries_simulation
-) = building.simulate(
-    state_initial=state_initial,
-    control_timeseries=control_timeseries_simulation
-)
-
-# Save simulation timeseries to CSV for debugging.
-control_timeseries_simulation.to_csv(os.path.join(results_path, 'control_timeseries_simulation.csv'))
-state_timeseries_simulation.to_csv(os.path.join(results_path, 'state_timeseries_simulation.csv'))
-output_timeseries_simulation.to_csv(os.path.join(results_path, 'output_timeseries_simulation.csv'))
+# # Run simulation.
+# (
+#     state_timeseries_simulation,
+#     output_timeseries_simulation
+# ) = building.simulate(
+#     state_initial=state_initial,
+#     control_timeseries=control_timeseries_simulation
+# )
+#
+# # Save simulation timeseries to CSV for debugging.
+# control_timeseries_simulation.to_csv(os.path.join(results_path, 'control_timeseries_simulation.csv'))
+# state_timeseries_simulation.to_csv(os.path.join(results_path, 'state_timeseries_simulation.csv'))
+# output_timeseries_simulation.to_csv(os.path.join(results_path, 'output_timeseries_simulation.csv'))
 
 # Run controller.
 controller = cobmo.controller.Controller(
@@ -84,21 +84,21 @@ output_timeseries_controller.to_csv(os.path.join(results_path, 'output_timeserie
 # Print operation cost for debugging.
 print("operation_cost = {}".format(operation_cost))
 
-# Run error calculation function.
-(
-    error_summary,
-    error_timeseries
-) = cobmo.utils.calculate_error(
-    output_timeseries_simulation.loc[:, output_timeseries_controller.columns.str.contains('temperature')],
-    output_timeseries_controller.loc[:, output_timeseries_controller.columns.str.contains('temperature')]
-)  # Note: These are exemplary inputs.
-
-# Save error outputs to CSV for debugging.
-error_timeseries.to_csv(os.path.join(results_path, 'error_timeseries.csv'))
-error_summary.to_csv(os.path.join(results_path, 'error_summary.csv'))
-
-# Print error summary for debugging.
-print("error_summary = \n{}".format(error_summary))
+# # Run error calculation function.
+# (
+#     error_summary,
+#     error_timeseries
+# ) = cobmo.utils.calculate_error(
+#     output_timeseries_simulation.loc[:, output_timeseries_controller.columns.str.contains('temperature')],
+#     output_timeseries_controller.loc[:, output_timeseries_controller.columns.str.contains('temperature')]
+# )  # Note: These are exemplary inputs.
+#
+# # Save error outputs to CSV for debugging.
+# error_timeseries.to_csv(os.path.join(results_path, 'error_timeseries.csv'))
+# error_summary.to_csv(os.path.join(results_path, 'error_summary.csv'))
+#
+# # Print error summary for debugging.
+# print("error_summary = \n{}".format(error_summary))
 
 # Calculate total demand for benchmarking.
 total_demand = (
