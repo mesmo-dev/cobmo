@@ -708,6 +708,7 @@ class Building(object):
             # Calculate heat transfer coefficients.
             for zone_name, zone_data in self.building_zones.iterrows():
                 if pd.notnull(zone_data['hvac_radiator_type']):
+                    # Calculate geometric parameters and heat capacity.
                     thickness_water_layer = (
                         self.parse_parameter(zone_data['radiator_water_volume'])
                         / self.parse_parameter(zone_data['radiator_panel_area'])
@@ -731,6 +732,79 @@ class Building(object):
                     self.building_zones['heat_capacitance_water'] = (
                         self.parse_parameter(zone_data['radiator_water_volume'])
                         * self.parse_parameter('water_specific_heat')
+                    )
+
+                    # Calculate fundamental thermal resistances.
+                    thermal_resistance_conduction = (
+                        thickness_hull_layer
+                        / (zone_data['radiator_hull_conductivity'] * zone_data['radiator_panel_area'])
+                    )
+                    thermal_resistance_convection = (
+                        1.0
+                        / (zone_data['radiator_convection_coefficient'] * zone_data['radiator_panel_area'])
+                    )
+                    temperature_radiator_surfaces_mean = (
+                        0.5
+                        * (
+                            0.5
+                            * (
+                                self.parse_parameter(zone_data['radiator_supply_temperature_nominal'])
+                                + self.parse_parameter(zone_data['radiator_return_temperature_nominal'])
+                            )
+                            + self.parse_parameter(self.building_scenarios['linearization_surface_temperature'])
+                        )
+                    )
+                    thermal_resistance_radiation_front = (
+                        (
+                            (1.0 / self.parse_parameter(zone_data['radiator_panel_area']))
+                            + (
+                                (1.0 - self.parse_parameter(zone_data['radiator_emissivity']))
+                                / (
+                                    self.parse_parameter(zone_data['radiator_panel_area'])
+                                    * self.parse_parameter(zone_data['radiator_emissivity'])
+                                )
+                            )
+                            + (
+                                # TODO: Use total zone surface area and emissivity?
+                                (1.0 - zone_data['zone_surfaces_wall_emissivity'])
+                                / (
+                                    zone_data['zone_surfaces_wall_area']
+                                    * zone_data['zone_surfaces_wall_emissivity']
+                                )
+                            )
+                        )
+                        / (
+                            (
+                                4.0 * self.parse_parameter('stefan_boltzmann_constant')
+                                * (temperature_radiator_surfaces_mean ** 3.0)
+                            )
+                        )
+                    )
+                    thermal_resistance_radiation_back = (
+                        (
+                            (1.0 / self.parse_parameter(zone_data['radiator_panel_area']))
+                            + (
+                                (1.0 - self.parse_parameter(zone_data['radiator_emissivity']))
+                                / (
+                                    self.parse_parameter(zone_data['radiator_panel_area'])
+                                    * self.parse_parameter(zone_data['radiator_emissivity'])
+                                )
+                            )
+                            + (
+                                # TODO: Use total zone surface area and emissivity?
+                                (1.0 - zone_data['zone_surfaces_wall_emissivity'])
+                                / (
+                                    self.parse_parameter(zone_data['radiator_panel_area'])
+                                    * zone_data['zone_surfaces_wall_emissivity']
+                                )
+                            )
+                        )
+                        / (
+                            (
+                                4.0 * self.parse_parameter('stefan_boltzmann_constant')
+                                * (temperature_radiator_surfaces_mean ** 3.0)
+                            )
+                        )
                     )
 
     def define_heat_transfer_surfaces_exterior(self):
