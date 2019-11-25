@@ -724,7 +724,8 @@ class Building(object):
         if pd.notnull(self.building_zones['hvac_radiator_type']).any():
             # Instantiate columns for heat transfer coefficients.
             self.building_zones['heat_capacitance_hull'] = None
-            self.building_zones['heat_capacitance_water'] = None
+            self.building_zones['thermal_resistance_radiator_hull_conduction'] = None
+            self.building_zones['thermal_resistance_radiator_front_zone'] = None
             self.building_zones['thermal_resistance_radiator_front_zone'] = None
             self.building_zones['thermal_resistance_radiator_front_surfaces'] = None
             self.building_zones['thermal_resistance_radiator_front_zone_surfaces'] = None
@@ -833,17 +834,20 @@ class Building(object):
                             )
                         )
                     )
-
-                    # Calculate transformed thermal resistances.
                     thermal_resistance_star_sum_front = (
-                        0.5 * thermal_resistance_conduction * thermal_resistance_convection
-                        + 0.5 * thermal_resistance_conduction * thermal_resistance_radiation_front
-                        + thermal_resistance_convection * thermal_resistance_radiation_front
+                            0.5 * thermal_resistance_conduction * thermal_resistance_convection
+                            + 0.5 * thermal_resistance_conduction * thermal_resistance_radiation_front
+                            + thermal_resistance_convection * thermal_resistance_radiation_front
                     )
                     thermal_resistance_star_sum_rear = (
-                        0.5 * thermal_resistance_conduction * thermal_resistance_convection
-                        + 0.5 * thermal_resistance_conduction * thermal_resistance_radiation_rear
-                        + thermal_resistance_convection * thermal_resistance_radiation_rear
+                            0.5 * thermal_resistance_conduction * thermal_resistance_convection
+                            + 0.5 * thermal_resistance_conduction * thermal_resistance_radiation_rear
+                            + thermal_resistance_convection * thermal_resistance_radiation_rear
+                    )
+
+                    # Calculate transformed thermal resistances.
+                    self.building_zones.at[zone_name, 'thermal_resistance_radiator_hull_conduction'] = (
+                        thermal_resistance_conduction
                     )
                     self.building_zones.at[zone_name, 'thermal_resistance_radiator_front_zone'] = (
                         thermal_resistance_star_sum_front / thermal_resistance_radiation_front
@@ -2174,7 +2178,22 @@ class Building(object):
                 )
 
     def define_heat_transfer_hvac_radiator(self):
-        pass
+        """Define state equations describing the heat transfer occurring due to radiators."""
+
+        if pd.notnull(self.building_zones['hvac_radiator_type']).any():
+            zones_index = (
+                pd.notnull(self.building_zones['hvac_radiator_type'])
+            )
+            self.state_matrix.loc[
+                self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_hull_front_temperature',
+                self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_hull_front_temperature'
+            ] += (
+                - 1.0
+                * (1.0 / (0.5 * self.building_zones.loc[zones_index, 'thermal_resistance_radiator_hull_conduction']))
+                * (1.0 / self.building_zones.loc[zones_index, 'thermal_resistance_radiator_front_zone'])
+                * (1.0 / self.building_zones.loc[zones_index, 'thermal_resistance_radiator_front_surfaces'])
+                / self.building_zones.loc[zones_index, 'heat_capacitance_hull']
+            )
 
     def define_heat_transfer_hvac_ahu(self):
         for index, row in self.building_zones.iterrows():
