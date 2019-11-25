@@ -149,6 +149,17 @@ class Building(object):
                     & pd.notnull(self.building_scenarios['humidity_model_type'][0])
                 ] + '_absolute_humidity',
 
+                # Radiator temperatures.
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_radiator_type'])
+                ] + '_radiator_water_mean_temperature',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_radiator_type'])
+                ] + '_radiator_hull_front_temperature',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_radiator_type'])
+                ] + '_radiator_hull_rear_temperature',
+
                 # Sensible storage state of charge.
                 self.building_scenarios['building_name'][
                     self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default'
@@ -172,6 +183,11 @@ class Building(object):
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_generic_type'])
                 ] + '_generic_cool_thermal_power',
+
+                # Radiator thermal power.
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_radiator_type'])
+                ] + '_radiator_thermal_power',
 
                 # AHU.
                 self.building_zones['zone_name'][
@@ -315,6 +331,16 @@ class Building(object):
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_generic_type'])
                 ] + '_generic_cool_electric_power',
+
+                # Radiator thermal power.
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_radiator_type'])
+                ] + '_radiator_thermal_power',
+
+                # Radiator electric power.
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_radiator_type'])
+                ] + '_radiator_electric_power',
 
                 # AHU electric power.
                 self.building_zones['zone_name'][
@@ -486,6 +512,7 @@ class Building(object):
         )
 
         # Define heat capacity vector.
+        # TODO: Move heat capacity calculation to `coefficients define_coefficients_...`.
         self.heat_capacity_vector = pd.Series(
             0.0,
             self.set_states
