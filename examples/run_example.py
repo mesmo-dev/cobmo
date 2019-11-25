@@ -11,7 +11,7 @@ import cobmo.utils
 
 
 # Set `scenario_name`.
-scenario_name = 'scenario_default'
+scenario_name = 'validation_1zone_radiator'
 
 # Set results path and create the directory.
 results_path = os.path.join(cobmo.config.results_path, 'run_example_' + cobmo.config.timestamp)
