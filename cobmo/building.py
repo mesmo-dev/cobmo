@@ -725,11 +725,11 @@ class Building(object):
                         thickness_hull_layer
                         * self.parse_parameter(zone_data['radiator_panel_area'])
                     )
-                    self.building_zones['heat_capacitance_hull'] = (
+                    self.building_zones.at[zone_name, 'heat_capacitance_hull'] = (
                         radiator_hull_volume
                         * self.parse_parameter(zone_data['radiator_hull_heat_capacity'])
                     )
-                    self.building_zones['heat_capacitance_water'] = (
+                    self.building_zones.at[zone_name, 'heat_capacitance_water'] = (
                         self.parse_parameter(zone_data['radiator_water_volume'])
                         * self.parse_parameter('water_specific_heat')
                     )
@@ -780,7 +780,7 @@ class Building(object):
                             )
                         )
                     )
-                    thermal_resistance_radiation_back = (
+                    thermal_resistance_radiation_rear = (
                         (
                             (1.0 / self.parse_parameter(zone_data['radiator_panel_area']))
                             + (
@@ -805,6 +805,36 @@ class Building(object):
                                 * (temperature_radiator_surfaces_mean ** 3.0)
                             )
                         )
+                    )
+
+                    # Calculate transformed thermal resistances.
+                    thermal_resistance_star_sum_front = (
+                        0.5 * thermal_resistance_conduction * thermal_resistance_convection
+                        + 0.5 * thermal_resistance_conduction * thermal_resistance_radiation_front
+                        + thermal_resistance_convection * thermal_resistance_radiation_front
+                    )
+                    thermal_resistance_star_sum_rear = (
+                        0.5 * thermal_resistance_conduction * thermal_resistance_convection
+                        + 0.5 * thermal_resistance_conduction * thermal_resistance_radiation_rear
+                        + thermal_resistance_convection * thermal_resistance_radiation_rear
+                    )
+                    self.building_zones.at[zone_name, 'thermal_resistance_radiator_front_zone'] = (
+                        thermal_resistance_star_sum_front / thermal_resistance_radiation_front
+                    )
+                    self.building_zones.at[zone_name, 'thermal_resistance_radiator_front_surfaces'] = (
+                        thermal_resistance_star_sum_front / thermal_resistance_convection
+                    )
+                    self.building_zones.at[zone_name, 'thermal_resistance_radiator_front_zone_surfaces'] = (
+                        thermal_resistance_star_sum_front / (0.5 * thermal_resistance_conduction)
+                    )
+                    self.building_zones.at[zone_name, 'thermal_resistance_radiator_rear_zone'] = (
+                        thermal_resistance_star_sum_rear / thermal_resistance_radiation_rear
+                    )
+                    self.building_zones.at[zone_name, 'thermal_resistance_radiator_rear_surfaces'] = (
+                        thermal_resistance_star_sum_rear / thermal_resistance_convection
+                    )
+                    self.building_zones.at[zone_name, 'thermal_resistance_radiator_rear_zone_surfaces'] = (
+                        thermal_resistance_star_sum_rear / (0.5 * thermal_resistance_conduction)
                     )
 
     def define_heat_transfer_surfaces_exterior(self):
