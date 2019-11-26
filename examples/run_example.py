@@ -1,5 +1,7 @@
 """Example run script for using the building model."""
 
+import hvplot
+import hvplot.pandas
 import numpy as np
 import os
 import pandas as pd
@@ -80,6 +82,100 @@ controller = cobmo.controller.Controller(
 control_timeseries_controller.to_csv(os.path.join(results_path, 'control_timeseries_controller.csv'))
 state_timeseries_controller.to_csv(os.path.join(results_path, 'state_timeseries_controller.csv'))
 output_timeseries_controller.to_csv(os.path.join(results_path, 'output_timeseries_controller.csv'))
+
+# Hvplot has no default options.
+# Workaround: Pass this dict to every new plot.
+hvplot_default_options = dict(width=1500, height=300)
+
+# Generate plot handles.
+irradiation_plot = (
+    building.disturbance_timeseries.loc[
+        :, building.disturbance_timeseries.columns.str.contains('irradiation')
+    ].stack().rename('irradiation').reset_index()
+).hvplot.line(
+    x='time',
+    y='irradiation',
+    by='disturbance_name',
+    **hvplot_default_options
+)
+ambient_air_temperature_plot = (
+    building.disturbance_timeseries['ambient_air_temperature'].rename('ambient_air_temperature').reset_index()
+).hvplot.line(
+    x='time',
+    y='ambient_air_temperature',
+    **hvplot_default_options
+)
+thermal_power_plot = (
+    output_timeseries_controller.loc[
+        :, output_timeseries_controller.columns.str.contains('thermal_power')
+    ].stack().rename('thermal_power').reset_index()
+).hvplot.step(
+    x='time',
+    y='thermal_power',
+    by='output_name',
+    **hvplot_default_options
+)
+zone_temperature_plot = (
+    output_timeseries_controller.loc[
+        :, output_timeseries_controller.columns.isin(
+            building.building_zones['zone_name'] + '_temperature'
+        )
+    ].stack().rename('zone_temperature').reset_index()
+).hvplot.line(
+    x='time',
+    y='zone_temperature',
+    by='output_name',
+    **hvplot_default_options
+)
+radiator_water_temperature_plot = (
+    state_timeseries_controller.loc[
+        :, state_timeseries_controller.columns.isin(
+            building.building_zones['zone_name'] + '_radiator_water_mean_temperature'
+        )
+    ].stack().rename('radiator_water_temperature').reset_index()
+).hvplot.line(
+    x='time',
+    y='radiator_water_temperature',
+    by='state_name',
+    **hvplot_default_options
+)
+radiator_hull_temperature_plot = (
+    state_timeseries_controller.loc[
+        :, state_timeseries_controller.columns.isin(
+            pd.concat([
+                building.building_zones['zone_name'] + '_radiator_hull_front_temperature',
+                building.building_zones['zone_name'] + '_radiator_hull_rear_temperature'
+            ])
+        )
+    ].stack().rename('radiator_hull_temperature').reset_index()
+).hvplot.line(
+    x='time',
+    y='radiator_hull_temperature',
+    by='state_name',
+    **hvplot_default_options
+)
+
+# Define layout and labels / render plots.
+hvplot.show(
+    (
+        irradiation_plot
+        + ambient_air_temperature_plot
+        + thermal_power_plot
+        + zone_temperature_plot
+        + radiator_water_temperature_plot
+        + radiator_hull_temperature_plot
+    ).redim.label(
+        time="Date / time",
+        irradiation="Irradiation [W/m²]",
+        ambient_air_temperature="Ambient air temp. [°C]",
+        thermal_power="Thermal power [W]",
+        zone_temperature="Zone temperature [°C]",
+        radiator_water_temperature="Radiator water temperature [°C]",
+        radiator_hull_temperature="Radiator hull temperature [°C]",
+    ).cols(1),
+    # Plots open in browser and are also stored in results directory.
+    filename=os.path.join(results_path, 'example_plots.html')
+)
 
 # Print operation cost for debugging.
 print("operation_cost = {}".format(operation_cost))
