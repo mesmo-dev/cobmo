@@ -2191,6 +2191,15 @@ class Building(object):
                 pd.notnull(self.building_zones['hvac_radiator_type'])
             )
 
+            # Thermal power input to water.
+            self.control_matrix.loc[
+                self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_water_mean_temperature',
+                self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_thermal_power'
+            ] += (
+                1.0
+                / self.building_zones.loc[zones_index, 'heat_capacitance_water']
+            ).values
+
             # Heat transfer between radiator hull front and water.
             self.state_matrix.loc[
                 self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_hull_front_temperature',
@@ -2942,7 +2951,29 @@ class Building(object):
                 )
 
     def define_output_hvac_radiator_power(self):
-        pass
+        """Define output equations for the thermal and electric power demand due to radiators."""
+
+        if pd.notnull(self.building_zones['hvac_radiator_type']).any():
+            zones_index = (
+                pd.notnull(self.building_zones['hvac_radiator_type'])
+            )
+
+            # Thermal power.
+            self.control_output_matrix.loc[
+                self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_thermal_power',
+                self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_thermal_power'
+            ] += (
+                1.0
+            )
+
+            # Electric power.
+            # TODO: Define heating COP for radiators.
+            self.control_output_matrix.loc[
+                self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_electric_power',
+                self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_thermal_power'
+            ] += (
+                1.0
+            )
 
     def define_output_hvac_ahu_electric_power(self):
         for zone_name, zone_data in self.building_zones.iterrows():
