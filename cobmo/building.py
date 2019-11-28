@@ -726,7 +726,6 @@ class Building(object):
             self.building_zones['heat_capacitance_hull'] = None
             self.building_zones['thermal_resistance_radiator_hull_conduction'] = None
             self.building_zones['thermal_resistance_radiator_front_zone'] = None
-            self.building_zones['thermal_resistance_radiator_front_zone'] = None
             self.building_zones['thermal_resistance_radiator_front_surfaces'] = None
             self.building_zones['thermal_resistance_radiator_front_zone_surfaces'] = None
             self.building_zones['thermal_resistance_radiator_rear_zone'] = None
