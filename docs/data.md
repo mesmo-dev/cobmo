@@ -62,6 +62,18 @@ Terminal unit (TU) set points and characteristics.
 | `tu_cooling_efficiency` | - | Chiller plant efficiency (thermal power / electrical power). |
 | `tu_heating_efficiency` | - | Heating plant efficiency (thermal power / electrical power). |
 
+## `building_initial_state_types`
+
+| Column | Unit | Description |
+| --- |:---:| --- |
+| initial_state_type | | Unique type identifier. |
+| initial_zone_temperature | °C | Initial zone air temperature. |
+| initial_surface_temperature | °C | Initial surface temperature. |
+| initial_co2_concentration | ppm | Initial zone air CO₂ concentration. |
+| initial_absolute_humidity | kg/kg | Initial zone air absolute humidity (mass of water / mass of air). |
+| initial_sensible_thermal_storage_state_of_charge | m³ | Initial stored volume of useable water layer in the sensible thermal storage. |
+| initial_battery_storage_state_of_charge | kWh | Initial stored electric energy in the battery storage.|
+
 ## `building_internal_gain_timeseries`
 
 Time series of internal gains.
