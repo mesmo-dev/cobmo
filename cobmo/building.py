@@ -513,8 +513,10 @@ class Building(object):
                     * self.parse_parameter(row['heat_capacity'])
             )
 
-        # Definition of parameters / coefficients.
-        self.define_heat_transfer_coefficients()
+        # Calculate parameters / coefficients.
+        self.calculate_coefficients_zone()
+        self.calculate_coefficients_surface()
+        self.calculate_coefficients_radiator()
 
         # Define heat, CO2 and humidity transfers.
         self.define_heat_transfer_surfaces_exterior()
@@ -563,12 +565,71 @@ class Building(object):
         - Checks if given parameter is a number.
         - If the parameter is not a number, it is assumed to be the name of a parameter from `building_parameters`
         """
+        # TODO: Apply parameter parsing when loading data instead when using data.
         try:
             return float(parameter)
         except ValueError:
             return self.building_parameters[parameter]
 
-    def define_heat_transfer_coefficients(self):
+    def calculate_coefficients_zone(self):
+        """Calculate zone parameters / heat transfer coefficients for use in, e.g., surface and radiator models."""
+
+        # Instantiate columns for parameters / heat transfer coefficients.
+        self.building_zones['zone_surfaces_wall_area'] = None
+        self.building_zones['zone_surfaces_window_area'] = None
+        self.building_zones['zone_surfaces_wall_emissivity'] = None
+        self.building_zones['zone_surfaces_window_emissivity'] = None
+
+        # Calculate zone parameters / heat transfer coefficients.
+        for zone_name, zone_data in self.building_zones.iterrows():
+            # Collect all surfaces adjacent to the zone.
+            zone_surfaces = (
+                pd.concat(
+                    [
+                        self.building_surfaces_exterior.loc[
+                            self.building_surfaces_exterior['zone_name'].isin([zone_name]),
+                            :
+                        ],
+                        self.building_surfaces_interior.loc[
+                            self.building_surfaces_interior['zone_name'].isin([zone_name]),
+                            :
+                        ],
+                        self.building_surfaces_interior.loc[
+                            self.building_surfaces_interior['zone_adjacent_name'].isin([zone_name]),
+                            :
+                        ],
+                        self.building_surfaces_adiabatic.loc[
+                            self.building_surfaces_adiabatic['zone_name'].isin([zone_name]),
+                            :
+                        ]
+                    ],
+                    sort=False
+                )
+            )
+
+            # Calculate parameters / heat transfer coefficients.
+            self.building_zones.at[zone_name, 'zone_surfaces_wall_area'] = (
+                (
+                    zone_surfaces['surface_area'].apply(self.parse_parameter)
+                    * (1 - zone_surfaces['window_wall_ratio'].apply(self.parse_parameter))
+                ).sum()
+            )
+            self.building_zones.at[zone_name, 'zone_surfaces_window_area'] = (
+                (
+                    zone_surfaces['surface_area'].apply(self.parse_parameter)
+                    * zone_surfaces['window_wall_ratio'].apply(self.parse_parameter)
+                ).sum()
+            )
+            self.building_zones.at[zone_name, 'zone_surfaces_wall_emissivity'] = (
+                zone_surfaces['emissivity'].apply(self.parse_parameter).mean()
+            )
+            self.building_zones.at[zone_name, 'zone_surfaces_window_emissivity'] = (
+                zone_surfaces['emissivity_window'].apply(self.parse_parameter).mean()
+            )
+
+    def calculate_coefficients_surface(self):
+        """Calculate heat transfer coefficients for the surface models."""
+
         # Instantiate columns for heat transfer coefficients.
         self.building_surfaces_exterior['heat_transfer_coefficient_surface_sky'] = None
         self.building_surfaces_exterior['heat_transfer_coefficient_surface_ground'] = None
@@ -637,29 +698,6 @@ class Building(object):
         # TODO: Rename thermal_resistance_surface
         # TODO: Exterior window transmission factor
         for surface_name, surface_data in self.building_surfaces_exterior.iterrows():
-            # Total zone surface area for later calculating share of interior (indirect) irradiation
-            zone_surface_area = sum(
-                self.parse_parameter(zone_surface_data['surface_area'])
-                * (1 - self.parse_parameter(zone_surface_data['window_wall_ratio']))
-                for zone_surface_name, zone_surface_data in pd.concat(
-                    [
-                        self.building_surfaces_exterior[:][
-                            self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
-                            ],
-                        self.building_surfaces_interior[:][
-                            self.building_surfaces_interior['zone_name'] == surface_data['zone_name']
-                            ],
-                        self.building_surfaces_interior[:][
-                            self.building_surfaces_interior['zone_adjacent_name'] == surface_data['zone_name']
-                            ],
-                        self.building_surfaces_adiabatic[:][
-                            self.building_surfaces_adiabatic['zone_name'] == surface_data['zone_name']
-                            ]
-                    ],
-                    sort=False
-                ).iterrows()  # For all surfaces adjacent to the zone
-            )
-
             if self.parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
                 # Conductive heat transfer from the exterior towards the core of surface
                 self.disturbance_matrix.at[
@@ -788,7 +826,7 @@ class Building(object):
                             (
                                     self.parse_parameter(zone_exterior_surface_data['surface_area'])
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
-                                    / zone_surface_area
+                                    / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
                             * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
                             * self.parse_parameter(surface_data['surface_area'])
@@ -872,7 +910,7 @@ class Building(object):
                             (
                                     self.parse_parameter(zone_exterior_surface_data['surface_area'])
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
-                                    / zone_surface_area
+                                    / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
                             * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
                             * self.parse_parameter(surface_data['surface_area'])
@@ -1072,7 +1110,7 @@ class Building(object):
                             (
                                     self.parse_parameter(zone_exterior_surface_data['surface_area'])
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
-                                    / zone_surface_area
+                                    / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
                             * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
                             * self.parse_parameter(surface_data['surface_area'])
@@ -1230,7 +1268,7 @@ class Building(object):
                             (
                                     self.parse_parameter(zone_exterior_surface_data['surface_area'])
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
-                                    / zone_surface_area
+                                    / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
                             * self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
                             * self.parse_parameter(surface_data['surface_area'])
@@ -1257,29 +1295,6 @@ class Building(object):
         """Thermal model: Interior surfaces"""
         for surface_name, surface_data in self.building_surfaces_interior.iterrows():
             for zone_name in [surface_data['zone_name'], surface_data['zone_adjacent_name']]:
-                # Total zone surface area for later calculating share of interior (indirect) irradiation
-                zone_surface_area = sum(
-                    self.parse_parameter(zone_surface_data['surface_area'])
-                    * (1 - self.parse_parameter(zone_surface_data['window_wall_ratio']))
-                    for zone_surface_name, zone_surface_data in pd.concat(
-                        [
-                            self.building_surfaces_exterior[:][
-                                self.building_surfaces_exterior['zone_name'] == zone_name
-                                ],
-                            self.building_surfaces_interior[:][
-                                self.building_surfaces_interior['zone_name'] == zone_name
-                                ],
-                            self.building_surfaces_interior[:][
-                                self.building_surfaces_interior['zone_adjacent_name'] == zone_name
-                                ],
-                            self.building_surfaces_adiabatic[:][
-                                self.building_surfaces_adiabatic['zone_name'] == zone_name
-                                ]
-                        ],
-                        sort=False
-                    ).iterrows()  # For all surfaces adjacent to the zone
-                )
-
                 if self.parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
                     # Conductive heat transfer from the interior towards the core of surface
                     for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
@@ -1298,7 +1313,7 @@ class Building(object):
                                 (
                                         self.parse_parameter(zone_exterior_surface_data['surface_area'])
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
-                                        / zone_surface_area
+                                        / self.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
                                 * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
                                 * self.parse_parameter(surface_data['surface_area'])
@@ -1376,7 +1391,7 @@ class Building(object):
                                 (
                                         self.parse_parameter(zone_exterior_surface_data['surface_area'])
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
-                                        / zone_surface_area
+                                        / self.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
                                 * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
                                 * self.parse_parameter(surface_data['surface_area'])
@@ -1556,7 +1571,7 @@ class Building(object):
                                 (
                                         self.parse_parameter(zone_exterior_surface_data['surface_area'])
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
-                                        / zone_surface_area
+                                        / self.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
                                 * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
                                 * self.parse_parameter(surface_data['surface_area'])
@@ -1692,7 +1707,7 @@ class Building(object):
                                 (
                                         self.parse_parameter(zone_exterior_surface_data['surface_area'])
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
-                                        / zone_surface_area
+                                        / self.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
                                 * self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
                                 * self.parse_parameter(surface_data['surface_area'])
@@ -1710,29 +1725,6 @@ class Building(object):
     def define_heat_transfer_surfaces_adiabatic(self):
         """Thermal model: Adiabatic surfaces"""
         for surface_name, surface_data in self.building_surfaces_adiabatic.iterrows():
-            # Total zone surface area for later calculating share of interior (indirect) irradiation
-            zone_surface_area = sum(
-                self.parse_parameter(zone_surface_data['surface_area'])
-                * (1 - self.parse_parameter(zone_surface_data['window_wall_ratio']))
-                for zone_surface_name, zone_surface_data in pd.concat(
-                    [
-                        self.building_surfaces_exterior[:][
-                            self.building_surfaces_exterior['zone_name'] == surface_data['zone_name']
-                            ],
-                        self.building_surfaces_interior[:][
-                            self.building_surfaces_interior['zone_name'] == surface_data['zone_name']
-                            ],
-                        self.building_surfaces_interior[:][
-                            self.building_surfaces_interior['zone_adjacent_name'] == surface_data['zone_name']
-                            ],
-                        self.building_surfaces_adiabatic[:][
-                            self.building_surfaces_adiabatic['zone_name'] == surface_data['zone_name']
-                            ]
-                    ],
-                    sort=False
-                ).iterrows()  # For all surfaces adjacent to the zone
-            )
-
             if self.parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
                 # Conductive heat transfer from the interior towards the core of surface
                 for zone_exterior_surface_name, zone_exterior_surface_data in self.building_surfaces_exterior[:][
@@ -1751,7 +1743,7 @@ class Building(object):
                             (
                                     self.parse_parameter(zone_exterior_surface_data['surface_area'])
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
-                                    / zone_surface_area
+                                    / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
                             * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
                             * self.parse_parameter(surface_data['surface_area'])
@@ -1835,7 +1827,7 @@ class Building(object):
                             (
                                     self.parse_parameter(zone_exterior_surface_data['surface_area'])
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
-                                    / zone_surface_area
+                                    / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
                             * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
                             * self.parse_parameter(surface_data['surface_area'])
