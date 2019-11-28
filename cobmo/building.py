@@ -516,7 +516,6 @@ class Building(object):
         # Calculate parameters / coefficients.
         self.calculate_coefficients_zone()
         self.calculate_coefficients_surface()
-        self.calculate_coefficients_radiator()
 
         # Define heat, CO2 and humidity transfers.
         self.define_heat_transfer_surfaces_exterior()
