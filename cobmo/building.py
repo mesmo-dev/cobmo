@@ -22,10 +22,6 @@ class Building(object):
         # Obtain scenario name.
         self.scenario_name = scenario_name
 
-        # Instantiate model variables.
-        self.disturbance_timeseries = pd.DataFrame()
-        self.electricity_price_timeseries = pd.DataFrame()
-
         # Load building model definition.
         self.building_scenarios = (
             pd.read_sql(
@@ -33,6 +29,7 @@ class Building(object):
                 SELECT * FROM building_scenarios 
                 JOIN buildings USING (building_name) 
                 JOIN building_linearization_types USING (linearization_type) 
+                LEFT JOIN building_initial_state_types USING (initial_state_type) 
                 LEFT JOIN building_storage_types USING (building_storage_type) 
                 WHERE scenario_name='{}'
                 """.format(self.scenario_name),
@@ -443,38 +440,13 @@ class Building(object):
             name='output_name'
         )
 
-        # Define initial states.
-        self.set_state_initial = pd.Series(
-            np.concatenate([
-                # Zone temperature.
-                26.0  # in °C
-                * np.ones(sum(self.set_states.str.contains('temperature'))),
-
-                # CO2 concentration.
-                100.0  # in ppm
-                * np.ones(sum(self.set_states.str.contains('co2_concentration'))),
-
-                # Absolute humidity.
-                0.013  # in kg(water)/kg(air)
-                * np.ones(sum(self.set_states.str.contains('absolute_humidity'))),
-
-                # Sensible storage state of charge.
-                0.0
-                * np.ones(sum(self.set_states.str.contains('_sensible_thermal_storage_state_of_charge'))),
-
-                # Battery storage state of charge.
-                0.0
-                * np.ones(sum(self.set_states.str.contains('_battery_storage_state_of_charge')))
-            ]),
-            self.set_states
-        ).to_dict()
-
         # Define timesteps.
+        self.timestep_delta = pd.to_timedelta(self.building_scenarios['time_step'][0])
         self.set_timesteps = pd.Index(
             pd.date_range(
                 start=pd.to_datetime(self.building_scenarios['time_start'][0]),
                 end=pd.to_datetime(self.building_scenarios['time_end'][0]),
-                freq=pd.to_timedelta(self.building_scenarios['time_step'][0])
+                freq=self.timestep_delta
             ),
             name='time'
         )
@@ -539,6 +511,17 @@ class Building(object):
                     * self.parse_parameter(row['heat_capacity'])
             )
 
+        # Instantiate other model properties / variables.
+        self.set_state_initial = pd.Series(
+            0.0,
+            index=self.set_states
+        )
+        self.disturbance_timeseries = pd.DataFrame()
+        self.electricity_price_timeseries = pd.DataFrame()
+
+        # Define initial state.
+        self.define_initial_state()
+
         # Calculate parameters / coefficients.
         self.calculate_coefficients_zone()
         self.calculate_coefficients_surface()
@@ -596,6 +579,57 @@ class Building(object):
             return float(parameter)
         except ValueError:
             return self.building_parameters[parameter]
+
+    def define_initial_state(self):
+        """Define initial value of the state vector for given definition in `building_initial_state_types`."""
+
+        # Zone air temperature.
+        self.set_state_initial.loc[
+            self.set_state_initial.index.isin(self.building_zones['zone_name'] + '_temperature')
+        ] = (
+            self.parse_parameter(self.building_scenarios['initial_zone_temperature'])
+        )
+
+        # Surface temperature.
+        self.set_state_initial.loc[
+            self.set_state_initial.index.isin(
+                pd.concat([
+                    self.building_surfaces_adiabatic['surface_name'] + '_temperature',
+                    self.building_surfaces_exterior['surface_name'] + '_temperature',
+                    self.building_surfaces_interior['surface_name'] + '_temperature'
+                ])
+            )
+        ] = (
+            self.parse_parameter(self.building_scenarios['initial_surface_temperature'])
+        )
+
+        # CO2 concentration.
+        self.set_state_initial.loc[
+            self.set_state_initial.index.isin(self.building_zones['zone_name'] + '_co2_concentration')
+        ] = (
+            self.parse_parameter(self.building_scenarios['initial_co2_concentration'])
+        )
+
+        # Zone air absolute humidity.
+        self.set_state_initial.loc[
+            self.set_state_initial.index.isin(self.building_zones['zone_name'] + '_absolute_humidity')
+        ] = (
+            self.parse_parameter(self.building_scenarios['initial_absolute_humidity'])
+        )
+
+        # Sensible storage state of charge.
+        self.set_state_initial.loc[
+            self.set_state_initial.index.str.contains('_sensible_thermal_storage_state_of_charge')
+        ] = (
+            self.parse_parameter(self.building_scenarios['initial_sensible_thermal_storage_state_of_charge'])
+        )
+
+        # Battery storage state of charge.
+        self.set_state_initial.loc[
+            self.set_state_initial.index.str.contains('_battery_storage_state_of_charge')
+        ] = (
+            self.parse_parameter(self.building_scenarios['initial_battery_storage_state_of_charge'])
+        )
 
     def calculate_coefficients_zone(self):
         """Calculate zone parameters / heat transfer coefficients for use in, e.g., surface and radiator models."""
@@ -3900,16 +3934,24 @@ class Building(object):
                     'irradiation_south',
                     'irradiation_west',
                     'irradiation_north'
-                    # 'storage_ambient_air_temperature'  # @add2
+                    # 'storage_ambient_air_temperature'  # TODO: Cleanup `storage_ambient_air_temperature`.
                 ]].reindex(
                     self.set_timesteps
                 ).interpolate(
                     'quadratic'
+                ).bfill(
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+                ).ffill(
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
                 ),
                 building_internal_gain_timeseries.reindex(
                     self.set_timesteps
                 ).interpolate(
                     'quadratic'
+                ).bfill(
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+                ).ffill(
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
                 ),
                 (
                     pd.DataFrame(
@@ -3953,6 +3995,10 @@ class Building(object):
                 self.set_timesteps
             ).interpolate(
                 'quadratic'
+            ).bfill(
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+            ).ffill(
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
             )
 
     def define_output_constraint_timeseries(self, conn):
@@ -4176,6 +4222,7 @@ class Building(object):
 
                 # Storage state of charge constraints.
                 # Sensible thermal storage.
+                # TODO: Validate storage size units.
                 if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
                     self.output_constraint_timeseries_maximum.at[
                         timestep,

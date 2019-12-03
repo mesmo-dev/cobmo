@@ -44,6 +44,15 @@ CREATE TABLE IF NOT EXISTS "building_hvac_tu_types" (
     "tu_cooling_efficiency" TEXT,
     "tu_heating_efficiency" TEXT
 );
+CREATE TABLE IF NOT EXISTS "building_initial_state_types" (
+    "initial_state_type" TEXT,
+    "initial_zone_temperature" TEXT,
+    "initial_surface_temperature" TEXT,
+    "initial_co2_concentration" TEXT,
+    "initial_absolute_humidity" TEXT,
+    "initial_sensible_thermal_storage_state_of_charge" TEXT,
+    "initial_battery_storage_state_of_charge" TEXT
+);
 CREATE TABLE IF NOT EXISTS "building_internal_gain_timeseries" (
     "internal_gain_type" TEXT,
     "time" TEXT,
@@ -83,6 +92,7 @@ CREATE TABLE IF NOT EXISTS "building_scenarios" (
     "building_name" TEXT,
     "parameter_set" TEXT,
     "linearization_type" TEXT,
+    "initial_state_type" TEXT,
     "demand_controlled_ventilation_type" TEXT,
     "co2_model_type" TEXT,
     "humidity_model_type" TEXT,
