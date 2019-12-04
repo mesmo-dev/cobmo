@@ -156,6 +156,14 @@ class Building(object):
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_radiator_type'])
                 ] + '_radiator_hull_rear_temperature',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_radiator_type'])
+                    & (self.building_zones['radiator_panel_number'] == '2')
+                ] + '_radiator_panel_1_hull_rear_temperature',
+                self.building_zones['zone_name'][
+                    pd.notnull(self.building_zones['hvac_radiator_type'])
+                    & (self.building_zones['radiator_panel_number'] == '2')
+                ] + '_radiator_panel_2_hull_front_temperature',
 
                 # Sensible storage state of charge.
                 self.building_scenarios['building_name'][
@@ -766,6 +774,11 @@ class Building(object):
             self.building_zones['thermal_resistance_radiator_rear_surfaces'] = None
             self.building_zones['thermal_resistance_radiator_rear_zone_surfaces'] = None
 
+            # Instantiate additional columns for multi-panel radiators.
+            if (self.building_zones['radiator_panel_number'] == '2').any():
+                self.building_zones['thermal_resistance_radiator_panel_1_rear_zone'] = None
+                self.building_zones['thermal_resistance_radiator_panel_2_front_zone'] = None
+
             # Calculate heat transfer coefficients.
             for zone_name, zone_data in self.building_zones.iterrows():
                 if pd.notnull(zone_data['hvac_radiator_type']):
@@ -906,6 +919,24 @@ class Building(object):
                     self.building_zones.at[zone_name, 'thermal_resistance_radiator_rear_zone_surfaces'] = (
                         thermal_resistance_star_sum_rear / (0.5 * thermal_resistance_conduction)
                     )
+
+                    if (self.building_zones['radiator_panel_number'] == '2').any():
+                        thermal_resistance_convection_fin = (
+                            1.0
+                            / (
+                                thermal_resistance_convection
+                                * self.parse_parameter(zone_data['radiator_fin_effectiveness'])
+                            )
+                        )
+
+                        self.building_zones.at[zone_name, 'thermal_resistance_radiator_panel_1_rear_zone'] = (
+                            0.5 * thermal_resistance_conduction
+                            + thermal_resistance_convection
+                        )
+                        self.building_zones.at[zone_name, 'thermal_resistance_radiator_panel_2_front_zone'] = (
+                            0.5 * thermal_resistance_conduction
+                            + thermal_resistance_convection_fin
+                        )
 
     def define_heat_transfer_surfaces_exterior(self):
         """Thermal model: Exterior surfaces"""
@@ -2223,6 +2254,10 @@ class Building(object):
             zones_index = (
                 pd.notnull(self.building_zones['hvac_radiator_type'])
             )
+            zones_2_panels_index = (
+                zones_index
+                & (self.building_zones['radiator_panel_number'] == '2')
+            )
 
             # Thermal power input to water.
             self.control_matrix.loc[
@@ -2266,6 +2301,75 @@ class Building(object):
                 / (0.5 * self.building_zones.loc[zones_index, 'thermal_resistance_radiator_hull_conduction'])
                 / self.building_zones.loc[zones_index, 'heat_capacitance_water']
             ).values
+
+            if zones_2_panels_index.any():
+                # Heat transfer between radiator panel 1 hull rear and water.
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_1_hull_rear_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_1_hull_rear_temperature'
+                ] += (
+                    - 1.0
+                    / (0.5 * self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_hull_conduction'])
+                    / self.building_zones.loc[zones_2_panels_index, 'heat_capacitance_hull']
+                ).values
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_1_hull_rear_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_water_mean_temperature'
+                ] += (
+                    1.0
+                    / (0.5 * self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_hull_conduction'])
+                    / self.building_zones.loc[zones_2_panels_index, 'heat_capacitance_hull']
+                ).values
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_water_mean_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_1_hull_rear_temperature'
+                ] += (
+                    1.0
+                    / (0.5 * self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_hull_conduction'])
+                    / self.building_zones.loc[zones_2_panels_index, 'heat_capacitance_water']
+                ).values
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_water_mean_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_water_mean_temperature'
+                ] += (
+                    - 1.0
+                    / (0.5 * self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_hull_conduction'])
+                    / self.building_zones.loc[zones_2_panels_index, 'heat_capacitance_water']
+                ).values
+
+                # Heat transfer between radiator panel 2 hull front and water.
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_2_hull_front_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_2_hull_front_temperature'
+                ] += (
+                    - 1.0
+                    / (0.5 * self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_hull_conduction'])
+                    / self.building_zones.loc[zones_2_panels_index, 'heat_capacitance_hull']
+                ).values
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_2_hull_front_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_water_mean_temperature'
+                ] += (
+                    1.0
+                    / (0.5 * self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_hull_conduction'])
+                    / self.building_zones.loc[zones_2_panels_index, 'heat_capacitance_hull']
+                ).values
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_water_mean_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_2_hull_front_temperature'
+                ] += (
+                    1.0
+                    / (0.5 * self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_hull_conduction'])
+                    / self.building_zones.loc[zones_2_panels_index, 'heat_capacitance_water']
+                ).values
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_water_mean_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_water_mean_temperature'
+                ] += (
+                    - 1.0
+                    / (0.5 * self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_hull_conduction'])
+                    / self.building_zones.loc[zones_2_panels_index, 'heat_capacitance_water']
+                ).values
 
             # Heat transfer between radiator hull rear and water.
             self.state_matrix.loc[
@@ -2334,6 +2438,75 @@ class Building(object):
                 / self.building_zones.loc[zones_index, 'thermal_resistance_radiator_front_zone']
                 / self.heat_capacity_vector[self.building_zones.loc[zones_index, 'zone_name']]
             ).values
+
+            if zones_2_panels_index.any():
+                # Heat transfer between radiator panel 1 hull rear and zone air.
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_1_hull_rear_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_1_hull_rear_temperature'
+                ] += (
+                    - 1.0
+                    / self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_panel_1_rear_zone']
+                    / self.building_zones.loc[zones_2_panels_index, 'heat_capacitance_hull']
+                ).values
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_1_hull_rear_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_temperature'
+                ] += (
+                    1.0
+                    / self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_panel_1_rear_zone']
+                    / self.building_zones.loc[zones_2_panels_index, 'heat_capacitance_hull']
+                ).values
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_1_hull_rear_temperature'
+                ] += (
+                    1.0
+                    / self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_panel_1_rear_zone']
+                    / self.heat_capacity_vector[self.building_zones.loc[zones_2_panels_index, 'zone_name']]
+                ).values
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_temperature'
+                ] += (
+                    - 1.0
+                    / self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_panel_1_rear_zone']
+                    / self.heat_capacity_vector[self.building_zones.loc[zones_2_panels_index, 'zone_name']]
+                ).values
+
+                # Heat transfer between radiator panel 2 hull front and zone air.
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_2_hull_front_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_2_hull_front_temperature'
+                ] += (
+                    - 1.0
+                    / self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_panel_2_front_zone']
+                    / self.building_zones.loc[zones_2_panels_index, 'heat_capacitance_hull']
+                ).values
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_2_hull_front_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_temperature'
+                ] += (
+                    1.0
+                    / self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_panel_2_front_zone']
+                    / self.building_zones.loc[zones_2_panels_index, 'heat_capacitance_hull']
+                ).values
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_radiator_panel_2_hull_front_temperature'
+                ] += (
+                    1.0
+                    / self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_panel_2_front_zone']
+                    / self.heat_capacity_vector[self.building_zones.loc[zones_2_panels_index, 'zone_name']]
+                ).values
+                self.state_matrix.loc[
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_temperature',
+                    self.building_zones.loc[zones_2_panels_index, 'zone_name'] + '_temperature'
+                ] += (
+                    - 1.0
+                    / self.building_zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_panel_2_front_zone']
+                    / self.heat_capacity_vector[self.building_zones.loc[zones_2_panels_index, 'zone_name']]
+                ).values
 
             # Heat transfer between radiator hull rear and zone air.
             self.state_matrix.loc[
