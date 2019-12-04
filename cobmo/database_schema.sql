@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS "building_hvac_radiator_types" (
     "radiator_convection_coefficient" TEXT,
     "radiator_emissivity" TEXT,
     "radiator_hull_conductivity" TEXT,
-    "radiator_hull_heat_capacity" TEXT
+    "radiator_hull_heat_capacity" TEXT,
+    "radiator_fin_effectiveness" TEXT
 );
 CREATE TABLE IF NOT EXISTS "building_hvac_tu_types" (
     "hvac_tu_type" TEXT,

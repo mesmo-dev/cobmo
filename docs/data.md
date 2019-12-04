@@ -56,6 +56,7 @@ Generic HVAC system characteristics.
 | `radiator_emissivity` | - | Emissivity factor. |
 | `radiator_hull_conductivity` | W/(mK) | Radiator hull material conductivity. |
 | `radiator_hull_heat_capacity` | J/m³ | Radiator hull material heat capacity. |
+| `radiator_fin_effectiveness` | - | Radiator fin effectiveness. |
 
 ## `building_hvac_tu_types`
 
