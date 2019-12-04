@@ -22,7 +22,18 @@ CREATE TABLE IF NOT EXISTS "building_hvac_generic_types" (
     "generic_cooling_efficiency" TEXT
 );
 CREATE TABLE IF NOT EXISTS "building_hvac_radiator_types" (
-    "hvac_radiator_type" TEXT
+    "hvac_radiator_type" TEXT,
+    "radiator_supply_temperature_nominal" TEXT,
+    "radiator_return_temperature_nominal" TEXT,
+    "radiator_panel_number" TEXT,
+    "radiator_panel_area" TEXT,
+    "radiator_panel_thickness" TEXT,
+    "radiator_water_volume" TEXT,
+    "radiator_convection_coefficient" TEXT,
+    "radiator_emissivity" TEXT,
+    "radiator_hull_conductivity" TEXT,
+    "radiator_hull_heat_capacity" TEXT,
+    "radiator_fin_effectiveness" TEXT
 );
 CREATE TABLE IF NOT EXISTS "building_hvac_tu_types" (
     "hvac_tu_type" TEXT,

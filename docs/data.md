@@ -45,7 +45,18 @@ Generic HVAC system characteristics.
 
 | Column | Unit | Description |
 | --- |:---:| --- |
+| `radiator_supply_temperature_nominal` | °C | |
+| `radiator_return_temperature_nominal` | °C | |
 | `hvac_radiator_type` | | Unique type identifier. |
+| `radiator_panel_number` | - | Number of radiator panels. |
+| `radiator_panel_area` | m² | Radiator panel surface area. |
+| `radiator_panel_thickness` | m | Radiator panel thickness. |
+| `radiator_water_volume` | m³ | Radiator panel water volume. |
+| `radiator_convection_coefficient` | W/(m²K) | Natural convection coefficient. |
+| `radiator_emissivity` | - | Emissivity factor. |
+| `radiator_hull_conductivity` | W/(mK) | Radiator hull material conductivity. |
+| `radiator_hull_heat_capacity` | J/m³ | Radiator hull material heat capacity. |
+| `radiator_fin_effectiveness` | - | Radiator fin effectiveness. |
 
 ## `building_hvac_tu_types`
 
