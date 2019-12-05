@@ -178,7 +178,7 @@ create_level8_6zones_a,zone5,zone6,surface_interior_5,interior_wall_window_gypsu
 create_level8_7zones_a,zone1,zone5,surface_interior_4,interior_wall_window_gypsum,30.96,6.45
 create_level8_7zones_a,zone5,zone6,surface_interior_5,interior_wall_window_gypsum,12.144,2.53
 create_level8_7zones_a,zone5,zone7,surface_interior_6,interior_wall_window_gypsum,30.96,6.45
-create_level8_7zones_b,zone1,zone9,surface_interior_8,interior_wall_window_gypsum,30.96,6.45
+create_level8_7zones_b,zone1,zone7,surface_interior_8,interior_wall_window_gypsum,30.96,6.45 TODO: Validate this entry
 create_level8_8zones,zone1,zone7,surface_interior_8,interior_wall_window_gypsum,30.96,6.45
 create_level8_8zones,zone7,zone8,surface_interior_9,interior_wall_window_gypsum,30.96,6.45
 create_level8_9zones_a,zone1,zone7,surface_interior_8,interior_wall_window_gypsum,30.96,6.45

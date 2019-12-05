@@ -691,6 +691,7 @@ class Building(object):
             self.building_zones.at[zone_name, 'zone_surfaces_wall_emissivity'] = (
                 zone_surfaces['emissivity'].apply(self.parse_parameter).mean()
             )
+            # TODO: Ignore surfaces with no windows.
             self.building_zones.at[zone_name, 'zone_surfaces_window_emissivity'] = (
                 zone_surfaces['emissivity_window'].apply(self.parse_parameter).mean()
             )
