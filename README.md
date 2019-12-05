@@ -24,9 +24,9 @@ If you are keen to contribute to this project, please see [docs/contributing.md]
 
 ## Acknowledgements
 
-- Sarmad Hanif suggested and initiated the work on a control-oriented building model.
-- Sebastian Troitzsch developed and implemented the initial version of CoBMo.
-- Anthony Vautrin developed the model extensions for indoor air quality and demand controlled ventilation.
-- Tommaso Miori developed the thermal and battery model extensions for CoBMo.
-- Sherif Hashem formulated the hydronic radiator models for CoBMo.
-- This work was financially supported by the Singapore National Research Foundation under its Campus for Research Excellence And Technological Enterprise (CREATE) programme.
+- **Sebastian Troitzsch** developed and implemented the initial version of CoBMo and maintains this repository.
+- **Sarmad Hanif** and **Henryk Wolisz** initiated and supervised the work on the initial version of CoBMo.
+- **Anthony Vautrin** developed the models for indoor air quality and demand controlled ventilation.
+- **Tommaso Miori** developed the models for thermal and battery energy storage.
+- **Sherif Hashem** developed the hydronic radiator models.
+- This work was financially supported by the **Singapore National Research Foundation** under its Campus for Research Excellence And Technological Enterprise (CREATE) programme.
