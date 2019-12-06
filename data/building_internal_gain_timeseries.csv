@@ -13319,7 +13319,7 @@ create_office_internal_gains,2017-01-01T11:20:00,10.0,0.24595
 create_office_internal_gains,2017-01-01T11:30:00,10.0,0.23918
 create_office_internal_gains,2017-01-01T11:40:00,10.0,0.24776
 create_office_internal_gains,2017-01-01T11:50:00,10.0,0.34448
-create_office_internal_gains,2017-01-01T12:00:00,78.0,0.34749
+create_office_internal_gains,2017-01-01T12:00:00,10.0,0.34749
 create_office_internal_gains,2017-01-01T12:10:00,10.0,0.3474
 create_office_internal_gains,2017-01-01T12:20:00,10.0,0.3439
 create_office_internal_gains,2017-01-01T12:30:00,10.0,0.34172
@@ -29260,7 +29260,6 @@ create_office_internal_gains,2017-04-22T04:10:00,10.0,0.245
 create_office_internal_gains,2017-04-22T04:20:00,10.0,0.25103
 create_office_internal_gains,2017-04-22T04:30:00,10.0,0.25085
 create_office_internal_gains,2017-04-22T04:40:00,10.0,0.25055
-create_office_internal_gains,2017-05-08T00:00:00,10.0,0.24403
 wtp_office_internal_gains,2017-01-01T00:00:00,0.0,0.3
 wtp_office_internal_gains,2017-01-01T01:00:00,0.0,0.3
 wtp_office_internal_gains,2017-01-01T02:00:00,0.0,0.3

@@ -164,7 +164,6 @@ CREATE TABLE IF NOT EXISTS "building_zone_constraint_profiles" (
     "minimum_fresh_air_flow_per_area_no_dcv" TEXT,
     "minimum_relative_humidity" TEXT,
     "maximum_relative_humidity" TEXT
-
 );
 CREATE TABLE IF NOT EXISTS "building_zone_types" (
     "zone_type" TEXT,
