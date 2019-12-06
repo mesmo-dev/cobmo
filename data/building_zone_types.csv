@@ -1,6 +1,6 @@
 zone_type,heat_capacity,base_surface_type,ceiling_surface_type,infiltration_rate,internal_gain_type,window_type,blind_type,hvac_generic_type,hvac_radiator_type,hvac_ahu_type,hvac_tu_type,zone_constraint_profile
-validation_zone_empty,heat_capacity_zone,,,infiltration_rate,internal_gain_default,,,hvac_generic_default,,,,zone_constraint_default
-validation_zone_empty_radiator,heat_capacity_zone,,,infiltration_rate,internal_gain_default,,,,mse_type_12,,,zone_constraint_default
-create_level_8_open_plan_office,heat_capacity_zone,base_ceiling,base_ceiling,infiltration_rate,internal_gain_default,,,,,hvac_ahu_default,,zone_constraint_default
-create_level_8_group_office,heat_capacity_zone,base_ceiling,base_ceiling,infiltration_rate,internal_gain_default,,,,,hvac_ahu_default,,zone_constraint_default
-wtp_office,47142.9,,,2.565e-05,cea_office,,,,,wtp_ahu,,cea_office
+validation_zone_empty,heat_capacity_zone,,,infiltration_rate,create_office_internal_gains,,,default_generic_hvac,,,,create_office_constraints
+validation_zone_empty_radiator,heat_capacity_zone,,,infiltration_rate,create_office_internal_gains,,,,mse_radiator_type_12,,,create_office_constraints
+create_level8_open_plan_office,heat_capacity_zone,create_interior_base_ceiling_concrete,create_interior_base_ceiling_concrete,infiltration_rate,create_office_internal_gains,,,,,create_ahu,,create_office_constraints
+create_level8_group_office,heat_capacity_zone,create_interior_base_ceiling_concrete,create_interior_base_ceiling_concrete,infiltration_rate,create_office_internal_gains,,,,,create_ahu,,create_office_constraints
+wtp_office,47142.9,,,2.565e-05,wtp_office_internal_gains,,,,,wtp_ahu,,wtp_office_constraints

@@ -1,3 +1,3 @@
 internal_gain_type,internal_gain_occupancy_factor,internal_gain_appliances_factor
-internal_gain_default,0,0
-cea_office,7.0,21.0
+create_office_internal_gains,0,0
+wtp_office_internal_gains,7.0,21.0

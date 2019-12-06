@@ -68,7 +68,7 @@ if run_simulation:
 
     # Modify `buildings` to change the `building_storage_type`.
     building_name = building_scenarios.at[scenario_name, 'building_name']
-    buildings.at[building_name, 'building_storage_type'] = 'battery_storage_default'
+    buildings.at[building_name, 'building_storage_type'] = 'default_battery_storage'
     buildings.to_sql(
         'buildings',
         con=conn,
@@ -125,20 +125,20 @@ if run_simulation:
             print("Starting simulation #{}.".format(counter))
 
             # Modify `building_storage_types`.
-            building_storage_types.at['battery_storage_default', 'storage_round_trip_efficiency'] = (
+            building_storage_types.at['default_battery_storage', 'storage_round_trip_efficiency'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'round_trip_efficiency']
                 * 0.95  # Accounting for inverter efficiency. # TODO: Move inverter efficiency to CSV.
             )
-            building_storage_types.at['battery_storage_default', 'storage_battery_depth_of_discharge'] = (
+            building_storage_types.at['default_battery_storage', 'storage_battery_depth_of_discharge'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'depth_of_discharge']
             )
-            building_storage_types.at['battery_storage_default', 'storage_planning_energy_installation_cost'] = (
+            building_storage_types.at['default_battery_storage', 'storage_planning_energy_installation_cost'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'energy_installation_cost']
             )
-            building_storage_types.at['battery_storage_default', 'storage_planning_power_installation_cost'] = (
+            building_storage_types.at['default_battery_storage', 'storage_planning_power_installation_cost'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'power_installation_cost']
             )
-            building_storage_types.at['battery_storage_default', 'storage_lifetime'] = (
+            building_storage_types.at['default_battery_storage', 'storage_lifetime'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'lifetime']
             )
             building_storage_types.to_sql(
