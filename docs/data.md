@@ -268,8 +268,6 @@ Zone type characteristics.
 | --- |:---:| --- |
 | `zone_type` | | Unique type identifier.|
 | `heat_capacity` | J/(m³K) | Specific heat capacity. |
-| `base_surface_type` | | Type identifier of the base surface as defined in `building_surface_types`. The base surface is automatically generated based on the `zone_area`. |
-| `ceiling_surface_type` | | Type identifier of the ceiling surface as defined in `building_surface_types`. The ceiling surface is automatically generated based on the `zone_area`. |
 | `infiltration_rate` | 1/h | Infiltration rate. |
 | `internal_gain_type` | | Type identifier as defined in `building_internal_gain_types`. |
 | `window_type` | | Type identifier as defined in `building_window_types`. |

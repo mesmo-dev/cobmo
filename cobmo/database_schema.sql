@@ -169,8 +169,6 @@ CREATE TABLE IF NOT EXISTS "building_zone_constraint_profiles" (
 CREATE TABLE IF NOT EXISTS "building_zone_types" (
     "zone_type" TEXT,
     "heat_capacity" TEXT,
-    "base_surface_type" TEXT,
-    "ceiling_surface_type" TEXT,
     "infiltration_rate" TEXT,
     "internal_gain_type" TEXT,
     "window_type" TEXT,
