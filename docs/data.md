@@ -181,7 +181,7 @@ Surface type characteristics.
 | `surface_type` | | Unique type identifier. |
 | `heat_capacity` | J/(m³K) | Specific heat capacity. |
 | `thermal_resistance_surface` | m²K/W | Specific thermal resistance. |
-| `irradiation_gain_coefficient` | - | Irradiation gain coefficient (absorbed irradiation / incident irradiation). |
+| `absorptivity` | - | Absorptivity factor / irradiation gain coefficient (absorbed irradiation / incident irradiation). |
 | `emissivity` | - | Emissivity factor. |
 | `window_type` | | Type identifier as defined in `building_window_types`. |
 | `window_wall_ratio` | - | Window surface area / total surface area. |
@@ -236,7 +236,7 @@ Window characteristics.
 | --- |:---:| --- |
 | `window_type` | | Unique type identifier. |
 | `thermal_resistance_window` | m²K/W | Specific thermal resistance. |
-| `irradiation_gain_coefficient_window` | - | Irradiation gain coefficient (absorbed irradiation / incident irradiation). |
+| `absorptivity_window` | - | Irradiation gain coefficient (absorbed irradiation / incident irradiation). |
 | `emissivity_window` | - | Emissivity factor. |
 
 ## `building_zone_constraint_profiles`

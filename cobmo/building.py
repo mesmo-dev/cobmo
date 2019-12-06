@@ -941,7 +941,7 @@ class Building(object):
 
     def define_heat_transfer_surfaces_exterior(self):
         """Thermal model: Exterior surfaces"""
-        # TODO: Rename irradiation_gain_coefficient
+        # TODO: Rename absorptivity
         # TODO: Rename thermal_resistance_surface
         # TODO: Exterior window transmission factor
         for surface_name, surface_data in self.building_surfaces_exterior.iterrows():
@@ -956,7 +956,7 @@ class Building(object):
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (
-                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        self.parse_parameter(surface_data['absorptivity'])
                         * self.parse_parameter(surface_data['surface_area'])
                         * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                         * (
@@ -1075,7 +1075,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * self.parse_parameter(surface_data['surface_area'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (
@@ -1159,7 +1159,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * self.parse_parameter(surface_data['surface_area'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (1.0 - (
@@ -1234,7 +1234,7 @@ class Building(object):
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (
-                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        self.parse_parameter(surface_data['absorptivity'])
                         * self.parse_parameter(surface_data['surface_area'])
                         * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                         * (
@@ -1359,7 +1359,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * self.parse_parameter(surface_data['surface_area'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (1.0 - (
@@ -1392,7 +1392,7 @@ class Building(object):
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (
-                        self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                        self.parse_parameter(surface_data['absorptivity_window'])
                         * self.parse_parameter(surface_data['surface_area'])
                         * self.parse_parameter(surface_data['window_wall_ratio'])
                         * (
@@ -1517,7 +1517,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                            * self.parse_parameter(surface_data['absorptivity_window'])
                             * self.parse_parameter(surface_data['surface_area'])
                             * self.parse_parameter(surface_data['window_wall_ratio'])
                             * (1.0 - (
@@ -1562,7 +1562,7 @@ class Building(object):
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                         / self.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                                * self.parse_parameter(surface_data['absorptivity'])
                                 * self.parse_parameter(surface_data['surface_area'])
                                 * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                                 * (
@@ -1640,7 +1640,7 @@ class Building(object):
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                         / self.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                                * self.parse_parameter(surface_data['absorptivity'])
                                 * self.parse_parameter(surface_data['surface_area'])
                                 * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                                 * (1.0 - (
@@ -1747,7 +1747,7 @@ class Building(object):
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                         / zone_adjacent_surface_area
                                 )  # Considers the share at the respective surface
-                                * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                                * self.parse_parameter(surface_data['absorptivity'])
                                 * self.parse_parameter(surface_data['surface_area'])
                                 * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                                 * (
@@ -1820,7 +1820,7 @@ class Building(object):
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                         / self.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                                * self.parse_parameter(surface_data['absorptivity'])
                                 * self.parse_parameter(surface_data['surface_area'])
                                 * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                                 * (1.0 - (
@@ -1883,7 +1883,7 @@ class Building(object):
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                         / zone_adjacent_surface_area
                                 )  # Considers the share at the respective surface
-                                * self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                                * self.parse_parameter(surface_data['absorptivity_window'])
                                 * self.parse_parameter(surface_data['surface_area'])
                                 * self.parse_parameter(surface_data['window_wall_ratio'])
                                 * (
@@ -1956,7 +1956,7 @@ class Building(object):
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                         / self.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                                * self.parse_parameter(surface_data['absorptivity_window'])
                                 * self.parse_parameter(surface_data['surface_area'])
                                 * self.parse_parameter(surface_data['window_wall_ratio'])
                                 * (1.0 - (
@@ -1992,7 +1992,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * self.parse_parameter(surface_data['surface_area'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (
@@ -2076,7 +2076,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * self.parse_parameter(surface_data['surface_area'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (1.0 - (
@@ -3764,7 +3764,7 @@ class Building(object):
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (
-                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        self.parse_parameter(surface_data['absorptivity'])
                         * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                 )
             else:  # Surfaces with neglected heat capacity
@@ -3777,7 +3777,7 @@ class Building(object):
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (
-                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        self.parse_parameter(surface_data['absorptivity'])
                         * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                 )
 
@@ -3826,7 +3826,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / zone_surface_area
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (1.0 - (
                                 1.0
@@ -3895,7 +3895,7 @@ class Building(object):
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (
-                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        self.parse_parameter(surface_data['absorptivity'])
                         * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                         * (
                                 1.0
@@ -4012,7 +4012,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / zone_surface_area
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (1.0 - (
                                 1.0
