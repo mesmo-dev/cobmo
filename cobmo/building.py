@@ -3219,85 +3219,78 @@ class Building(object):
                 )
 
                 # Calculate enthalpies.
-                # TODO: Remove unnecessary HVAC types.
                 if (
-                    zone_data['ahu_cooling_type'] == 'default'
-                    and zone_data['ahu_heating_type'] == 'default'
-                    and zone_data['ahu_dehumidification_type'] == 'default'
-                    and zone_data['ahu_return_air_heat_recovery_type'] == 'default'
+                    self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                    <= ahu_supply_air_absolute_humidity_setpoint
                 ):
-                    if (
-                        self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                        <= ahu_supply_air_absolute_humidity_setpoint
-                    ):
-                        delta_enthalpy_ahu_cooling = min(
+                    delta_enthalpy_ahu_cooling = min(
+                        0.0,
+                        cobmo.utils.calculate_enthalpy_humid_air(
+                            self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                        )
+                        - cobmo.utils.calculate_enthalpy_humid_air(
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature']),
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                        )
+                    )
+                    delta_enthalpy_ahu_heating = max(
+                        0.0,
+                        cobmo.utils.calculate_enthalpy_humid_air(
+                            self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                        )
+                        - cobmo.utils.calculate_enthalpy_humid_air(
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature']),
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                        )
+                    )
+                    delta_enthalpy_ahu_recovery_cooling = max(
+                        delta_enthalpy_ahu_cooling,
+                        min(
                             0.0,
-                            cobmo.utils.calculate_enthalpy_humid_air(
-                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                            )
-                            - cobmo.utils.calculate_enthalpy_humid_air(
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature']),
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                            )
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
+                            * delta_enthalpy_ahu_recovery
                         )
-                        delta_enthalpy_ahu_heating = max(
+                    )
+                    delta_enthalpy_ahu_recovery_heating = min(
+                        delta_enthalpy_ahu_heating,
+                        max(
                             0.0,
-                            cobmo.utils.calculate_enthalpy_humid_air(
-                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                            )
-                            - cobmo.utils.calculate_enthalpy_humid_air(
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature']),
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                            )
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
+                            * delta_enthalpy_ahu_recovery
                         )
-                        delta_enthalpy_ahu_recovery_cooling = max(
-                            delta_enthalpy_ahu_cooling,
-                            min(
-                                0.0,
-                                self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
-                                * delta_enthalpy_ahu_recovery
-                            )
+                    )
+                else:
+                    delta_enthalpy_ahu_cooling = (
+                        cobmo.utils.calculate_dew_point_enthalpy_humid_air(
+                            self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
+                            self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
                         )
-                        delta_enthalpy_ahu_recovery_heating = min(
-                            delta_enthalpy_ahu_heating,
-                            max(
-                                0.0,
-                                self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
-                                * delta_enthalpy_ahu_recovery
-                            )
+                        - cobmo.utils.calculate_enthalpy_humid_air(
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature']),
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
                         )
-                    else:
-                        delta_enthalpy_ahu_cooling = (
-                            cobmo.utils.calculate_dew_point_enthalpy_humid_air(
-                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
-                            )
-                            - cobmo.utils.calculate_enthalpy_humid_air(
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature']),
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                            )
+                    )
+                    delta_enthalpy_ahu_heating = (
+                        cobmo.utils.calculate_enthalpy_humid_air(
+                            self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
+                            ahu_supply_air_absolute_humidity_setpoint
                         )
-                        delta_enthalpy_ahu_heating = (
-                            cobmo.utils.calculate_enthalpy_humid_air(
-                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                ahu_supply_air_absolute_humidity_setpoint
-                            )
-                            - cobmo.utils.calculate_dew_point_enthalpy_humid_air(
-                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
-                            )
+                        - cobmo.utils.calculate_dew_point_enthalpy_humid_air(
+                            self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
+                            self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
                         )
-                        delta_enthalpy_ahu_recovery_cooling = max(
-                            delta_enthalpy_ahu_cooling,
-                            min(
-                                0.0,
-                                self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
-                                * delta_enthalpy_ahu_recovery
-                            )
+                    )
+                    delta_enthalpy_ahu_recovery_cooling = max(
+                        delta_enthalpy_ahu_cooling,
+                        min(
+                            0.0,
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
+                            * delta_enthalpy_ahu_recovery
                         )
-                        delta_enthalpy_ahu_recovery_heating = 0.0
+                    )
+                    delta_enthalpy_ahu_recovery_heating = 0.0
 
                 # TODO: Revise code to remove `abs(delta_enthalpy...)` and invert `ahu_cooling_efficiency`.
 

@@ -5,10 +5,6 @@ CREATE TABLE IF NOT EXISTS "building_blind_types" (
 );
 CREATE TABLE IF NOT EXISTS "building_hvac_ahu_types" (
     "hvac_ahu_type" TEXT,
-    "ahu_cooling_type" TEXT,
-    "ahu_heating_type" TEXT,
-    "ahu_dehumidification_type" TEXT,
-    "ahu_return_air_heat_recovery_type" TEXT,
     "ahu_supply_air_temperature_setpoint" TEXT,
     "ahu_supply_air_relative_humidity_setpoint" TEXT,
     "ahu_fan_efficiency" TEXT,

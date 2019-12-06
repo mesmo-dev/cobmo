@@ -20,10 +20,6 @@ Air handling unit (AHU) set points and characteristics.
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `hvac_ahu_type` | | Unique type identifier. |
-| `ahu_cooling_type` | | *Currently not used.* |
-| `ahu_heating_type` | | *Currently not used.* |
-| `ahu_dehumidification_type` | | *Currently not used.* |
-| `ahu_return_air_heat_recovery_type` | | *Currently not used.* |
 | `ahu_supply_air_temperature_setpoint` | °C | Supply air temperature at outlet of AHU towards zone. |
 | `ahu_supply_air_relative_humidity_setpoint` | % | Supply air relative humidity at outlet of AHU towards zone. |
 | `ahu_fan_efficiency` | J/kg | Fan efficiency (electric power / air mass flow rate). |
