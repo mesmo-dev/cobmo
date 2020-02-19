@@ -5,10 +5,6 @@ CREATE TABLE IF NOT EXISTS "building_blind_types" (
 );
 CREATE TABLE IF NOT EXISTS "building_hvac_ahu_types" (
     "hvac_ahu_type" TEXT,
-    "ahu_cooling_type" TEXT,
-    "ahu_heating_type" TEXT,
-    "ahu_dehumidification_type" TEXT,
-    "ahu_return_air_heat_recovery_type" TEXT,
     "ahu_supply_air_temperature_setpoint" TEXT,
     "ahu_supply_air_relative_humidity_setpoint" TEXT,
     "ahu_fan_efficiency" TEXT,
@@ -118,7 +114,7 @@ CREATE TABLE IF NOT EXISTS "building_surface_types" (
     "surface_type" TEXT,
     "heat_capacity" TEXT,
     "thermal_resistance_surface" TEXT,
-    "irradiation_gain_coefficient" TEXT,
+    "absorptivity" TEXT,
     "emissivity" TEXT,
     "window_type" TEXT,
     "window_wall_ratio" TEXT,
@@ -153,7 +149,7 @@ CREATE TABLE IF NOT EXISTS "building_surfaces_interior" (
 CREATE TABLE IF NOT EXISTS "building_window_types" (
     "window_type" TEXT,
     "thermal_resistance_window" TEXT,
-    "irradiation_gain_coefficient_window" TEXT,
+    "absorptivity_window" TEXT,
     "emissivity_window" TEXT
 );
 CREATE TABLE IF NOT EXISTS "building_zone_constraint_profiles" (
@@ -168,13 +164,10 @@ CREATE TABLE IF NOT EXISTS "building_zone_constraint_profiles" (
     "minimum_fresh_air_flow_per_area_no_dcv" TEXT,
     "minimum_relative_humidity" TEXT,
     "maximum_relative_humidity" TEXT
-
 );
 CREATE TABLE IF NOT EXISTS "building_zone_types" (
     "zone_type" TEXT,
     "heat_capacity" TEXT,
-    "base_surface_type" TEXT,
-    "ceiling_surface_type" TEXT,
     "infiltration_rate" TEXT,
     "internal_gain_type" TEXT,
     "window_type" TEXT,

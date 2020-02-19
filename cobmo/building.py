@@ -167,12 +167,12 @@ class Building(object):
 
                 # Sensible storage state of charge.
                 self.building_scenarios['building_name'][
-                    self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default'
+                    self.building_scenarios['building_storage_type'] == 'default_sensible_thermal_storage'
                 ] + '_sensible_thermal_storage_state_of_charge',
 
                 # Battery storage state of charge.
                 self.building_scenarios['building_name'][
-                    self.building_scenarios['building_storage_type'] == 'battery_storage_default'
+                    self.building_scenarios['building_storage_type'] == 'default_battery_storage'
                 ] + '_battery_storage_state_of_charge'
             ]),
             name='state_name'
@@ -218,57 +218,57 @@ class Building(object):
                 # Sensible storage charge.
                 # TODO: Add consideration for sensible storage heating / cooling.
                 # self.building_scenarios['building_name'][
-                #     self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default'
+                #     self.building_scenarios['building_storage_type'] == 'default_sensible_thermal_storage'
                 # ] + '_sensible_storage_charge_heat_thermal_power',
                 self.building_scenarios['building_name'][
-                    self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default'
+                    self.building_scenarios['building_storage_type'] == 'default_sensible_thermal_storage'
                 ] + '_sensible_storage_charge_cool_thermal_power',
 
                 # Battery storage charge.
                 self.building_scenarios['building_name'][
-                    self.building_scenarios['building_storage_type'] == 'battery_storage_default'
+                    self.building_scenarios['building_storage_type'] == 'default_battery_storage'
                 ] + '_battery_storage_charge_electric_power',
 
                 # Sensible storage discharge to AHU.
                 # TODO: Add consideration for sensible storage heating / cooling.
                 # self.building_zones['zone_name'][
                 #     pd.notnull(self.building_zones['hvac_ahu_type'])
-                #     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                #     & (self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage')
                 # ] + '_sensible_storage_to_zone_ahu_heat_thermal_power',
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_ahu_type'])
-                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                    & (self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage')
                 ] + '_sensible_storage_to_zone_ahu_cool_thermal_power',
 
                 # Sensible storage discharge to TU.
                 # TODO: Add consideration for sensible storage heating / cooling.
                 # self.building_zones['zone_name'][
                 #     pd.notnull(self.building_zones['hvac_tu_type'])
-                #     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                #     & (self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage')
                 # ] + '_sensible_storage_to_zone_tu_heat_thermal_power',
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_tu_type'])
-                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                    & (self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage')
                 ] + '_sensible_storage_to_zone_tu_cool_thermal_power',
 
                 # Battery storage discharge to AHU.
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_ahu_type'])
-                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                    & (self.building_scenarios['building_storage_type'][0] == 'default_battery_storage')
                 ] + '_battery_storage_to_zone_ahu_heat_electric_power',
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_ahu_type'])
-                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                    & (self.building_scenarios['building_storage_type'][0] == 'default_battery_storage')
                 ] + '_battery_storage_to_zone_ahu_cool_electric_power',
 
                 # Battery storage discharge to TU.
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_tu_type'])
-                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                    & (self.building_scenarios['building_storage_type'][0] == 'default_battery_storage')
                 ] + '_battery_storage_to_zone_tu_heat_electric_power',
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_tu_type'])
-                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                    & (self.building_scenarios['building_storage_type'][0] == 'default_battery_storage')
                 ] + '_battery_storage_to_zone_tu_cool_electric_power',
             ]),
             name='control_name'
@@ -376,69 +376,69 @@ class Building(object):
 
                 # Sensible storage state of charge.
                 self.building_scenarios['building_name'][
-                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                    (self.building_scenarios['building_storage_type'] == 'default_sensible_thermal_storage')
                 ] + '_sensible_thermal_storage_state_of_charge',
 
                 # Battery storage state of charge.
                 self.building_scenarios['building_name'][
-                    (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
+                    (self.building_scenarios['building_storage_type'] == 'default_battery_storage')
                 ] + '_battery_storage_state_of_charge',
 
                 # Sensible storage discharge.
                 # TODO: Add consideration for sensible storage heating / cooling.
                 # self.building_zones['zone_name'][
                 #     pd.notnull(self.building_zones['hvac_ahu_type'])
-                #     & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                #     & (self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage')
                 # ] + '_sensible_storage_to_zone_ahu_heat_thermal_power',
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_tu_type'])
-                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                    & (self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage')
                 ] + '_sensible_storage_to_zone_tu_heat_thermal_power',
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_ahu_type'])
-                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                    & (self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage')
                 ] + '_sensible_storage_to_zone_ahu_cool_thermal_power',
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_tu_type'])
-                    & (self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default')
+                    & (self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage')
                 ] + '_sensible_storage_to_zone_tu_cool_thermal_power',
 
                 # Battery storage discharge.
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_ahu_type'])
-                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                    & (self.building_scenarios['building_storage_type'][0] == 'default_battery_storage')
                 ] + '_battery_storage_to_zone_ahu_heat_electric_power',
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_tu_type'])
-                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                    & (self.building_scenarios['building_storage_type'][0] == 'default_battery_storage')
                 ] + '_battery_storage_to_zone_tu_heat_electric_power',
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_ahu_type'])
-                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                    & (self.building_scenarios['building_storage_type'][0] == 'default_battery_storage')
                 ] + '_battery_storage_to_zone_ahu_cool_electric_power',
                 self.building_zones['zone_name'][
                     pd.notnull(self.building_zones['hvac_tu_type'])
-                    & (self.building_scenarios['building_storage_type'][0] == 'battery_storage_default')
+                    & (self.building_scenarios['building_storage_type'][0] == 'default_battery_storage')
                 ] + '_battery_storage_to_zone_tu_cool_electric_power',
 
                 # Sensible storage charge.
                 self.building_scenarios['building_name'][
-                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                    (self.building_scenarios['building_storage_type'] == 'default_sensible_thermal_storage')
                 ] + '_sensible_storage_charge_heat_thermal_power',
                 self.building_scenarios['building_name'][
-                    (self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default')
+                    (self.building_scenarios['building_storage_type'] == 'default_sensible_thermal_storage')
                 ] + '_sensible_storage_charge_cool_thermal_power',
                 # TODO: Add consideration for sensible storage heating / cooling.
                 # self.building_scenarios['building_name'][
-                #     self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default'
+                #     self.building_scenarios['building_storage_type'] == 'default_sensible_thermal_storage'
                 # ] + '_sensible_storage_charge_heat_electric_power',
                 self.building_scenarios['building_name'][
-                    self.building_scenarios['building_storage_type'] == 'sensible_thermal_storage_default'
+                    self.building_scenarios['building_storage_type'] == 'default_sensible_thermal_storage'
                 ] + '_sensible_storage_charge_cool_electric_power',
 
                 # Battery storage charge.
                 self.building_scenarios['building_name'][
-                    (self.building_scenarios['building_storage_type'] == 'battery_storage_default')
+                    (self.building_scenarios['building_storage_type'] == 'default_battery_storage')
                 ] + '_battery_storage_charge_electric_power',
 
                 # Validation outputs.
@@ -691,6 +691,7 @@ class Building(object):
             self.building_zones.at[zone_name, 'zone_surfaces_wall_emissivity'] = (
                 zone_surfaces['emissivity'].apply(self.parse_parameter).mean()
             )
+            # TODO: Ignore surfaces with no windows.
             self.building_zones.at[zone_name, 'zone_surfaces_window_emissivity'] = (
                 zone_surfaces['emissivity_window'].apply(self.parse_parameter).mean()
             )
@@ -940,7 +941,6 @@ class Building(object):
 
     def define_heat_transfer_surfaces_exterior(self):
         """Thermal model: Exterior surfaces"""
-        # TODO: Rename irradiation_gain_coefficient
         # TODO: Rename thermal_resistance_surface
         # TODO: Exterior window transmission factor
         for surface_name, surface_data in self.building_surfaces_exterior.iterrows():
@@ -955,7 +955,7 @@ class Building(object):
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (
-                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        self.parse_parameter(surface_data['absorptivity'])
                         * self.parse_parameter(surface_data['surface_area'])
                         * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                         * (
@@ -1074,7 +1074,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * self.parse_parameter(surface_data['surface_area'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (
@@ -1158,7 +1158,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * self.parse_parameter(surface_data['surface_area'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (1.0 - (
@@ -1233,7 +1233,7 @@ class Building(object):
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (
-                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        self.parse_parameter(surface_data['absorptivity'])
                         * self.parse_parameter(surface_data['surface_area'])
                         * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                         * (
@@ -1358,7 +1358,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * self.parse_parameter(surface_data['surface_area'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (1.0 - (
@@ -1391,7 +1391,7 @@ class Building(object):
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (
-                        self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                        self.parse_parameter(surface_data['absorptivity_window'])
                         * self.parse_parameter(surface_data['surface_area'])
                         * self.parse_parameter(surface_data['window_wall_ratio'])
                         * (
@@ -1516,7 +1516,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                            * self.parse_parameter(surface_data['absorptivity_window'])
                             * self.parse_parameter(surface_data['surface_area'])
                             * self.parse_parameter(surface_data['window_wall_ratio'])
                             * (1.0 - (
@@ -1561,7 +1561,7 @@ class Building(object):
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                         / self.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                                * self.parse_parameter(surface_data['absorptivity'])
                                 * self.parse_parameter(surface_data['surface_area'])
                                 * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                                 * (
@@ -1639,7 +1639,7 @@ class Building(object):
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                         / self.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                                * self.parse_parameter(surface_data['absorptivity'])
                                 * self.parse_parameter(surface_data['surface_area'])
                                 * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                                 * (1.0 - (
@@ -1746,7 +1746,7 @@ class Building(object):
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                         / zone_adjacent_surface_area
                                 )  # Considers the share at the respective surface
-                                * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                                * self.parse_parameter(surface_data['absorptivity'])
                                 * self.parse_parameter(surface_data['surface_area'])
                                 * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                                 * (
@@ -1819,7 +1819,7 @@ class Building(object):
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                         / self.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                                * self.parse_parameter(surface_data['absorptivity'])
                                 * self.parse_parameter(surface_data['surface_area'])
                                 * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                                 * (1.0 - (
@@ -1882,7 +1882,7 @@ class Building(object):
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                         / zone_adjacent_surface_area
                                 )  # Considers the share at the respective surface
-                                * self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                                * self.parse_parameter(surface_data['absorptivity_window'])
                                 * self.parse_parameter(surface_data['surface_area'])
                                 * self.parse_parameter(surface_data['window_wall_ratio'])
                                 * (
@@ -1955,7 +1955,7 @@ class Building(object):
                                         * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                         / self.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * self.parse_parameter(surface_data['irradiation_gain_coefficient_window'])
+                                * self.parse_parameter(surface_data['absorptivity_window'])
                                 * self.parse_parameter(surface_data['surface_area'])
                                 * self.parse_parameter(surface_data['window_wall_ratio'])
                                 * (1.0 - (
@@ -1991,7 +1991,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * self.parse_parameter(surface_data['surface_area'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (
@@ -2075,7 +2075,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / self.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * self.parse_parameter(surface_data['surface_area'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (1.0 - (
@@ -2958,7 +2958,7 @@ class Building(object):
 
     def define_storage_state_of_charge(self):
         # Sensible thermal storage.
-        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+        if self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage':
             # Storage charge.
             self.control_matrix.at[
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
@@ -3031,7 +3031,7 @@ class Building(object):
                     )
 
         # Battery storage.
-        if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+        if self.building_scenarios['building_storage_type'][0] == 'default_battery_storage':
             # Storage charge.
             self.control_matrix.at[
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
@@ -3218,85 +3218,78 @@ class Building(object):
                 )
 
                 # Calculate enthalpies.
-                # TODO: Remove unnecessary HVAC types.
                 if (
-                    zone_data['ahu_cooling_type'] == 'default'
-                    and zone_data['ahu_heating_type'] == 'default'
-                    and zone_data['ahu_dehumidification_type'] == 'default'
-                    and zone_data['ahu_return_air_heat_recovery_type'] == 'default'
+                    self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                    <= ahu_supply_air_absolute_humidity_setpoint
                 ):
-                    if (
-                        self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                        <= ahu_supply_air_absolute_humidity_setpoint
-                    ):
-                        delta_enthalpy_ahu_cooling = min(
+                    delta_enthalpy_ahu_cooling = min(
+                        0.0,
+                        cobmo.utils.calculate_enthalpy_humid_air(
+                            self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                        )
+                        - cobmo.utils.calculate_enthalpy_humid_air(
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature']),
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                        )
+                    )
+                    delta_enthalpy_ahu_heating = max(
+                        0.0,
+                        cobmo.utils.calculate_enthalpy_humid_air(
+                            self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                        )
+                        - cobmo.utils.calculate_enthalpy_humid_air(
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature']),
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                        )
+                    )
+                    delta_enthalpy_ahu_recovery_cooling = max(
+                        delta_enthalpy_ahu_cooling,
+                        min(
                             0.0,
-                            cobmo.utils.calculate_enthalpy_humid_air(
-                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                            )
-                            - cobmo.utils.calculate_enthalpy_humid_air(
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature']),
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                            )
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
+                            * delta_enthalpy_ahu_recovery
                         )
-                        delta_enthalpy_ahu_heating = max(
+                    )
+                    delta_enthalpy_ahu_recovery_heating = min(
+                        delta_enthalpy_ahu_heating,
+                        max(
                             0.0,
-                            cobmo.utils.calculate_enthalpy_humid_air(
-                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                            )
-                            - cobmo.utils.calculate_enthalpy_humid_air(
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature']),
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                            )
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
+                            * delta_enthalpy_ahu_recovery
                         )
-                        delta_enthalpy_ahu_recovery_cooling = max(
-                            delta_enthalpy_ahu_cooling,
-                            min(
-                                0.0,
-                                self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
-                                * delta_enthalpy_ahu_recovery
-                            )
+                    )
+                else:
+                    delta_enthalpy_ahu_cooling = (
+                        cobmo.utils.calculate_dew_point_enthalpy_humid_air(
+                            self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
+                            self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
                         )
-                        delta_enthalpy_ahu_recovery_heating = min(
-                            delta_enthalpy_ahu_heating,
-                            max(
-                                0.0,
-                                self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
-                                * delta_enthalpy_ahu_recovery
-                            )
+                        - cobmo.utils.calculate_enthalpy_humid_air(
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature']),
+                            self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
                         )
-                    else:
-                        delta_enthalpy_ahu_cooling = (
-                            cobmo.utils.calculate_dew_point_enthalpy_humid_air(
-                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
-                            )
-                            - cobmo.utils.calculate_enthalpy_humid_air(
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_temperature']),
-                                self.parse_parameter(self.building_scenarios['linearization_ambient_air_humidity_ratio'])
-                            )
+                    )
+                    delta_enthalpy_ahu_heating = (
+                        cobmo.utils.calculate_enthalpy_humid_air(
+                            self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
+                            ahu_supply_air_absolute_humidity_setpoint
                         )
-                        delta_enthalpy_ahu_heating = (
-                            cobmo.utils.calculate_enthalpy_humid_air(
-                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                ahu_supply_air_absolute_humidity_setpoint
-                            )
-                            - cobmo.utils.calculate_dew_point_enthalpy_humid_air(
-                                self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
-                            )
+                        - cobmo.utils.calculate_dew_point_enthalpy_humid_air(
+                            self.parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
+                            self.parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
                         )
-                        delta_enthalpy_ahu_recovery_cooling = max(
-                            delta_enthalpy_ahu_cooling,
-                            min(
-                                0.0,
-                                self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
-                                * delta_enthalpy_ahu_recovery
-                            )
+                    )
+                    delta_enthalpy_ahu_recovery_cooling = max(
+                        delta_enthalpy_ahu_cooling,
+                        min(
+                            0.0,
+                            self.parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
+                            * delta_enthalpy_ahu_recovery
                         )
-                        delta_enthalpy_ahu_recovery_heating = 0.0
+                    )
+                    delta_enthalpy_ahu_recovery_heating = 0.0
 
                 # TODO: Revise code to remove `abs(delta_enthalpy...)` and invert `ahu_cooling_efficiency`.
 
@@ -3324,7 +3317,7 @@ class Building(object):
 
                 # Sensible thermal storage heating discharge.
                 # TODO: Add consideration for sensible storage heating / cooling.
-                # if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                # if self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage':
                 #     self.control_output_matrix.at[
                 #         zone_name + '_ahu_heat_electric_power',
                 #         zone_name + '_sensible_storage_to_zone_ahu_heat_thermal_power'
@@ -3333,7 +3326,7 @@ class Building(object):
                 #     )
 
                 # Battery storage heating discharge.
-                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                if self.building_scenarios['building_storage_type'][0] == 'default_battery_storage':
                     self.control_output_matrix.at[
                         zone_name + '_ahu_heat_electric_power',
                         zone_name + '_battery_storage_to_zone_ahu_heat_electric_power'
@@ -3392,7 +3385,7 @@ class Building(object):
 
                 # TODO: Add thermal power for storage.
                 # Sensible thermal storage cooling discharge.
-                if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                if self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage':
                     self.control_output_matrix.at[
                         zone_name + '_ahu_cool_electric_power_cooling',
                         zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
@@ -3402,7 +3395,7 @@ class Building(object):
                     # TODO: Add consideration for sensible storage heating / cooling.
 
                 # Battery storage cooling discharge.
-                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                if self.building_scenarios['building_storage_type'][0] == 'default_battery_storage':
                     self.control_output_matrix.at[
                         zone_name + '_ahu_cool_electric_power_cooling',
                         zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
@@ -3492,7 +3485,7 @@ class Building(object):
 
                 # Sensible thermal storage heating discharge.
                 # TODO: Add consideration for sensible storage heating / cooling.
-                # if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                # if self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage':
                 #     self.control_output_matrix.at[
                 #         zone_name + '_tu_heat_electric_power',
                 #         zone_name + '_sensible_storage_to_zone_tu_heat_thermal_power'
@@ -3505,7 +3498,7 @@ class Building(object):
                 #     )
 
                 # Battery storage heating discharge.
-                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                if self.building_scenarios['building_storage_type'][0] == 'default_battery_storage':
                     self.control_output_matrix.at[
                         zone_name + '_tu_heat_electric_power',
                         zone_name + '_battery_storage_to_zone_tu_heat_electric_power'
@@ -3534,7 +3527,7 @@ class Building(object):
                 )
 
                 # Sensible thermal storage cooling discharge.
-                if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                if self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage':
                     self.control_output_matrix.at[
                         zone_name + '_tu_cool_electric_power',
                         zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power'
@@ -3547,7 +3540,7 @@ class Building(object):
                     )
 
                 # Battery storage cooling discharge.
-                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                if self.building_scenarios['building_storage_type'][0] == 'default_battery_storage':
                     self.control_output_matrix.at[
                         zone_name + '_tu_cool_electric_power',
                         zone_name + '_battery_storage_to_zone_tu_cool_electric_power'
@@ -3611,14 +3604,14 @@ class Building(object):
 
     def define_output_storage_state_of_charge(self):
         # Sensible thermal storage.
-        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+        if self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage':
             self.state_output_matrix.at[
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge',
                 self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
             ] = 1.0
 
         # Battery storage.
-        if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+        if self.building_scenarios['building_storage_type'][0] == 'default_battery_storage':
             self.state_output_matrix.at[
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge',
                 self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
@@ -3628,7 +3621,7 @@ class Building(object):
         # TODO: Remove redundant charge ouputs.
 
         # Sensible thermal storage charge thermal power.
-        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+        if self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage':
             # Heating.
             # TODO: Add consideration for sensible storage heating / cooling.
             # self.control_output_matrix.at[
@@ -3643,7 +3636,7 @@ class Building(object):
             ] = 1.0
 
         # Sensible thermal storage charge electric power.
-        if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+        if self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage':
             # Heating.
             # TODO: Add consideration for sensible storage heating / cooling.
             # self.control_output_matrix.at[
@@ -3678,7 +3671,7 @@ class Building(object):
             )
 
         # Battery storage charge.
-        if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+        if self.building_scenarios['building_storage_type'][0] == 'default_battery_storage':
             self.control_output_matrix.at[
                 self.building_scenarios['building_name'] + '_battery_storage_charge_electric_power',
                 self.building_scenarios['building_name'] + '_battery_storage_charge_electric_power'
@@ -3687,7 +3680,7 @@ class Building(object):
     def define_output_storage_discharge(self):
         for zone_name, zone_data in self.building_zones.iterrows():
             # Sensible thermal storage.
-            if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+            if self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage':
                 # TODO: Add consideration for sensible storage heating / cooling.
                 # if pd.notnull(zone_data['hvac_ahu_type']):
                 #     # Storage discharge to AHU for heating.
@@ -3730,7 +3723,7 @@ class Building(object):
                     ] = 1.0
 
             # Battery storage.
-            if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+            if self.building_scenarios['building_storage_type'][0] == 'default_battery_storage':
                 if pd.notnull(zone_data['hvac_ahu_type']):
                     # Storage discharge to AHU for cooling.
                     self.control_output_matrix.at[
@@ -3770,7 +3763,7 @@ class Building(object):
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (
-                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        self.parse_parameter(surface_data['absorptivity'])
                         * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                 )
             else:  # Surfaces with neglected heat capacity
@@ -3783,7 +3776,7 @@ class Building(object):
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (
-                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        self.parse_parameter(surface_data['absorptivity'])
                         * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                 )
 
@@ -3832,7 +3825,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / zone_surface_area
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (1.0 - (
                                 1.0
@@ -3901,7 +3894,7 @@ class Building(object):
                             'irradiation_' + surface_data['direction_name']
                         ]
                 ) + (
-                        self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                        self.parse_parameter(surface_data['absorptivity'])
                         * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                         * (
                                 1.0
@@ -4018,7 +4011,7 @@ class Building(object):
                                     * self.parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
                                     / zone_surface_area
                             )  # Considers the share at the respective surface
-                            * self.parse_parameter(surface_data['irradiation_gain_coefficient'])
+                            * self.parse_parameter(surface_data['absorptivity'])
                             * (1 - self.parse_parameter(surface_data['window_wall_ratio']))
                             * (1.0 - (
                                 1.0
@@ -4396,7 +4389,7 @@ class Building(object):
                 # Storage state of charge constraints.
                 # Sensible thermal storage.
                 # TODO: Validate storage size units.
-                if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                if self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage':
                     self.output_constraint_timeseries_maximum.at[
                         timestep,
                         self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
@@ -4404,19 +4397,19 @@ class Building(object):
                         self.parse_parameter(self.building_scenarios['storage_size'])
                         * self.parse_parameter('water_density')  # Convert volume to mass.
                     )
-                if self.building_scenarios['building_storage_type'][0] == 'sensible_thermal_storage_default':
+                if self.building_scenarios['building_storage_type'][0] == 'default_sensible_thermal_storage':
                     self.output_constraint_timeseries_minimum.at[
                         timestep,
                         self.building_scenarios['building_name'][0] + '_sensible_thermal_storage_state_of_charge'
                     ] = 0.0
 
                 # Battery storage.
-                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                if self.building_scenarios['building_storage_type'][0] == 'default_battery_storage':
                     self.output_constraint_timeseries_maximum.at[
                         timestep,
                         self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'
                     ] = self.parse_parameter(self.building_scenarios['storage_size'])
-                if self.building_scenarios['building_storage_type'][0] == 'battery_storage_default':
+                if self.building_scenarios['building_storage_type'][0] == 'default_battery_storage':
                     self.output_constraint_timeseries_minimum.at[
                         timestep,
                         self.building_scenarios['building_name'][0] + '_battery_storage_state_of_charge'

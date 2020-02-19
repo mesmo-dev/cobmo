@@ -20,10 +20,6 @@ Air handling unit (AHU) set points and characteristics.
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `hvac_ahu_type` | | Unique type identifier. |
-| `ahu_cooling_type` | | *Currently not used.* |
-| `ahu_heating_type` | | *Currently not used.* |
-| `ahu_dehumidification_type` | | *Currently not used.* |
-| `ahu_return_air_heat_recovery_type` | | *Currently not used.* |
 | `ahu_supply_air_temperature_setpoint` | °C | Supply air temperature at outlet of AHU towards zone. |
 | `ahu_supply_air_relative_humidity_setpoint` | % | Supply air relative humidity at outlet of AHU towards zone. |
 | `ahu_fan_efficiency` | J/kg | Fan efficiency (electric power / air mass flow rate). |
@@ -185,7 +181,7 @@ Surface type characteristics.
 | `surface_type` | | Unique type identifier. |
 | `heat_capacity` | J/(m³K) | Specific heat capacity. |
 | `thermal_resistance_surface` | m²K/W | Specific thermal resistance. |
-| `irradiation_gain_coefficient` | - | Irradiation gain coefficient (absorbed irradiation / incident irradiation). |
+| `absorptivity` | - | Absorptivity factor / irradiation gain coefficient (absorbed irradiation / incident irradiation). |
 | `emissivity` | - | Emissivity factor. |
 | `window_type` | | Type identifier as defined in `building_window_types`. |
 | `window_wall_ratio` | - | Window surface area / total surface area. |
@@ -240,7 +236,7 @@ Window characteristics.
 | --- |:---:| --- |
 | `window_type` | | Unique type identifier. |
 | `thermal_resistance_window` | m²K/W | Specific thermal resistance. |
-| `irradiation_gain_coefficient_window` | - | Irradiation gain coefficient (absorbed irradiation / incident irradiation). |
+| `absorptivity_window` | - | Irradiation gain coefficient (absorbed irradiation / incident irradiation). |
 | `emissivity_window` | - | Emissivity factor. |
 
 ## `building_zone_constraint_profiles`
@@ -272,8 +268,6 @@ Zone type characteristics.
 | --- |:---:| --- |
 | `zone_type` | | Unique type identifier.|
 | `heat_capacity` | J/(m³K) | Specific heat capacity. |
-| `base_surface_type` | | Type identifier of the base surface as defined in `building_surface_types`. The base surface is automatically generated based on the `zone_area`. |
-| `ceiling_surface_type` | | Type identifier of the ceiling surface as defined in `building_surface_types`. The ceiling surface is automatically generated based on the `zone_area`. |
 | `infiltration_rate` | 1/h | Infiltration rate. |
 | `internal_gain_type` | | Type identifier as defined in `building_internal_gain_types`. |
 | `window_type` | | Type identifier as defined in `building_window_types`. |
