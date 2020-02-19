@@ -21,3 +21,12 @@ Please also read [docs/intro.md](./docs/intro.md).
 ## Contributing
 
 If you are keen to contribute to this project, please see [docs/contributing.md](./docs/contributing.md).
+
+## Acknowledgements
+
+- Sebastian Troitzsch developed and implemented the initial version of CoBMo and maintains this repository.
+- Sarmad Hanif and Henryk Wolisz initiated and supervised the work on the initial version of CoBMo.
+- Anthony Vautrin under supervision of Srikkanth Ramachandran developed the models for indoor air quality and demand controlled ventilation.
+- Tommaso Miori developed the models for thermal and battery energy storage.
+- Sherif Hashem under supervision of Thomas Licklederer developed the hydronic radiator models.
+- This work was financially supported by the Singapore National Research Foundation under its Campus for Research Excellence And Technological Enterprise (CREATE) programme.
