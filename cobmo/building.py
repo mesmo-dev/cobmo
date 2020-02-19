@@ -941,7 +941,6 @@ class Building(object):
 
     def define_heat_transfer_surfaces_exterior(self):
         """Thermal model: Exterior surfaces"""
-        # TODO: Rename absorptivity
         # TODO: Rename thermal_resistance_surface
         # TODO: Exterior window transmission factor
         for surface_name, surface_data in self.building_surfaces_exterior.iterrows():
