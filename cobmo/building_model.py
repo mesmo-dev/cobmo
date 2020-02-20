@@ -1,5 +1,6 @@
 """Building model module."""
 
+from multimethod import multimethod
 import numpy as np
 import pandas as pd
 import scipy.linalg
@@ -9,6 +10,7 @@ import sqlite3
 from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
 
 import cobmo.config
+import cobmo.database_interface
 import cobmo.utils
 
 logger = cobmo.config.get_logger(__name__)
@@ -17,14 +19,28 @@ logger = cobmo.config.get_logger(__name__)
 class BuildingModel(object):
     """Building model object."""
 
+    @multimethod
     def __init__(
             self,
-            database_connection: sqlite3.Connection,
             scenario_name: str
     ):
-        """Initialize building model for given `scenario_name`."""
 
-        # Obtain scenario name.
+        # Obtain database connection.
+        database_connection = cobmo.database_interface.connect_database()
+
+        self.__init__(
+            scenario_name,
+            database_connection
+        )
+
+    @multimethod
+    def __init__(
+            self,
+            scenario_name: str,
+            database_connection: sqlite3.Connection
+    ):
+
+        # Store scenario name.
         self.scenario_name = scenario_name
 
         # Load building model definition.

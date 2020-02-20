@@ -9,6 +9,7 @@ setuptools.setup(
     install_requires=[
         'CoolProp==6.2.1',
         'hvplot',
+        'multimethod',
         'numpy',
         'pandas',
         'pvlib',

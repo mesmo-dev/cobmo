@@ -14,26 +14,16 @@ logger = cobmo.config.get_logger(__name__)
 class TestBuilding(unittest.TestCase):
 
     def test_building_model_default_scenario(self):
-        # Define expected result.
-        expected = cobmo.building_model.BuildingModel
-
         # Setup.
-        database_connection = cobmo.database_interface.connect_database()
         scenario_name = 'scenario_default'
 
-        # Get actual result.
+        # Get result.
         time_start = time.time()
-        actual = type(cobmo.building_model.BuildingModel(database_connection, scenario_name))
+        cobmo.building_model.BuildingModel(scenario_name)
         time_duration = time.time() - time_start
         logger.info(f"Test BuildingModel for scenario '{scenario_name}': Completed in {time_duration:.6f} seconds.")
 
-        # Compare expected and actual.
-        self.assertEqual(actual, expected)
-
     def test_building_model_all_scenarios(self):
-        # Define expected result.
-        expected = cobmo.building_model.BuildingModel
-
         # Setup.
         database_connection = cobmo.database_interface.connect_database()
         building_scenarios = (
@@ -48,14 +38,11 @@ class TestBuilding(unittest.TestCase):
         # Iterate through all scenarios.
         for scenario_name in building_scenarios['scenario_name'].tolist():
 
-            # Get actual result.
+            # Get result.
             time_start = time.time()
-            actual = type(cobmo.building_model.BuildingModel(database_connection, scenario_name))
+            cobmo.building_model.BuildingModel(scenario_name, database_connection)
             time_duration = time.time() - time_start
             logger.info(f"Test BuildingModel for scenario '{scenario_name}': Completed in {time_duration:.6f} seconds.")
-
-            # Compare expected and actual.
-            self.assertEqual(actual, expected)
 
 
 if __name__ == '__main__':
