@@ -22,7 +22,8 @@ class BuildingModel(object):
     @multimethod
     def __init__(
             self,
-            scenario_name: str
+            scenario_name: str,
+            **kwargs
     ):
 
         # Obtain database connection.
@@ -30,14 +31,18 @@ class BuildingModel(object):
 
         self.__init__(
             scenario_name,
-            database_connection
+            database_connection,
+            **kwargs
         )
 
     @multimethod
     def __init__(
             self,
             scenario_name: str,
-            database_connection: sqlite3.Connection
+            database_connection: sqlite3.Connection,
+            timestep_start=None,
+            timestep_end=None,
+            timestep_delta=None
     ):
 
         # Store scenario name.
@@ -54,8 +59,12 @@ class BuildingModel(object):
                 LEFT JOIN building_storage_types USING (building_storage_type) 
                 WHERE scenario_name='{}'
                 """.format(self.scenario_name),
-                database_connection
-            )
+                database_connection,
+                parse_dates=[
+                    'time_start',
+                    'time_end'
+                ]
+            )  # TODO: Convert to Series with `.iloc[0]`.
         )
         self.building_parameters = (
             pd.read_sql(
@@ -470,11 +479,22 @@ class BuildingModel(object):
         )
 
         # Define timesteps.
-        self.timestep_delta = pd.to_timedelta(self.building_scenarios['time_step'][0])
+        if timestep_start is not None:
+            self.timestep_start = timestep_start
+        else:
+            self.timestep_start = self.building_scenarios.iloc[0]['time_start']
+        if timestep_end is not None:
+            self.timestep_end = timestep_end
+        else:
+            self.timestep_end = self.building_scenarios.iloc[0]['time_end']
+        if timestep_delta is not None:
+            self.timestep_delta = timestep_delta
+        else:
+            self.timestep_delta = pd.to_timedelta(self.building_scenarios['time_step'][0])
         self.set_timesteps = pd.Index(
             pd.date_range(
-                start=pd.to_datetime(self.building_scenarios['time_start'][0]),
-                end=pd.to_datetime(self.building_scenarios['time_end'][0]),
+                start=self.timestep_start,
+                end=self.timestep_end,
                 freq=self.timestep_delta
             ),
             name='time'
@@ -4060,8 +4080,8 @@ class BuildingModel(object):
             AND time BETWEEN '{}' AND '{}'
             """.format(
                 self.building_scenarios['weather_type'][0],
-                self.building_scenarios['time_start'][0],
-                self.building_scenarios['time_end'][0]
+                np.datetime_as_string(self.timestep_start, unit='s'),
+                np.datetime_as_string(self.timestep_end, unit='s')
             ),
             database_connection
         )
@@ -4077,8 +4097,8 @@ class BuildingModel(object):
                 ", ".join([
                     "'{}'".format(data_set_name) for data_set_name in self.building_zones['internal_gain_type'].unique()
                 ]),
-                self.building_scenarios['time_start'][0],
-                self.building_scenarios['time_end'][0]
+                np.datetime_as_string(self.timestep_start, unit='s'),
+                np.datetime_as_string(self.timestep_end, unit='s')
             ),
             database_connection
         )
@@ -4449,7 +4469,7 @@ class BuildingModel(object):
 
         state_matrix_discrete = scipy.linalg.expm(
             self.state_matrix.values
-            * pd.to_timedelta(self.building_scenarios['time_step'][0]).seconds
+            * self.timestep_delta.seconds
         )
 
         control_matrix_discrete = (
