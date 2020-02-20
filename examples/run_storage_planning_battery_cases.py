@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import time as time
 
-import cobmo.building
+import cobmo.building_model
 import cobmo.config
 import cobmo.controller
 import cobmo.database_interface
@@ -41,28 +41,28 @@ if run_simulation:
     print("interest_rate = {}".format(interest_rate))
 
     # Obtain a connection to the database.
-    conn = cobmo.database_interface.connect_database()
+    database_connection = cobmo.database_interface.connect_database()
 
     # Load selected database tables for modification.
     building_scenarios = pd.read_sql(
         """
         SELECT * FROM building_scenarios
         """,
-        conn,
+        database_connection,
         index_col='scenario_name'
     )
     buildings = pd.read_sql(
         """
         SELECT * FROM buildings
         """,
-        conn,
+        database_connection,
         index_col='building_name'
     )
     building_storage_types = pd.read_sql(
         """
         SELECT * FROM building_storage_types
         """,
-        conn,
+        database_connection,
         index_col='building_storage_type'
     )
 
@@ -71,7 +71,7 @@ if run_simulation:
     buildings.at[building_name, 'building_storage_type'] = 'default_battery_storage'
     buildings.to_sql(
         'buildings',
-        con=conn,
+        con=database_connection,
         if_exists='replace'
     )
 
@@ -79,7 +79,7 @@ if run_simulation:
     building_scenarios.at[scenario_name, 'price_type'] = price_type
     building_scenarios.to_sql(
         'building_scenarios',
-        con=conn,
+        con=database_connection,
         if_exists='replace'
     )
 
@@ -143,7 +143,7 @@ if run_simulation:
             )
             building_storage_types.to_sql(
                 'building_storage_types',
-                con=conn,
+                con=database_connection,
                 if_exists='replace'
             )
 
@@ -152,11 +152,11 @@ if run_simulation:
             print("Starting baseline case.")
 
             # Obtain building model object for the baseline case.
-            building_baseline = cobmo.building.Building(conn, scenario_name)
+            building_baseline = cobmo.building_model.BuildingModel(scenario_name, database_connection)
 
             # Run controller for the baseline case.
             controller_baseline = cobmo.controller.Controller(
-                conn=conn,
+                database_connection=database_connection,
                 building=building_baseline,
                 problem_type='storage_planning_baseline'
             )
@@ -177,11 +177,11 @@ if run_simulation:
             print("Starting storage case.")
 
             # Obtain building model object for the storage case.
-            building_storage = cobmo.building.Building(conn, scenario_name)
+            building_storage = cobmo.building_model.BuildingModel(scenario_name, database_connection)
 
             # Run controller for the storage case.
             controller_storage = cobmo.controller.Controller(
-                conn=conn,
+                database_connection=database_connection,
                 building=building_storage,
                 problem_type='storage_planning'
             )

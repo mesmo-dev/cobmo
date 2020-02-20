@@ -6,7 +6,7 @@ import numpy as np
 import os
 import pandas as pd
 
-import cobmo.building
+import cobmo.building_model
 import cobmo.config
 import cobmo.database_interface
 import cobmo.utils
@@ -20,12 +20,12 @@ results_path = os.path.join(cobmo.config.results_path, 'run_validation_' + cobmo
 os.mkdir(results_path)
 
 # Obtain a connection to the database.
-conn = cobmo.database_interface.connect_database()
+database_connection = cobmo.database_interface.connect_database()
 
 # Define the building model (main function of the CoBMo toolbox).
 # - Generates the building model for given `scenario_name` based on the building definitions in the `data` directory.
-building = cobmo.building.Building(
-    conn=conn,
+building = cobmo.building_model.BuildingModel(
+    database_connection=database_connection,
     scenario_name=scenario_name
 )
 

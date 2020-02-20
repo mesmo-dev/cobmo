@@ -6,7 +6,8 @@ import numpy as np
 import os
 import pandas as pd
 
-import cobmo.building
+import cobmo.building_model
+import cobmo.config
 import cobmo.controller
 import cobmo.database_interface
 import cobmo.utils
@@ -22,14 +23,11 @@ os.mkdir(os.path.join(results_path, 'plots'))
 os.mkdir(os.path.join(results_path, 'details'))
 
 # Obtain a connection to the database.
-conn = cobmo.database_interface.connect_database()
+database_connection = cobmo.database_interface.connect_database()
 
 # Define the building model (main function of the CoBMo toolbox).
 # - Generates the building model for given `scenario_name` based on the building definitions in the `data` directory.
-building = cobmo.building.Building(
-    conn=conn,
-    scenario_name=scenario_name
-)
+building = cobmo.building_model.BuildingModel(scenario_name)
 
 # Save building model matrices to CSV for debugging.
 building.state_matrix.to_csv(os.path.join(results_path, 'building_state_matrix.csv'))
@@ -42,7 +40,7 @@ building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_dist
 
 # Run controller for baseline case.
 controller_baseline = cobmo.controller.Controller(
-    conn=conn,
+    database_connection=database_connection,
     building=building
 )
 (
@@ -102,7 +100,7 @@ for time_duration in set_time_duration:
 
             # Run controller for load reduction case.
             controller_load_reduction = cobmo.controller.Controller(
-                conn=conn,
+                database_connection=database_connection,
                 building=building,
                 problem_type='load_reduction',
                 output_timeseries_reference=output_timeseries_baseline,

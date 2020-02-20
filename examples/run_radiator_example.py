@@ -6,7 +6,8 @@ import numpy as np
 import os
 import pandas as pd
 
-import cobmo.building
+import cobmo.building_model
+import cobmo.config
 import cobmo.controller
 import cobmo.database_interface
 import cobmo.utils
@@ -20,14 +21,11 @@ results_path = os.path.join(cobmo.config.results_path, 'run_example_' + cobmo.co
 os.mkdir(results_path)
 
 # Obtain a connection to the database.
-conn = cobmo.database_interface.connect_database()
+database_connection = cobmo.database_interface.connect_database()
 
 # Define the building model (main function of the CoBMo toolbox).
 # - Generates the building model for given `scenario_name` based on the building definitions in the `data` directory.
-building = cobmo.building.Building(
-    conn=conn,
-    scenario_name=scenario_name
-)
+building = cobmo.building_model.BuildingModel(scenario_name)
 
 # Save building model matrices to CSV for debugging.
 building.state_matrix.to_csv(os.path.join(results_path, 'building_state_matrix.csv'))
@@ -40,7 +38,7 @@ building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_dist
 
 # Run controller.
 controller = cobmo.controller.Controller(
-    conn=conn,
+    database_connection=database_connection,
     building=building
 )
 (
