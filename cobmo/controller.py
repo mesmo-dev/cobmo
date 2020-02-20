@@ -12,7 +12,7 @@ class Controller(object):
 
     def __init__(
             self,
-            conn,
+            database_connection,
             building,
             problem_type='operation',
             # Choices: 'operation', 'storage_planning', 'storage_planning_baseline', 'load_reduction',

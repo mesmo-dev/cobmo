@@ -68,7 +68,7 @@ def calculate_dew_point_enthalpy_humid_air(
 
 
 def calculate_irradiation_surfaces(
-        conn,
+        database_connection,
         weather_type='singapore_nus',
         irradiation_model='dirint'
 ):
@@ -85,14 +85,14 @@ def calculate_irradiation_surfaces(
         select * from weather_types  
         where weather_type='{}' 
         """.format(weather_type),
-        conn
+        database_connection
     )
     weather_timeseries = pd.read_sql(
         """ 
         select * from weather_timeseries  
         where weather_type='{}' 
         """.format(weather_type),
-        conn
+        database_connection
     )
 
     # Set time zone (required for pvlib solar position calculations).
@@ -175,7 +175,7 @@ def calculate_irradiation_surfaces(
         weather_timeseries.loc[:, 'irradiation_' + index] = irradiation_surface['poa_global']
 
     # Update weather_timeseries in database.
-    conn.cursor().execute(
+    database_connection.cursor().execute(
         """ 
         delete from weather_timeseries  
         where weather_type='{}' 
@@ -183,14 +183,14 @@ def calculate_irradiation_surfaces(
     )
     weather_timeseries.to_sql(
         'weather_timeseries',
-        conn,
+        database_connection,
         if_exists='append',
         index=False
     )
 
 
 def calculate_sky_temperature(
-        conn,
+        database_connection,
         weather_type='singapore_nus'
 ):
     """ Calculates sky temperatures from ambient air temperature for tropical weather.
@@ -204,14 +204,14 @@ def calculate_sky_temperature(
         select * from weather_types  
         where weather_type='{}' 
         """.format(weather_type),
-        conn
+        database_connection
     )
     weather_timeseries = pd.read_sql(
         """ 
         select * from weather_timeseries  
         where weather_type='{}' 
         """.format(weather_type),
-        conn
+        database_connection
     )
     weather_timeseries.index = pd.to_datetime(weather_timeseries['time'])
 
@@ -223,13 +223,13 @@ def calculate_sky_temperature(
         weather_timeseries.loc[:, 'ambient_air_temperature'] - temperature_difference
 
     # Update weather_timeseries in database.
-    conn.cursor().execute(
+    database_connection.cursor().execute(
         """ 
         delete from weather_timeseries  
         where weather_type='{}' 
         """.format(weather_type),
     )
-    weather_timeseries.to_sql('weather_timeseries', conn, if_exists='append', index=False)
+    weather_timeseries.to_sql('weather_timeseries', database_connection, if_exists='append', index=False)
 
 
 def calculate_error(
