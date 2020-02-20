@@ -7,17 +7,19 @@ import sqlite3
 
 import cobmo.config
 
+logger = cobmo.config.get_logger(__name__)
 
-def create_database(
-        sqlite_path,
-        sql_path,
-        csv_path
-):
-    """Create SQLITE database from SQL schema file and CSV files."""
+
+def recreate_database(
+        database_path: str = cobmo.config.database_path,
+        database_schema_path: str = os.path.join(cobmo.config.cobmo_path, 'cobmo', 'database_schema.sql'),
+        csv_path: str = cobmo.config.data_path
+) -> None:
+    """Recreate SQLITE database from SQL schema file and CSV files."""
 
     # Connect SQLITE database (creates file, if none).
-    conn = sqlite3.connect(sqlite_path)
-    cursor = conn.cursor()
+    database_connection = sqlite3.connect(database_path)
+    cursor = database_connection.cursor()
 
     # Remove old data, if any.
     cursor.executescript(
@@ -30,46 +32,46 @@ def create_database(
     )
 
     # Recreate SQLITE database (schema) from SQL file.
-    cursor.executescript(open(sql_path, 'r').read())
-    conn.commit()
+    with open(database_schema_path, 'r') as database_schema_file:
+        cursor.executescript(database_schema_file.read())
+    database_connection.commit()
 
     # Import CSV files into SQLITE database.
-    conn.text_factory = str  # Allows utf-8 data to be stored.
-    cursor = conn.cursor()
+    database_connection.text_factory = str  # Allows utf-8 data to be stored.
+    cursor = database_connection.cursor()
     for file in glob.glob(os.path.join(csv_path, '*.csv')):
         # Obtain table name.
         table_name = os.path.splitext(os.path.basename(file))[0]
 
         # Delete existing table content.
         cursor.execute("DELETE FROM {}".format(table_name))
-        conn.commit()
+        database_connection.commit()
 
         # Write new table content.
+        logger.debug(f"Loading {file} into database.")
         table = pd.read_csv(file)
         table.to_sql(
             table_name,
-            con=conn,
+            con=database_connection,
             if_exists='append',
             index=False
         )
     cursor.close()
-    conn.close()
+    database_connection.close()
 
 
 def connect_database(
-        data_path=cobmo.config.data_path,
-        overwrite_database=True
-):
+        database_path: str = cobmo.config.database_path
+) -> sqlite3.Connection:
     """Connect to the database at given `data_path` and return connection handle."""
 
-    # Create database, if `overwrite_database` or no database exists.
-    if overwrite_database or not os.path.isfile(os.path.join(data_path, 'data.sqlite')):
-        create_database(
-            sqlite_path=os.path.join(data_path, 'data.sqlite'),
-            sql_path=os.path.join(cobmo.config.cobmo_path, 'cobmo', 'database_schema.sql'),
-            csv_path=data_path
+    # Recreate database, if no database exists.
+    if not os.path.isfile(database_path):
+        logger.debug(f"Database does not exist and is recreated at: {database_path}")
+        recreate_database(
+            database_path=database_path
         )
 
     # Obtain connection.
-    conn = sqlite3.connect(os.path.join(data_path, 'data.sqlite'))
-    return conn
+    database_connection = sqlite3.connect(database_path)
+    return database_connection

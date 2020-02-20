@@ -7,6 +7,7 @@ import os
 # Path definitions.
 cobmo_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
 data_path = os.path.join(cobmo_path, 'data')
+database_path = os.path.join(data_path, 'database.sqlite')
 results_path = os.path.join(cobmo_path, 'results')
 
 # Generate timestamp (for saving results with timestamp).
