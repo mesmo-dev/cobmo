@@ -12,6 +12,7 @@ setuptools.setup(
         'multimethod',
         'numpy',
         'pandas',
+        'parameterized',  # for tests.
         'pvlib',
         'pyomo',
         'scipy',
