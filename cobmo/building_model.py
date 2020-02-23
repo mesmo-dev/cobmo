@@ -36,6 +36,8 @@ class BuildingModel(object):
     set_state_initial: pd.Series
     disturbance_timeseries: pd.DataFrame
     electricity_price_timeseries: pd.DataFrame
+    output_constraint_timeseries_maximum: pd.DataFrame
+    output_constraint_timeseries_minimum: pd.DataFrame
 
     @multimethod
     def __init__(
