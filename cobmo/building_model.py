@@ -23,9 +23,9 @@ class BuildingModel(object):
     set_controls: pd.Index
     set_disturbances: pd.Index
     set_outputs: pd.Index
-    timestep_start: np.datetime64
-    timestep_end: np.datetime64
-    timestep_delta: np.timedelta64
+    timestep_start: pd.Timestamp
+    timestep_end: pd.Timestamp
+    timestep_delta: pd.Timedelta
     set_timesteps: pd.Index
     state_matrix: pd.DataFrame
     control_matrix: pd.DataFrame
@@ -80,11 +80,7 @@ class BuildingModel(object):
                 LEFT JOIN building_storage_types USING (building_storage_type) 
                 WHERE scenario_name='{}'
                 """.format(self.scenario_name),
-                database_connection,
-                parse_dates=[
-                    'time_start',
-                    'time_end'
-                ]
+                database_connection
             )  # TODO: Convert to Series with `.iloc[0]`.
         )
         self.building_parameters = (
@@ -564,17 +560,17 @@ class BuildingModel(object):
 
         # Define timesteps.
         if timestep_start is not None:
-            self.timestep_start = timestep_start
+            self.timestep_start = pd.Timestamp(timestep_start)
         else:
-            self.timestep_start = self.building_scenarios.iloc[0]['time_start']
+            self.timestep_start = pd.Timestamp(self.building_scenarios.iloc[0]['time_start'])
         if timestep_end is not None:
-            self.timestep_end = timestep_end
+            self.timestep_end = pd.Timestamp(timestep_end)
         else:
-            self.timestep_end = self.building_scenarios.iloc[0]['time_end']
+            self.timestep_end = pd.Timestamp(self.building_scenarios.iloc[0]['time_end'])
         if timestep_delta is not None:
-            self.timestep_delta = timestep_delta
+            self.timestep_delta = pd.Timedelta(timestep_delta)
         else:
-            self.timestep_delta = pd.to_timedelta(self.building_scenarios.iloc[0]['time_step'])
+            self.timestep_delta = pd.Timedelta(self.building_scenarios.iloc[0]['time_step'])
         self.set_timesteps = pd.Index(
             pd.date_range(
                 start=self.timestep_start,
@@ -3917,8 +3913,8 @@ class BuildingModel(object):
                 AND time BETWEEN '{}' AND '{}'
                 """.format(
                     self.building_scenarios['weather_type'][0],
-                    np.datetime_as_string(self.timestep_start, unit='s'),
-                    np.datetime_as_string(self.timestep_end, unit='s')
+                    self.timestep_start.strftime('%Y-%m-%dT%H:%M:%S'),
+                    self.timestep_end.strftime('%Y-%m-%dT%H:%M:%S')
                 ),
                 database_connection
             )
@@ -3934,8 +3930,8 @@ class BuildingModel(object):
                     ", ".join([
                         "'{}'".format(data_set_name) for data_set_name in self.building_zones['internal_gain_type'].unique()
                     ]),
-                    np.datetime_as_string(self.timestep_start, unit='s'),
-                    np.datetime_as_string(self.timestep_end, unit='s')
+                    self.timestep_start.strftime('%Y-%m-%dT%H:%M:%S'),
+                    self.timestep_end.strftime('%Y-%m-%dT%H:%M:%S')
                 ),
                 database_connection
             )
