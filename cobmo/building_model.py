@@ -2942,12 +2942,12 @@ class BuildingModel(object):
                 # Heating power (radiators only require heating power).
                 self.control_output_matrix.loc[
                     self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_thermal_power_heating',
-                    self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_thermal_power_heating'
+                    self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_thermal_power'
                 ] = 1.0
                 # TODO: Define heating plant COP for radiators.
                 self.control_output_matrix.loc[
                     self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_electric_power_heating',
-                    self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_thermal_power_heating'
+                    self.building_zones.loc[zones_index, 'zone_name'] + '_radiator_thermal_power'
                 ] = (
                     1.0
                     / 1.0
@@ -3841,6 +3841,7 @@ class BuildingModel(object):
                     ] = (
                         -1.0
                         * parse_parameter(self.building_zones['ahu_cooling_efficiency'][0])
+                        if pd.notnull(self.building_zones['ahu_cooling_efficiency'][0]) else 1.0
                         # TODO: Define heating / cooling plant.
                     )
                 if connect_thermal_grid_cooling:
@@ -3867,6 +3868,7 @@ class BuildingModel(object):
                     ] = (
                         -1.0
                         * parse_parameter(self.building_zones['ahu_heating_efficiency'][0])
+                        if pd.notnull(self.building_zones['ahu_heating_efficiency'][0]) else 1.0
                         # TODO: Define heating / cooling plant.
                     )
                 if connect_thermal_grid_heating:
