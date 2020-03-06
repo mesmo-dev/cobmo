@@ -553,7 +553,11 @@ class BuildingModel(object):
                     connect_electric_grid,
                     connect_thermal_grid_heating
                 ]) else None,
-                pd.Series(['grid_electric_power']) if connect_electric_grid else None,
+                pd.Series([
+                    'grid_electric_power_cooling',
+                    'grid_electric_power_heating',
+                    'grid_electric_power'
+                ]) if connect_electric_grid else None,
                 pd.Series(['grid_thermal_power_cooling']) if connect_thermal_grid_cooling else None,
                 pd.Series(['grid_thermal_power_heating']) if connect_thermal_grid_heating else None
             ]),
@@ -3891,6 +3895,14 @@ class BuildingModel(object):
                 self.control_output_matrix.loc[
                     'grid_electric_power',
                     ['grid_electric_power_heating', 'grid_electric_power_cooling']
+                ] = 1.0
+                self.control_output_matrix.loc[
+                    'grid_electric_power_cooling',
+                    'grid_electric_power_cooling'
+                ] = 1.0
+                self.control_output_matrix.loc[
+                    'grid_electric_power_heating',
+                    'grid_electric_power_heating'
                 ] = 1.0
 
             # Thermal cooling grid power.
