@@ -3896,6 +3896,14 @@ class BuildingModel(object):
                     'grid_electric_power',
                     ['grid_electric_power_heating', 'grid_electric_power_cooling']
                 ] = 1.0
+                for zone_name, zone_data in self.building_zones.iterrows():
+                    self.disturbance_output_matrix.loc[
+                        'grid_electric_power',
+                        zone_data['internal_gain_type'] + '_appliances'
+                    ] += (
+                        parse_parameter(zone_data['internal_gain_appliances_factor'])
+                        * parse_parameter(zone_data['zone_area'])
+                    )
                 self.control_output_matrix.loc[
                     'grid_electric_power_cooling',
                     'grid_electric_power_cooling'
