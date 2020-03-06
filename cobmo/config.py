@@ -18,7 +18,7 @@ solver_name = 'gurobi'  # Must be valid input string for Pyomo's `SolverFactory`
 solver_output = False  # If True, activate verbose solver output.
 
 # Logger settings.
-logging_level = logging.DEBUG
+logging_level = logging.INFO
 logging_handler = logging.StreamHandler()
 logging_handler.setFormatter(logging.Formatter('%(levelname)s | %(name)s | %(message)s'))
 # logging_handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)s | %(name)s | %(message)s'))
