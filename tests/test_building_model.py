@@ -28,14 +28,11 @@ scenario_names = (
 class TestBuilding(unittest.TestCase):
 
     def test_building_model_default_scenario(self):
-        # Setup.
-        scenario_name = 'scenario_default'
-
         # Get result.
         time_start = time.time()
-        cobmo.building_model.BuildingModel(scenario_name)
+        cobmo.building_model.BuildingModel(cobmo.config.test_scenario_name)
         time_duration = time.time() - time_start
-        logger.info(f"Test BuildingModel for scenario '{scenario_name}': Completed in {time_duration:.6f} seconds.")
+        logger.info(f"Test BuildingModel for default scenario: Completed in {time_duration:.6f} seconds.")
 
     @parameterized.expand(
         [(scenario_name,) for scenario_name in scenario_names])
