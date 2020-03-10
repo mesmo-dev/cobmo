@@ -1,6 +1,7 @@
 """Database interface function definitions."""
 
 import glob
+from multimethod import multimethod
 import os
 import pandas as pd
 import sqlite3
@@ -75,3 +76,125 @@ def connect_database(
     # Obtain connection.
     database_connection = sqlite3.connect(database_path)
     return database_connection
+
+
+class BuildingData(object):
+    """Building data object."""
+
+    building_scenarios: pd.Series
+    building_parameters: pd.Series
+    building_surfaces_adiabatic: pd.DataFrame
+    building_surfaces_exterior: pd.DataFrame
+    building_surfaces_interior: pd.DataFrame
+    building_zones: pd.DataFrame
+
+    @ multimethod
+    def __init__(
+            self,
+            scenario_name: str
+    ) -> None:
+
+        # Obtain database connection.
+        database_connection = connect_database()
+
+        self.__init__(
+            scenario_name,
+            database_connection
+        )
+
+    @ multimethod
+    def __init__(
+            self,
+            scenario_name: str,
+            database_connection: sqlite3.Connection
+    ) -> None:
+
+        # Store scenario name.
+        self.scenario_name = scenario_name
+
+        # Obtain building data.
+        self.building_scenarios = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_scenarios 
+                JOIN buildings USING (building_name) 
+                JOIN building_linearization_types USING (linearization_type) 
+                LEFT JOIN building_initial_state_types USING (initial_state_type) 
+                LEFT JOIN building_storage_types USING (building_storage_type) 
+                WHERE scenario_name = ?
+                """,
+                con=database_connection,
+                params=[self.scenario_name]
+            ).iloc[0]  # Convert to Series for shorter indexing.
+        )
+        self.building_parameters = (
+            pd.read_sql(
+                """
+                SELECT parameter_name, parameter_value FROM building_parameter_sets 
+                WHERE parameter_set IN ('constants', ?)
+                """,
+                con=database_connection,
+                params=[self.building_scenarios['parameter_set']],
+                index_col='parameter_name'
+            ).iloc[:, 0]  # Convert to Series for shorter indexing.
+        )
+        self.building_surfaces_adiabatic = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_surfaces_adiabatic 
+                JOIN building_surface_types USING (surface_type) 
+                LEFT JOIN building_window_types USING (window_type) 
+                JOIN building_zones USING (zone_name, building_name) 
+                WHERE building_name = ?
+                """,
+                con=database_connection,
+                params=[self.building_scenarios['building_name']]
+            )
+        )
+        self.building_surfaces_adiabatic.index = self.building_surfaces_adiabatic['surface_name']
+        self.building_surfaces_exterior = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_surfaces_exterior 
+                JOIN building_surface_types USING (surface_type) 
+                LEFT JOIN building_window_types USING (window_type) 
+                JOIN building_zones USING (zone_name, building_name) 
+                WHERE building_name = ?
+                """,
+                con=database_connection,
+                params=[self.building_scenarios['building_name']]
+            )
+        )
+        self.building_surfaces_exterior.index = self.building_surfaces_exterior['surface_name']
+        self.building_surfaces_interior = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_surfaces_interior 
+                JOIN building_surface_types USING (surface_type) 
+                LEFT JOIN building_window_types USING (window_type) 
+                JOIN building_zones USING (zone_name, building_name) 
+                WHERE building_name = ?
+                """,
+                con=database_connection,
+                params=[self.building_scenarios['building_name']]
+            )
+        )
+        self.building_surfaces_interior.index = self.building_surfaces_interior['surface_name']
+        self.building_zones = (
+            pd.read_sql(
+                """
+                SELECT * FROM building_zones 
+                JOIN building_zone_types USING (zone_type) 
+                JOIN building_internal_gain_types USING (internal_gain_type) 
+                LEFT JOIN building_blind_types USING (blind_type) 
+                LEFT JOIN building_hvac_generic_types USING (hvac_generic_type) 
+                LEFT JOIN building_hvac_radiator_types USING (hvac_radiator_type) 
+                LEFT JOIN building_hvac_ahu_types USING (hvac_ahu_type) 
+                LEFT JOIN building_hvac_tu_types USING (hvac_tu_type) 
+                WHERE building_name = ?
+                """,
+                con=database_connection,
+                params=[self.building_scenarios['building_name']]
+            )
+        )
+        self.building_zones.index = self.building_zones['zone_name']

@@ -159,19 +159,19 @@ class OptimizationProblem(object):
                     and ('state_of_charge' in output)
                 ):
                     # Storage planning constraints.
-                    if 'sensible' in self.building.building_scenarios['building_storage_type'][0]:
+                    if 'sensible' in self.building.building_data.building_scenarios['building_storage_type']:
                         self.problem.constraints.add(
                             self.problem.variable_output_timeseries[timestep, output]
                             <=
                             self.problem.variable_storage_size[0]
                             * self.building.parse_parameter('water_density')
                         )
-                    elif 'battery' in self.building.building_scenarios['building_storage_type'][0]:
+                    elif 'battery' in self.building.building_data.building_scenarios['building_storage_type']:
                         self.problem.constraints.add(
                             self.problem.variable_output_timeseries[timestep, output]
                             <=
                             self.problem.variable_storage_size[0]
-                            * self.building.building_scenarios['storage_battery_depth_of_discharge'][0]
+                            * self.building.building_data.building_scenarios['storage_battery_depth_of_discharge']
                         )
                 else:
                     self.problem.constraints.add(
@@ -237,7 +237,7 @@ class OptimizationProblem(object):
             self.operation_cost_factor = (
                 (pd.to_timedelta('1y') / pd.to_timedelta(timestep_delta))  # Theoretical number of time steps in a year.
                 / len(self.building.set_timesteps)  # Actual number of time steps.
-                * self.building.building_scenarios['storage_lifetime'][0]  # Storage lifetime in years.
+                * self.building.building_data.building_scenarios['storage_lifetime']  # Storage lifetime in years.
                 * 14.0  # 14 levels at CREATE Tower. # TODO: Check if considered properly in storage size.
             )
         elif self.problem_type == 'load_reduction':
@@ -268,25 +268,25 @@ class OptimizationProblem(object):
 
         # Investment cost (CAPEX).
         if self.problem_type == 'storage_planning':
-            if 'sensible' in self.building.building_scenarios['building_storage_type'][0]:
+            if 'sensible' in self.building.building_data.building_scenarios['building_storage_type']:
                 self.investment_cost += (
                     self.problem.variable_storage_size[0]  # In m3.
-                    * self.building.building_scenarios['storage_planning_energy_installation_cost'][0]  # In SGD/m3.
+                    * self.building.building_data.building_scenarios['storage_planning_energy_installation_cost']  # In SGD/m3.
                     # TODO: Currently, power / fixed cost are set to zero for sensible thermal storage in the database.
                     + self.problem.variable_storage_peak_power[0] / 1000.0  # W in kW.
-                    * self.building.building_scenarios['storage_planning_power_installation_cost'][0]  # In SGD/kW.
+                    * self.building.building_data.building_scenarios['storage_planning_power_installation_cost']  # In SGD/kW.
                     + self.problem.variable_storage_exists[0]  # No unit.
-                    * self.building.building_scenarios['storage_planning_fixed_installation_cost'][0]  # In SGD.
+                    * self.building.building_data.building_scenarios['storage_planning_fixed_installation_cost']  # In SGD.
                 )
-            elif 'battery' in self.building.building_scenarios['building_storage_type'][0]:
+            elif 'battery' in self.building.building_data.building_scenarios['building_storage_type']:
                 self.investment_cost += (
                     self.problem.variable_storage_size[0] / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
-                    * self.building.building_scenarios['storage_planning_energy_installation_cost'][0]
+                    * self.building.building_data.building_scenarios['storage_planning_energy_installation_cost']
                     # TODO: Validate unit of power cost.
                     + self.problem.variable_storage_peak_power[0] / 1000.0  # W in kW.
-                    * self.building.building_scenarios['storage_planning_power_installation_cost'][0]  # In SGD/kW
+                    * self.building.building_data.building_scenarios['storage_planning_power_installation_cost']  # In SGD/kW
                     + self.problem.variable_storage_exists[0]  # No unit.
-                    * self.building.building_scenarios['storage_planning_fixed_installation_cost'][0]  # In SGD.
+                    * self.building.building_data.building_scenarios['storage_planning_fixed_installation_cost']  # In SGD.
                 )
         elif self.problem_type == 'load_reduction':
             # TODO: Introduce dedicated cost for demand side flexibility indicators.

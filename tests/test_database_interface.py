@@ -35,6 +35,13 @@ class TestDatabaseInterface(unittest.TestCase):
         # Compare expected and actual.
         self.assertEqual(actual, expected)
 
+    def test_building_data(self):
+        # Get result.
+        time_start = time.time()
+        cobmo.database_interface.BuildingData(cobmo.config.test_scenario_name)
+        time_duration = time.time() - time_start
+        logger.info(f"Test BuildingData: Completed in {time_duration:.6f} seconds.")
+
 
 if __name__ == '__main__':
     unittest.main()
