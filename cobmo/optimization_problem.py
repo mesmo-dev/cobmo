@@ -1,4 +1,4 @@
-"""Controller class definition."""
+"""Optimization problem module."""
 
 import pandas as pd
 import pyomo.environ as pyo
@@ -6,9 +6,11 @@ import time as time
 
 import cobmo.config
 
+logger = cobmo.config.get_logger(__name__)
 
-class Controller(object):
-    """Controller object to store the model predictive control problem."""
+
+class OptimizationProblem(object):
+    """Optimization problem object."""
 
     def __init__(
             self,
@@ -23,10 +25,6 @@ class Controller(object):
             price_sensitivity_factor=None,
             price_sensitivity_timestep=None,
     ):
-        """Initialize controller object based on given `building` object.
-
-        - The optimization problem is formulated with the Pyomo toolbox.
-        """
         time_start = time.clock()
         self.building = building
         self.problem_type = problem_type
@@ -301,7 +299,7 @@ class Controller(object):
         )
 
         # Print setup time for debugging.
-        print("Controller setup time: {:.2f} seconds".format(time.clock() - time_start))
+        logger.debug("OptimizationProblem setup time: {:.2f} seconds".format(time.clock() - time_start))
 
     def solve(self):
         """Invoke solver on Pyomo problem."""
@@ -314,7 +312,7 @@ class Controller(object):
         )
 
         # Print solve time for debugging.
-        print("Controller solve time: {:.2f} seconds".format(time.clock() - time_start))
+        logger.debug("OptimizationProblem solve time: {:.2f} seconds".format(time.clock() - time_start))
 
         # Retrieve results.
         time_start = time.clock()
@@ -366,7 +364,7 @@ class Controller(object):
             storage_size = None
 
         # Print results compilation time for debugging.
-        print("Controller results compilation time: {:.2f} seconds".format(time.clock() - time_start))
+        logger.debug("OptimizationProblem results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 
         return (
             control_timeseries,

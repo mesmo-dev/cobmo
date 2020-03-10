@@ -8,7 +8,7 @@ import pandas as pd
 
 import cobmo.building_model
 import cobmo.config
-import cobmo.controller
+import cobmo.optimization_problem
 import cobmo.database_interface
 import cobmo.utils
 
@@ -39,7 +39,7 @@ building.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_d
 building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
 
 # Run controller for baseline case.
-controller_baseline = cobmo.controller.Controller(
+controller_baseline = cobmo.optimization_problem.OptimizationProblem(
     database_connection=database_connection,
     building=building
 )
@@ -99,7 +99,7 @@ for time_duration in set_time_duration:
             print("Calculate load reduction for: time_duration = {} / timestep = {}".format(time_duration, timestep))
 
             # Run controller for load reduction case.
-            controller_load_reduction = cobmo.controller.Controller(
+            controller_load_reduction = cobmo.optimization_problem.OptimizationProblem(
                 database_connection=database_connection,
                 building=building,
                 problem_type='load_reduction',

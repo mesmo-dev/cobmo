@@ -6,7 +6,7 @@ import pandas as pd
 
 import cobmo.building_model
 import cobmo.config
-import cobmo.controller
+import cobmo.optimization_problem
 import cobmo.database_interface
 import cobmo.utils
 
@@ -61,7 +61,7 @@ state_timeseries_simulation.to_csv(os.path.join(results_path, 'state_timeseries_
 output_timeseries_simulation.to_csv(os.path.join(results_path, 'output_timeseries_simulation.csv'))
 
 # Run controller.
-controller = cobmo.controller.Controller(
+controller = cobmo.optimization_problem.OptimizationProblem(
     database_connection=database_connection,
     building=building
 )

@@ -6,7 +6,7 @@ import time as time
 
 import cobmo.building_model
 import cobmo.config
-import cobmo.controller
+import cobmo.optimization_problem
 import cobmo.database_interface
 import cobmo.plots
 import cobmo.utils
@@ -155,7 +155,7 @@ if run_simulation:
             building_baseline = cobmo.building_model.BuildingModel(scenario_name, database_connection)
 
             # Run controller for the baseline case.
-            controller_baseline = cobmo.controller.Controller(
+            controller_baseline = cobmo.optimization_problem.OptimizationProblem(
                 database_connection=database_connection,
                 building=building_baseline,
                 problem_type='storage_planning_baseline'
@@ -180,7 +180,7 @@ if run_simulation:
             building_storage = cobmo.building_model.BuildingModel(scenario_name, database_connection)
 
             # Run controller for the storage case.
-            controller_storage = cobmo.controller.Controller(
+            controller_storage = cobmo.optimization_problem.OptimizationProblem(
                 database_connection=database_connection,
                 building=building_storage,
                 problem_type='storage_planning'
