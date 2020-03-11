@@ -1,4 +1,4 @@
-"""Example run script for using the building model."""
+"""Example run script to demonstrate the main features of CoBMo."""
 
 import numpy as np
 import os
@@ -8,117 +8,92 @@ import cobmo.building_model
 import cobmo.config
 import cobmo.optimization_problem
 import cobmo.database_interface
-import cobmo.utils
 
 
-# Set `scenario_name`.
-scenario_name = 'scenario_default'
+def main():
 
-# Set results path and create the directory.
-results_path = os.path.join(cobmo.config.results_path, 'run_example_' + cobmo.config.timestamp)
-os.mkdir(results_path)
+    # Settings.
+    scenario_name = 'scenario_default'
+    results_path = os.path.join(cobmo.config.results_path, f'run_example_{cobmo.config.timestamp}')
 
-# Obtain a connection to the database.
-database_connection = cobmo.database_interface.connect_database()
+    # Instantiate results directory.
+    os.mkdir(results_path)
 
-# Define the building model (main function of the CoBMo toolbox).
-# - Generates the building model for given `scenario_name` based on the building definitions in the `data` directory.
-building = cobmo.building_model.BuildingModel(scenario_name)
+    # Recreate / overwrite database, to incorporate changes in the CSV files.
+    cobmo.database_interface.recreate_database()
 
-# Define augemented state space model matrices.
-# TODO: Check if there is any usage for the augmented state space model.
-building.define_augmented_model()
+    # Obtain building model.
+    building = cobmo.building_model.BuildingModel(scenario_name)
 
-# Save building model matrices to CSV for debugging.
-building.state_matrix.to_csv(os.path.join(results_path, 'building_state_matrix.csv'))
-building.control_matrix.to_csv(os.path.join(results_path, 'building_control_matrix.csv'))
-building.disturbance_matrix.to_csv(os.path.join(results_path, 'building_disturbance_matrix.csv'))
-building.state_output_matrix.to_csv(os.path.join(results_path, 'building_state_output_matrix.csv'))
-building.control_output_matrix.to_csv(os.path.join(results_path, 'building_control_output_matrix.csv'))
-building.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_disturbance_output_matrix.csv'))
-building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
+    # Print building model matrices and disturbance timeseries.
+    print(f"state_matrix = \n{building.state_matrix.to_string()}")
+    print(f"control_matrix = \n{building.control_matrix.to_string()}")
+    print(f"disturbance_matrix = \n{building.disturbance_matrix.to_string()}")
+    print(f"state_output_matrix = \n{building.state_output_matrix.to_string()}")
+    print(f"control_output_matrix = \n{building.control_output_matrix.to_string()}")
+    print(f"disturbance_output_matrix = \n{building.disturbance_output_matrix.to_string()}")
+    print(f"disturbance_timeseries = \n{building.disturbance_timeseries.to_string()}")
 
-# Define initial state and control timeseries.
-state_initial = building.set_state_initial
-control_timeseries_simulation = pd.DataFrame(
-    np.ones((len(building.set_timesteps), len(building.set_controls))),
-    building.set_timesteps,
-    building.set_controls
-)
+    # Store building model matrices and disturbance timeseries as CSV.
+    building.state_matrix.to_csv(os.path.join(results_path, 'building_state_matrix.csv'))
+    building.control_matrix.to_csv(os.path.join(results_path, 'building_control_matrix.csv'))
+    building.disturbance_matrix.to_csv(os.path.join(results_path, 'building_disturbance_matrix.csv'))
+    building.state_output_matrix.to_csv(os.path.join(results_path, 'building_state_output_matrix.csv'))
+    building.control_output_matrix.to_csv(os.path.join(results_path, 'building_control_output_matrix.csv'))
+    building.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_disturbance_output_matrix.csv'))
+    building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
 
-# Run simulation.
-(
-    state_timeseries_simulation,
-    output_timeseries_simulation
-) = building.simulate(
-    state_initial=state_initial,
-    control_timeseries=control_timeseries_simulation
-)
+    # Define exemplary control timeseries and run simulation.
+    control_timeseries_simulation = pd.DataFrame(
+        np.ones((len(building.set_timesteps), len(building.set_controls))),
+        building.set_timesteps,
+        building.set_controls
+    )
+    (
+        state_timeseries_simulation,
+        output_timeseries_simulation
+    ) = building.simulate(
+        state_initial=building.set_state_initial,
+        control_timeseries=control_timeseries_simulation
+    )
 
-# Save simulation timeseries to CSV for debugging.
-control_timeseries_simulation.to_csv(os.path.join(results_path, 'control_timeseries_simulation.csv'))
-state_timeseries_simulation.to_csv(os.path.join(results_path, 'state_timeseries_simulation.csv'))
-output_timeseries_simulation.to_csv(os.path.join(results_path, 'output_timeseries_simulation.csv'))
+    # Print simulation results.
+    print(f"control_timeseries_simulation = \n{control_timeseries_simulation.to_string()}")
+    print(f"state_timeseries_simulation = \n{state_timeseries_simulation.to_string()}")
+    print(f"output_timeseries_simulation = \n{output_timeseries_simulation.to_string()}")
 
-# Run controller.
-controller = cobmo.optimization_problem.OptimizationProblem(
-    database_connection=database_connection,
-    building=building
-)
-(
-    control_timeseries_controller,
-    state_timeseries_controller,
-    output_timeseries_controller,
-    operation_cost,
-    investment_cost,  # Zero when running (default) operation problem.
-    storage_size  # Zero when running (default) operation problem.
-) = controller.solve()
+    # Store simulation results as CSV.
+    control_timeseries_simulation.to_csv(os.path.join(results_path, 'control_timeseries_simulation.csv'))
+    state_timeseries_simulation.to_csv(os.path.join(results_path, 'state_timeseries_simulation.csv'))
+    output_timeseries_simulation.to_csv(os.path.join(results_path, 'output_timeseries_simulation.csv'))
 
-# Save controller timeseries to CSV for debugging.
-control_timeseries_controller.to_csv(os.path.join(results_path, 'control_timeseries_controller.csv'))
-state_timeseries_controller.to_csv(os.path.join(results_path, 'state_timeseries_controller.csv'))
-output_timeseries_controller.to_csv(os.path.join(results_path, 'output_timeseries_controller.csv'))
+    # Obtain and solve optimization problem.
+    optimization_problem = cobmo.optimization_problem.OptimizationProblem(
+        building
+    )
+    (
+        control_timeseries_optimization,
+        state_timeseries_optimization,
+        output_timeseries_optimization,
+        operation_cost,
+        investment_cost,  # Zero when running (default) operation problem.
+        storage_size  # Zero when running (default) operation problem.
+    ) = optimization_problem.solve()
 
-# Print operation cost for debugging.
-print("operation_cost = {}".format(operation_cost))
+    # Print optimization results.
+    print(f"operation_cost = {operation_cost}")
+    print(f"control_timeseries_optimization = \n{control_timeseries_optimization.to_string()}")
+    print(f"state_timeseries_optimization = \n{state_timeseries_optimization.to_string()}")
+    print(f"output_timeseries_optimization = \n{output_timeseries_optimization.to_string()}")
 
-# Run error calculation function.
-(
-    error_summary,
-    error_timeseries
-) = cobmo.utils.calculate_error(
-    output_timeseries_simulation.loc[:, output_timeseries_controller.columns.str.contains('temperature')],
-    output_timeseries_controller.loc[:, output_timeseries_controller.columns.str.contains('temperature')]
-)  # Note: These are exemplary inputs.
+    # Store optimization results as CSV.
+    control_timeseries_optimization.to_csv(os.path.join(results_path, 'control_timeseries_optimization.csv'))
+    state_timeseries_optimization.to_csv(os.path.join(results_path, 'state_timeseries_optimization.csv'))
+    output_timeseries_optimization.to_csv(os.path.join(results_path, 'output_timeseries_optimization.csv'))
 
-# Save error outputs to CSV for debugging.
-error_timeseries.to_csv(os.path.join(results_path, 'error_timeseries.csv'))
-error_summary.to_csv(os.path.join(results_path, 'error_summary.csv'))
+    # Print results path.
+    print(f"Results are stored in: {results_path}")
 
-# Print error summary for debugging.
-print("error_summary = \n{}".format(error_summary))
 
-# Calculate total demand for benchmarking.
-total_demand = (
-    output_timeseries_controller.loc[:, output_timeseries_controller.columns.str.contains('electric_power')].sum().sum()
-    * pd.to_timedelta(building.set_timesteps[1] - building.set_timesteps[0]).seconds / 3600.0 / 1000.0  # W in kWh.
-)
-total_demand_year = (
-    total_demand
-    * (pd.to_timedelta('1y') / pd.to_timedelta(building.set_timesteps[1] - building.set_timesteps[0]))
-    # Theoretical number of time steps in a year.
-    / len(building.set_timesteps)
-    # Actual number of time steps.
-)
-total_demand_year_per_area = (
-    total_demand_year
-    / building.zones['zone_area'].apply(building.parse_parameter).sum()  # kWh to kWh/m2.
-)
-
-# Print total demand for benchmarking.
-print("total_demand = {}".format(total_demand))
-print("total_demand_year = {}".format(total_demand_year))
-print("total_demand_year_per_area = {}".format(total_demand_year_per_area))
-
-# Print results path for debugging.
-print("Results are stored in: " + results_path)
+if __name__ == '__main__':
+    main()
