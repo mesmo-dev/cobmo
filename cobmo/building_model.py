@@ -547,26 +547,26 @@ class BuildingModel(object):
             0.0,
             self.set_states
         )
-        for index, row in self.building_data.building_zones.iterrows():
-            self.heat_capacity_vector.at[index] = (
-                row['zone_area']
-                * row['zone_height']
-                * row['heat_capacity']
+        for zone_name, zone_data in self.building_data.building_zones.iterrows():
+            self.heat_capacity_vector.at[zone_name] = (
+                zone_data['zone_area']
+                * zone_data['zone_height']
+                * zone_data['heat_capacity']
             )
-        for index, row in self.building_data.building_surfaces_adiabatic.iterrows():
-            self.heat_capacity_vector.at[index] = (
-                row['surface_area']
-                * row['heat_capacity']
+        for surface_name, surface_data in self.building_data.building_surfaces_adiabatic.iterrows():
+            self.heat_capacity_vector.at[surface_name] = (
+                surface_data['surface_area']
+                * surface_data['heat_capacity']
             )
-        for index, row in self.building_data.building_surfaces_exterior.iterrows():
-            self.heat_capacity_vector.at[index] = (
-                row['surface_area']
-                * row['heat_capacity']
+        for surface_name, surface_data in self.building_data.building_surfaces_exterior.iterrows():
+            self.heat_capacity_vector.at[surface_name] = (
+                surface_data['surface_area']
+                * surface_data['heat_capacity']
             )
-        for index, row in self.building_data.building_surfaces_interior.iterrows():
-            self.heat_capacity_vector.at[index] = (
-                row['surface_area']
-                * row['heat_capacity']
+        for surface_name, surface_data in self.building_data.building_surfaces_interior.iterrows():
+            self.heat_capacity_vector.at[surface_name] = (
+                surface_data['surface_area']
+                * surface_data['heat_capacity']
             )
 
         # Instantiate other model properties / variables.
@@ -1958,81 +1958,81 @@ class BuildingModel(object):
 
         def define_heat_transfer_infiltration():
 
-            for index, row in self.building_data.building_zones.iterrows():
+            for zone_name, zone_data in self.building_data.building_zones.iterrows():
                 self.state_matrix.at[
-                    index + '_temperature',
-                    index + '_temperature'
+                    zone_name + '_temperature',
+                    zone_name + '_temperature'
                 ] += (
-                    - row['infiltration_rate']
+                    - zone_data['infiltration_rate']
                     * self.building_data.building_parameters['heat_capacity_air']
-                    * row['zone_area']
-                    * row['zone_height']
-                    / self.heat_capacity_vector[index]
+                    * zone_data['zone_area']
+                    * zone_data['zone_height']
+                    / self.heat_capacity_vector[zone_name]
                 )
                 self.disturbance_matrix.at[
-                    index + '_temperature',
+                    zone_name + '_temperature',
                     'ambient_air_temperature'
                 ] += (
-                    row['infiltration_rate']
+                    zone_data['infiltration_rate']
                     * self.building_data.building_parameters['heat_capacity_air']
-                    * row['zone_area']
-                    * row['zone_height']
-                    / self.heat_capacity_vector[index]
+                    * zone_data['zone_area']
+                    * zone_data['zone_height']
+                    / self.heat_capacity_vector[zone_name]
                 )
 
         def define_heat_transfer_window_air_flow():
 
-            for index, row in self.building_data.building_zones.iterrows():
-                if pd.notnull(row['window_type']):
+            for zone_name, zone_data in self.building_data.building_zones.iterrows():
+                if pd.notnull(zone_data['window_type']):
                     self.control_matrix.at[
-                        index + '_temperature',
-                        index + '_window_air_flow'
+                        zone_name + '_temperature',
+                        zone_name + '_window_air_flow'
                     ] += (
                         self.building_data.building_parameters['heat_capacity_air']
                         * (
                             self.building_data.building_scenarios['linearization_ambient_air_temperature']
                             - self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
                         )
-                        / self.heat_capacity_vector[index]
+                        / self.heat_capacity_vector[zone_name]
                     )
 
         def define_heat_transfer_internal_gains():
 
-            for index, row in self.building_data.building_zones.iterrows():
+            for zone_name, zone_data in self.building_data.building_zones.iterrows():
                 self.disturbance_matrix.at[
-                    index + '_temperature',
-                    row['internal_gain_type'] + '_occupancy'
+                    zone_name + '_temperature',
+                    zone_data['internal_gain_type'] + '_occupancy'
                 ] += (
-                    row['internal_gain_occupancy_factor']
-                    * row['zone_area']
-                    / self.heat_capacity_vector[index]
+                    zone_data['internal_gain_occupancy_factor']
+                    * zone_data['zone_area']
+                    / self.heat_capacity_vector[zone_name]
                 )
                 self.disturbance_matrix.at[
-                    index + '_temperature',
-                    row['internal_gain_type'] + '_appliances'
+                    zone_name + '_temperature',
+                    zone_data['internal_gain_type'] + '_appliances'
                 ] += (
-                    row['internal_gain_appliances_factor']
-                    * row['zone_area']
-                    / self.heat_capacity_vector[index]
+                    zone_data['internal_gain_appliances_factor']
+                    * zone_data['zone_area']
+                    / self.heat_capacity_vector[zone_name]
                 )
 
         def define_heat_transfer_hvac_generic():
 
-            for index, row in self.building_data.building_zones.iterrows():
-                if pd.notnull(row['hvac_generic_type']):
+            for zone_name, zone_data in self.building_data.building_zones.iterrows():
+                if pd.notnull(zone_data['hvac_generic_type']):
                     self.control_matrix.at[
-                        index + '_temperature',
-                        index + '_generic_heat_thermal_power'
+                        zone_name + '_temperature',
+                        zone_name + '_generic_heat_thermal_power'
                     ] += (
                         1.0
-                        / self.heat_capacity_vector[index]
+                        / self.heat_capacity_vector[zone_name]
                     )
                     self.control_matrix.at[
-                        index + '_temperature',
-                        index + '_generic_cool_thermal_power'
+                        zone_name + '_temperature',
+                        zone_name + '_generic_cool_thermal_power'
                     ] += (
                         - 1.0
-                        / self.heat_capacity_vector[index]
+                        / self.heat_capacity_vector[zone_name]
                     )
 
         def define_heat_transfer_hvac_radiator():
@@ -2443,106 +2443,106 @@ class BuildingModel(object):
 
         def define_heat_transfer_hvac_ahu():
 
-            for index, row in self.building_data.building_zones.iterrows():
-                if pd.notnull(row['hvac_ahu_type']):
+            for zone_name, zone_data in self.building_data.building_zones.iterrows():
+                if pd.notnull(zone_data['hvac_ahu_type']):
                     self.control_matrix.at[
-                        index + '_temperature',
-                        index + '_ahu_heat_air_flow'
+                        zone_name + '_temperature',
+                        zone_name + '_ahu_heat_air_flow'
                     ] += (
                         self.building_data.building_parameters['heat_capacity_air']
                         * (
-                            row['ahu_supply_air_temperature_setpoint']
+                            zone_data['ahu_supply_air_temperature_setpoint']
                             - self.building_data.building_scenarios['linearization_zone_air_temperature_heat']
                         )
-                        / self.heat_capacity_vector[index]
+                        / self.heat_capacity_vector[zone_name]
                     )
                     self.control_matrix.at[
-                        index + '_temperature',
-                        index + '_ahu_cool_air_flow'
+                        zone_name + '_temperature',
+                        zone_name + '_ahu_cool_air_flow'
                     ] += (
                         self.building_data.building_parameters['heat_capacity_air']
                         * (
-                            row['ahu_supply_air_temperature_setpoint']
+                            zone_data['ahu_supply_air_temperature_setpoint']
                             - self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
                         )
-                        / self.heat_capacity_vector[index]
+                        / self.heat_capacity_vector[zone_name]
                     )
 
         def define_heat_transfer_hvac_tu():
 
-            for index, row in self.building_data.building_zones.iterrows():
-                if pd.notnull(row['hvac_tu_type']):
+            for zone_name, zone_data in self.building_data.building_zones.iterrows():
+                if pd.notnull(zone_data['hvac_tu_type']):
                     self.control_matrix.at[
-                        index + '_temperature',
-                        index + '_tu_heat_air_flow'
+                        zone_name + '_temperature',
+                        zone_name + '_tu_heat_air_flow'
                     ] += (
                         self.building_data.building_parameters['heat_capacity_air']
                         * (
-                            row['tu_supply_air_temperature_setpoint']
+                            zone_data['tu_supply_air_temperature_setpoint']
                             - self.building_data.building_scenarios['linearization_zone_air_temperature_heat']
                         )
-                        / self.heat_capacity_vector[index]
+                        / self.heat_capacity_vector[zone_name]
                     )
                     self.control_matrix.at[
-                        index + '_temperature',
-                        index + '_tu_cool_air_flow'
+                        zone_name + '_temperature',
+                        zone_name + '_tu_cool_air_flow'
                     ] += (
                         self.building_data.building_parameters['heat_capacity_air']
                         * (
-                            row['tu_supply_air_temperature_setpoint']
+                            zone_data['tu_supply_air_temperature_setpoint']
                             - self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
                         )
-                        / self.heat_capacity_vector[index]
+                        / self.heat_capacity_vector[zone_name]
                     )
 
         def define_co2_transfer_hvac_ahu():
 
             if pd.notnull(self.building_data.building_scenarios['co2_model_type']):
-                for index, row in self.building_data.building_zones.iterrows():
-                    if pd.notnull(row['hvac_ahu_type']) | pd.notnull(row['window_type']):
+                for zone_name, zone_data in self.building_data.building_zones.iterrows():
+                    if pd.notnull(zone_data['hvac_ahu_type']) | pd.notnull(zone_data['window_type']):
                         self.state_matrix.at[
-                            index + '_co2_concentration',
-                            index + '_co2_concentration'
+                            zone_name + '_co2_concentration',
+                            zone_name + '_co2_concentration'
                         ] += (
                             - 1.0
                             * (
                                 self.building_data.building_scenarios['linearization_ventilation_rate_per_square_meter']
-                                / row['zone_height']
+                                / zone_data['zone_height']
                             )
                         )
-                        if pd.notnull(row['hvac_ahu_type']):
+                        if pd.notnull(zone_data['hvac_ahu_type']):
                             self.control_matrix.at[
-                                index + '_co2_concentration',
-                                index + '_ahu_heat_air_flow'
+                                zone_name + '_co2_concentration',
+                                zone_name + '_ahu_heat_air_flow'
                             ] += (
                                 - 1.0
                                 * (
                                     self.building_data.building_scenarios['linearization_co2_concentration']
-                                    / row['zone_height']
-                                    / row['zone_area']
+                                    / zone_data['zone_height']
+                                    / zone_data['zone_area']
                                 )
                             )
                             self.control_matrix.at[
-                                index + '_co2_concentration',
-                                index + '_ahu_cool_air_flow'
+                                zone_name + '_co2_concentration',
+                                zone_name + '_ahu_cool_air_flow'
                             ] += (
                                 - 1.0
                                 * (
                                     self.building_data.building_scenarios['linearization_co2_concentration']
-                                    / row['zone_height']
-                                    / row['zone_area']
+                                    / zone_data['zone_height']
+                                    / zone_data['zone_area']
                                 )
                             )
-                        if pd.notnull(row['window_type']):
+                        if pd.notnull(zone_data['window_type']):
                             self.control_matrix.at[
-                                index + '_co2_concentration',
-                                index + '_window_air_flow'
+                                zone_name + '_co2_concentration',
+                                zone_name + '_window_air_flow'
                             ] += (
                                 - 1.0
                                 * (
                                     self.building_data.building_scenarios['linearization_co2_concentration']
-                                    / row['zone_height']
-                                    / row['zone_area']
+                                    / zone_data['zone_height']
+                                    / zone_data['zone_area']
                                 )
                             )
                         # self.disturbance_matrix.at[
@@ -2554,77 +2554,77 @@ class BuildingModel(object):
                         #     * zone_data['infiltration_rate'])
                         # )  # TODO: Revise infiltration
                         self.disturbance_matrix.at[
-                            index + '_co2_concentration',
-                            row['internal_gain_type'] + '_occupancy'
+                            zone_name + '_co2_concentration',
+                            zone_data['internal_gain_type'] + '_occupancy'
                         ] += (
                             self.building_data.building_parameters['co2_generation_rate_per_person']
-                            / row['zone_height']
-                            / row['zone_area']
+                            / zone_data['zone_height']
+                            / zone_data['zone_area']
                         )
                         # division by zone_area since the occupancy here is in p
                         # if iterative and robust BM, no division by zone_area since the occupancy there is in p/m2
                         self.disturbance_matrix.at[
-                            index + '_co2_concentration',
+                            zone_name + '_co2_concentration',
                             'constant'
                         ] += (
                             self.building_data.building_scenarios['linearization_ventilation_rate_per_square_meter']
                             * self.building_data.building_scenarios['linearization_co2_concentration']
-                            / row['zone_height']
+                            / zone_data['zone_height']
                         )
 
         def define_humidity_transfer_hvac_ahu():
 
             if pd.notnull(self.building_data.building_scenarios['humidity_model_type']):
-                for index, row in self.building_data.building_zones.iterrows():
-                    if pd.notnull(row['hvac_ahu_type']):
+                for zone_name, zone_data in self.building_data.building_zones.iterrows():
+                    if pd.notnull(zone_data['hvac_ahu_type']):
                         self.state_matrix.at[
-                            index + '_absolute_humidity',
-                            index + '_absolute_humidity'
+                            zone_name + '_absolute_humidity',
+                            zone_name + '_absolute_humidity'
                         ] += (
                             - 1.0
                             * (
                                 self.building_data.building_scenarios['linearization_ventilation_rate_per_square_meter']
-                                / row['zone_height']
+                                / zone_data['zone_height']
                             )
                         )
                         self.control_matrix.at[
-                            index + '_absolute_humidity',
-                            index + '_ahu_heat_air_flow'
+                            zone_name + '_absolute_humidity',
+                            zone_name + '_ahu_heat_air_flow'
                         ] += (
                             - 1.0
                             * (
                                 (
                                     self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
                                     - cobmo.utils.calculate_absolute_humidity_humid_air(
-                                        row['ahu_supply_air_temperature_setpoint'],
-                                        row['ahu_supply_air_relative_humidity_setpoint']
+                                        zone_data['ahu_supply_air_temperature_setpoint'],
+                                        zone_data['ahu_supply_air_relative_humidity_setpoint']
                                     )
                                 )
-                                / row['zone_height']
-                                / row['zone_area']
+                                / zone_data['zone_height']
+                                / zone_data['zone_area']
                             )
                         )
                         self.control_matrix.at[
-                            index + '_absolute_humidity',
-                            index + '_ahu_cool_air_flow'
+                            zone_name + '_absolute_humidity',
+                            zone_name + '_ahu_cool_air_flow'
                         ] += (
                             - 1.0
                             * (
                                 (
                                     self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
                                     - cobmo.utils.calculate_absolute_humidity_humid_air(
-                                        row['ahu_supply_air_temperature_setpoint'],
-                                        row['ahu_supply_air_relative_humidity_setpoint']
+                                        zone_data['ahu_supply_air_temperature_setpoint'],
+                                        zone_data['ahu_supply_air_relative_humidity_setpoint']
                                     )
                                 )
-                                / row['zone_height']
-                                / row['zone_area']
+                                / zone_data['zone_height']
+                                / zone_data['zone_area']
                             )
                         )
-                        if pd.notnull(row['window_type']):
+                        if pd.notnull(zone_data['window_type']):
                             self.control_matrix.at[
-                                index + '_absolute_humidity',
-                                index + '_window_air_flow'
+                                zone_name + '_absolute_humidity',
+                                zone_name + '_window_air_flow'
                             ] += (
                                 - 1.0
                                 * (
@@ -2632,12 +2632,12 @@ class BuildingModel(object):
                                         self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
                                         - self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio']
                                     )
-                                    / row['zone_height']
-                                    / row['zone_area']
+                                    / zone_data['zone_height']
+                                    / zone_data['zone_area']
                                 )
                             )
                         self.disturbance_matrix.at[
-                            index + '_absolute_humidity',
+                            zone_name + '_absolute_humidity',
                             'constant'
                         ] += (
                             - 1.0
@@ -2646,25 +2646,25 @@ class BuildingModel(object):
                                     self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
                                     - self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio']
                                 )
-                                * row['infiltration_rate']
+                                * zone_data['infiltration_rate']
                             )
                         )  # TODO: Revise infiltration
                         self.disturbance_matrix.at[
-                            index + '_absolute_humidity',
-                            row['internal_gain_type'] + '_occupancy'
+                            zone_name + '_absolute_humidity',
+                            zone_data['internal_gain_type'] + '_occupancy'
                         ] += (
                             self.building_data.building_parameters['moisture_generation_rate_per_person']
-                            / row['zone_height']
-                            / row['zone_area']
+                            / zone_data['zone_height']
+                            / zone_data['zone_area']
                             / self.building_data.building_parameters['density_air']
                         )
                         self.disturbance_matrix.at[
-                            index + '_absolute_humidity',
+                            zone_name + '_absolute_humidity',
                             'constant'
                         ] += (
                             self.building_data.building_scenarios['linearization_ventilation_rate_per_square_meter']
                             * self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
-                            / row['zone_height']
+                            / zone_data['zone_height']
                         )
 
         def define_storage_state_of_charge():
@@ -2783,30 +2783,30 @@ class BuildingModel(object):
 
         def define_output_zone_temperature():
 
-            for index, row in self.building_data.building_zones.iterrows():
+            for zone_name, zone_data in self.building_data.building_zones.iterrows():
                 self.state_output_matrix.at[
-                    index + '_temperature',
-                    index + '_temperature'
+                    zone_name + '_temperature',
+                    zone_name + '_temperature'
                 ] = 1.0
 
         def define_output_zone_co2_concentration():
 
             if pd.notnull(self.building_data.building_scenarios['co2_model_type']):
-                for index, row in self.building_data.building_zones.iterrows():
-                    if pd.notnull(row['hvac_ahu_type']) | pd.notnull(row['window_type']):
+                for zone_name, zone_data in self.building_data.building_zones.iterrows():
+                    if pd.notnull(zone_data['hvac_ahu_type']) | pd.notnull(zone_data['window_type']):
                         self.state_output_matrix.at[
-                            index + '_co2_concentration',
-                            index + '_co2_concentration'
+                            zone_name + '_co2_concentration',
+                            zone_name + '_co2_concentration'
                         ] = 1.0
 
         def define_output_zone_humidity():
 
             if pd.notnull(self.building_data.building_scenarios['humidity_model_type']):
-                for index, row in self.building_data.building_zones.iterrows():
-                    if pd.notnull(row['hvac_ahu_type']):
+                for zone_name, zone_data in self.building_data.building_zones.iterrows():
+                    if pd.notnull(zone_data['hvac_ahu_type']):
                         self.state_output_matrix.at[
-                            index + '_absolute_humidity',
-                            index + '_absolute_humidity'
+                            zone_name + '_absolute_humidity',
+                            zone_name + '_absolute_humidity'
                         ] = 1.0
 
         def define_output_hvac_generic_power():
@@ -3305,50 +3305,50 @@ class BuildingModel(object):
 
         def define_output_fresh_air_flow():
 
-            for index, row in self.building_data.building_zones.iterrows():
-                if pd.notnull(row['hvac_ahu_type']):
+            for zone_name, zone_data in self.building_data.building_zones.iterrows():
+                if pd.notnull(zone_data['hvac_ahu_type']):
                     self.control_output_matrix.at[
-                        index + '_total_fresh_air_flow',
-                        index + '_ahu_heat_air_flow'
+                        zone_name + '_total_fresh_air_flow',
+                        zone_name + '_ahu_heat_air_flow'
                     ] = 1.0
                     self.control_output_matrix.at[
-                        index + '_total_fresh_air_flow',
-                        index + '_ahu_cool_air_flow'
+                        zone_name + '_total_fresh_air_flow',
+                        zone_name + '_ahu_cool_air_flow'
                     ] = 1.0
-                if pd.notnull(row['window_type']):
+                if pd.notnull(zone_data['window_type']):
                     self.control_output_matrix.at[
-                        index + '_total_fresh_air_flow',
-                        index + '_window_air_flow'
+                        zone_name + '_total_fresh_air_flow',
+                        zone_name + '_window_air_flow'
                     ] = 1.0
-                if pd.notnull(row['window_type']) | pd.notnull(row['hvac_ahu_type']):
+                if pd.notnull(zone_data['window_type']) | pd.notnull(zone_data['hvac_ahu_type']):
                     self.disturbance_output_matrix.at[
-                        index + '_total_fresh_air_flow',
+                        zone_name + '_total_fresh_air_flow',
                         'constant'
                     ] += (
-                        row['infiltration_rate']
-                        * row['zone_area']
-                        * row['zone_height']
+                        zone_data['infiltration_rate']
+                        * zone_data['zone_area']
+                        * zone_data['zone_height']
                     )  # TODO: Revise infiltration
 
         def define_output_ahu_fresh_air_flow():
 
-            for index, row in self.building_data.building_zones.iterrows():
-                if pd.notnull(row['hvac_ahu_type']):
+            for zone_name, zone_data in self.building_data.building_zones.iterrows():
+                if pd.notnull(zone_data['hvac_ahu_type']):
                     self.control_output_matrix.at[
-                        index + '_ahu_fresh_air_flow',
-                        index + '_ahu_heat_air_flow'
+                        zone_name + '_ahu_fresh_air_flow',
+                        zone_name + '_ahu_heat_air_flow'
                     ] = 1.0
                     self.control_output_matrix.at[
-                        index + '_ahu_fresh_air_flow',
-                        index + '_ahu_cool_air_flow'
+                        zone_name + '_ahu_fresh_air_flow',
+                        zone_name + '_ahu_cool_air_flow'
                     ] = 1.0
 
         def define_output_window_fresh_air_flow():
-            for index, row in self.building_data.building_zones.iterrows():
-                if pd.notnull(row['window_type']):
+            for zone_name, zone_data in self.building_data.building_zones.iterrows():
+                if pd.notnull(zone_data['window_type']):
                     self.control_output_matrix.at[
-                        index + '_window_fresh_air_flow',
-                        index + '_window_air_flow'
+                        zone_name + '_window_fresh_air_flow',
+                        zone_name + '_window_air_flow'
                     ] = 1.0
 
         def define_output_storage_state_of_charge():
