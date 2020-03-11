@@ -89,6 +89,10 @@ class BuildingData(object):
     building_surfaces_interior: pd.DataFrame
     building_zones: pd.DataFrame
     building_zone_constraint_profiles_dict: dict
+    timestep_start: pd.Timestamp
+    timestep_end: pd.Timestamp
+    timestep_delta: pd.Timedelta
+    set_timesteps: pd.Index
     weather_timeseries: pd.DataFrame
     building_internal_gain_timeseries: pd.DataFrame
     electricity_price_timeseries: pd.DataFrame
@@ -96,7 +100,8 @@ class BuildingData(object):
     @ multimethod
     def __init__(
             self,
-            scenario_name: str
+            scenario_name: str,
+            **kwargs
     ) -> None:
 
         # Obtain database connection.
@@ -104,14 +109,18 @@ class BuildingData(object):
 
         self.__init__(
             scenario_name,
-            database_connection
+            database_connection,
+            **kwargs
         )
 
     @ multimethod
     def __init__(
             self,
             scenario_name: str,
-            database_connection: sqlite3.Connection
+            database_connection: sqlite3.Connection,
+            timestep_start=None,
+            timestep_end=None,
+            timestep_delta=None
     ) -> None:
 
         # Store scenario name.
@@ -355,7 +364,31 @@ class BuildingData(object):
                 ].apply(parse_parameter)
             )
 
-        # Load timeseries data.
+        # Obtain timestep data.
+        if timestep_start is not None:
+            self.timestep_start = pd.Timestamp(timestep_start)
+        else:
+            self.timestep_start = pd.Timestamp(self.building_scenarios['time_start'])
+        if timestep_end is not None:
+            self.timestep_end = pd.Timestamp(timestep_end)
+        else:
+            self.timestep_end = pd.Timestamp(self.building_scenarios['time_end'])
+        if timestep_delta is not None:
+            self.timestep_delta = pd.Timedelta(timestep_delta)
+        else:
+            self.timestep_delta = pd.Timedelta(self.building_scenarios['time_step'])
+        self.set_timesteps = pd.Index(
+            pd.date_range(
+                start=self.timestep_start,
+                end=self.timestep_end,
+                freq=self.timestep_delta
+            ),
+            name='time'
+        )
+
+        # Obtain timeseries data.
+        timestep_start_string = self.timestep_start.strftime('%Y-%m-%dT%H:%M:%S')  # Shorthand for SQL commands.
+        timestep_end_string = self.timestep_end.strftime('%Y-%m-%dT%H:%M:%S')  # Shorthand for SQL commands.
         self.weather_timeseries = (
             pd.read_sql(
                 """
@@ -365,9 +398,10 @@ class BuildingData(object):
                     JOIN buildings USING (building_name)
                     WHERE scenario_name = ?
                 )
+                AND time between ? AND ?
                 """,
                 con=database_connection,
-                params=[self.scenario_name],
+                params=[self.scenario_name, timestep_start_string, timestep_end_string],
                 parse_dates=['time']
             )
         )
@@ -383,9 +417,10 @@ class BuildingData(object):
                     WHERE scenario_name = ?
                 )
             )
+            AND time between ? AND ?
             """,
             con=database_connection,
-            params=[self.scenario_name],
+            params=[self.scenario_name, timestep_start_string, timestep_end_string],
             parse_dates=['time']
         )
         self.electricity_price_timeseries = (
@@ -396,9 +431,10 @@ class BuildingData(object):
                     SELECT price_type from building_scenarios 
                     WHERE scenario_name = ?
                 )
+                AND time between ? AND ?
                 """,
                 con=database_connection,
-                params=[self.scenario_name],
+                params=[self.scenario_name, timestep_start_string, timestep_end_string],
                 parse_dates=['time']
             )
         )
@@ -429,3 +465,38 @@ class BuildingData(object):
             axis='columns'
         )
         self.building_internal_gain_timeseries.index = pd.to_datetime(self.building_internal_gain_timeseries.index)
+
+        # Reindex / interpolate timeseries.
+        self.weather_timeseries = (
+            self.weather_timeseries.reindex(
+                self.set_timesteps
+            ).interpolate(
+                'quadratic'
+            ).bfill(
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+            ).ffill(
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+            )
+        )
+        self.building_internal_gain_timeseries = (
+            self.building_internal_gain_timeseries.reindex(
+                self.set_timesteps
+            ).interpolate(
+                'quadratic'
+            ).bfill(
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+            ).ffill(
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+            )
+        )
+        self.electricity_price_timeseries = (
+            self.electricity_price_timeseries.reindex(
+                self.set_timesteps
+            ).interpolate(
+                'quadratic'
+            ).bfill(
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+            ).ffill(
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+            )
+        )

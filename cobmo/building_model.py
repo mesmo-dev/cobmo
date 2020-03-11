@@ -23,10 +23,8 @@ class BuildingModel(object):
     set_controls: pd.Index
     set_disturbances: pd.Index
     set_outputs: pd.Index
-    timestep_start: pd.Timestamp
-    timestep_end: pd.Timestamp
-    timestep_delta: pd.Timedelta
     set_timesteps: pd.Index
+    timestep_delta: pd.Timedelta
     state_matrix: pd.DataFrame
     control_matrix: pd.DataFrame
     disturbance_matrix: pd.DataFrame
@@ -75,7 +73,10 @@ class BuildingModel(object):
         self.building_data = (
             cobmo.database_interface.BuildingData(
                 self.scenario_name,
-                database_connection
+                database_connection,
+                timestep_start,
+                timestep_end,
+                timestep_delta
             )
         )
 
@@ -279,7 +280,6 @@ class BuildingModel(object):
                     'irradiation_south',
                     'irradiation_west',
                     'irradiation_north'
-                    # 'storage_ambient_air_temperature'  # TODO: Check if storage_ambient_air_temperature still needed.
                 ]),
 
                 # Internal gains.
@@ -505,27 +505,9 @@ class BuildingModel(object):
             name='output_name'
         )
 
-        # Define timesteps.
-        if timestep_start is not None:
-            self.timestep_start = pd.Timestamp(timestep_start)
-        else:
-            self.timestep_start = pd.Timestamp(self.building_data.building_scenarios['time_start'])
-        if timestep_end is not None:
-            self.timestep_end = pd.Timestamp(timestep_end)
-        else:
-            self.timestep_end = pd.Timestamp(self.building_data.building_scenarios['time_end'])
-        if timestep_delta is not None:
-            self.timestep_delta = pd.Timedelta(timestep_delta)
-        else:
-            self.timestep_delta = pd.Timedelta(self.building_data.building_scenarios['time_step'])
-        self.set_timesteps = pd.Index(
-            pd.date_range(
-                start=self.timestep_start,
-                end=self.timestep_end,
-                freq=self.timestep_delta
-            ),
-            name='time'
-        )
+        # Obtain timesteps.
+        self.set_timesteps = self.building_data.set_timesteps
+        self.timestep_delta = self.building_data.timestep_delta
 
         # Instantiate empty state space model matrices.
         self.state_matrix = pd.DataFrame(
@@ -3825,25 +3807,8 @@ class BuildingModel(object):
                         'irradiation_south',
                         'irradiation_west',
                         'irradiation_north'
-                        # 'storage_ambient_air_temperature'  # TODO: Cleanup `storage_ambient_air_temperature`.
-                    ]].reindex(
-                        self.set_timesteps
-                    ).interpolate(
-                        'quadratic'
-                    ).bfill(
-                        limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
-                    ).ffill(
-                        limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
-                    ),
-                    self.building_data.building_internal_gain_timeseries.reindex(
-                        self.set_timesteps
-                    ).interpolate(
-                        'quadratic'
-                    ).bfill(
-                        limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
-                    ).ffill(
-                        limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
-                    ),
+                    ]],
+                    self.building_data.building_internal_gain_timeseries,
                     (
                         pd.DataFrame(
                             1.0,
@@ -3869,17 +3834,6 @@ class BuildingModel(object):
                 self.electricity_price_timeseries['time'] = self.set_timesteps
             else:
                 self.electricity_price_timeseries = self.building_data.electricity_price_timeseries
-
-                # Reindex / interpolate to match set_timesteps.
-                self.electricity_price_timeseries.reindex(
-                    self.set_timesteps
-                ).interpolate(
-                    'quadratic'
-                ).bfill(
-                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
-                ).ffill(
-                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
-                )
 
         def define_output_constraint_timeseries():
             # TODO: Make construction / interpolation simpler and more efficient.
