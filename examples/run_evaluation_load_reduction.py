@@ -40,8 +40,7 @@ building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_dist
 
 # Run controller for baseline case.
 controller_baseline = cobmo.optimization_problem.OptimizationProblem(
-    database_connection=database_connection,
-    building=building
+    building
 )
 (
     control_timeseries_baseline,
@@ -100,8 +99,7 @@ for time_duration in set_time_duration:
 
             # Run controller for load reduction case.
             controller_load_reduction = cobmo.optimization_problem.OptimizationProblem(
-                database_connection=database_connection,
-                building=building,
+                building,
                 problem_type='load_reduction',
                 output_timeseries_reference=output_timeseries_baseline,
                 load_reduction_start_time=timestep,

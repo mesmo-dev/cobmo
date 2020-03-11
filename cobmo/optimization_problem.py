@@ -14,7 +14,6 @@ class OptimizationProblem(object):
 
     def __init__(
             self,
-            database_connection,
             building,
             problem_type='operation',
             # Choices: 'operation', 'storage_planning', 'storage_planning_baseline', 'load_reduction',

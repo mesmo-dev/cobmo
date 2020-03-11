@@ -40,8 +40,7 @@ building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_dist
 
 # Run controller for baseline case.
 controller_baseline = cobmo.optimization_problem.OptimizationProblem(
-    database_connection=database_connection,
-    building=building
+    building
 )
 (
     control_timeseries_baseline,
@@ -84,8 +83,7 @@ for price_factor in set_price_factors:
 
             # Run controller for load reduction case.
             controller_price_sensitivity = cobmo.optimization_problem.OptimizationProblem(
-                database_connection=database_connection,
-                building=building,
+                building,
                 problem_type='price_sensitivity',
                 price_sensitivity_factor=price_factor,
                 price_sensitivity_timestep=timestep

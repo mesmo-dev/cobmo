@@ -156,8 +156,7 @@ if run_simulation:
 
             # Run controller for the baseline case.
             controller_baseline = cobmo.optimization_problem.OptimizationProblem(
-                database_connection=database_connection,
-                building=building_baseline,
+                building_baseline,
                 problem_type='storage_planning_baseline'
             )
             (
@@ -181,8 +180,7 @@ if run_simulation:
 
             # Run controller for the storage case.
             controller_storage = cobmo.optimization_problem.OptimizationProblem(
-                database_connection=database_connection,
-                building=building_storage,
+                building_storage,
                 problem_type='storage_planning'
             )
             (

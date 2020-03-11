@@ -38,8 +38,7 @@ building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_dist
 
 # Run controller.
 controller = cobmo.optimization_problem.OptimizationProblem(
-    database_connection=database_connection,
-    building=building
+    building
 )
 (
     control_timeseries_controller,
