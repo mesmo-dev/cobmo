@@ -66,27 +66,27 @@ set_time_duration = (
         for time_duration in np.arange(0.5, 6.5, 0.5)
     ])
 )
-set_timesteps = building.set_timesteps
+timesteps = building.timesteps
 load_reduction_energy_results = pd.DataFrame(
     None,
-    set_timesteps,
+    timesteps,
     set_time_duration
 )
 load_reduction_power_results = pd.DataFrame(
     None,
-    set_timesteps,
+    timesteps,
     set_time_duration
 )
 load_reduction_percent_results = pd.DataFrame(
     None,
-    set_timesteps,
+    timesteps,
     set_time_duration
 )
 
 # Iterate load reduction calculation.
 for time_duration in set_time_duration:
-    for timestep in set_timesteps:
-        if (timestep + time_duration) > building.set_timesteps[-1]:
+    for timestep in timesteps:
+        if (timestep + time_duration) > building.timesteps[-1]:
             break  # Interrupt loop if end time goes beyond building model time horizon.
         elif (
             output_timeseries_baseline.loc[timestep, output_timeseries_baseline.columns.str.contains('electric_power')]
@@ -171,7 +171,7 @@ for time_duration in set_time_duration:
 
             # Calculate results.
             # TODO: Move timestep_delta into building model.
-            timestep_delta = building.set_timesteps[1] - building.set_timesteps[0]
+            timestep_delta = building.timesteps[1] - building.timesteps[0]
             baseline_energy = (
                 output_timeseries_baseline.loc[
                     timestep:(timestep + time_duration),

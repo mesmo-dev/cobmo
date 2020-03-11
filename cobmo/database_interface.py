@@ -92,7 +92,7 @@ class BuildingData(object):
     timestep_start: pd.Timestamp
     timestep_end: pd.Timestamp
     timestep_delta: pd.Timedelta
-    set_timesteps: pd.Index
+    timesteps: pd.Index
     weather_timeseries: pd.DataFrame
     internal_gain_timeseries: pd.DataFrame
     electricity_price_timeseries: pd.DataFrame
@@ -377,7 +377,7 @@ class BuildingData(object):
             self.timestep_delta = pd.Timedelta(timestep_delta)
         else:
             self.timestep_delta = pd.Timedelta(self.scenarios['time_step'])
-        self.set_timesteps = pd.Index(
+        self.timesteps = pd.Index(
             pd.date_range(
                 start=self.timestep_start,
                 end=self.timestep_end,
@@ -469,7 +469,7 @@ class BuildingData(object):
         # Reindex / interpolate timeseries.
         self.weather_timeseries = (
             self.weather_timeseries.reindex(
-                self.set_timesteps
+                self.timesteps
             ).interpolate(
                 'quadratic'
             ).bfill(
@@ -480,7 +480,7 @@ class BuildingData(object):
         )
         self.internal_gain_timeseries = (
             self.internal_gain_timeseries.reindex(
-                self.set_timesteps
+                self.timesteps
             ).interpolate(
                 'quadratic'
             ).bfill(
@@ -491,7 +491,7 @@ class BuildingData(object):
         )
         self.electricity_price_timeseries = (
             self.electricity_price_timeseries.reindex(
-                self.set_timesteps
+                self.timesteps
             ).interpolate(
                 'quadratic'
             ).bfill(

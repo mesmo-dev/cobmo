@@ -33,14 +33,14 @@ building = cobmo.building_model.BuildingModel(
 state_initial = pd.Series(
     np.concatenate([
         24.0  # in °C
-        * np.ones(sum(building.set_states.str.contains('temperature')))
+        * np.ones(sum(building.states.str.contains('temperature')))
     ]),
-    building.set_states
+    building.states
 )
 control_timeseries_simulation = pd.DataFrame(
     0.0,
-    building.set_timesteps,
-    building.set_controls
+    building.timesteps,
+    building.controls
 )
 control_timeseries_simulation.loc[:]['zone_1_generic_cool_thermal_power'] = 200.0
 
@@ -75,7 +75,7 @@ output_timeseries_validation = pd.read_csv(
     index_col='time',
     parse_dates=True,
 ).reindex(
-    building.set_timesteps
+    building.timesteps
 )  # Do not interpolate here, because it defeats the purpose of validation.
 output_timeseries_validation.columns.name = 'output_name'  # For compatibility with output_timeseries.
 

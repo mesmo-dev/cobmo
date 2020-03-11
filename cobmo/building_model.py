@@ -19,11 +19,11 @@ class BuildingModel(object):
 
     scenario_name: str
     building_data: cobmo.database_interface.BuildingData
-    set_states: pd.Index
-    set_controls: pd.Index
-    set_disturbances: pd.Index
-    set_outputs: pd.Index
-    set_timesteps: pd.Index
+    states: pd.Index
+    controls: pd.Index
+    disturbances: pd.Index
+    outputs: pd.Index
+    timesteps: pd.Index
     timestep_delta: pd.Timedelta
     state_matrix: pd.DataFrame
     control_matrix: pd.DataFrame
@@ -31,7 +31,7 @@ class BuildingModel(object):
     state_output_matrix: pd.DataFrame
     control_output_matrix: pd.DataFrame
     disturbance_output_matrix: pd.DataFrame
-    set_state_initial: pd.Series
+    state_vector_initial: pd.Series
     disturbance_timeseries: pd.DataFrame
     electricity_price_timeseries: pd.DataFrame
     output_constraint_timeseries_maximum: pd.DataFrame
@@ -90,7 +90,7 @@ class BuildingModel(object):
         # Define sets.
 
         # State variables.
-        self.set_states = pd.Index(
+        self.states = pd.Index(
             pd.concat([
                 # Zone temperature.
                 self.building_data.zones['zone_name'] + '_temperature',
@@ -156,7 +156,7 @@ class BuildingModel(object):
         )
 
         # Control variables.
-        self.set_controls = pd.Index(
+        self.controls = pd.Index(
             pd.concat([
                 # Generic HVAC system.
                 self.building_data.zones['zone_name'][
@@ -269,7 +269,7 @@ class BuildingModel(object):
         )
 
         # Disturbance variables.
-        self.set_disturbances = pd.Index(
+        self.disturbances = pd.Index(
             pd.concat([
                 # Weather.
                 pd.Series([
@@ -293,7 +293,7 @@ class BuildingModel(object):
         )
 
         # Output variables.
-        self.set_outputs = pd.Index(
+        self.outputs = pd.Index(
             pd.concat([
                 # Zone temperature.
                 self.building_data.zones['zone_name'] + '_temperature',
@@ -506,62 +506,62 @@ class BuildingModel(object):
         )
 
         # Obtain timesteps.
-        self.set_timesteps = self.building_data.set_timesteps
+        self.timesteps = self.building_data.timesteps
         self.timestep_delta = self.building_data.timestep_delta
 
         # Instantiate state space model matrices.
         self.state_matrix = pd.DataFrame(
             0.0,
-            self.set_states,
-            self.set_states
+            self.states,
+            self.states
         )
         self.control_matrix = pd.DataFrame(
             0.0,
-            self.set_states,
-            self.set_controls
+            self.states,
+            self.controls
         )
         self.disturbance_matrix = pd.DataFrame(
             0.0,
-            self.set_states,
-            self.set_disturbances
+            self.states,
+            self.disturbances
         )
         self.state_output_matrix = pd.DataFrame(
             0.0,
-            self.set_outputs,
-            self.set_states
+            self.outputs,
+            self.states
         )
         self.control_output_matrix = pd.DataFrame(
             0.0,
-            self.set_outputs,
-            self.set_controls
+            self.outputs,
+            self.controls
         )
         self.disturbance_output_matrix = pd.DataFrame(
             0.0,
-            self.set_outputs,
-            self.set_disturbances
+            self.outputs,
+            self.disturbances
         )
 
         def define_initial_state():
             """Define initial value of the state vector for given definition in `initial_state_types`."""
 
             # Instantiate.
-            self.set_state_initial = (
+            self.state_vector_initial = (
                 pd.Series(
                     0.0,
-                    index=self.set_states
+                    index=self.states
                 )
             )
 
             # Zone air temperature.
-            self.set_state_initial.loc[
-                self.set_state_initial.index.isin(self.building_data.zones['zone_name'] + '_temperature')
+            self.state_vector_initial.loc[
+                self.state_vector_initial.index.isin(self.building_data.zones['zone_name'] + '_temperature')
             ] = (
                 self.building_data.scenarios['initial_zone_temperature']
             )
 
             # Surface temperature.
-            self.set_state_initial.loc[
-                self.set_state_initial.index.isin(
+            self.state_vector_initial.loc[
+                self.state_vector_initial.index.isin(
                     pd.concat([
                         self.building_data.surfaces_adiabatic['surface_name'] + '_temperature',
                         self.building_data.surfaces_exterior['surface_name'] + '_temperature',
@@ -573,29 +573,29 @@ class BuildingModel(object):
             )
 
             # CO2 concentration.
-            self.set_state_initial.loc[
-                self.set_state_initial.index.isin(self.building_data.zones['zone_name'] + '_co2_concentration')
+            self.state_vector_initial.loc[
+                self.state_vector_initial.index.isin(self.building_data.zones['zone_name'] + '_co2_concentration')
             ] = (
                 self.building_data.scenarios['initial_co2_concentration']
             )
 
             # Zone air absolute humidity.
-            self.set_state_initial.loc[
-                self.set_state_initial.index.isin(self.building_data.zones['zone_name'] + '_absolute_humidity')
+            self.state_vector_initial.loc[
+                self.state_vector_initial.index.isin(self.building_data.zones['zone_name'] + '_absolute_humidity')
             ] = (
                 self.building_data.scenarios['initial_absolute_humidity']
             )
 
             # Sensible storage state of charge.
-            self.set_state_initial.loc[
-                self.set_state_initial.index.str.contains('_sensible_thermal_storage_state_of_charge')
+            self.state_vector_initial.loc[
+                self.state_vector_initial.index.str.contains('_sensible_thermal_storage_state_of_charge')
             ] = (
                 self.building_data.scenarios['initial_sensible_thermal_storage_state_of_charge']
             )
 
             # Battery storage state of charge.
-            self.set_state_initial.loc[
-                self.set_state_initial.index.str.contains('_battery_storage_state_of_charge')
+            self.state_vector_initial.loc[
+                self.state_vector_initial.index.str.contains('_battery_storage_state_of_charge')
             ] = (
                 self.building_data.scenarios['initial_battery_storage_state_of_charge']
             )
@@ -3694,7 +3694,7 @@ class BuildingModel(object):
                     :
                 ] = (
                     self.control_output_matrix.loc[
-                        self.set_outputs.str.contains('thermal_power_cooling'),
+                        self.outputs.str.contains('thermal_power_cooling'),
                         :
                     ].sum(axis=0)
                 )
@@ -3722,7 +3722,7 @@ class BuildingModel(object):
                     :
                 ] = (
                     self.control_output_matrix.loc[
-                        self.set_outputs.str.contains('thermal_power_heating'),
+                        self.outputs.str.contains('thermal_power_heating'),
                         :
                     ].sum(axis=0)
                 )
@@ -3749,7 +3749,7 @@ class BuildingModel(object):
                     :
                 ] = (
                     self.control_output_matrix.loc[
-                        self.set_outputs.str.contains('electric_power_fan'),
+                        self.outputs.str.contains('electric_power_fan'),
                         :
                     ].sum(axis=0)
                 )
@@ -3806,7 +3806,7 @@ class BuildingModel(object):
                     (
                         pd.DataFrame(
                             1.0,
-                            self.set_timesteps,
+                            self.timesteps,
                             ['constant']
                         ) if self.define_constant else pd.DataFrame([])  # Append constant only when needed.
                     )
@@ -3822,10 +3822,10 @@ class BuildingModel(object):
                     pd.DataFrame(
                         [[None, None, 1.0]],
                         columns=['time', 'price_type', 'price'],
-                        index=self.set_timesteps
+                        index=self.timesteps
                     )
                 )
-                self.electricity_price_timeseries['time'] = self.set_timesteps
+                self.electricity_price_timeseries['time'] = self.timesteps
             else:
                 self.electricity_price_timeseries = self.building_data.electricity_price_timeseries
 
@@ -3835,8 +3835,8 @@ class BuildingModel(object):
             # Initialise constraint timeseries as +/- infinity.
             self.output_constraint_timeseries_maximum = pd.DataFrame(
                 1.0 * np.infty,
-                self.set_timesteps,
-                self.set_outputs
+                self.timesteps,
+                self.outputs
             )
             self.output_constraint_timeseries_minimum = -self.output_constraint_timeseries_maximum
             # Minimum bound for "power" outputs.
@@ -3898,7 +3898,7 @@ class BuildingModel(object):
                     kind='zero',
                     fill_value='extrapolate'
                 )
-                for timestep in self.set_timesteps:
+                for timestep in self.timesteps:
                     # Create zone_name function for `from_time` (mapping `timestep.timestamp` to `from_time`).
                     constraint_profile_index_time = scipy.interpolate.interp1d(
                         pd.to_datetime(
@@ -4178,24 +4178,24 @@ class BuildingModel(object):
         # Initialize state and output timeseries
         state_timeseries = pd.DataFrame(
             np.nan,
-            self.set_timesteps,
-            self.set_states
+            self.timesteps,
+            self.states
         )
         state_timeseries.iloc[0, :] = state_initial
         output_timeseries = pd.DataFrame(
             np.nan,
-            self.set_timesteps,
-            self.set_outputs
+            self.timesteps,
+            self.outputs
         )
 
         # Iterative simulation of state space equations
-        for timestep in range(len(self.set_timesteps) - 1):
+        for timestep in range(len(self.timesteps) - 1):
             state_timeseries.iloc[timestep + 1, :] = (
                 np.dot(self.state_matrix.values, state_timeseries.iloc[timestep, :].values)
                 + np.dot(self.control_matrix.values, control_timeseries.iloc[timestep, :].values)
                 + np.dot(self.disturbance_matrix.values, disturbance_timeseries.iloc[timestep, :].values)
             )
-        for timestep in range(1, len(self.set_timesteps)):
+        for timestep in range(1, len(self.timesteps)):
             # TODO: Check `timestep - 1` (This was added to match with EnergyPlus outputs)
             output_timeseries.iloc[timestep - 1, :] = (
                 np.dot(self.state_output_matrix.values, state_timeseries.iloc[timestep, :].values)

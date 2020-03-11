@@ -61,16 +61,16 @@ output_timeseries_baseline.to_csv(os.path.join(results_path, 'output_timeseries_
 
 # Instantiate load reduction iteration variables.
 set_price_factors = pd.Index(np.concatenate([np.arange(0.0, 1.0, 0.25), np.arange(1.0, 25.0, 5.0)]))
-set_timesteps = building.set_timesteps
+timesteps = building.timesteps
 load_change_percent_results = pd.DataFrame(
     None,
-    set_timesteps,
+    timesteps,
     set_price_factors
 )
 
 # Iterate load reduction calculation.
 for price_factor in set_price_factors:
-    for timestep in set_timesteps:
+    for timestep in timesteps:
         # TODO: Check if this condition is necessary.
         if (
             output_timeseries_baseline.loc[timestep, output_timeseries_baseline.columns.str.contains('electric_power')]

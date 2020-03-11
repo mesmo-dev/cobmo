@@ -45,15 +45,15 @@ def main():
 
     # Define exemplary control timeseries and run simulation.
     control_timeseries_simulation = pd.DataFrame(
-        np.ones((len(building.set_timesteps), len(building.set_controls))),
-        building.set_timesteps,
-        building.set_controls
+        np.ones((len(building.timesteps), len(building.controls))),
+        index=building.timesteps,
+        columns=building.controls
     )
     (
         state_timeseries_simulation,
         output_timeseries_simulation
     ) = building.simulate(
-        state_initial=building.set_state_initial,
+        state_initial=building.state_vector_initial,
         control_timeseries=control_timeseries_simulation
     )
 
