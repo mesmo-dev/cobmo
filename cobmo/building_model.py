@@ -6,8 +6,6 @@ import pandas as pd
 import scipy.linalg
 import scipy.interpolate
 import sqlite3
-# TODO: Using CoolProp for calculating humid air properties: http://www.coolprop.org/fluid_properties/HumidAir.html
-from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
 
 import cobmo.config
 import cobmo.database_interface
@@ -4130,34 +4128,24 @@ class BuildingModel(object):
                             self.output_constraint_timeseries_minimum.at[
                                 timestep,
                                 zone_name + '_absolute_humidity'
-                            ] = humid_air_properties(
-                                'W',
-                                'R',
-                                building_zone_constraint_profile['minimum_relative_humidity'][
-                                    int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                ]
-                                / 100,
-                                'T',
-                                self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
-                                + 273.15,
-                                'P',
-                                101325
+                            ] = (
+                                cobmo.utils.calculate_absolute_humidity_humid_air(
+                                    self.building_data.building_scenarios['linearization_zone_air_temperature_cool'],
+                                    building_zone_constraint_profile['minimum_relative_humidity'][
+                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                    ]
+                                )
                             )
                             self.output_constraint_timeseries_maximum.at[
                                 timestep,
                                 zone_name + '_absolute_humidity'
-                            ] = humid_air_properties(
-                                'W',
-                                'R',
-                                building_zone_constraint_profile['maximum_relative_humidity'][
-                                    int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                ]
-                                / 100,
-                                'T',
-                                self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
-                                + 273.15,
-                                'P',
-                                101325
+                            ] = (
+                                cobmo.utils.calculate_absolute_humidity_humid_air(
+                                    self.building_data.building_scenarios['linearization_zone_air_temperature_cool'],
+                                    building_zone_constraint_profile['maximum_relative_humidity'][
+                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                    ]
+                                )
                             )
 
                     # Storage state of charge constraints.
