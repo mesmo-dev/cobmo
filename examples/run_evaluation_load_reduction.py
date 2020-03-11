@@ -43,9 +43,9 @@ controller_baseline = cobmo.optimization_problem.OptimizationProblem(
     building
 )
 (
-    control_timeseries_baseline,
-    state_timeseries_baseline,
-    output_timeseries_baseline,
+    control_vector_baseline,
+    state_vector_baseline,
+    output_vector_baseline,
     operation_cost_baseline,
     investment_cost_baseline,  # Zero when running (default) operation problem.
     storage_size_baseline  # Zero when running (default) operation problem.
@@ -55,9 +55,9 @@ controller_baseline = cobmo.optimization_problem.OptimizationProblem(
 print("operation_cost_baseline = {}".format(operation_cost_baseline))
 
 # Save controller timeseries to CSV for debugging.
-control_timeseries_baseline.to_csv(os.path.join(results_path, 'control_timeseries_baseline.csv'))
-state_timeseries_baseline.to_csv(os.path.join(results_path, 'state_timeseries_baseline.csv'))
-output_timeseries_baseline.to_csv(os.path.join(results_path, 'output_timeseries_baseline.csv'))
+control_vector_baseline.to_csv(os.path.join(results_path, 'control_vector_baseline.csv'))
+state_vector_baseline.to_csv(os.path.join(results_path, 'state_vector_baseline.csv'))
+output_vector_baseline.to_csv(os.path.join(results_path, 'output_vector_baseline.csv'))
 
 # Instantiate load reduction iteration variables.
 set_time_duration = (
@@ -89,7 +89,7 @@ for time_duration in set_time_duration:
         if (timestep + time_duration) > building.timesteps[-1]:
             break  # Interrupt loop if end time goes beyond building model time horizon.
         elif (
-            output_timeseries_baseline.loc[timestep, output_timeseries_baseline.columns.str.contains('electric_power')]
+            output_vector_baseline.loc[timestep, output_vector_baseline.columns.str.contains('electric_power')]
             == 0.0
         ).all():
             continue  # Skip loop if there is no baseline demand in the start timestep (no reduction possible).
@@ -101,35 +101,35 @@ for time_duration in set_time_duration:
             controller_load_reduction = cobmo.optimization_problem.OptimizationProblem(
                 building,
                 problem_type='load_reduction',
-                output_timeseries_reference=output_timeseries_baseline,
+                output_vector_reference=output_vector_baseline,
                 load_reduction_start_time=timestep,
                 load_reduction_end_time=timestep + time_duration
             )
             (
-                control_timeseries_load_reduction,
-                state_timeseries_load_reduction,
-                output_timeseries_load_reduction,
+                control_vector_load_reduction,
+                state_vector_load_reduction,
+                output_vector_load_reduction,
                 operation_cost_load_reduction,
                 investment_cost_load_reduction,  # Represents load reduction.
                 storage_size_load_reduction
             ) = controller_load_reduction.solve()
 
             # Save controller timeseries to CSV for debugging.
-            control_timeseries_load_reduction.to_csv(os.path.join(
-                results_path, 'details', '{} - {} control_timeseries.csv'.format(time_duration, timestep).replace(':', '-')
+            control_vector_load_reduction.to_csv(os.path.join(
+                results_path, 'details', '{} - {} control_vector.csv'.format(time_duration, timestep).replace(':', '-')
             ))
-            control_timeseries_load_reduction.to_csv(os.path.join(
-                results_path, 'details', '{} - {} state_timeseries.csv'.format(time_duration, timestep).replace(':', '-')
+            control_vector_load_reduction.to_csv(os.path.join(
+                results_path, 'details', '{} - {} state_vector.csv'.format(time_duration, timestep).replace(':', '-')
             ))
-            control_timeseries_load_reduction.to_csv(os.path.join(
-                results_path, 'details', '{} - {} output_timeseriesd.csv'.format(time_duration, timestep).replace(':', '-')
+            control_vector_load_reduction.to_csv(os.path.join(
+                results_path, 'details', '{} - {} output_vectord.csv'.format(time_duration, timestep).replace(':', '-')
             ))
 
             # Plot demand comparison for debugging.
             electric_power_comparison = pd.concat(
                 [
-                    output_timeseries_baseline.loc[:, output_timeseries_baseline.columns.str.contains('electric_power')].sum(axis=1),
-                    output_timeseries_load_reduction.loc[:, output_timeseries_load_reduction.columns.str.contains('electric_power')].sum(axis=1),
+                    output_vector_baseline.loc[:, output_vector_baseline.columns.str.contains('electric_power')].sum(axis=1),
+                    output_vector_load_reduction.loc[:, output_vector_load_reduction.columns.str.contains('electric_power')].sum(axis=1),
                 ],
                 keys=[
                     'baseline',
@@ -173,9 +173,9 @@ for time_duration in set_time_duration:
             # TODO: Move timestep_delta into building model.
             timestep_delta = building.timesteps[1] - building.timesteps[0]
             baseline_energy = (
-                output_timeseries_baseline.loc[
+                output_vector_baseline.loc[
                     timestep:(timestep + time_duration),
-                    output_timeseries_baseline.columns.str.contains('electric_power')
+                    output_vector_baseline.columns.str.contains('electric_power')
                 ].sum().sum()
                 * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
             )

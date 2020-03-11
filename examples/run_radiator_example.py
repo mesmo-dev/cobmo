@@ -41,18 +41,18 @@ controller = cobmo.optimization_problem.OptimizationProblem(
     building
 )
 (
-    control_timeseries_controller,
-    state_timeseries_controller,
-    output_timeseries_controller,
+    control_vector_controller,
+    state_vector_controller,
+    output_vector_controller,
     operation_cost,
     investment_cost,  # Zero when running (default) operation problem.
     storage_size  # Zero when running (default) operation problem.
 ) = controller.solve()
 
 # Save controller timeseries to CSV for debugging.
-control_timeseries_controller.to_csv(os.path.join(results_path, 'control_timeseries_controller.csv'))
-state_timeseries_controller.to_csv(os.path.join(results_path, 'state_timeseries_controller.csv'))
-output_timeseries_controller.to_csv(os.path.join(results_path, 'output_timeseries_controller.csv'))
+control_vector_controller.to_csv(os.path.join(results_path, 'control_vector_controller.csv'))
+state_vector_controller.to_csv(os.path.join(results_path, 'state_vector_controller.csv'))
+output_vector_controller.to_csv(os.path.join(results_path, 'output_vector_controller.csv'))
 
 # Hvplot has no default options.
 # Workaround: Pass this dict to every new plot.
@@ -77,8 +77,8 @@ ambient_air_temperature_plot = (
     **hvplot_default_options
 )
 thermal_power_plot = (
-    output_timeseries_controller.loc[
-        :, output_timeseries_controller.columns.str.contains('thermal_power')
+    output_vector_controller.loc[
+        :, output_vector_controller.columns.str.contains('thermal_power')
     ].stack().rename('thermal_power').reset_index()
 ).hvplot.step(
     x='time',
@@ -87,8 +87,8 @@ thermal_power_plot = (
     **hvplot_default_options
 )
 zone_temperature_plot = (
-    output_timeseries_controller.loc[
-        :, output_timeseries_controller.columns.isin(
+    output_vector_controller.loc[
+        :, output_vector_controller.columns.isin(
             building.zones['zone_name'] + '_temperature'
         )
     ].stack().rename('zone_temperature').reset_index()
@@ -99,8 +99,8 @@ zone_temperature_plot = (
     **hvplot_default_options
 )
 radiator_water_temperature_plot = (
-    state_timeseries_controller.loc[
-        :, state_timeseries_controller.columns.isin(
+    state_vector_controller.loc[
+        :, state_vector_controller.columns.isin(
             building.zones['zone_name'] + '_radiator_water_mean_temperature'
         )
     ].stack().rename('radiator_water_temperature').reset_index()
@@ -111,8 +111,8 @@ radiator_water_temperature_plot = (
     **hvplot_default_options
 )
 radiator_hull_temperature_plot = (
-    state_timeseries_controller.loc[
-        :, state_timeseries_controller.columns.isin(
+    state_vector_controller.loc[
+        :, state_vector_controller.columns.isin(
             pd.concat([
                 building.zones['zone_name'] + '_radiator_hull_front_temperature',
                 building.zones['zone_name'] + '_radiator_hull_rear_temperature'

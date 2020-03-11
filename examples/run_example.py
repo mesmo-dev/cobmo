@@ -44,37 +44,37 @@ def main():
     building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
 
     # Define exemplary control timeseries and run simulation.
-    control_timeseries_simulation = pd.DataFrame(
+    control_vector_simulation = pd.DataFrame(
         np.ones((len(building.timesteps), len(building.controls))),
         index=building.timesteps,
         columns=building.controls
     )
     (
-        state_timeseries_simulation,
-        output_timeseries_simulation
+        state_vector_simulation,
+        output_vector_simulation
     ) = building.simulate(
         state_initial=building.state_vector_initial,
-        control_timeseries=control_timeseries_simulation
+        control_vector=control_vector_simulation
     )
 
     # Print simulation results.
-    print(f"control_timeseries_simulation = \n{control_timeseries_simulation.to_string()}")
-    print(f"state_timeseries_simulation = \n{state_timeseries_simulation.to_string()}")
-    print(f"output_timeseries_simulation = \n{output_timeseries_simulation.to_string()}")
+    print(f"control_vector_simulation = \n{control_vector_simulation.to_string()}")
+    print(f"state_vector_simulation = \n{state_vector_simulation.to_string()}")
+    print(f"output_vector_simulation = \n{output_vector_simulation.to_string()}")
 
     # Store simulation results as CSV.
-    control_timeseries_simulation.to_csv(os.path.join(results_path, 'control_timeseries_simulation.csv'))
-    state_timeseries_simulation.to_csv(os.path.join(results_path, 'state_timeseries_simulation.csv'))
-    output_timeseries_simulation.to_csv(os.path.join(results_path, 'output_timeseries_simulation.csv'))
+    control_vector_simulation.to_csv(os.path.join(results_path, 'control_vector_simulation.csv'))
+    state_vector_simulation.to_csv(os.path.join(results_path, 'state_vector_simulation.csv'))
+    output_vector_simulation.to_csv(os.path.join(results_path, 'output_vector_simulation.csv'))
 
     # Obtain and solve optimization problem.
     optimization_problem = cobmo.optimization_problem.OptimizationProblem(
         building
     )
     (
-        control_timeseries_optimization,
-        state_timeseries_optimization,
-        output_timeseries_optimization,
+        control_vector_optimization,
+        state_vector_optimization,
+        output_vector_optimization,
         operation_cost,
         investment_cost,  # Zero when running (default) operation problem.
         storage_size  # Zero when running (default) operation problem.
@@ -82,14 +82,14 @@ def main():
 
     # Print optimization results.
     print(f"operation_cost = {operation_cost}")
-    print(f"control_timeseries_optimization = \n{control_timeseries_optimization.to_string()}")
-    print(f"state_timeseries_optimization = \n{state_timeseries_optimization.to_string()}")
-    print(f"output_timeseries_optimization = \n{output_timeseries_optimization.to_string()}")
+    print(f"control_vector_optimization = \n{control_vector_optimization.to_string()}")
+    print(f"state_vector_optimization = \n{state_vector_optimization.to_string()}")
+    print(f"output_vector_optimization = \n{output_vector_optimization.to_string()}")
 
     # Store optimization results as CSV.
-    control_timeseries_optimization.to_csv(os.path.join(results_path, 'control_timeseries_optimization.csv'))
-    state_timeseries_optimization.to_csv(os.path.join(results_path, 'state_timeseries_optimization.csv'))
-    output_timeseries_optimization.to_csv(os.path.join(results_path, 'output_timeseries_optimization.csv'))
+    control_vector_optimization.to_csv(os.path.join(results_path, 'control_vector_optimization.csv'))
+    state_vector_optimization.to_csv(os.path.join(results_path, 'state_vector_optimization.csv'))
+    output_vector_optimization.to_csv(os.path.join(results_path, 'output_vector_optimization.csv'))
 
     # Print results path.
     print(f"Results are stored in: {results_path}")

@@ -37,12 +37,12 @@ state_initial = pd.Series(
     ]),
     building.states
 )
-control_timeseries_simulation = pd.DataFrame(
+control_vector_simulation = pd.DataFrame(
     0.0,
     building.timesteps,
     building.controls
 )
-control_timeseries_simulation.loc[:]['zone_1_generic_cool_thermal_power'] = 200.0
+control_vector_simulation.loc[:]['zone_1_generic_cool_thermal_power'] = 200.0
 
 # Save building model matrices to CSV for debugging.
 building.state_matrix.to_csv(os.path.join(results_path, 'building_state_matrix.csv'))
@@ -55,20 +55,20 @@ building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_dist
 
 # Run simulation.
 (
-    state_timeseries_simulation,
-    output_timeseries_simulation
+    state_vector_simulation,
+    output_vector_simulation
 ) = building.simulate(
     state_initial=state_initial,
-    control_timeseries=control_timeseries_simulation
+    control_vector=control_vector_simulation
 )
 
 # Save simulation timeseries to CSV for debugging.
-control_timeseries_simulation.to_csv(os.path.join(results_path, 'control_timeseries_simulation.csv'))
-state_timeseries_simulation.to_csv(os.path.join(results_path, 'state_timeseries_simulation.csv'))
-output_timeseries_simulation.to_csv(os.path.join(results_path, 'output_timeseries_simulation.csv'))
+control_vector_simulation.to_csv(os.path.join(results_path, 'control_vector_simulation.csv'))
+state_vector_simulation.to_csv(os.path.join(results_path, 'state_vector_simulation.csv'))
+output_vector_simulation.to_csv(os.path.join(results_path, 'output_vector_simulation.csv'))
 
 # Load validation data.
-output_timeseries_validation = pd.read_csv(
+output_vector_validation = pd.read_csv(
     os.path.join(
         os.path.dirname(os.path.normpath(__file__)), '..', 'data', 'validation', scenario_name + '.csv'
     ),
@@ -77,22 +77,22 @@ output_timeseries_validation = pd.read_csv(
 ).reindex(
     building.timesteps
 )  # Do not interpolate here, because it defeats the purpose of validation.
-output_timeseries_validation.columns.name = 'output_name'  # For compatibility with output_timeseries.
+output_vector_validation.columns.name = 'output_name'  # For compatibility with output_vector.
 
 # Run error calculation function.
 (
     error_summary,
     error_timeseries
 ) = cobmo.utils.calculate_error(
-    output_timeseries_validation,
-    output_timeseries_simulation,
+    output_vector_validation,
+    output_vector_simulation,
 )
 
 # Combine data for plotting.
 zone_temperature_comparison = pd.concat(
     [
-        output_timeseries_validation.loc[:, output_timeseries_validation.columns.str.contains('temperature')],
-        output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains('temperature')],
+        output_vector_validation.loc[:, output_vector_validation.columns.str.contains('temperature')],
+        output_vector_simulation.loc[:, output_vector_simulation.columns.str.contains('temperature')],
     ],
     keys=[
         'expected',
@@ -106,8 +106,8 @@ zone_temperature_comparison = pd.concat(
 )
 surface_irradiation_gain_exterior_comparison = pd.concat(
     [
-        output_timeseries_validation.loc[:, output_timeseries_validation.columns.str.contains('irradiation_gain')],
-        output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains('irradiation_gain')],
+        output_vector_validation.loc[:, output_vector_validation.columns.str.contains('irradiation_gain')],
+        output_vector_simulation.loc[:, output_vector_simulation.columns.str.contains('irradiation_gain')],
     ],
     keys=[
         'expected',
@@ -121,10 +121,10 @@ surface_irradiation_gain_exterior_comparison = pd.concat(
 )
 surface_convection_interior_comparison = pd.concat(
     [
-        output_timeseries_validation.loc[:, output_timeseries_validation.columns.str.contains(
+        output_vector_validation.loc[:, output_vector_validation.columns.str.contains(
             'convection_interior'
         )],
-        output_timeseries_simulation.loc[:, output_timeseries_simulation.columns.str.contains(
+        output_vector_simulation.loc[:, output_vector_simulation.columns.str.contains(
             'convection_interior'
         )],
     ],
@@ -145,7 +145,7 @@ hvplot_default_options = dict(width=1500, height=300)
 
 # Generate plot handles.
 thermal_power_plot = (
-    control_timeseries_simulation.stack().rename('thermal_power').reset_index()
+    control_vector_simulation.stack().rename('thermal_power').reset_index()
 ).hvplot.step(
     x='time',
     y='thermal_power',

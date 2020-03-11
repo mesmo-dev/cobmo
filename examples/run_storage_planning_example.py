@@ -89,9 +89,9 @@ controller_baseline = cobmo.optimization_problem.OptimizationProblem(
     problem_type='storage_planning_baseline'
 )
 (
-    control_timeseries_controller_baseline,
-    state_timeseries_controller_baseline,
-    output_timeseries_controller_baseline,
+    control_vector_controller_baseline,
+    state_vector_controller_baseline,
+    output_vector_controller_baseline,
     operation_cost_baseline,
     investment_cost_baseline,
     storage_size_baseline
@@ -113,9 +113,9 @@ controller_storage = cobmo.optimization_problem.OptimizationProblem(
     problem_type='storage_planning'
 )
 (
-    control_timeseries_controller_storage,
-    state_timeseries_controller_storage,
-    output_timeseries_controller_storage,
+    control_vector_controller_storage,
+    state_vector_controller_storage,
+    output_vector_controller_storage,
     operation_cost_storage,
     investment_cost_storage,
     storage_size_storage
@@ -166,9 +166,9 @@ if save_csv:
     building_baseline.control_output_matrix.to_csv(os.path.join(results_path, 'building_baseline_control_output_matrix.csv'))
     building_baseline.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_baseline_disturbance_output_matrix.csv'))
 
-    control_timeseries_controller_storage.to_csv(os.path.join(results_path, 'storage_control_timeseries_controller.csv'))
-    state_timeseries_controller_storage.to_csv(os.path.join(results_path, 'storage_state_timeseries_controller.csv'))
-    output_timeseries_controller_storage.to_csv(os.path.join(results_path, 'storage_output_timeseries_controller.csv'))
+    control_vector_controller_storage.to_csv(os.path.join(results_path, 'storage_control_vector_controller.csv'))
+    state_vector_controller_storage.to_csv(os.path.join(results_path, 'storage_state_vector_controller.csv'))
+    output_vector_controller_storage.to_csv(os.path.join(results_path, 'storage_output_vector_controller.csv'))
 
     building_storage.state_matrix.to_csv(os.path.join(results_path, 'building_storage_state_matrix.csv'))
     building_storage.control_matrix.to_csv(os.path.join(results_path, 'building_storage_control_matrix.csv'))
@@ -177,9 +177,9 @@ if save_csv:
     building_storage.control_output_matrix.to_csv(os.path.join(results_path, 'building_storage_control_output_matrix.csv'))
     building_storage.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_storage_disturbance_output_matrix.csv'))
 
-    control_timeseries_controller_baseline.to_csv(os.path.join(results_path, 'baseline_control_timeseries_controller.csv'))
-    state_timeseries_controller_baseline.to_csv(os.path.join(results_path, 'baseline_state_timeseries_controller.csv'))
-    output_timeseries_controller_baseline.to_csv(os.path.join(results_path, 'baseline_output_timeseries_controller.csv'))
+    control_vector_controller_baseline.to_csv(os.path.join(results_path, 'baseline_control_vector_controller.csv'))
+    state_vector_controller_baseline.to_csv(os.path.join(results_path, 'baseline_state_vector_controller.csv'))
+    output_vector_controller_baseline.to_csv(os.path.join(results_path, 'baseline_output_vector_controller.csv'))
 
 # Print results path.
 if save_csv or save_plots:

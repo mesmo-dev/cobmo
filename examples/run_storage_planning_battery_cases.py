@@ -160,9 +160,9 @@ if run_simulation:
                 problem_type='storage_planning_baseline'
             )
             (
-                control_timeseries_baseline,
-                state_timeseries_baseline,
-                output_timeseries_baseline,
+                control_vector_baseline,
+                state_vector_baseline,
+                output_vector_baseline,
                 operation_cost_baseline,
                 investment_cost_baseline,
                 storage_size_baseline
@@ -184,9 +184,9 @@ if run_simulation:
                 problem_type='storage_planning'
             )
             (
-                control_timeseries_storage,
-                state_timeseries_storage,
-                output_timeseries_storage,
+                control_vector_storage,
+                state_vector_storage,
+                output_vector_storage,
                 operation_cost_storage,
                 investment_cost_storage,
                 storage_size_storage

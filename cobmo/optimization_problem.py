@@ -18,7 +18,7 @@ class OptimizationProblem(object):
             problem_type='operation',
             # Choices: 'operation', 'storage_planning', 'storage_planning_baseline', 'load_reduction',
             # 'price_sensitivity'
-            output_timeseries_reference=None,
+            output_vector_reference=None,
             load_reduction_start_time=None,
             load_reduction_end_time=None,
             price_sensitivity_factor=None,
@@ -27,7 +27,7 @@ class OptimizationProblem(object):
         time_start = time.clock()
         self.building = building
         self.problem_type = problem_type
-        self.output_timeseries_reference = output_timeseries_reference
+        self.output_vector_reference = output_vector_reference
         self.load_reduction_start_time = load_reduction_start_time
         self.load_reduction_end_time = load_reduction_end_time
         self.price_sensitivity_factor = price_sensitivity_factor
@@ -41,17 +41,17 @@ class OptimizationProblem(object):
         self.result = None
 
         # Define variables.
-        self.problem.variable_state_timeseries = pyo.Var(
+        self.problem.variable_state_vector = pyo.Var(
             self.building.timesteps,
             self.building.states,
             domain=pyo.Reals
         )
-        self.problem.variable_control_timeseries = pyo.Var(
+        self.problem.variable_control_vector = pyo.Var(
             self.building.timesteps,
             self.building.controls,
             domain=pyo.NonNegativeReals  # TODO: Workaround for proper behavior of battery storage.
         )
-        self.problem.variable_output_timeseries = pyo.Var(
+        self.problem.variable_output_vector = pyo.Var(
             self.building.timesteps,
             self.building.outputs,
             domain=pyo.Reals
@@ -85,7 +85,7 @@ class OptimizationProblem(object):
         # Initial state constraint.
         for state in self.building.states:
             self.problem.constraints.add(
-                self.problem.variable_state_timeseries[self.building.timesteps[0], state]
+                self.problem.variable_state_vector[self.building.timesteps[0], state]
                 ==
                 self.building.state_vector_initial[state]
             )
@@ -96,17 +96,17 @@ class OptimizationProblem(object):
         for state in self.building.states:
             for timestep in self.building.timesteps[:-1]:
                 self.problem.constraints.add(
-                    self.problem.variable_state_timeseries[timestep + timestep_delta, state]
+                    self.problem.variable_state_vector[timestep + timestep_delta, state]
                     ==
                     (
                         sum(
                             self.building.state_matrix.loc[state, state_other]
-                            * self.problem.variable_state_timeseries[timestep, state_other]
+                            * self.problem.variable_state_vector[timestep, state_other]
                             for state_other in self.building.states
                         )
                         + sum(
                             self.building.control_matrix.loc[state, control]
-                            * self.problem.variable_control_timeseries[timestep, control]
+                            * self.problem.variable_control_vector[timestep, control]
                             for control in self.building.controls
                         )
                         + sum(
@@ -121,17 +121,17 @@ class OptimizationProblem(object):
         for output in self.building.outputs:
             for timestep in self.building.timesteps:
                 self.problem.constraints.add(
-                    self.problem.variable_output_timeseries[timestep, output]
+                    self.problem.variable_output_vector[timestep, output]
                     ==
                     (
                         sum(
                             self.building.state_output_matrix.loc[output, state]
-                            * self.problem.variable_state_timeseries[timestep, state]
+                            * self.problem.variable_state_vector[timestep, state]
                             for state in self.building.states
                         )
                         + sum(
                             self.building.control_output_matrix.loc[output, control]
-                            * self.problem.variable_control_timeseries[timestep, control]
+                            * self.problem.variable_control_vector[timestep, control]
                             for control in self.building.controls
                         )
                         + sum(
@@ -147,7 +147,7 @@ class OptimizationProblem(object):
             for timestep in self.building.timesteps:
                 # Minimum.
                 self.problem.constraints.add(
-                    self.problem.variable_output_timeseries[timestep, output]
+                    self.problem.variable_output_vector[timestep, output]
                     >=
                     self.building.output_constraint_timeseries_minimum.loc[timestep, output]
                 )
@@ -160,21 +160,21 @@ class OptimizationProblem(object):
                     # Storage planning constraints.
                     if 'sensible' in self.building.building_data.scenarios['building_storage_type']:
                         self.problem.constraints.add(
-                            self.problem.variable_output_timeseries[timestep, output]
+                            self.problem.variable_output_vector[timestep, output]
                             <=
                             self.problem.variable_storage_size[0]
                             * self.building.parse_parameter('water_density')
                         )
                     elif 'battery' in self.building.building_data.scenarios['building_storage_type']:
                         self.problem.constraints.add(
-                            self.problem.variable_output_timeseries[timestep, output]
+                            self.problem.variable_output_vector[timestep, output]
                             <=
                             self.problem.variable_storage_size[0]
                             * self.building.building_data.scenarios['storage_battery_depth_of_discharge']
                         )
                 else:
                     self.problem.constraints.add(
-                        self.problem.variable_output_timeseries[timestep, output]
+                        self.problem.variable_output_vector[timestep, output]
                         <=
                         self.building.output_constraint_timeseries_maximum.loc[timestep, output]
                     )
@@ -185,7 +185,7 @@ class OptimizationProblem(object):
                 # Storage peak demand constraint.
                 self.problem.constraints.add(
                     sum(
-                        self.problem.variable_output_timeseries[timestep, output]
+                        self.problem.variable_output_vector[timestep, output]
                         if ('storage_charge' in output) and ('electric_power' in output) else 0.0
                         for output in self.building.outputs
                     )
@@ -211,7 +211,7 @@ class OptimizationProblem(object):
                     # TODO: Introduce total electric demand in building outputs.
                     self.problem.constraints.add(
                         sum(
-                            self.problem.variable_output_timeseries[timestep, output]
+                            self.problem.variable_output_vector[timestep, output]
                             if (('electric_power' in output) and not ('storage_to_zone' in output)) else 0.0
                             for output in self.building.outputs
                         )
@@ -219,7 +219,7 @@ class OptimizationProblem(object):
                         (
                             (1.0 - (self.problem.variable_load_reduction[0] / 100.0))
                             * sum(
-                                self.output_timeseries_reference.loc[timestep, output]
+                                self.output_vector_reference.loc[timestep, output]
                                 if (('electric_power' in output) and not ('storage_to_zone' in output)) else 0.0
                                 for output in self.building.outputs
                             )
@@ -259,7 +259,7 @@ class OptimizationProblem(object):
             for output in self.building.outputs:
                 if ('electric_power' in output) and not ('storage_to_zone' in output):
                     self.operation_cost += (
-                        self.problem.variable_output_timeseries[timestep, output]
+                        self.problem.variable_output_vector[timestep, output]
                         * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
                         * self.electricity_price_timeseries.loc[timestep, 'price']
                         * self.operation_cost_factor
@@ -315,33 +315,33 @@ class OptimizationProblem(object):
 
         # Retrieve results.
         time_start = time.clock()
-        control_timeseries = pd.DataFrame(
+        control_vector = pd.DataFrame(
             0.0,
             self.building.timesteps,
             self.building.controls
         )
-        state_timeseries = pd.DataFrame(
+        state_vector = pd.DataFrame(
             0.0,
             self.building.timesteps,
             self.building.states
         )
-        output_timeseries = pd.DataFrame(
+        output_vector = pd.DataFrame(
             0.0,
             self.building.timesteps,
             self.building.outputs
         )
         for timestep in self.building.timesteps:
             for control in self.building.controls:
-                control_timeseries.at[timestep, control] = (
-                    self.problem.variable_control_timeseries[timestep, control].value
+                control_vector.at[timestep, control] = (
+                    self.problem.variable_control_vector[timestep, control].value
                 )
             for state in self.building.states:
-                state_timeseries.at[timestep, state] = (
-                    self.problem.variable_state_timeseries[timestep, state].value
+                state_vector.at[timestep, state] = (
+                    self.problem.variable_state_vector[timestep, state].value
                 )
             for output in self.building.outputs:
-                output_timeseries.at[timestep, output] = (
-                    self.problem.variable_output_timeseries[timestep, output].value
+                output_vector.at[timestep, output] = (
+                    self.problem.variable_output_vector[timestep, output].value
                 )
 
         # Retrieve objective / cost values.
@@ -366,9 +366,9 @@ class OptimizationProblem(object):
         logger.debug("OptimizationProblem results compilation time: {:.2f} seconds".format(time.clock() - time_start))
 
         return (
-            control_timeseries,
-            state_timeseries,
-            output_timeseries,
+            control_vector,
+            state_vector,
+            output_vector,
             operation_cost,
             investment_cost,
             storage_size

@@ -4162,7 +4162,7 @@ class BuildingModel(object):
     def simulate(
             self,
             state_initial,
-            control_timeseries,
+            control_vector,
             disturbance_timeseries=None
     ):
         """Simulate building model with given initial state and control timeseries.
@@ -4176,13 +4176,13 @@ class BuildingModel(object):
             disturbance_timeseries = self.disturbance_timeseries
 
         # Initialize state and output timeseries
-        state_timeseries = pd.DataFrame(
+        state_vector = pd.DataFrame(
             np.nan,
             self.timesteps,
             self.states
         )
-        state_timeseries.iloc[0, :] = state_initial
-        output_timeseries = pd.DataFrame(
+        state_vector.iloc[0, :] = state_initial
+        output_vector = pd.DataFrame(
             np.nan,
             self.timesteps,
             self.outputs
@@ -4190,20 +4190,20 @@ class BuildingModel(object):
 
         # Iterative simulation of state space equations
         for timestep in range(len(self.timesteps) - 1):
-            state_timeseries.iloc[timestep + 1, :] = (
-                np.dot(self.state_matrix.values, state_timeseries.iloc[timestep, :].values)
-                + np.dot(self.control_matrix.values, control_timeseries.iloc[timestep, :].values)
+            state_vector.iloc[timestep + 1, :] = (
+                np.dot(self.state_matrix.values, state_vector.iloc[timestep, :].values)
+                + np.dot(self.control_matrix.values, control_vector.iloc[timestep, :].values)
                 + np.dot(self.disturbance_matrix.values, disturbance_timeseries.iloc[timestep, :].values)
             )
         for timestep in range(1, len(self.timesteps)):
             # TODO: Check `timestep - 1` (This was added to match with EnergyPlus outputs)
-            output_timeseries.iloc[timestep - 1, :] = (
-                np.dot(self.state_output_matrix.values, state_timeseries.iloc[timestep, :].values)
-                + np.dot(self.control_output_matrix.values, control_timeseries.iloc[timestep, :].values)
+            output_vector.iloc[timestep - 1, :] = (
+                np.dot(self.state_output_matrix.values, state_vector.iloc[timestep, :].values)
+                + np.dot(self.control_output_matrix.values, control_vector.iloc[timestep, :].values)
                 + np.dot(self.disturbance_output_matrix.values, disturbance_timeseries.iloc[timestep, :].values)
             )
 
         return (
-            state_timeseries,
-            output_timeseries
+            state_vector,
+            output_vector
         )

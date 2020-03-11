@@ -43,9 +43,9 @@ controller_baseline = cobmo.optimization_problem.OptimizationProblem(
     building
 )
 (
-    control_timeseries_baseline,
-    state_timeseries_baseline,
-    output_timeseries_baseline,
+    control_vector_baseline,
+    state_vector_baseline,
+    output_vector_baseline,
     operation_cost_baseline,
     investment_cost_baseline,  # Zero when running (default) operation problem.
     storage_size_baseline  # Zero when running (default) operation problem.
@@ -55,9 +55,9 @@ controller_baseline = cobmo.optimization_problem.OptimizationProblem(
 print("operation_cost_baseline = {}".format(operation_cost_baseline))
 
 # Save controller timeseries to CSV for debugging.
-control_timeseries_baseline.to_csv(os.path.join(results_path, 'control_timeseries_baseline.csv'))
-state_timeseries_baseline.to_csv(os.path.join(results_path, 'state_timeseries_baseline.csv'))
-output_timeseries_baseline.to_csv(os.path.join(results_path, 'output_timeseries_baseline.csv'))
+control_vector_baseline.to_csv(os.path.join(results_path, 'control_vector_baseline.csv'))
+state_vector_baseline.to_csv(os.path.join(results_path, 'state_vector_baseline.csv'))
+output_vector_baseline.to_csv(os.path.join(results_path, 'output_vector_baseline.csv'))
 
 # Instantiate load reduction iteration variables.
 set_price_factors = pd.Index(np.concatenate([np.arange(0.0, 1.0, 0.25), np.arange(1.0, 25.0, 5.0)]))
@@ -73,7 +73,7 @@ for price_factor in set_price_factors:
     for timestep in timesteps:
         # TODO: Check if this condition is necessary.
         if (
-            output_timeseries_baseline.loc[timestep, output_timeseries_baseline.columns.str.contains('electric_power')]
+            output_vector_baseline.loc[timestep, output_vector_baseline.columns.str.contains('electric_power')]
             == 0.0
         ).all():
             continue  # Skip loop if there is no baseline demand in the start timestep (no reduction possible).
@@ -89,30 +89,30 @@ for price_factor in set_price_factors:
                 price_sensitivity_timestep=timestep
             )
             (
-                control_timeseries_price_sensitivity,
-                state_timeseries_price_sensitivity,
-                output_timeseries_price_sensitivity,
+                control_vector_price_sensitivity,
+                state_vector_price_sensitivity,
+                output_vector_price_sensitivity,
                 operation_cost_price_sensitivity,
                 investment_cost_price_sensitivity,  # Represents load reduction.
                 storage_size_price_sensitivity
             ) = controller_price_sensitivity.solve()
 
             # Save controller timeseries to CSV for debugging.
-            control_timeseries_price_sensitivity.to_csv(os.path.join(
-                results_path, 'details', '{} - {} control_timeseries.csv'.format(price_factor, timestep).replace(':', '-')
+            control_vector_price_sensitivity.to_csv(os.path.join(
+                results_path, 'details', '{} - {} control_vector.csv'.format(price_factor, timestep).replace(':', '-')
             ))
-            state_timeseries_price_sensitivity.to_csv(os.path.join(
-                results_path, 'details', '{} - {} state_timeseries.csv'.format(price_factor, timestep).replace(':', '-')
+            state_vector_price_sensitivity.to_csv(os.path.join(
+                results_path, 'details', '{} - {} state_vector.csv'.format(price_factor, timestep).replace(':', '-')
             ))
-            output_timeseries_price_sensitivity.to_csv(os.path.join(
-                results_path, 'details', '{} - {} output_timeseriesd.csv'.format(price_factor, timestep).replace(':', '-')
+            output_vector_price_sensitivity.to_csv(os.path.join(
+                results_path, 'details', '{} - {} output_vectord.csv'.format(price_factor, timestep).replace(':', '-')
             ))
 
             # Plot demand comparison for debugging.
             electric_power_comparison = pd.concat(
                 [
-                    output_timeseries_baseline.loc[:, output_timeseries_baseline.columns.str.contains('electric_power')].sum(axis=1),
-                    output_timeseries_price_sensitivity.loc[:, output_timeseries_price_sensitivity.columns.str.contains('electric_power')].sum(axis=1),
+                    output_vector_baseline.loc[:, output_vector_baseline.columns.str.contains('electric_power')].sum(axis=1),
+                    output_vector_price_sensitivity.loc[:, output_vector_price_sensitivity.columns.str.contains('electric_power')].sum(axis=1),
                 ],
                 keys=[
                     'baseline',
@@ -154,15 +154,15 @@ for price_factor in set_price_factors:
 
             # Calculate results.
             baseline_power = (
-                output_timeseries_baseline.loc[
+                output_vector_baseline.loc[
                     timestep,
-                    output_timeseries_baseline.columns.str.contains('electric_power')
+                    output_vector_baseline.columns.str.contains('electric_power')
                 ].sum()
             )
             price_sensitivity_power = (
-                output_timeseries_price_sensitivity.loc[
+                output_vector_price_sensitivity.loc[
                     timestep,
-                    output_timeseries_price_sensitivity.columns.str.contains('electric_power')
+                    output_vector_price_sensitivity.columns.str.contains('electric_power')
                 ].sum()
             )
             load_change_percent = (
