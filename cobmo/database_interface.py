@@ -89,6 +89,9 @@ class BuildingData(object):
     building_surfaces_interior: pd.DataFrame
     building_zones: pd.DataFrame
     building_zone_constraint_profiles_dict: dict
+    weather_timeseries: pd.DataFrame
+    building_internal_gain_timeseries: pd.DataFrame
+    electricity_price_timeseries: pd.DataFrame
 
     @ multimethod
     def __init__(
@@ -147,10 +150,13 @@ class BuildingData(object):
                 JOIN building_surface_types USING (surface_type) 
                 LEFT JOIN building_window_types USING (window_type) 
                 JOIN building_zones USING (zone_name, building_name) 
-                WHERE building_name = ?
+                WHERE building_name = (
+                    SELECT building_name from building_scenarios 
+                    WHERE scenario_name = ?
+                )
                 """,
                 con=database_connection,
-                params=[self.building_scenarios['building_name']]
+                params=[scenario_name]
             )
         )
         self.building_surfaces_adiabatic.index = self.building_surfaces_adiabatic['surface_name']
@@ -161,10 +167,13 @@ class BuildingData(object):
                 JOIN building_surface_types USING (surface_type) 
                 LEFT JOIN building_window_types USING (window_type) 
                 JOIN building_zones USING (zone_name, building_name) 
-                WHERE building_name = ?
+                WHERE building_name = (
+                    SELECT building_name from building_scenarios 
+                    WHERE scenario_name = ?
+                )
                 """,
                 con=database_connection,
-                params=[self.building_scenarios['building_name']]
+                params=[self.scenario_name]
             )
         )
         self.building_surfaces_exterior.index = self.building_surfaces_exterior['surface_name']
@@ -175,10 +184,13 @@ class BuildingData(object):
                 JOIN building_surface_types USING (surface_type) 
                 LEFT JOIN building_window_types USING (window_type) 
                 JOIN building_zones USING (zone_name, building_name) 
-                WHERE building_name = ?
+                WHERE building_name = (
+                    SELECT building_name from building_scenarios 
+                    WHERE scenario_name = ?
+                )
                 """,
                 con=database_connection,
-                params=[self.building_scenarios['building_name']]
+                params=[self.scenario_name]
             )
         )
         self.building_surfaces_interior.index = self.building_surfaces_interior['surface_name']
@@ -193,10 +205,13 @@ class BuildingData(object):
                 LEFT JOIN building_hvac_radiator_types USING (hvac_radiator_type) 
                 LEFT JOIN building_hvac_ahu_types USING (hvac_ahu_type) 
                 LEFT JOIN building_hvac_tu_types USING (hvac_tu_type) 
-                WHERE building_name = ?
+                WHERE building_name = (
+                    SELECT building_name from building_scenarios 
+                    WHERE scenario_name = ?
+                )
                 """,
                 con=database_connection,
-                params=[self.building_scenarios['building_name']]
+                params=[self.scenario_name]
             )
         )
         self.building_zones.index = self.building_zones['zone_name']
@@ -339,3 +354,78 @@ class BuildingData(object):
                     :, building_zone_constraint_profiles_numerical_columns
                 ].apply(parse_parameter)
             )
+
+        # Load timeseries data.
+        self.weather_timeseries = (
+            pd.read_sql(
+                """
+                SELECT * FROM weather_timeseries 
+                WHERE weather_type = (
+                    SELECT weather_type from building_scenarios 
+                    JOIN buildings USING (building_name)
+                    WHERE scenario_name = ?
+                )
+                """,
+                con=database_connection,
+                params=[self.scenario_name],
+                parse_dates=['time']
+            )
+        )
+        self.weather_timeseries.index = self.weather_timeseries['time']
+        self.building_internal_gain_timeseries = pd.read_sql(
+            """
+            SELECT * FROM building_internal_gain_timeseries 
+            WHERE internal_gain_type IN (
+                SELECT DISTINCT internal_gain_type FROM building_zones
+                JOIN building_zone_types USING (zone_type) 
+                WHERE building_name = (
+                    SELECT building_name from building_scenarios 
+                    WHERE scenario_name = ?
+                )
+            )
+            """,
+            con=database_connection,
+            params=[self.scenario_name],
+            parse_dates=['time']
+        )
+        self.electricity_price_timeseries = (
+            pd.read_sql(
+                """
+                SELECT * FROM electricity_price_timeseries 
+                WHERE price_type = (
+                    SELECT price_type from building_scenarios 
+                    WHERE scenario_name = ?
+                )
+                """,
+                con=database_connection,
+                params=[self.scenario_name],
+                parse_dates=['time']
+            )
+        )
+        self.electricity_price_timeseries.index = self.electricity_price_timeseries['time']
+
+        # Pivot internal gain timeseries, to get one `_occupancy` / `_appliances` for each `internal_gain_type`.
+        building_internal_gain_occupancy_timeseries = self.building_internal_gain_timeseries.pivot(
+            index='time',
+            columns='internal_gain_type',
+            values='internal_gain_occupancy'
+        )
+        building_internal_gain_occupancy_timeseries.columns = (
+            building_internal_gain_occupancy_timeseries.columns + '_occupancy'
+        )
+        building_internal_gain_appliances_timeseries = self.building_internal_gain_timeseries.pivot(
+            index='time',
+            columns='internal_gain_type',
+            values='internal_gain_appliances'
+        )
+        building_internal_gain_appliances_timeseries.columns = (
+            building_internal_gain_appliances_timeseries.columns + '_appliances'
+        )
+        self.building_internal_gain_timeseries = pd.concat(
+            [
+                building_internal_gain_occupancy_timeseries,
+                building_internal_gain_appliances_timeseries
+            ],
+            axis='columns'
+        )
+        self.building_internal_gain_timeseries.index = pd.to_datetime(self.building_internal_gain_timeseries.index)

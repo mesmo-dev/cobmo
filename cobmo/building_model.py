@@ -3812,71 +3812,12 @@ class BuildingModel(object):
                     'grid_thermal_power_heating'
                 ] = 1.0
 
-        def load_disturbance_timeseries():
+        def define_disturbance_timeseries():
 
-            # Load weather timeseries
-            weather_timeseries = pd.read_sql(
-                """
-                SELECT * FROM weather_timeseries 
-                WHERE weather_type='{}'
-                AND time BETWEEN '{}' AND '{}'
-                """.format(
-                    self.building_data.building_scenarios['weather_type'],
-                    self.timestep_start.strftime('%Y-%m-%dT%H:%M:%S'),
-                    self.timestep_end.strftime('%Y-%m-%dT%H:%M:%S')
-                ),
-                database_connection
-            )
-            weather_timeseries.index = pd.to_datetime(weather_timeseries['time'])
-
-            # Load internal gain timeseries
-            building_internal_gain_timeseries = pd.read_sql(
-                """
-                SELECT * FROM building_internal_gain_timeseries 
-                WHERE internal_gain_type IN ({})
-                AND time BETWEEN '{}' AND '{}'
-                """.format(
-                    ", ".join([
-                        "'{}'".format(data_set_name)
-                        for data_set_name in self.building_data.building_zones['internal_gain_type'].unique()
-                    ]),
-                    self.timestep_start.strftime('%Y-%m-%dT%H:%M:%S'),
-                    self.timestep_end.strftime('%Y-%m-%dT%H:%M:%S')
-                ),
-                database_connection
-            )
-
-            # Pivot internal gain timeseries, so there is one `_occupancy` & one `_appliances` for each `internal_gain_type`
-            building_internal_gain_occupancy_timeseries = building_internal_gain_timeseries.pivot(
-                index='time',
-                columns='internal_gain_type',
-                values='internal_gain_occupancy'
-            )
-            building_internal_gain_occupancy_timeseries.columns = (
-                    building_internal_gain_occupancy_timeseries.columns + '_occupancy'
-            )
-            building_internal_gain_appliances_timeseries = building_internal_gain_timeseries.pivot(
-                index='time',
-                columns='internal_gain_type',
-                values='internal_gain_appliances'
-            )
-            building_internal_gain_appliances_timeseries.columns = (
-                    building_internal_gain_appliances_timeseries.columns + '_appliances'
-            )
-            building_internal_gain_timeseries = pd.concat(
-                [
-                    building_internal_gain_occupancy_timeseries,
-                    building_internal_gain_appliances_timeseries
-                ],
-                axis='columns'
-            )
-            building_internal_gain_timeseries.index = pd.to_datetime(building_internal_gain_timeseries.index)
-
-            # Reindex, interpolate and construct full disturbance timeseries
-            # TODO: Initialize disturbance_timeseries in _init_
+            # Reindex, interpolate and construct full disturbance timeseries.
             self.disturbance_timeseries = pd.concat(
                 [
-                    weather_timeseries[[
+                    self.building_data.weather_timeseries[[
                         'ambient_air_temperature',
                         'sky_temperature',
                         'irradiation_horizontal',
@@ -3894,7 +3835,7 @@ class BuildingModel(object):
                     ).ffill(
                         limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
                     ),
-                    building_internal_gain_timeseries.reindex(
+                    self.building_data.building_internal_gain_timeseries.reindex(
                         self.set_timesteps
                     ).interpolate(
                         'quadratic'
@@ -3914,32 +3855,20 @@ class BuildingModel(object):
                 axis='columns',
             ).rename_axis('disturbance_name', axis='columns')
 
-        def load_electricity_price_timeseries():
+        def define_electricity_price_timeseries():
 
             if pd.isnull(self.building_data.building_scenarios['price_type']):
                 # If no price_type defined, generate a flat price signal.
                 self.electricity_price_timeseries = (
                     pd.DataFrame(
-                        [[None, 1.0]],
-                        columns=['price_type', 'price'],
+                        [[None, None, 1.0]],
+                        columns=['time', 'price_type', 'price'],
                         index=self.set_timesteps
                     )
                 )
+                self.electricity_price_timeseries['time'] = self.set_timesteps
             else:
-                self.electricity_price_timeseries = (
-                    pd.read_sql(
-                        """
-                        SELECT * FROM electricity_price_timeseries 
-                        WHERE price_type=(
-                            SELECT price_type from building_scenarios 
-                            WHERE scenario_name='{}'
-                        )
-                        """.format(self.scenario_name),
-                        database_connection,
-                        index_col='time',
-                        parse_dates=['time']
-                    )
-                )
+                self.electricity_price_timeseries = self.building_data.electricity_price_timeseries
 
                 # Reindex / interpolate to match set_timesteps.
                 self.electricity_price_timeseries.reindex(
@@ -3953,7 +3882,6 @@ class BuildingModel(object):
                 )
 
         def define_output_constraint_timeseries():
-            """Generate minimum/maximum constraint timeseries based on `building_zone_constraint_profiles`."""
             # TODO: Make construction / interpolation simpler and more efficient.
 
             # Initialise constraint timeseries as +/- infinity.
@@ -4084,20 +4012,20 @@ class BuildingModel(object):
                                     timestep,
                                     zone_name + '_total_fresh_air_flow'
                                 ] = (
-                                        building_zone_constraint_profile['minimum_fresh_air_flow_per_person'][
-                                            int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                    building_zone_constraint_profile['minimum_fresh_air_flow_per_person'][
+                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                    ]
+                                    * (
+                                        self.disturbance_timeseries[
+                                            self.building_data.building_zones["internal_gain_type"].loc[zone_name] + "_occupancy"
+                                        ].loc[timestep] * zone_data['zone_area']
+                                        + building_zone_constraint_profile['minimum_fresh_air_flow_per_area'][
+                                            int(constraint_profile_index_time(
+                                                timestep.to_datetime64().astype('int64')
+                                            ))
                                         ]
-                                        * (
-                                            self.disturbance_timeseries[
-                                                self.building_data.building_zones["internal_gain_type"].loc[zone_name] + "_occupancy"
-                                            ].loc[timestep] * zone_data['zone_area']
-                                            + building_zone_constraint_profile['minimum_fresh_air_flow_per_area'][
-                                                int(constraint_profile_index_time(
-                                                    timestep.to_datetime64().astype('int64')
-                                                ))
-                                            ]
-                                            * zone_data['zone_area']
-                                        )
+                                        * zone_data['zone_area']
+                                    )
                                 )
                         else:
                             if pd.notnull(zone_data['hvac_ahu_type']):
@@ -4276,8 +4204,8 @@ class BuildingModel(object):
         define_output_surfaces_exterior_convection_interior()
 
         # Define timeseries.
-        load_disturbance_timeseries()
-        load_electricity_price_timeseries()
+        define_disturbance_timeseries()
+        define_electricity_price_timeseries()
         define_output_constraint_timeseries()
 
         # Convert to time discrete model.
