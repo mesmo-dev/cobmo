@@ -541,34 +541,6 @@ class BuildingModel(object):
             self.set_disturbances
         )
 
-        # Define heat capacity vector.
-        # TODO: Move heat capacity calculation to `coefficients define_coefficients_...`.
-        self.heat_capacity_vector = pd.Series(
-            0.0,
-            self.set_states
-        )
-        for zone_name, zone_data in self.building_data.zones.iterrows():
-            self.heat_capacity_vector.at[zone_name] = (
-                zone_data['zone_area']
-                * zone_data['zone_height']
-                * zone_data['heat_capacity']
-            )
-        for surface_name, surface_data in self.building_data.surfaces_adiabatic.iterrows():
-            self.heat_capacity_vector.at[surface_name] = (
-                surface_data['surface_area']
-                * surface_data['heat_capacity']
-            )
-        for surface_name, surface_data in self.building_data.surfaces_exterior.iterrows():
-            self.heat_capacity_vector.at[surface_name] = (
-                surface_data['surface_area']
-                * surface_data['heat_capacity']
-            )
-        for surface_name, surface_data in self.building_data.surfaces_interior.iterrows():
-            self.heat_capacity_vector.at[surface_name] = (
-                surface_data['surface_area']
-                * surface_data['heat_capacity']
-            )
-
         # Instantiate other model properties / variables.
         self.set_state_initial = pd.Series(
             0.0,
@@ -629,6 +601,13 @@ class BuildingModel(object):
         def calculate_coefficients_zone():
             """Calculate zone parameters / heat transfer coefficients for use in, e.g., surface and radiator models."""
 
+            # Calculate absolute heat capacity from specific heat capacity.
+            self.building_data.zones['heat_capacity'] = (
+                self.building_data.zones['zone_area']
+                * self.building_data.zones['zone_height']
+                * self.building_data.zones['heat_capacity']
+            )
+
             # Instantiate columns for parameters / heat transfer coefficients.
             self.building_data.zones['zone_surfaces_wall_area'] = None
             self.building_data.zones['zone_surfaces_window_area'] = None
@@ -685,6 +664,20 @@ class BuildingModel(object):
 
         def calculate_coefficients_surface():
             """Calculate heat transfer coefficients for the surface models."""
+
+            # Calculate absolute heat capacity from specific heat capacity.
+            self.building_data.surfaces_adiabatic['heat_capacity'] = (
+                self.building_data.surfaces_adiabatic['surface_area']
+                * self.building_data.surfaces_adiabatic['heat_capacity']
+            )
+            self.building_data.surfaces_exterior['heat_capacity'] = (
+                self.building_data.surfaces_exterior['surface_area']
+                * self.building_data.surfaces_exterior['heat_capacity']
+            )
+            self.building_data.surfaces_interior['heat_capacity'] = (
+                self.building_data.surfaces_interior['surface_area']
+                * self.building_data.surfaces_interior['heat_capacity']
+            )
 
             # Instantiate columns for heat transfer coefficients.
             self.building_data.surfaces_exterior['heat_transfer_coefficient_surface_sky'] = None
@@ -953,7 +946,7 @@ class BuildingModel(object):
                                 * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_name]
+                        / surface_data['heat_capacity']
                     )
                     self.disturbance_matrix.at[
                         surface_name + '_temperature',
@@ -977,7 +970,7 @@ class BuildingModel(object):
                                 * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_name]
+                        / surface_data['heat_capacity']
                     )
                     self.disturbance_matrix.at[
                         surface_name + '_temperature',
@@ -998,7 +991,7 @@ class BuildingModel(object):
                                 * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_name]
+                        / surface_data['heat_capacity']
                     )
                     self.state_matrix.at[
                         surface_name + '_temperature',
@@ -1020,7 +1013,7 @@ class BuildingModel(object):
                                 * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_name]
+                        / surface_data['heat_capacity']
                     )
 
                     # Conductive heat transfer from the interior towards the core of surface
@@ -1037,7 +1030,7 @@ class BuildingModel(object):
                             (
                                 zone_exterior_surface_data['surface_area']
                                 * zone_exterior_surface_data['window_wall_ratio']
-                                / self.building_data.zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
+                                / self.building_data.zones.at[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
                             * surface_data['absorptivity']
                             * surface_data['surface_area']
@@ -1052,7 +1045,7 @@ class BuildingModel(object):
                                     * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1)
-                            / self.heat_capacity_vector[surface_name]
+                            / surface_data['heat_capacity']
                         )
                     self.state_matrix.at[
                         surface_name + '_temperature',
@@ -1072,7 +1065,7 @@ class BuildingModel(object):
                                 * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_name]
+                        / surface_data['heat_capacity']
                     )
                     self.state_matrix.at[
                         surface_name + '_temperature',
@@ -1091,7 +1084,7 @@ class BuildingModel(object):
                                 * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_name]
+                        / surface_data['heat_capacity']
                     )
 
                     # Convective heat transfer from the surface towards zone
@@ -1108,7 +1101,7 @@ class BuildingModel(object):
                             (
                                 zone_exterior_surface_data['surface_area']
                                 * zone_exterior_surface_data['window_wall_ratio']
-                                / self.building_data.zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
+                                / self.building_data.zones.at[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
                             * surface_data['absorptivity']
                             * surface_data['surface_area']
@@ -1123,7 +1116,7 @@ class BuildingModel(object):
                                     * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1))
-                            / self.heat_capacity_vector[surface_data['zone_name']]
+                            / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                         )
                     self.state_matrix.at[
                         surface_data['zone_name'] + '_temperature',
@@ -1142,7 +1135,7 @@ class BuildingModel(object):
                                 * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_data['zone_name']]
+                        / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
                     self.state_matrix.at[
                         surface_data['zone_name'] + '_temperature',
@@ -1162,7 +1155,7 @@ class BuildingModel(object):
                                 * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_data['zone_name']]
+                        / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
                 else:  # Surfaces with neglected heat capacity
                     # Complete convective heat transfer from surface to zone
@@ -1188,7 +1181,7 @@ class BuildingModel(object):
                             )
                             / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_data['zone_name']]
+                        / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
                     self.disturbance_matrix.at[
                         surface_data['zone_name'] + '_temperature',
@@ -1215,7 +1208,7 @@ class BuildingModel(object):
                             )
                             / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_data['zone_name']]
+                        / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
                     self.disturbance_matrix.at[
                         surface_data['zone_name'] + '_temperature',
@@ -1239,7 +1232,7 @@ class BuildingModel(object):
                             )
                             / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_data['zone_name']]
+                        / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
                     self.state_matrix.at[
                         surface_data['zone_name'] + '_temperature',
@@ -1260,7 +1253,7 @@ class BuildingModel(object):
                             + 1.0
                             / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_data['zone_name']]
+                        / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
                     for zone_exterior_surface_name, zone_exterior_surface_data in (
                             self.building_data.surfaces_exterior[
@@ -1275,7 +1268,7 @@ class BuildingModel(object):
                             (
                                 zone_exterior_surface_data['surface_area']
                                 * zone_exterior_surface_data['window_wall_ratio']
-                                / self.building_data.zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
+                                / self.building_data.zones.at[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
                             * surface_data['absorptivity']
                             * surface_data['surface_area']
@@ -1295,7 +1288,7 @@ class BuildingModel(object):
                                 )
                                 / (surface_data['thermal_resistance_surface'] ** (- 1))
                             ) ** (- 1))
-                            / self.heat_capacity_vector[surface_data['zone_name']]
+                            / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                         )
 
                 # Windows for each exterior surface - Modelled as surfaces with neglected heat capacity
@@ -1323,7 +1316,7 @@ class BuildingModel(object):
                             )
                             / (surface_data['thermal_resistance_window'] ** (- 1))
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_data['zone_name']]
+                        / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
                     self.disturbance_matrix.at[
                         surface_data['zone_name'] + '_temperature',
@@ -1350,7 +1343,7 @@ class BuildingModel(object):
                             )
                             / (surface_data['thermal_resistance_window'] ** (- 1))
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_data['zone_name']]
+                        / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
                     self.disturbance_matrix.at[
                         surface_data['zone_name'] + '_temperature',
@@ -1374,7 +1367,7 @@ class BuildingModel(object):
                             )
                             / (surface_data['thermal_resistance_window'] ** (- 1))
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_data['zone_name']]
+                        / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
                     self.state_matrix.at[
                         surface_data['zone_name'] + '_temperature',
@@ -1395,7 +1388,7 @@ class BuildingModel(object):
                             + 1.0
                             / (surface_data['thermal_resistance_window'] ** (- 1))
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_data['zone_name']]
+                        / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
                     for zone_exterior_surface_name, zone_exterior_surface_data in (
                             self.building_data.surfaces_exterior[
@@ -1410,7 +1403,7 @@ class BuildingModel(object):
                             (
                                 zone_exterior_surface_data['surface_area']
                                 * zone_exterior_surface_data['window_wall_ratio']
-                                / self.building_data.zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
+                                / self.building_data.zones.at[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
                             * surface_data['absorptivity_window']
                             * surface_data['surface_area']
@@ -1430,7 +1423,7 @@ class BuildingModel(object):
                                 )
                                 / (surface_data['thermal_resistance_window'] ** (- 1))
                             ) ** (- 1))
-                            / self.heat_capacity_vector[surface_data['zone_name']]
+                            / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                         )
 
         def define_heat_transfer_surfaces_interior():
@@ -1453,7 +1446,7 @@ class BuildingModel(object):
                                 (
                                     zone_exterior_surface_data['surface_area']
                                     * zone_exterior_surface_data['window_wall_ratio']
-                                    / self.building_data.zones.loc[zone_name, 'zone_surfaces_wall_area']
+                                    / self.building_data.zones.at[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
                                 * surface_data['absorptivity']
                                 * surface_data['surface_area']
@@ -1466,7 +1459,7 @@ class BuildingModel(object):
                                         * surface_data['thermal_resistance_surface'] ** (- 1)
                                     )
                                 ) ** (- 1)
-                                / self.heat_capacity_vector[surface_name]
+                                / surface_data['heat_capacity']
                             )
                         self.state_matrix.at[
                             surface_name + '_temperature',
@@ -1484,7 +1477,7 @@ class BuildingModel(object):
                                     * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1)
-                            / self.heat_capacity_vector[surface_name]
+                            / surface_data['heat_capacity']
                         )
                         self.state_matrix.at[
                             surface_name + '_temperature',
@@ -1501,7 +1494,7 @@ class BuildingModel(object):
                                     * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1)
-                            / self.heat_capacity_vector[surface_name]
+                            / surface_data['heat_capacity']
                         )
 
                         # Convective heat transfer from the surface towards zone
@@ -1518,7 +1511,7 @@ class BuildingModel(object):
                                 (
                                     zone_exterior_surface_data['surface_area']
                                     * zone_exterior_surface_data['window_wall_ratio']
-                                    / self.building_data.zones.loc[zone_name, 'zone_surfaces_wall_area']
+                                    / self.building_data.zones.at[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
                                 * surface_data['absorptivity']
                                 * surface_data['surface_area']
@@ -1531,7 +1524,7 @@ class BuildingModel(object):
                                         * surface_data['thermal_resistance_surface'] ** (- 1)
                                     )
                                 ) ** (- 1))
-                                / self.heat_capacity_vector[zone_name]
+                                / self.building_data.zones.at[zone_name, 'heat_capacity']
                             )
                         self.state_matrix.at[
                             zone_name + '_temperature',
@@ -1548,7 +1541,7 @@ class BuildingModel(object):
                                     * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1)
-                            / self.heat_capacity_vector[zone_name]
+                            / self.building_data.zones.at[zone_name, 'heat_capacity']
                         )
                         self.state_matrix.at[
                             zone_name + '_temperature',
@@ -1566,7 +1559,7 @@ class BuildingModel(object):
                                     * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1)
-                            / self.heat_capacity_vector[zone_name]
+                            / self.building_data.zones.at[zone_name, 'heat_capacity']
                         )
                     else:  # Surfaces with neglected heat capacity
                         # Get adjacent / opposite zone_name
@@ -1575,7 +1568,7 @@ class BuildingModel(object):
                         else:
                             zone_adjacent_name = surface_data['zone_name']
 
-                        # Total adjacent zone surface area for later calculating share of interior (indirect) irradiation
+                        # Total adjacent zone surface area for calculating share of interior (indirect) irradiation.
                         zone_adjacent_surface_area = sum(
                             zone_surface_data['surface_area']
                             * (1 - zone_surface_data['window_wall_ratio'])
@@ -1624,7 +1617,7 @@ class BuildingModel(object):
                                     + self.building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / surface_data['thermal_resistance_surface'] ** (- 1)
                                 ) ** (- 1)
-                                / self.heat_capacity_vector[zone_name]
+                                / self.building_data.zones.at[zone_name, 'heat_capacity']
                             )
                         self.state_matrix.at[
                             zone_name + '_temperature',
@@ -1640,7 +1633,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / surface_data['thermal_resistance_surface'] ** (- 1)
                             ) ** (- 1)
-                            / self.heat_capacity_vector[zone_name]
+                            / self.building_data.zones.at[zone_name, 'heat_capacity']
                         )
                         self.state_matrix.at[
                             zone_name + '_temperature',
@@ -1657,7 +1650,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / surface_data['thermal_resistance_surface'] ** (- 1)
                             ) ** (- 1)
-                            / self.heat_capacity_vector[zone_name]
+                            / self.building_data.zones.at[zone_name, 'heat_capacity']
                         )
                         for zone_exterior_surface_name, zone_exterior_surface_data in (
                                 self.building_data.surfaces_exterior[
@@ -1672,7 +1665,7 @@ class BuildingModel(object):
                                 (
                                     zone_exterior_surface_data['surface_area']
                                     * zone_exterior_surface_data['window_wall_ratio']
-                                    / self.building_data.zones.loc[zone_name, 'zone_surfaces_wall_area']
+                                    / self.building_data.zones.at[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
                                 * surface_data['absorptivity']
                                 * surface_data['surface_area']
@@ -1684,7 +1677,7 @@ class BuildingModel(object):
                                     + self.building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / surface_data['thermal_resistance_surface'] ** (- 1)
                                 ) ** (- 1))
-                                / self.heat_capacity_vector[zone_name]
+                                / self.building_data.zones.at[zone_name, 'heat_capacity']
                             )
 
                     # Windows for each interior surface - Modelled as surfaces with neglected heat capacity
@@ -1744,7 +1737,7 @@ class BuildingModel(object):
                                     + self.building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / surface_data['thermal_resistance_window'] ** (- 1)
                                 ) ** (- 1)
-                                / self.heat_capacity_vector[zone_name]
+                                / self.building_data.zones.at[zone_name, 'heat_capacity']
                             )
                         self.state_matrix.at[
                             zone_name + '_temperature',
@@ -1760,7 +1753,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / surface_data['thermal_resistance_window'] ** (- 1)
                             ) ** (- 1)
-                            / self.heat_capacity_vector[zone_name]
+                            / self.building_data.zones.at[zone_name, 'heat_capacity']
                         )
                         self.state_matrix.at[
                             zone_name + '_temperature',
@@ -1777,7 +1770,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / surface_data['thermal_resistance_window'] ** (- 1)
                             ) ** (- 1)
-                            / self.heat_capacity_vector[zone_name]
+                            / self.building_data.zones.at[zone_name, 'heat_capacity']
                         )
                         for zone_exterior_surface_name, zone_exterior_surface_data in (
                                 self.building_data.surfaces_exterior[
@@ -1792,7 +1785,7 @@ class BuildingModel(object):
                                 (
                                     zone_exterior_surface_data['surface_area']
                                     * zone_exterior_surface_data['window_wall_ratio']
-                                    / self.building_data.zones.loc[zone_name, 'zone_surfaces_wall_area']
+                                    / self.building_data.zones.at[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
                                 * surface_data['absorptivity_window']
                                 * surface_data['surface_area']
@@ -1804,7 +1797,7 @@ class BuildingModel(object):
                                     + self.building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / surface_data['thermal_resistance_window'] ** (- 1)
                                 ) ** (- 1))
-                                / self.heat_capacity_vector[zone_name]
+                                / self.building_data.zones.at[zone_name, 'heat_capacity']
                             )
 
         def define_heat_transfer_surfaces_adiabatic():
@@ -1826,7 +1819,7 @@ class BuildingModel(object):
                             (
                                 zone_exterior_surface_data['surface_area']
                                 * zone_exterior_surface_data['window_wall_ratio']
-                                / self.building_data.zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
+                                / self.building_data.zones.at[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
                             * surface_data['absorptivity']
                             * surface_data['surface_area']
@@ -1841,7 +1834,7 @@ class BuildingModel(object):
                                     * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1)
-                            / self.heat_capacity_vector[surface_name]
+                            / surface_data['heat_capacity']
                         )
                     self.state_matrix.at[
                         surface_name + '_temperature',
@@ -1861,7 +1854,7 @@ class BuildingModel(object):
                                 * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_name]
+                        / surface_data['heat_capacity']
                     )
                     self.state_matrix.at[
                         surface_name + '_temperature',
@@ -1880,7 +1873,7 @@ class BuildingModel(object):
                                 * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_name]
+                        / surface_data['heat_capacity']
                     )
 
                     # Convective heat transfer from the surface towards zone
@@ -1897,7 +1890,7 @@ class BuildingModel(object):
                             (
                                 zone_exterior_surface_data['surface_area']
                                 * zone_exterior_surface_data['window_wall_ratio']
-                                / self.building_data.zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
+                                / self.building_data.zones.at[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
                             * surface_data['absorptivity']
                             * surface_data['surface_area']
@@ -1912,7 +1905,7 @@ class BuildingModel(object):
                                     * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1))
-                            / self.heat_capacity_vector[surface_data['zone_name']]
+                            / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                         )
                     self.state_matrix.at[
                         surface_data['zone_name'] + '_temperature',
@@ -1931,7 +1924,7 @@ class BuildingModel(object):
                                 * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_data['zone_name']]
+                        / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
                     self.state_matrix.at[
                         surface_data['zone_name'] + '_temperature',
@@ -1951,7 +1944,7 @@ class BuildingModel(object):
                                 * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
-                        / self.heat_capacity_vector[surface_data['zone_name']]
+                        / self.building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
                 else:  # Surfaces with neglected heat capacity
                     logger.warn(f"Adiabatic surfaces with zero heat capacity have no effect: {surface_name}")
@@ -1967,7 +1960,7 @@ class BuildingModel(object):
                     * self.building_data.parameters['heat_capacity_air']
                     * zone_data['zone_area']
                     * zone_data['zone_height']
-                    / self.heat_capacity_vector[zone_name]
+                    / zone_data['heat_capacity']
                 )
                 self.disturbance_matrix.at[
                     zone_name + '_temperature',
@@ -1977,7 +1970,7 @@ class BuildingModel(object):
                     * self.building_data.parameters['heat_capacity_air']
                     * zone_data['zone_area']
                     * zone_data['zone_height']
-                    / self.heat_capacity_vector[zone_name]
+                    / zone_data['heat_capacity']
                 )
 
         def define_heat_transfer_window_air_flow():
@@ -1993,7 +1986,7 @@ class BuildingModel(object):
                             self.building_data.scenarios['linearization_ambient_air_temperature']
                             - self.building_data.scenarios['linearization_zone_air_temperature_cool']
                         )
-                        / self.heat_capacity_vector[zone_name]
+                        / zone_data['heat_capacity']
                     )
 
         def define_heat_transfer_internal_gains():
@@ -2005,7 +1998,7 @@ class BuildingModel(object):
                 ] += (
                     zone_data['internal_gain_occupancy_factor']
                     * zone_data['zone_area']
-                    / self.heat_capacity_vector[zone_name]
+                    / zone_data['heat_capacity']
                 )
                 self.disturbance_matrix.at[
                     zone_name + '_temperature',
@@ -2013,7 +2006,7 @@ class BuildingModel(object):
                 ] += (
                     zone_data['internal_gain_appliances_factor']
                     * zone_data['zone_area']
-                    / self.heat_capacity_vector[zone_name]
+                    / zone_data['heat_capacity']
                 )
 
         def define_heat_transfer_hvac_generic():
@@ -2025,14 +2018,14 @@ class BuildingModel(object):
                         zone_name + '_generic_heat_thermal_power'
                     ] += (
                         1.0
-                        / self.heat_capacity_vector[zone_name]
+                        / zone_data['heat_capacity']
                     )
                     self.control_matrix.at[
                         zone_name + '_temperature',
                         zone_name + '_generic_cool_thermal_power'
                     ] += (
                         - 1.0
-                        / self.heat_capacity_vector[zone_name]
+                        / zone_data['heat_capacity']
                     )
 
         def define_heat_transfer_hvac_radiator():
@@ -2216,7 +2209,7 @@ class BuildingModel(object):
                 ] += (
                     1.0
                     / self.building_data.zones.loc[zones_index, 'thermal_resistance_radiator_front_zone']
-                    / self.heat_capacity_vector[self.building_data.zones.loc[zones_index, 'zone_name']]
+                    / self.building_data.zones.loc[zones_index, 'heat_capacity']
                 ).values
                 self.state_matrix.loc[
                     self.building_data.zones.loc[zones_index, 'zone_name'] + '_temperature',
@@ -2224,7 +2217,7 @@ class BuildingModel(object):
                 ] += (
                     - 1.0
                     / self.building_data.zones.loc[zones_index, 'thermal_resistance_radiator_front_zone']
-                    / self.heat_capacity_vector[self.building_data.zones.loc[zones_index, 'zone_name']]
+                    / self.building_data.zones.loc[zones_index, 'heat_capacity']
                 ).values
 
                 if zones_2_panels_index.any():
@@ -2251,7 +2244,7 @@ class BuildingModel(object):
                     ] += (
                         1.0
                         / self.building_data.zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_panel_1_rear_zone']
-                        / self.heat_capacity_vector[self.building_data.zones.loc[zones_2_panels_index, 'zone_name']]
+                        / self.building_data.zones.loc[zones_2_panels_index, 'heat_capacity']
                     ).values
                     self.state_matrix.loc[
                         self.building_data.zones.loc[zones_2_panels_index, 'zone_name'] + '_temperature',
@@ -2259,7 +2252,7 @@ class BuildingModel(object):
                     ] += (
                         - 1.0
                         / self.building_data.zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_panel_1_rear_zone']
-                        / self.heat_capacity_vector[self.building_data.zones.loc[zones_2_panels_index, 'zone_name']]
+                        / self.building_data.zones.loc[zones_2_panels_index, 'heat_capacity']
                     ).values
 
                     # Heat transfer between radiator panel 2 hull front and zone air.
@@ -2285,7 +2278,7 @@ class BuildingModel(object):
                     ] += (
                         1.0
                         / self.building_data.zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_panel_2_front_zone']
-                        / self.heat_capacity_vector[self.building_data.zones.loc[zones_2_panels_index, 'zone_name']]
+                        / self.building_data.zones.loc[zones_2_panels_index, 'heat_capacity']
                     ).values
                     self.state_matrix.loc[
                         self.building_data.zones.loc[zones_2_panels_index, 'zone_name'] + '_temperature',
@@ -2293,7 +2286,7 @@ class BuildingModel(object):
                     ] += (
                         - 1.0
                         / self.building_data.zones.loc[zones_2_panels_index, 'thermal_resistance_radiator_panel_2_front_zone']
-                        / self.heat_capacity_vector[self.building_data.zones.loc[zones_2_panels_index, 'zone_name']]
+                        / self.building_data.zones.loc[zones_2_panels_index, 'heat_capacity']
                     ).values
 
                 # Heat transfer between radiator hull rear and zone air.
@@ -2319,7 +2312,7 @@ class BuildingModel(object):
                 ] += (
                     1.0
                     / self.building_data.zones.loc[zones_index, 'thermal_resistance_radiator_rear_zone']
-                    / self.heat_capacity_vector[self.building_data.zones.loc[zones_index, 'zone_name']]
+                    / self.building_data.zones.loc[zones_index, 'heat_capacity']
                 ).values
                 self.state_matrix.loc[
                     self.building_data.zones.loc[zones_index, 'zone_name'] + '_temperature',
@@ -2327,7 +2320,7 @@ class BuildingModel(object):
                 ] += (
                     - 1.0
                     / self.building_data.zones.loc[zones_index, 'thermal_resistance_radiator_rear_zone']
-                    / self.heat_capacity_vector[self.building_data.zones.loc[zones_index, 'zone_name']]
+                    / self.building_data.zones.loc[zones_index, 'heat_capacity']
                 ).values
 
                 # Heat transfer between radiator hull front / rear and zone surfaces.
@@ -2392,7 +2385,7 @@ class BuildingModel(object):
                             * surface_data['surface_area']
                             * (1 - surface_data['window_wall_ratio'])
                             / zone_data['zone_surfaces_wall_area']
-                            / self.heat_capacity_vector[surface_name]
+                            / surface_data['heat_capacity']
                         )
                         self.state_matrix.at[
                             surface_name + '_temperature',
@@ -2403,7 +2396,7 @@ class BuildingModel(object):
                             * surface_data['surface_area']
                             * (1 - surface_data['window_wall_ratio'])
                             / zone_data['zone_surfaces_wall_area']
-                            / self.heat_capacity_vector[surface_name]
+                            / surface_data['heat_capacity']
                         )
 
                         # Back.
@@ -2427,7 +2420,7 @@ class BuildingModel(object):
                             * surface_data['surface_area']
                             * (1 - surface_data['window_wall_ratio'])
                             / zone_data['zone_surfaces_wall_area']
-                            / self.heat_capacity_vector[surface_name]
+                            / surface_data['heat_capacity']
                         )
                         self.state_matrix.at[
                             surface_name + '_temperature',
@@ -2438,7 +2431,7 @@ class BuildingModel(object):
                             * surface_data['surface_area']
                             * (1 - surface_data['window_wall_ratio'])
                             / zone_data['zone_surfaces_wall_area']
-                            / self.heat_capacity_vector[surface_name]
+                            / surface_data['heat_capacity']
                         )
 
         def define_heat_transfer_hvac_ahu():
@@ -2454,7 +2447,7 @@ class BuildingModel(object):
                             zone_data['ahu_supply_air_temperature_setpoint']
                             - self.building_data.scenarios['linearization_zone_air_temperature_heat']
                         )
-                        / self.heat_capacity_vector[zone_name]
+                        / zone_data['heat_capacity']
                     )
                     self.control_matrix.at[
                         zone_name + '_temperature',
@@ -2465,7 +2458,7 @@ class BuildingModel(object):
                             zone_data['ahu_supply_air_temperature_setpoint']
                             - self.building_data.scenarios['linearization_zone_air_temperature_cool']
                         )
-                        / self.heat_capacity_vector[zone_name]
+                        / zone_data['heat_capacity']
                     )
 
         def define_heat_transfer_hvac_tu():
@@ -2481,7 +2474,7 @@ class BuildingModel(object):
                             zone_data['tu_supply_air_temperature_setpoint']
                             - self.building_data.scenarios['linearization_zone_air_temperature_heat']
                         )
-                        / self.heat_capacity_vector[zone_name]
+                        / zone_data['heat_capacity']
                     )
                     self.control_matrix.at[
                         zone_name + '_temperature',
@@ -2492,7 +2485,7 @@ class BuildingModel(object):
                             zone_data['tu_supply_air_temperature_setpoint']
                             - self.building_data.scenarios['linearization_zone_air_temperature_cool']
                         )
-                        / self.heat_capacity_vector[zone_name]
+                        / zone_data['heat_capacity']
                     )
 
         def define_co2_transfer_hvac_ahu():
