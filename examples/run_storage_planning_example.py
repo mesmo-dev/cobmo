@@ -38,9 +38,9 @@ print("pricing_method = {}".format(price_type))
 database_connection = cobmo.database_interface.connect_database()
 
 # Load selected database tables for modification.
-building_scenarios = pd.read_sql(
+scenarios = pd.read_sql(
     """
-    SELECT * FROM building_scenarios
+    SELECT * FROM scenarios
     """,
     database_connection,
     index_col='scenario_name'
@@ -52,26 +52,26 @@ buildings = pd.read_sql(
     database_connection,
     index_col='building_name'
 )
-building_storage_types = pd.read_sql(
+storage_types = pd.read_sql(
     """
-    SELECT * FROM building_storage_types
+    SELECT * FROM storage_types
     """,
     database_connection,
     index_col='building_storage_type'
 )
 
 # Modify `buildings` to change the `building_storage_type`.
-buildings.at[building_scenarios.at[scenario_name, 'building_name'], 'building_storage_type'] = building_storage_type
+buildings.at[scenarios.at[scenario_name, 'building_name'], 'building_storage_type'] = building_storage_type
 buildings.to_sql(
     'buildings',
     con=database_connection,
     if_exists='replace'
 )
 
-# Modify `building_scenarios` to change the `price_type`.
-building_scenarios.at[scenario_name, 'price_type'] = price_type
-building_scenarios.to_sql(
-    'building_scenarios',
+# Modify `scenarios` to change the `price_type`.
+scenarios.at[scenario_name, 'price_type'] = price_type
+scenarios.to_sql(
+    'scenarios',
     con=database_connection,
     if_exists='replace'
 )
@@ -124,14 +124,14 @@ controller_storage = cobmo.optimization_problem.OptimizationProblem(
 ) = controller_storage.solve()
 
 # Calculate savings and payback time.
-storage_lifetime = building_storage_types.at[building_storage_type, 'storage_lifetime']
+storage_lifetime = storage_types.at[building_storage_type, 'storage_lifetime']
 operation_cost_savings_annual = (operation_cost_baseline - operation_cost_storage) / storage_lifetime
 if 'sensible' in building_storage_type:
     storage_size_kwh = (
             storage_size_storage
             * 1000.0  # Density in kg/m3 (water).
             * 4186.0  # Specific heat capacity in J/(kg*K) (water)
-            * building_storage_types.at[building_storage_type, 'storage_sensible_temperature_delta']  # Temp. dif. in K.
+            * storage_types.at[building_storage_type, 'storage_sensible_temperature_delta']  # Temp. dif. in K.
             / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
     )
 elif 'battery' in building_storage_type:

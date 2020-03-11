@@ -1,9 +1,19 @@
 BEGIN TRANSACTION;
-CREATE TABLE IF NOT EXISTS "building_blind_types" (
+CREATE TABLE IF NOT EXISTS "blind_types" (
     "blind_type" TEXT,
     "blind_efficiency" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_hvac_ahu_types" (
+CREATE TABLE IF NOT EXISTS "buildings" (
+    "building_name" TEXT,
+    "weather_type" TEXT,
+    "building_storage_type" TEXT
+);
+CREATE TABLE IF NOT EXISTS "electricity_price_timeseries" (
+    "price_type" TEXT,
+    "time" TEXT,
+    "price" REAL
+);
+CREATE TABLE IF NOT EXISTS "hvac_ahu_types" (
     "hvac_ahu_type" TEXT,
     "ahu_supply_air_temperature_setpoint" TEXT,
     "ahu_supply_air_relative_humidity_setpoint" TEXT,
@@ -12,12 +22,12 @@ CREATE TABLE IF NOT EXISTS "building_hvac_ahu_types" (
     "ahu_heating_efficiency" TEXT,
     "ahu_return_air_heat_recovery_efficiency" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_hvac_generic_types" (
+CREATE TABLE IF NOT EXISTS "hvac_generic_types" (
     "hvac_generic_type" TEXT,
     "generic_heating_efficiency" TEXT,
     "generic_cooling_efficiency" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_hvac_radiator_types" (
+CREATE TABLE IF NOT EXISTS "hvac_radiator_types" (
     "hvac_radiator_type" TEXT,
     "radiator_supply_temperature_nominal" TEXT,
     "radiator_return_temperature_nominal" TEXT,
@@ -31,7 +41,7 @@ CREATE TABLE IF NOT EXISTS "building_hvac_radiator_types" (
     "radiator_hull_heat_capacity" TEXT,
     "radiator_fin_effectiveness" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_hvac_tu_types" (
+CREATE TABLE IF NOT EXISTS "hvac_tu_types" (
     "hvac_tu_type" TEXT,
     "tu_cooling_type" TEXT,
     "tu_heating_type" TEXT,
@@ -41,7 +51,7 @@ CREATE TABLE IF NOT EXISTS "building_hvac_tu_types" (
     "tu_cooling_efficiency" TEXT,
     "tu_heating_efficiency" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_initial_state_types" (
+CREATE TABLE IF NOT EXISTS "initial_state_types" (
     "initial_state_type" TEXT,
     "initial_zone_temperature" TEXT,
     "initial_surface_temperature" TEXT,
@@ -50,18 +60,18 @@ CREATE TABLE IF NOT EXISTS "building_initial_state_types" (
     "initial_sensible_thermal_storage_state_of_charge" TEXT,
     "initial_battery_storage_state_of_charge" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_internal_gain_timeseries" (
+CREATE TABLE IF NOT EXISTS "internal_gain_timeseries" (
     "internal_gain_type" TEXT,
     "time" TEXT,
     "internal_gain_occupancy" REAL,
     "internal_gain_appliances" REAL
 );
-CREATE TABLE IF NOT EXISTS "building_internal_gain_types" (
+CREATE TABLE IF NOT EXISTS "internal_gain_types" (
     "internal_gain_type" TEXT,
     "internal_gain_occupancy_factor" TEXT,
     "internal_gain_appliances_factor" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_linearization_types" (
+CREATE TABLE IF NOT EXISTS "linearization_types" (
     "linearization_type" TEXT,
     "linearization_zone_air_temperature_heat" TEXT,
     "linearization_zone_air_temperature_cool" TEXT,
@@ -77,14 +87,14 @@ CREATE TABLE IF NOT EXISTS "building_linearization_types" (
     "linearization_co2_concentration" TEXT,
     "linearization_ventilation_rate_per_square_meter" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_parameter_sets" (
+CREATE TABLE IF NOT EXISTS "parameters" (
     "parameter_set" TEXT,
     "parameter_name" TEXT,
     "parameter_value" REAL,
     "parameter_unit" TEXT,
     "parameter_comment" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_scenarios" (
+CREATE TABLE IF NOT EXISTS "scenarios" (
     "scenario_name" TEXT,
     "building_name" TEXT,
     "parameter_set" TEXT,
@@ -99,7 +109,7 @@ CREATE TABLE IF NOT EXISTS "building_scenarios" (
     "time_end" TEXT,
     "time_step" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_storage_types" (
+CREATE TABLE IF NOT EXISTS "storage_types" (
     "building_storage_type" TEXT,
     "storage_size" REAL,
     "storage_round_trip_efficiency" REAL,
@@ -110,7 +120,7 @@ CREATE TABLE IF NOT EXISTS "building_storage_types" (
     "storage_planning_power_installation_cost"  REAL,
     "storage_planning_fixed_installation_cost"  REAL
 );
-CREATE TABLE IF NOT EXISTS "building_surface_types" (
+CREATE TABLE IF NOT EXISTS "surface_types" (
     "surface_type" TEXT,
     "heat_capacity" TEXT,
     "thermal_resistance_surface" TEXT,
@@ -120,7 +130,7 @@ CREATE TABLE IF NOT EXISTS "building_surface_types" (
     "window_wall_ratio" TEXT,
     "sky_view_factor" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_surfaces_adiabatic" (
+CREATE TABLE IF NOT EXISTS "surfaces_adiabatic" (
     "building_name" TEXT,
     "zone_name" TEXT,
     "surface_name" TEXT,
@@ -128,7 +138,7 @@ CREATE TABLE IF NOT EXISTS "building_surfaces_adiabatic" (
     "surface_area" TEXT,
     "surface_comment" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_surfaces_exterior" (
+CREATE TABLE IF NOT EXISTS "surfaces_exterior" (
     "building_name" TEXT,
     "zone_name" TEXT,
     "direction_name" TEXT,
@@ -137,7 +147,7 @@ CREATE TABLE IF NOT EXISTS "building_surfaces_exterior" (
     "surface_area" TEXT,
     "surface_comment" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_surfaces_interior" (
+CREATE TABLE IF NOT EXISTS "surfaces_interior" (
     "building_name" TEXT,
     "zone_name" TEXT,
     "zone_adjacent_name" TEXT,
@@ -146,55 +156,11 @@ CREATE TABLE IF NOT EXISTS "building_surfaces_interior" (
     "surface_area" TEXT,
     "surface_comment" TEXT
 );
-CREATE TABLE IF NOT EXISTS "building_window_types" (
+CREATE TABLE IF NOT EXISTS "window_types" (
     "window_type" TEXT,
     "thermal_resistance_window" TEXT,
     "absorptivity_window" TEXT,
     "emissivity_window" TEXT
-);
-CREATE TABLE IF NOT EXISTS "building_zone_constraint_profiles" (
-    "zone_constraint_profile" TEXT,
-    "from_weekday" INTEGER,
-    "from_time" TEXT,
-    "minimum_air_temperature" TEXT,
-    "maximum_air_temperature" TEXT,
-    "minimum_fresh_air_flow_per_area" TEXT,
-    "minimum_fresh_air_flow_per_person" TEXT,
-    "maximum_co2_concentration" TEXT,
-    "minimum_fresh_air_flow_per_area_no_dcv" TEXT,
-    "minimum_relative_humidity" TEXT,
-    "maximum_relative_humidity" TEXT
-);
-CREATE TABLE IF NOT EXISTS "building_zone_types" (
-    "zone_type" TEXT,
-    "heat_capacity" TEXT,
-    "infiltration_rate" TEXT,
-    "internal_gain_type" TEXT,
-    "window_type" TEXT,
-    "blind_type" TEXT,
-    "hvac_generic_type" TEXT,
-    "hvac_radiator_type" TEXT,
-    "hvac_ahu_type" TEXT,
-    "hvac_tu_type" TEXT,
-    "zone_constraint_profile" TEXT
-);
-CREATE TABLE IF NOT EXISTS "building_zones" (
-    "building_name" TEXT,
-    "zone_name" TEXT,
-    "zone_type" TEXT,
-    "zone_height" TEXT,
-    "zone_area" TEXT,
-    "zone_comment" TEXT
-);
-CREATE TABLE IF NOT EXISTS "buildings" (
-    "building_name" TEXT,
-    "weather_type" TEXT,
-    "building_storage_type" TEXT
-);
-CREATE TABLE IF NOT EXISTS "electricity_price_timeseries" (
-    "price_type" TEXT,
-    "time" TEXT,
-    "price" REAL
 );
 CREATE TABLE IF NOT EXISTS "weather_timeseries" (
     "weather_type" TEXT,
@@ -214,5 +180,39 @@ CREATE TABLE IF NOT EXISTS "weather_types" (
     "latitude" REAL,
     "longitude" REAL,
     "temperature_difference_sky_ambient" REAL
+);
+CREATE TABLE IF NOT EXISTS "zone_constraint_profiles" (
+    "zone_constraint_profile" TEXT,
+    "from_weekday" INTEGER,
+    "from_time" TEXT,
+    "minimum_air_temperature" TEXT,
+    "maximum_air_temperature" TEXT,
+    "minimum_fresh_air_flow_per_area" TEXT,
+    "minimum_fresh_air_flow_per_person" TEXT,
+    "maximum_co2_concentration" TEXT,
+    "minimum_fresh_air_flow_per_area_no_dcv" TEXT,
+    "minimum_relative_humidity" TEXT,
+    "maximum_relative_humidity" TEXT
+);
+CREATE TABLE IF NOT EXISTS "zone_types" (
+    "zone_type" TEXT,
+    "heat_capacity" TEXT,
+    "infiltration_rate" TEXT,
+    "internal_gain_type" TEXT,
+    "window_type" TEXT,
+    "blind_type" TEXT,
+    "hvac_generic_type" TEXT,
+    "hvac_radiator_type" TEXT,
+    "hvac_ahu_type" TEXT,
+    "hvac_tu_type" TEXT,
+    "zone_constraint_profile" TEXT
+);
+CREATE TABLE IF NOT EXISTS "zones" (
+    "building_name" TEXT,
+    "zone_name" TEXT,
+    "zone_type" TEXT,
+    "zone_height" TEXT,
+    "zone_area" TEXT,
+    "zone_comment" TEXT
 );
 COMMIT;

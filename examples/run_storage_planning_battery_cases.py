@@ -44,9 +44,9 @@ if run_simulation:
     database_connection = cobmo.database_interface.connect_database()
 
     # Load selected database tables for modification.
-    building_scenarios = pd.read_sql(
+    scenarios = pd.read_sql(
         """
-        SELECT * FROM building_scenarios
+        SELECT * FROM scenarios
         """,
         database_connection,
         index_col='scenario_name'
@@ -58,16 +58,16 @@ if run_simulation:
         database_connection,
         index_col='building_name'
     )
-    building_storage_types = pd.read_sql(
+    storage_types = pd.read_sql(
         """
-        SELECT * FROM building_storage_types
+        SELECT * FROM storage_types
         """,
         database_connection,
         index_col='building_storage_type'
     )
 
     # Modify `buildings` to change the `building_storage_type`.
-    building_name = building_scenarios.at[scenario_name, 'building_name']
+    building_name = scenarios.at[scenario_name, 'building_name']
     buildings.at[building_name, 'building_storage_type'] = 'default_battery_storage'
     buildings.to_sql(
         'buildings',
@@ -75,10 +75,10 @@ if run_simulation:
         if_exists='replace'
     )
 
-    # Modify `building_scenarios` to change the `price_type`.
-    building_scenarios.at[scenario_name, 'price_type'] = price_type
-    building_scenarios.to_sql(
-        'building_scenarios',
+    # Modify `scenarios` to change the `price_type`.
+    scenarios.at[scenario_name, 'price_type'] = price_type
+    scenarios.to_sql(
+        'scenarios',
         con=database_connection,
         if_exists='replace'
     )
@@ -124,25 +124,25 @@ if run_simulation:
             # Print status info.
             print("Starting simulation #{}.".format(counter))
 
-            # Modify `building_storage_types`.
-            building_storage_types.at['default_battery_storage', 'storage_round_trip_efficiency'] = (
+            # Modify `storage_types`.
+            storage_types.at['default_battery_storage', 'storage_round_trip_efficiency'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'round_trip_efficiency']
                 * 0.95  # Accounting for inverter efficiency. # TODO: Move inverter efficiency to CSV.
             )
-            building_storage_types.at['default_battery_storage', 'storage_battery_depth_of_discharge'] = (
+            storage_types.at['default_battery_storage', 'storage_battery_depth_of_discharge'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'depth_of_discharge']
             )
-            building_storage_types.at['default_battery_storage', 'storage_planning_energy_installation_cost'] = (
+            storage_types.at['default_battery_storage', 'storage_planning_energy_installation_cost'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'energy_installation_cost']
             )
-            building_storage_types.at['default_battery_storage', 'storage_planning_power_installation_cost'] = (
+            storage_types.at['default_battery_storage', 'storage_planning_power_installation_cost'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'power_installation_cost']
             )
-            building_storage_types.at['default_battery_storage', 'storage_lifetime'] = (
+            storage_types.at['default_battery_storage', 'storage_lifetime'] = (
                 battery_parameters.loc[(battery_technology, year, case), 'lifetime']
             )
-            building_storage_types.to_sql(
-                'building_storage_types',
+            storage_types.to_sql(
+                'storage_types',
                 con=database_connection,
                 if_exists='replace'
             )

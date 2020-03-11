@@ -90,7 +90,7 @@ thermal_power_plot = (
 zone_temperature_plot = (
     output_timeseries_controller.loc[
         :, output_timeseries_controller.columns.isin(
-            building.building_zones['zone_name'] + '_temperature'
+            building.zones['zone_name'] + '_temperature'
         )
     ].stack().rename('zone_temperature').reset_index()
 ).hvplot.line(
@@ -102,7 +102,7 @@ zone_temperature_plot = (
 radiator_water_temperature_plot = (
     state_timeseries_controller.loc[
         :, state_timeseries_controller.columns.isin(
-            building.building_zones['zone_name'] + '_radiator_water_mean_temperature'
+            building.zones['zone_name'] + '_radiator_water_mean_temperature'
         )
     ].stack().rename('radiator_water_temperature').reset_index()
 ).hvplot.line(
@@ -115,8 +115,8 @@ radiator_hull_temperature_plot = (
     state_timeseries_controller.loc[
         :, state_timeseries_controller.columns.isin(
             pd.concat([
-                building.building_zones['zone_name'] + '_radiator_hull_front_temperature',
-                building.building_zones['zone_name'] + '_radiator_hull_rear_temperature'
+                building.zones['zone_name'] + '_radiator_hull_front_temperature',
+                building.zones['zone_name'] + '_radiator_hull_rear_temperature'
             ])
         )
     ].stack().rename('radiator_hull_temperature').reset_index()

@@ -4,7 +4,7 @@
     This reference is work in progress.
 ```
 
-## `building_blind_types`
+## `blind_types`
 
 Window blind characteristics. *Currently not used.*
 
@@ -13,7 +13,7 @@ Window blind characteristics. *Currently not used.*
 | `blind_type` | | Unique type identifier. |
 | `blind_efficiency` | - | Blind efficiency (absorbed irradiation / incident irradiation). |
 
-## `building_hvac_ahu_types`
+## `hvac_ahu_types`
 
 Air handling unit (AHU) set points and characteristics.
 
@@ -27,7 +27,7 @@ Air handling unit (AHU) set points and characteristics.
 | `ahu_heating_efficiency` | - | Heating plant efficiency (thermal power / electrical power). |
 | `ahu_return_air_heat_recovery_efficiency` | - | Recovery efficiency (recovered power / available power). |
 
-## `building_hvac_generic_types`
+## `hvac_generic_types`
 
 Generic HVAC system characteristics.
 
@@ -37,7 +37,7 @@ Generic HVAC system characteristics.
 | `generic_heating_efficiency` | - | Heating efficiency (thermal power / electric power). |
 | `generic_cooling_efficiency` | - | Cooling efficiency (thermal power / electric power). |
 
-## `building_hvac_radiator_types`
+## `hvac_radiator_types`
 
 | Column | Unit | Description |
 | --- |:---:| --- |
@@ -54,7 +54,7 @@ Generic HVAC system characteristics.
 | `radiator_hull_heat_capacity` | J/m³ | Radiator hull material heat capacity. |
 | `radiator_fin_effectiveness` | - | Radiator fin effectiveness. |
 
-## `building_hvac_tu_types`
+## `hvac_tu_types`
 
 Terminal unit (TU) set points and characteristics.
 
@@ -69,7 +69,7 @@ Terminal unit (TU) set points and characteristics.
 | `tu_cooling_efficiency` | - | Chiller plant efficiency (thermal power / electrical power). |
 | `tu_heating_efficiency` | - | Heating plant efficiency (thermal power / electrical power). |
 
-## `building_initial_state_types`
+## `initial_state_types`
 
 | Column | Unit | Description |
 | --- |:---:| --- |
@@ -81,18 +81,18 @@ Terminal unit (TU) set points and characteristics.
 | initial_sensible_thermal_storage_state_of_charge | m³ | Initial stored volume of useable water layer in the sensible thermal storage. |
 | initial_battery_storage_state_of_charge | kWh | Initial stored electric energy in the battery storage.|
 
-## `building_internal_gain_timeseries`
+## `internal_gain_timeseries`
 
 Time series of internal gains.
 
 | Column | Unit | Description |
 | --- |:---:| --- |
-| `internal_gain_type` | | Type identifier as defined in `building_internal_gain_types`. |
+| `internal_gain_type` | | Type identifier as defined in `internal_gain_types`. |
 | `time` | | Timestamp according to ISO 8601. |
 | `internal_gain_occupancy` | W/m² | Internal gains related to occupants.|
 | `internal_gain_appliances` | W/m² | Internal gains related to appliances. |
 
-## `building_internal_gain_types`
+## `internal_gain_types`
 
 Internal gain type definitions.
 
@@ -102,7 +102,7 @@ Internal gain type definitions.
 | `internal_gain_occupancy_factor` | - | Occupancy gains scaling factor. |
 | `internal_gain_appliances_factor` | - | Appliance gains scaling factor. |
 
-## `building_linearization_types`
+## `linearization_types`
 
 Linearization point definitions.
 
@@ -123,11 +123,11 @@ Linearization point definitions.
 | `linearization_co2_concentration` | ppm | |
 | `linearization_ventilation_rate_per_square_meter` | m/s | |
 
-## `building_parameter_sets`
+## `parameters`
 
 Parameter definitions, which includes constants and user-defined parameters.
 
-In all tables, a `parameter_name` string can be used to define numerical parameters in place of numerical values. During building model setup, those strings will be parsed from the `building_parameter_sets` table to obtain the corresponding numerical values.
+In all tables, a `parameter_name` string can be used to define numerical parameters in place of numerical values. During building model setup, those strings will be parsed from the `parameters` table to obtain the corresponding numerical values.
 
 | Column | Unit | Description |
 | --- |:---:| --- |
@@ -137,7 +137,7 @@ In all tables, a `parameter_name` string can be used to define numerical paramet
 | `parameter_unit` | | Comment field for the parameter unit. |
 | `parameter_comment` | | Comment field for further explanations. |
 
-## `building_scenarios`
+## `scenarios`
 
 Building scenario definitions.
 
@@ -145,8 +145,8 @@ Building scenario definitions.
 | --- |:---:| --- |
 | `scenario_name` | | Unique scenario identifier. |
 | `building_name` | | Building identifier as defined in `buildings`. |
-| `parameter_set` | | Parameter set identifier as defined in `building_parameter_sets`. |
-| `linearization_type` | | Type identifier as defined in `building_linearization_types`. |
+| `parameter_set` | | Parameter set identifier as defined in `parameters`. |
+| `linearization_type` | | Type identifier as defined in `linearization_types`. |
 | `demand_controlled_ventilation_type` | | *Currently not used.* |
 | `co2_model_type` | | *Currently not used.* |
 | `humidity_model_type` | | *Currently not used.* |
@@ -156,7 +156,7 @@ Building scenario definitions.
 | `time_end` | | Timestamp according to ISO 8601. |
 | `time_step` | | Time step length in seconds. |
 
-## `building_storage_types`
+## `storage_types`
 
 Storage characteristics.
 
@@ -172,7 +172,7 @@ Storage characteristics.
 | `storage_planning_power_installation_cost` | SGD/kW | Investment cost per installed power capacity. *Only used for storage planning problems.* |
 | `storage_planning_fixed_installation_cost` | SGD | Investment cost per installed storage unit. *Only used for storage planning problems.* |
 
-## `building_surface_types`
+## `surface_types`
 
 Surface type characteristics.
 
@@ -183,52 +183,52 @@ Surface type characteristics.
 | `thermal_resistance_surface` | m²K/W | Specific thermal resistance. |
 | `absorptivity` | - | Absorptivity factor / irradiation gain coefficient (absorbed irradiation / incident irradiation). |
 | `emissivity` | - | Emissivity factor. |
-| `window_type` | | Type identifier as defined in `building_window_types`. |
+| `window_type` | | Type identifier as defined in `window_types`. |
 | `window_wall_ratio` | - | Window surface area / total surface area. |
 | `sky_view_factor` | - | Sky view factor. |
 
-## `building_surfaces_adiabatic`
+## `surfaces_adiabatic`
 
 Adiabatic surfaces geometry.
 
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `building_name` | | Building identifier as defined in `buildings`. |
-| `zone_name` | | Zone identifier as defined in `building_zones`. |
+| `zone_name` | | Zone identifier as defined in `zones`. |
 | `surface_name` | | Unique surface identifier. |
-| `surface_type` | | Type identifier as defined in `building_surface_types`. |
+| `surface_type` | | Type identifier as defined in `surface_types`. |
 | `surface_area` | m² | Surface area. |
 | `surface_comment` | | Explanatory comment, e.g., description of the geometry. |
 
-## `building_surfaces_exterior`
+## `surfaces_exterior`
 
 Exterior surfaces geometry.
 
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `building_name` | | Building identifier as defined in `buildings`. |
-| `zone_name` | | Zone identifier as defined in `building_zones`. |
+| `zone_name` | | Zone identifier as defined in `zones`. |
 | `direction_name` | | Direction name (`horizontal`, `east`, `south`, `west`, `north`). |
 | `surface_name` | | Unique surface identifier. |
-| `surface_type` | | Type identifier as defined in `building_surface_types`. |
+| `surface_type` | | Type identifier as defined in `surface_types`. |
 | `surface_area` | m² | Surface area. |
 | `surface_comment` | | Explanatory comment, e.g., description of the geometry. |
 
-## `building_surfaces_interior`
+## `surfaces_interior`
 
 Interior surfaces geometry.
 
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `building_name` | | Building identifier as defined in `buildings`. |
-| `zone_name` | | Zone on primary side identifier as defined in `building_zones`. |
-| `zone_adjacent_name` | | Zone on secondary side identifier as defined in `building_zones`. |
+| `zone_name` | | Zone on primary side identifier as defined in `zones`. |
+| `zone_adjacent_name` | | Zone on secondary side identifier as defined in `zones`. |
 | `surface_name` | | Unique surface identifier. |
-| `surface_type` | | Type identifier as defined in `building_surface_types`. |
+| `surface_type` | | Type identifier as defined in `surface_types`. |
 | `surface_area` | m² | Surface area. |
 | `surface_comment` | | Explanatory comment, e.g., description of the geometry. |
 
-## `building_window_types`
+## `window_types`
 
 Window characteristics.
 
@@ -239,7 +239,7 @@ Window characteristics.
 | `absorptivity_window` | - | Irradiation gain coefficient (absorbed irradiation / incident irradiation). |
 | `emissivity_window` | - | Emissivity factor. |
 
-## `building_zone_constraint_profiles`
+## `zone_constraint_profiles`
 
 Constraint profile definitions.
 
@@ -260,7 +260,7 @@ The constraint profile time series is constructed by obtaining the appropriate v
 | `maximum_relative_humidity` | % | |
 
 
-## `building_zone_types`
+## `zone_types`
 
 Zone type characteristics.
 
@@ -269,16 +269,16 @@ Zone type characteristics.
 | `zone_type` | | Unique type identifier.|
 | `heat_capacity` | J/(m³K) | Specific heat capacity. |
 | `infiltration_rate` | 1/h | Infiltration rate. |
-| `internal_gain_type` | | Type identifier as defined in `building_internal_gain_types`. |
-| `window_type` | | Type identifier as defined in `building_window_types`. |
-| `blind_type` | | Type identifier as defined in `building_blind_types`. *Currently not used.* |
-| `hvac_generic_type` | | Type identifier as defined in `building_hvac_generic_types`. |
-| `hvac_radiator_type` | | Type identifier as defined in `building_hvac_radiator_types`. |
-| `hvac_ahu_type` | | Type identifier as defined in `building_hvac_ahu_types`. |
-| `hvac_tu_type` | | Type identifier as defined in `building_hvac_tu_types`. |
-| `zone_constraint_profile` | | Constraint profile identifier as defined in `building_zone_constraint_profiles`. |
+| `internal_gain_type` | | Type identifier as defined in `internal_gain_types`. |
+| `window_type` | | Type identifier as defined in `window_types`. |
+| `blind_type` | | Type identifier as defined in `blind_types`. *Currently not used.* |
+| `hvac_generic_type` | | Type identifier as defined in `hvac_generic_types`. |
+| `hvac_radiator_type` | | Type identifier as defined in `hvac_radiator_types`. |
+| `hvac_ahu_type` | | Type identifier as defined in `hvac_ahu_types`. |
+| `hvac_tu_type` | | Type identifier as defined in `hvac_tu_types`. |
+| `zone_constraint_profile` | | Constraint profile identifier as defined in `zone_constraint_profiles`. |
 
-## `building_zones`
+## `zones`
 
 Zone geometry.
 
@@ -286,7 +286,7 @@ Zone geometry.
 | --- |:---:| --- |
 | `building_name` | | Building identifier as defined in `buildings`. |
 | `zone_name` | | Unique zone identifier. |
-| `zone_type` | | Type identifier as defined in `building_zone_types`. |
+| `zone_type` | | Type identifier as defined in `zone_types`. |
 | `zone_height` | m | Zone height (clear interior height from base to ceiling). |
 | `zone_area` | m² | Zone area (interior area excluding surfaces). |
 | `zone_comment` | | Explanatory comment, e.g., description of the geometry. |
@@ -299,7 +299,7 @@ Building definition.
 | --- |:---:| --- |
 | `building_name` | | Unique building identifier.|
 | `weather_type` | | Type identifier as defined in `weather_types`. |
-| `building_storage_type` | | Type identifier as defined in `building_storage_types`. |
+| `building_storage_type` | | Type identifier as defined in `storage_types`. |
 
 ## `electricity_price_timeseries`
 

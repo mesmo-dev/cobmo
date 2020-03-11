@@ -18,7 +18,7 @@ database_connection = cobmo.database_interface.connect_database()
 scenario_names = (
     pd.read_sql(
         """
-        SELECT scenario_name FROM building_scenarios 
+        SELECT scenario_name FROM scenarios 
         """,
         database_connection
     )['scenario_name'].tolist()

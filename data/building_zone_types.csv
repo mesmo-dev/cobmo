@@ -1,6 +1,0 @@
-zone_type,heat_capacity,infiltration_rate,internal_gain_type,window_type,blind_type,hvac_generic_type,hvac_radiator_type,hvac_ahu_type,hvac_tu_type,zone_constraint_profile
-validation_zone_empty,heat_capacity_zone,infiltration_rate,create_office_internal_gains,,,default_generic_hvac,,,,create_office_constraints
-validation_zone_empty_radiator,heat_capacity_zone,infiltration_rate,create_office_internal_gains,,,,mse_radiator_type_12,,,create_office_constraints
-create_level8_open_plan_office,heat_capacity_zone,infiltration_rate,create_office_internal_gains,,,,,create_ahu,,create_office_constraints
-create_level8_group_office,heat_capacity_zone,infiltration_rate,create_office_internal_gains,,,,,create_ahu,,create_office_constraints
-wtp_office,47142.9,2.565e-05,wtp_office_internal_gains,,,,,wtp_ahu,,wtp_office_constraints

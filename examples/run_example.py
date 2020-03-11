@@ -112,7 +112,7 @@ total_demand_year = (
 )
 total_demand_year_per_area = (
     total_demand_year
-    / building.building_zones['zone_area'].apply(building.parse_parameter).sum()  # kWh to kWh/m2.
+    / building.zones['zone_area'].apply(building.parse_parameter).sum()  # kWh to kWh/m2.
 )
 
 # Print total demand for benchmarking.
