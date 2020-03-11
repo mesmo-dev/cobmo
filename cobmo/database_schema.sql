@@ -43,8 +43,6 @@ CREATE TABLE IF NOT EXISTS "hvac_radiator_types" (
 );
 CREATE TABLE IF NOT EXISTS "hvac_tu_types" (
     "hvac_tu_type" TEXT,
-    "tu_cooling_type" TEXT,
-    "tu_heating_type" TEXT,
     "tu_air_intake_type" TEXT,
     "tu_supply_air_temperature_setpoint" TEXT,
     "tu_fan_efficiency" TEXT,

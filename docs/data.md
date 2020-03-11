@@ -61,8 +61,6 @@ Terminal unit (TU) set points and characteristics.
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `hvac_tu_type` | | Unique type identifier. |
-| `tu_cooling_type` | | *Currently not used.* |
-| `tu_heating_type` | | *Currently not used.* |
 | `tu_air_intake_type` | | *Currently not used.* |
 | `tu_supply_air_temperature_setpoint` | °C | Supply air temperature at outlet of TU towards zone. |
 | `tu_fan_efficiency` | J/kg | Fan efficiency (electric power / air mass flow rate). |
