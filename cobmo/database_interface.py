@@ -2,6 +2,7 @@
 
 import glob
 from multimethod import multimethod
+import numpy as np
 import os
 import pandas as pd
 import sqlite3
@@ -198,3 +199,110 @@ class BuildingData(object):
             )
         )
         self.building_zones.index = self.building_zones['zone_name']
+
+        # Define parameter parsing utility function.
+        @np.vectorize
+        def parse_parameter(parameter_string):
+            """Parse parameter utility function.
+            - Convert given parameter string as `np.float`.
+            - If the parameter string is the name of a parameter from `building_parameters`, return that parameter.
+            - If the parameter string is `None`, `NaN` is returned.
+            """
+            try:
+                return np.float(parameter_string)
+            except ValueError:
+                return self.building_parameters[parameter_string]
+            except TypeError:
+                return np.nan
+
+        # Parse parameters.
+        building_scenarios_numerical_columns = [
+            'linearization_zone_air_temperature_heat',
+            'linearization_zone_air_temperature_cool',
+            'linearization_surface_temperature',
+            'linearization_exterior_surface_temperature',
+            'linearization_internal_gain_occupancy',
+            'linearization_internal_gain_appliances',
+            'linearization_ambient_air_temperature',
+            'linearization_sky_temperature',
+            'linearization_ambient_air_humidity_ratio',
+            'linearization_zone_air_humidity_ratio',
+            'linearization_irradiation',
+            'linearization_co2_concentration',
+            'linearization_ventilation_rate_per_square_meter',
+            'initial_zone_temperature',
+            'initial_surface_temperature',
+            'initial_co2_concentration',
+            'initial_absolute_humidity',
+            'initial_sensible_thermal_storage_state_of_charge',
+            'initial_battery_storage_state_of_charge',
+            'storage_size',
+            'storage_round_trip_efficiency',
+            'storage_battery_depth_of_discharge',
+            'storage_sensible_temperature_delta',
+            'storage_lifetime',
+            'storage_planning_energy_installation_cost',
+            'storage_planning_power_installation_cost',
+            'storage_planning_fixed_installation_cost'
+        ]
+        self.building_scenarios.loc[building_scenarios_numerical_columns] = (
+            self.building_scenarios.loc[building_scenarios_numerical_columns].apply(parse_parameter)
+        )
+        building_surfaces_numerical_columns = [
+            'surface_area',
+            'heat_capacity',
+            'thermal_resistance_surface',
+            'absorptivity',
+            'emissivity',
+            'window_wall_ratio',
+            'sky_view_factor',
+            'thermal_resistance_window',
+            'absorptivity_window',
+            'emissivity_window',
+            'zone_height',
+            'zone_area'
+        ]
+        self.building_surfaces_adiabatic.loc[:, building_surfaces_numerical_columns] = (
+            self.building_surfaces_adiabatic.loc[:, building_surfaces_numerical_columns].apply(parse_parameter)
+        )
+        self.building_surfaces_exterior.loc[:, building_surfaces_numerical_columns] = (
+            self.building_surfaces_exterior.loc[:, building_surfaces_numerical_columns].apply(parse_parameter)
+        )
+        self.building_surfaces_interior.loc[:, building_surfaces_numerical_columns] = (
+            self.building_surfaces_interior.loc[:, building_surfaces_numerical_columns].apply(parse_parameter)
+        )
+        building_zones_numerical_columns = [
+            'zone_area',
+            'zone_height',
+            'heat_capacity',
+            'infiltration_rate',
+            'internal_gain_occupancy_factor',
+            'internal_gain_appliances_factor',
+            'blind_efficiency',
+            'generic_heating_efficiency',
+            'generic_cooling_efficiency',
+            'radiator_supply_temperature_nominal',
+            'radiator_return_temperature_nominal',
+            'radiator_panel_number',
+            'radiator_panel_area',
+            'radiator_panel_thickness',
+            'radiator_water_volume',
+            'radiator_convection_coefficient',
+            'radiator_emissivity',
+            'radiator_hull_conductivity',
+            'radiator_hull_heat_capacity',
+            'radiator_fin_effectiveness',
+            'ahu_supply_air_temperature_setpoint',
+            'ahu_supply_air_relative_humidity_setpoint',
+            'ahu_fan_efficiency',
+            'ahu_cooling_efficiency',
+            'ahu_heating_efficiency',
+            'ahu_return_air_heat_recovery_efficiency',
+            'tu_supply_air_temperature_setpoint',
+            'tu_fan_efficiency',
+            'tu_cooling_efficiency',
+            'tu_heating_efficiency'
+        ]
+        self.building_zones.loc[:, building_zones_numerical_columns] = (
+            self.building_zones.loc[:, building_zones_numerical_columns].apply(parse_parameter)
+        )

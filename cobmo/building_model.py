@@ -82,7 +82,7 @@ class BuildingModel(object):
         )
 
         def parse_parameter(parameter):
-            """
+            """Parse parameter utility function.
             - Checks if given parameter is a number.
             - If the parameter is not a number, it is assumed to be the name of a parameter from `building_parameters`
             """
@@ -111,13 +111,13 @@ class BuildingModel(object):
 
                 # Surface temperature.
                 self.building_data.building_surfaces_adiabatic['surface_name'][
-                    self.building_data.building_surfaces_adiabatic['heat_capacity'].apply(parse_parameter) != 0.0
+                    self.building_data.building_surfaces_adiabatic['heat_capacity'] != 0.0
                 ] + '_temperature',
                 self.building_data.building_surfaces_exterior['surface_name'][
-                    self.building_data.building_surfaces_exterior['heat_capacity'].apply(parse_parameter) != 0.0
+                    self.building_data.building_surfaces_exterior['heat_capacity'] != 0.0
                 ] + '_temperature',
                 self.building_data.building_surfaces_interior['surface_name'][
-                    self.building_data.building_surfaces_interior['heat_capacity'].apply(parse_parameter) != 0.0
+                    self.building_data.building_surfaces_interior['heat_capacity'] != 0.0
                 ] + '_temperature',
 
                 # Zone CO2 concentration.
@@ -582,24 +582,24 @@ class BuildingModel(object):
         )
         for index, row in self.building_data.building_zones.iterrows():
             self.heat_capacity_vector.at[index] = (
-                parse_parameter(row['zone_area'])
-                * parse_parameter(row['zone_height'])
-                * parse_parameter(row['heat_capacity'])
+                row['zone_area']
+                * row['zone_height']
+                * row['heat_capacity']
             )
         for index, row in self.building_data.building_surfaces_adiabatic.iterrows():
             self.heat_capacity_vector.at[index] = (
-                parse_parameter(row['surface_area'])
-                * parse_parameter(row['heat_capacity'])
+                row['surface_area']
+                * row['heat_capacity']
             )
         for index, row in self.building_data.building_surfaces_exterior.iterrows():
             self.heat_capacity_vector.at[index] = (
-                parse_parameter(row['surface_area'])
-                * parse_parameter(row['heat_capacity'])
+                row['surface_area']
+                * row['heat_capacity']
             )
         for index, row in self.building_data.building_surfaces_interior.iterrows():
             self.heat_capacity_vector.at[index] = (
-                parse_parameter(row['surface_area'])
-                * parse_parameter(row['heat_capacity'])
+                row['surface_area']
+                * row['heat_capacity']
             )
 
         # Instantiate other model properties / variables.
@@ -615,7 +615,7 @@ class BuildingModel(object):
             self.set_state_initial.loc[
                 self.set_state_initial.index.isin(self.building_data.building_zones['zone_name'] + '_temperature')
             ] = (
-                parse_parameter(self.building_data.building_scenarios['initial_zone_temperature'])
+                self.building_data.building_scenarios['initial_zone_temperature']
             )
 
             # Surface temperature.
@@ -628,35 +628,35 @@ class BuildingModel(object):
                     ])
                 )
             ] = (
-                parse_parameter(self.building_data.building_scenarios['initial_surface_temperature'])
+                self.building_data.building_scenarios['initial_surface_temperature']
             )
 
             # CO2 concentration.
             self.set_state_initial.loc[
                 self.set_state_initial.index.isin(self.building_data.building_zones['zone_name'] + '_co2_concentration')
             ] = (
-                parse_parameter(self.building_data.building_scenarios['initial_co2_concentration'])
+                self.building_data.building_scenarios['initial_co2_concentration']
             )
 
             # Zone air absolute humidity.
             self.set_state_initial.loc[
                 self.set_state_initial.index.isin(self.building_data.building_zones['zone_name'] + '_absolute_humidity')
             ] = (
-                parse_parameter(self.building_data.building_scenarios['initial_absolute_humidity'])
+                self.building_data.building_scenarios['initial_absolute_humidity']
             )
 
             # Sensible storage state of charge.
             self.set_state_initial.loc[
                 self.set_state_initial.index.str.contains('_sensible_thermal_storage_state_of_charge')
             ] = (
-                parse_parameter(self.building_data.building_scenarios['initial_sensible_thermal_storage_state_of_charge'])
+                self.building_data.building_scenarios['initial_sensible_thermal_storage_state_of_charge']
             )
 
             # Battery storage state of charge.
             self.set_state_initial.loc[
                 self.set_state_initial.index.str.contains('_battery_storage_state_of_charge')
             ] = (
-                parse_parameter(self.building_data.building_scenarios['initial_battery_storage_state_of_charge'])
+                self.building_data.building_scenarios['initial_battery_storage_state_of_charge']
             )
 
         def calculate_coefficients_zone():
@@ -698,22 +698,22 @@ class BuildingModel(object):
                 # Calculate parameters / heat transfer coefficients.
                 self.building_data.building_zones.at[zone_name, 'zone_surfaces_wall_area'] = (
                     (
-                        zone_surfaces['surface_area'].apply(parse_parameter)
-                        * (1 - zone_surfaces['window_wall_ratio'].apply(parse_parameter))
+                        zone_surfaces['surface_area']
+                        * (1 - zone_surfaces['window_wall_ratio'])
                     ).sum()
                 )
                 self.building_data.building_zones.at[zone_name, 'zone_surfaces_window_area'] = (
                     (
-                        zone_surfaces['surface_area'].apply(parse_parameter)
-                        * zone_surfaces['window_wall_ratio'].apply(parse_parameter)
+                        zone_surfaces['surface_area']
+                        * zone_surfaces['window_wall_ratio']
                     ).sum()
                 )
                 self.building_data.building_zones.at[zone_name, 'zone_surfaces_wall_emissivity'] = (
-                    zone_surfaces['emissivity'].apply(parse_parameter).mean()
+                    zone_surfaces['emissivity'].mean()
                 )
                 # TODO: Ignore surfaces with no windows.
                 self.building_data.building_zones.at[zone_name, 'zone_surfaces_window_emissivity'] = (
-                    zone_surfaces['emissivity_window'].apply(parse_parameter).mean()
+                    zone_surfaces['emissivity_window'].mean()
                 )
 
         def calculate_coefficients_surface():
@@ -729,26 +729,26 @@ class BuildingModel(object):
             for surface_name, surface_data in self.building_data.building_surfaces_exterior.iterrows():
                 surface_data['heat_transfer_coefficient_surface_sky'] = (
                     4.0
-                    * parse_parameter('stefan_boltzmann_constant')
-                    * parse_parameter(surface_data['emissivity'])
-                    * parse_parameter(surface_data['sky_view_factor'])
+                    * self.building_data.building_parameters['stefan_boltzmann_constant']
+                    * surface_data['emissivity']
+                    * surface_data['sky_view_factor']
                     * (
-                        parse_parameter(self.building_data.building_scenarios['linearization_exterior_surface_temperature'])
+                        self.building_data.building_scenarios['linearization_exterior_surface_temperature']
                         / 2.0
-                        + parse_parameter(self.building_data.building_scenarios['linearization_sky_temperature'])
+                        + self.building_data.building_scenarios['linearization_sky_temperature']
                         / 2.0
                         + 273.15
                     ) ** 3
                 )
                 surface_data['heat_transfer_coefficient_surface_ground'] = (
                     4.0
-                    * parse_parameter('stefan_boltzmann_constant')
-                    * parse_parameter(surface_data['emissivity'])
-                    * (1.0 - parse_parameter(surface_data['sky_view_factor']))
+                    * self.building_data.building_parameters['stefan_boltzmann_constant']
+                    * surface_data['emissivity']
+                    * (1.0 - surface_data['sky_view_factor'])
                     * (
-                        parse_parameter(self.building_data.building_scenarios['linearization_exterior_surface_temperature'])
+                        self.building_data.building_scenarios['linearization_exterior_surface_temperature']
                         / 2.0
-                        + parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_temperature'])
+                        + self.building_data.building_scenarios['linearization_ambient_air_temperature']
                         / 2.0
                         + 273.15
                     ) ** 3
@@ -756,26 +756,26 @@ class BuildingModel(object):
                 if pd.notnull(surface_data['window_type']):
                     surface_data['heat_transfer_coefficient_window_sky'] = (
                         4.0
-                        * parse_parameter('stefan_boltzmann_constant')
-                        * parse_parameter(surface_data['emissivity_window'])
-                        * parse_parameter(surface_data['sky_view_factor'])
+                        * self.building_data.building_parameters['stefan_boltzmann_constant']
+                        * surface_data['emissivity_window']
+                        * surface_data['sky_view_factor']
                         * (
-                            parse_parameter(self.building_data.building_scenarios['linearization_exterior_surface_temperature'])
+                            self.building_data.building_scenarios['linearization_exterior_surface_temperature']
                             / 2.0
-                            + parse_parameter(self.building_data.building_scenarios['linearization_sky_temperature'])
+                            + self.building_data.building_scenarios['linearization_sky_temperature']
                             / 2.0
                             + 273.15
                         ) ** 3
                     )
                     surface_data['heat_transfer_coefficient_window_ground'] = (
                         4.0
-                        * parse_parameter('stefan_boltzmann_constant')
-                        * parse_parameter(surface_data['emissivity_window'])
-                        * (1.0 - parse_parameter(surface_data['sky_view_factor']))
+                        * self.building_data.building_parameters['stefan_boltzmann_constant']
+                        * surface_data['emissivity_window']
+                        * (1.0 - surface_data['sky_view_factor'])
                         * (
-                            parse_parameter(self.building_data.building_scenarios['linearization_exterior_surface_temperature'])
+                            self.building_data.building_scenarios['linearization_exterior_surface_temperature']
                             / 2.0
-                            + parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_temperature'])
+                            + self.building_data.building_scenarios['linearization_ambient_air_temperature']
                             / 2.0
                             + 273.15
                         ) ** 3
@@ -805,43 +805,43 @@ class BuildingModel(object):
                     if pd.notnull(zone_data['hvac_radiator_type']):
                         # Calculate geometric parameters and heat capacity.
                         thickness_water_layer = (
-                            parse_parameter(zone_data['radiator_water_volume'])
-                            / parse_parameter(zone_data['radiator_panel_area'])
+                            zone_data['radiator_water_volume']
+                            / zone_data['radiator_panel_area']
                         )
                         thickness_hull_layer = (
                             # Thickness for hull on one side of the panel.
                             0.5 * (
-                                parse_parameter(zone_data['radiator_panel_thickness'])
+                                zone_data['radiator_panel_thickness']
                                 - thickness_water_layer
                             )
                         )
                         radiator_hull_volume = (
                             # Volume for hull on one side of the panel.
                             thickness_hull_layer
-                            * parse_parameter(zone_data['radiator_panel_area'])
+                            * zone_data['radiator_panel_area']
                         )
                         self.building_data.building_zones.at[zone_name, 'heat_capacitance_hull'] = (
                             radiator_hull_volume
-                            * parse_parameter(zone_data['radiator_hull_heat_capacity'])
+                            * zone_data['radiator_hull_heat_capacity']
                         )
                         self.building_data.building_zones.at[zone_name, 'heat_capacitance_water'] = (
-                            parse_parameter(zone_data['radiator_water_volume'])
-                            * parse_parameter('water_specific_heat')
+                            zone_data['radiator_water_volume']
+                            * self.building_data.building_parameters['water_specific_heat']
                         )
 
                         # Calculate fundamental thermal resistances.
                         thermal_resistance_conduction = (
                             thickness_hull_layer
                             / (
-                                parse_parameter(zone_data['radiator_hull_conductivity'])
-                                * parse_parameter(zone_data['radiator_panel_area'])
+                                zone_data['radiator_hull_conductivity']
+                                * zone_data['radiator_panel_area']
                             )
                         )
                         thermal_resistance_convection = (
                             1.0
                             / (
-                                parse_parameter(zone_data['radiator_convection_coefficient'])
-                                * parse_parameter(zone_data['radiator_panel_area'])
+                                zone_data['radiator_convection_coefficient']
+                                * zone_data['radiator_panel_area']
                             )
                         )
                         temperature_radiator_surfaces_mean = (
@@ -849,20 +849,20 @@ class BuildingModel(object):
                             * (
                                 0.5
                                 * (
-                                    parse_parameter(zone_data['radiator_supply_temperature_nominal'])
-                                    + parse_parameter(zone_data['radiator_return_temperature_nominal'])
+                                    zone_data['radiator_supply_temperature_nominal']
+                                    + zone_data['radiator_return_temperature_nominal']
                                 )
-                                + parse_parameter(self.building_data.building_scenarios['linearization_surface_temperature'])
+                                + self.building_data.building_scenarios['linearization_surface_temperature']
                             )
                         )
                         thermal_resistance_radiation_front = (
                             (
-                                (1.0 / parse_parameter(zone_data['radiator_panel_area']))
+                                (1.0 / zone_data['radiator_panel_area'])
                                 + (
-                                    (1.0 - parse_parameter(zone_data['radiator_emissivity']))
+                                    (1.0 - zone_data['radiator_emissivity'])
                                     / (
-                                        parse_parameter(zone_data['radiator_panel_area'])
-                                        * parse_parameter(zone_data['radiator_emissivity'])
+                                        zone_data['radiator_panel_area']
+                                        * zone_data['radiator_emissivity']
                                     )
                                 )
                                 + (
@@ -876,33 +876,33 @@ class BuildingModel(object):
                             )
                             / (
                                 (
-                                    4.0 * parse_parameter('stefan_boltzmann_constant')
+                                    4.0 * self.building_data.building_parameters['stefan_boltzmann_constant']
                                     * (temperature_radiator_surfaces_mean ** 3.0)
                                 )
                             )
                         )
                         thermal_resistance_radiation_rear = (
                             (
-                                (1.0 / parse_parameter(zone_data['radiator_panel_area']))
+                                (1.0 / zone_data['radiator_panel_area'])
                                 + (
-                                    (1.0 - parse_parameter(zone_data['radiator_emissivity']))
+                                    (1.0 - zone_data['radiator_emissivity'])
                                     / (
-                                        parse_parameter(zone_data['radiator_panel_area'])
-                                        * parse_parameter(zone_data['radiator_emissivity'])
+                                        zone_data['radiator_panel_area']
+                                        * zone_data['radiator_emissivity']
                                     )
                                 )
                                 + (
                                     # TODO: Use total zone surface area and emissivity?
                                     (1.0 - zone_data['zone_surfaces_wall_emissivity'])
                                     / (
-                                        parse_parameter(zone_data['radiator_panel_area'])
+                                        zone_data['radiator_panel_area']
                                         * zone_data['zone_surfaces_wall_emissivity']
                                     )
                                 )
                             )
                             / (
                                 (
-                                    4.0 * parse_parameter('stefan_boltzmann_constant')
+                                    4.0 * self.building_data.building_parameters['stefan_boltzmann_constant']
                                     * (temperature_radiator_surfaces_mean ** 3.0)
                                 )
                             )
@@ -946,7 +946,7 @@ class BuildingModel(object):
                                 1.0
                                 / (
                                     thermal_resistance_convection
-                                    * parse_parameter(zone_data['radiator_fin_effectiveness'])
+                                    * zone_data['radiator_fin_effectiveness']
                                 )
                             )
 
@@ -965,25 +965,25 @@ class BuildingModel(object):
             # TODO: Exterior window transmission factor
 
             for surface_name, surface_data in self.building_data.building_surfaces_exterior.iterrows():
-                if parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
+                if surface_data['heat_capacity'] != 0.0:  # Surfaces with non-zero heat capacity
                     # Conductive heat transfer from the exterior towards the core of surface
                     self.disturbance_matrix.at[
                         surface_name + '_temperature',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
-                        parse_parameter(surface_data['absorptivity'])
-                        * parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        surface_data['absorptivity']
+                        * surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_name]
@@ -993,21 +993,21 @@ class BuildingModel(object):
                         'ambient_air_temperature'
                     ] += (
                         (
-                            parse_parameter('heat_transfer_coefficient_exterior_convection')
-                            + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                            self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                            + surface_data['heat_transfer_coefficient_surface_ground']
                         )
-                        * parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        * surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_name]
@@ -1016,19 +1016,19 @@ class BuildingModel(object):
                         surface_name + '_temperature',
                         'sky_temperature'
                     ] += (
-                        parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
-                        * parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        surface_data['heat_transfer_coefficient_surface_sky']
+                        * surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_name]
@@ -1038,19 +1038,19 @@ class BuildingModel(object):
                         surface_name + '_temperature'
                     ] += (
                         - 1.0
-                        * parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        * surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
                             + 1.0
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_name]
@@ -1068,21 +1068,21 @@ class BuildingModel(object):
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
                             (
-                                parse_parameter(zone_exterior_surface_data['surface_area'])
-                                * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                zone_exterior_surface_data['surface_area']
+                                * zone_exterior_surface_data['window_wall_ratio']
                                 / self.building_data.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * parse_parameter(surface_data['absorptivity'])
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['absorptivity']
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             * (
                                 1.0
                                 + (
-                                    parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 )
                                 / (
                                     2.0
-                                    * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1)
                             / self.heat_capacity_vector[surface_name]
@@ -1092,17 +1092,17 @@ class BuildingModel(object):
                         surface_name + '_temperature'
                     ] += (
                         - 1.0
-                        * parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        * surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_interior_convection')
+                                self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             )
                             + 1.0
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_name]
@@ -1111,17 +1111,17 @@ class BuildingModel(object):
                         surface_name + '_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
-                        parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_interior_convection')
+                                self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             )
                             + 1.0
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_name]
@@ -1139,21 +1139,21 @@ class BuildingModel(object):
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
                             (
-                                parse_parameter(zone_exterior_surface_data['surface_area'])
-                                * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                zone_exterior_surface_data['surface_area']
+                                * zone_exterior_surface_data['window_wall_ratio']
                                 / self.building_data.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * parse_parameter(surface_data['absorptivity'])
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['absorptivity']
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             * (1.0 - (
                                 1.0
                                 + (
-                                    parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 )
                                 / (
                                     2.0
-                                    * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1))
                             / self.heat_capacity_vector[surface_data['zone_name']]
@@ -1162,17 +1162,17 @@ class BuildingModel(object):
                         surface_data['zone_name'] + '_temperature',
                         surface_name + '_temperature'
                     ] += (
-                        parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_interior_convection')
+                                self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             )
                             + 1.0
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_data['zone_name']]
@@ -1182,17 +1182,17 @@ class BuildingModel(object):
                         surface_data['zone_name'] + '_temperature'
                     ] += (
                         - 1.0
-                        * parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        * surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_interior_convection')
+                                self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             )
                             + 1.0
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_data['zone_name']]
@@ -1203,23 +1203,23 @@ class BuildingModel(object):
                         surface_data['zone_name'] + '_temperature',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
-                        parse_parameter(surface_data['absorptivity'])
-                        * parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        surface_data['absorptivity']
+                        * surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / parse_parameter('heat_transfer_coefficient_interior_convection')
+                            / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                            / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_data['zone_name']]
                     )
@@ -1228,25 +1228,25 @@ class BuildingModel(object):
                         'ambient_air_temperature'
                     ] += (
                         (
-                            parse_parameter('heat_transfer_coefficient_exterior_convection')
-                            + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                            self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                            + surface_data['heat_transfer_coefficient_surface_ground']
                         )
-                        * parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        * surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / parse_parameter('heat_transfer_coefficient_interior_convection')
+                            / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                            / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_data['zone_name']]
                     )
@@ -1254,23 +1254,23 @@ class BuildingModel(object):
                         surface_data['zone_name'] + '_temperature',
                         'sky_temperature'
                     ] += (
-                        parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
-                        * parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        surface_data['heat_transfer_coefficient_surface_sky']
+                        * surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / parse_parameter('heat_transfer_coefficient_interior_convection')
+                            / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                            / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_data['zone_name']]
                     )
@@ -1279,19 +1279,19 @@ class BuildingModel(object):
                         surface_data['zone_name'] + '_temperature'
                     ] += (
                         - 1.0
-                        * parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        * surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
                             + 1.0
-                            / parse_parameter('heat_transfer_coefficient_interior_convection')
+                            / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             + 1.0
-                            / (parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                            / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_data['zone_name']]
                     )
@@ -1306,55 +1306,55 @@ class BuildingModel(object):
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
                             (
-                                parse_parameter(zone_exterior_surface_data['surface_area'])
-                                * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                zone_exterior_surface_data['surface_area']
+                                * zone_exterior_surface_data['window_wall_ratio']
                                 / self.building_data.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * parse_parameter(surface_data['absorptivity'])
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['absorptivity']
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             * (1.0 - (
                                 1.0
                                 + (
-                                    parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                    + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                    + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                    self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                    + surface_data['heat_transfer_coefficient_surface_ground']
+                                    + surface_data['heat_transfer_coefficient_surface_sky']
                                 )
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + (
-                                    parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                    + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                    + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                    self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                    + surface_data['heat_transfer_coefficient_surface_ground']
+                                    + surface_data['heat_transfer_coefficient_surface_sky']
                                 )
-                                / (parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                                / (surface_data['thermal_resistance_surface'] ** (- 1))
                             ) ** (- 1))
                             / self.heat_capacity_vector[surface_data['zone_name']]
                         )
 
                 # Windows for each exterior surface - Modelled as surfaces with neglected heat capacity
-                if parse_parameter(surface_data['window_wall_ratio']) != 0.0:
+                if surface_data['window_wall_ratio'] != 0.0:
                     # Complete convective heat transfer from surface to zone
                     self.disturbance_matrix.at[
                         surface_data['zone_name'] + '_temperature',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
-                        parse_parameter(surface_data['absorptivity_window'])
-                        * parse_parameter(surface_data['surface_area'])
-                        * parse_parameter(surface_data['window_wall_ratio'])
+                        surface_data['absorptivity_window']
+                        * surface_data['surface_area']
+                        * surface_data['window_wall_ratio']
                         * (
                             1.0
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_window_ground']
+                                + surface_data['heat_transfer_coefficient_window_sky']
                             )
-                            / parse_parameter('heat_transfer_coefficient_interior_convection')
+                            / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_window_ground']
+                                + surface_data['heat_transfer_coefficient_window_sky']
                             )
-                            / (parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                            / (surface_data['thermal_resistance_window'] ** (- 1))
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_data['zone_name']]
                     )
@@ -1363,25 +1363,25 @@ class BuildingModel(object):
                         'ambient_air_temperature'
                     ] += (
                         (
-                            parse_parameter('heat_transfer_coefficient_exterior_convection')
-                            + parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
+                            self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                            + surface_data['heat_transfer_coefficient_window_ground']
                         )
-                        * parse_parameter(surface_data['surface_area'])
-                        * parse_parameter(surface_data['window_wall_ratio'])
+                        * surface_data['surface_area']
+                        * surface_data['window_wall_ratio']
                         * (
                             1.0
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_window_ground']
+                                + surface_data['heat_transfer_coefficient_window_sky']
                             )
-                            / parse_parameter('heat_transfer_coefficient_interior_convection')
+                            / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_window_ground']
+                                + surface_data['heat_transfer_coefficient_window_sky']
                             )
-                            / (parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                            / (surface_data['thermal_resistance_window'] ** (- 1))
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_data['zone_name']]
                     )
@@ -1389,23 +1389,23 @@ class BuildingModel(object):
                         surface_data['zone_name'] + '_temperature',
                         'sky_temperature'
                     ] += (
-                        parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
-                        * parse_parameter(surface_data['surface_area'])
-                        * parse_parameter(surface_data['window_wall_ratio'])
+                        surface_data['heat_transfer_coefficient_window_sky']
+                        * surface_data['surface_area']
+                        * surface_data['window_wall_ratio']
                         * (
                             1.0
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_window_ground']
+                                + surface_data['heat_transfer_coefficient_window_sky']
                             )
-                            / parse_parameter('heat_transfer_coefficient_interior_convection')
+                            / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_window_ground']
+                                + surface_data['heat_transfer_coefficient_window_sky']
                             )
-                            / (parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                            / (surface_data['thermal_resistance_window'] ** (- 1))
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_data['zone_name']]
                     )
@@ -1414,19 +1414,19 @@ class BuildingModel(object):
                         surface_data['zone_name'] + '_temperature'
                     ] += (
                         - 1.0
-                        * parse_parameter(surface_data['surface_area'])
-                        * parse_parameter(surface_data['window_wall_ratio'])
+                        * surface_data['surface_area']
+                        * surface_data['window_wall_ratio']
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_window_ground']
+                                + surface_data['heat_transfer_coefficient_window_sky']
                             )
                             + 1.0
-                            / parse_parameter('heat_transfer_coefficient_interior_convection')
+                            / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             + 1.0
-                            / (parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                            / (surface_data['thermal_resistance_window'] ** (- 1))
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_data['zone_name']]
                     )
@@ -1441,27 +1441,27 @@ class BuildingModel(object):
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
                             (
-                                parse_parameter(zone_exterior_surface_data['surface_area'])
-                                * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                zone_exterior_surface_data['surface_area']
+                                * zone_exterior_surface_data['window_wall_ratio']
                                 / self.building_data.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * parse_parameter(surface_data['absorptivity_window'])
-                            * parse_parameter(surface_data['surface_area'])
-                            * parse_parameter(surface_data['window_wall_ratio'])
+                            * surface_data['absorptivity_window']
+                            * surface_data['surface_area']
+                            * surface_data['window_wall_ratio']
                             * (1.0 - (
                                 1.0
                                 + (
-                                    parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                    + parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
-                                    + parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                    self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                    + surface_data['heat_transfer_coefficient_window_ground']
+                                    + surface_data['heat_transfer_coefficient_window_sky']
                                 )
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + (
-                                    parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                    + parse_parameter(surface_data['heat_transfer_coefficient_window_ground'])
-                                    + parse_parameter(surface_data['heat_transfer_coefficient_window_sky'])
+                                    self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                    + surface_data['heat_transfer_coefficient_window_ground']
+                                    + surface_data['heat_transfer_coefficient_window_sky']
                                 )
-                                / (parse_parameter(surface_data['thermal_resistance_window']) ** (- 1))
+                                / (surface_data['thermal_resistance_window'] ** (- 1))
                             ) ** (- 1))
                             / self.heat_capacity_vector[surface_data['zone_name']]
                         )
@@ -1471,7 +1471,7 @@ class BuildingModel(object):
 
             for surface_name, surface_data in self.building_data.building_surfaces_interior.iterrows():
                 for zone_name in [surface_data['zone_name'], surface_data['zone_adjacent_name']]:
-                    if parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
+                    if surface_data['heat_capacity'] != 0.0:  # Surfaces with non-zero heat capacity
                         # Conductive heat transfer from the interior towards the core of surface
                         for zone_exterior_surface_name, zone_exterior_surface_data in (
                                 self.building_data.building_surfaces_exterior[
@@ -1484,19 +1484,19 @@ class BuildingModel(object):
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
                                 (
-                                    parse_parameter(zone_exterior_surface_data['surface_area'])
-                                    * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    zone_exterior_surface_data['surface_area']
+                                    * zone_exterior_surface_data['window_wall_ratio']
                                     / self.building_data.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * parse_parameter(surface_data['absorptivity'])
-                                * parse_parameter(surface_data['surface_area'])
-                                * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                                * surface_data['absorptivity']
+                                * surface_data['surface_area']
+                                * (1 - surface_data['window_wall_ratio'])
                                 * (
                                     1.0
-                                    + parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                     / (
                                         2.0
-                                        * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                        * surface_data['thermal_resistance_surface'] ** (- 1)
                                     )
                                 ) ** (- 1)
                                 / self.heat_capacity_vector[surface_name]
@@ -1506,15 +1506,15 @@ class BuildingModel(object):
                             surface_name + '_temperature'
                         ] += (
                             - 1.0
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             * (
                                 1.0
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
                                 / (
                                     2.0
-                                    * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1)
                             / self.heat_capacity_vector[surface_name]
@@ -1523,15 +1523,15 @@ class BuildingModel(object):
                             surface_name + '_temperature',
                             zone_name + '_temperature'
                         ] += (
-                            parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             * (
                                 1.0
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
                                 / (
                                     2.0
-                                    * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1)
                             / self.heat_capacity_vector[surface_name]
@@ -1549,19 +1549,19 @@ class BuildingModel(object):
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
                                 (
-                                    parse_parameter(zone_exterior_surface_data['surface_area'])
-                                    * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    zone_exterior_surface_data['surface_area']
+                                    * zone_exterior_surface_data['window_wall_ratio']
                                     / self.building_data.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * parse_parameter(surface_data['absorptivity'])
-                                * parse_parameter(surface_data['surface_area'])
-                                * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                                * surface_data['absorptivity']
+                                * surface_data['surface_area']
+                                * (1 - surface_data['window_wall_ratio'])
                                 * (1.0 - (
                                     1.0
-                                    + parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    + self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                     / (
                                         2.0
-                                        * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                        * surface_data['thermal_resistance_surface'] ** (- 1)
                                     )
                                 ) ** (- 1))
                                 / self.heat_capacity_vector[zone_name]
@@ -1570,15 +1570,15 @@ class BuildingModel(object):
                             zone_name + '_temperature',
                             surface_name + '_temperature'
                         ] += (
-                            parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             * (
                                 1.0
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
                                 / (
                                     2.0
-                                    * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1)
                             / self.heat_capacity_vector[zone_name]
@@ -1588,15 +1588,15 @@ class BuildingModel(object):
                             zone_name + '_temperature'
                         ] += (
                             - 1.0
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             * (
                                 1.0
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
                                 / (
                                     2.0
-                                    * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1)
                             / self.heat_capacity_vector[zone_name]
@@ -1610,8 +1610,8 @@ class BuildingModel(object):
 
                         # Total adjacent zone surface area for later calculating share of interior (indirect) irradiation
                         zone_adjacent_surface_area = sum(
-                            parse_parameter(zone_surface_data['surface_area'])
-                            * (1 - parse_parameter(zone_surface_data['window_wall_ratio']))
+                            zone_surface_data['surface_area']
+                            * (1 - zone_surface_data['window_wall_ratio'])
                             for zone_surface_name, zone_surface_data in pd.concat(
                                 [
                                     self.building_data.building_surfaces_exterior[
@@ -1643,19 +1643,19 @@ class BuildingModel(object):
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
                                 (
-                                    parse_parameter(zone_exterior_surface_data['surface_area'])
-                                    * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    zone_exterior_surface_data['surface_area']
+                                    * zone_exterior_surface_data['window_wall_ratio']
                                     / zone_adjacent_surface_area
                                 )  # Considers the share at the respective surface
-                                * parse_parameter(surface_data['absorptivity'])
-                                * parse_parameter(surface_data['surface_area'])
-                                * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                                * surface_data['absorptivity']
+                                * surface_data['surface_area']
+                                * (1 - surface_data['window_wall_ratio'])
                                 * (
                                     1.0
-                                    + parse_parameter('heat_transfer_coefficient_interior_convection')
-                                    / parse_parameter('heat_transfer_coefficient_interior_convection')
-                                    + parse_parameter('heat_transfer_coefficient_interior_convection')
-                                    / parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    + self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
+                                    / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
+                                    + self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
+                                    / surface_data['thermal_resistance_surface'] ** (- 1)
                                 ) ** (- 1)
                                 / self.heat_capacity_vector[zone_name]
                             )
@@ -1663,15 +1663,15 @@ class BuildingModel(object):
                             zone_name + '_temperature',
                             zone_adjacent_name + '_temperature'
                         ] += (
-                            parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             * (
                                 1.0
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                / surface_data['thermal_resistance_surface'] ** (- 1)
                             ) ** (- 1)
                             / self.heat_capacity_vector[zone_name]
                         )
@@ -1680,15 +1680,15 @@ class BuildingModel(object):
                             zone_name + '_temperature'
                         ] += (
                             - 1.0
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             * (
                                 1.0
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                / surface_data['thermal_resistance_surface'] ** (- 1)
                             ) ** (- 1)
                             / self.heat_capacity_vector[zone_name]
                         )
@@ -1703,25 +1703,25 @@ class BuildingModel(object):
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
                                 (
-                                    parse_parameter(zone_exterior_surface_data['surface_area'])
-                                    * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    zone_exterior_surface_data['surface_area']
+                                    * zone_exterior_surface_data['window_wall_ratio']
                                     / self.building_data.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * parse_parameter(surface_data['absorptivity'])
-                                * parse_parameter(surface_data['surface_area'])
-                                * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                                * surface_data['absorptivity']
+                                * surface_data['surface_area']
+                                * (1 - surface_data['window_wall_ratio'])
                                 * (1.0 - (
                                     1.0
-                                    + parse_parameter('heat_transfer_coefficient_interior_convection')
-                                    / parse_parameter('heat_transfer_coefficient_interior_convection')
-                                    + parse_parameter('heat_transfer_coefficient_interior_convection')
-                                    / parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    + self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
+                                    / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
+                                    + self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
+                                    / surface_data['thermal_resistance_surface'] ** (- 1)
                                 ) ** (- 1))
                                 / self.heat_capacity_vector[zone_name]
                             )
 
                     # Windows for each interior surface - Modelled as surfaces with neglected heat capacity
-                    if parse_parameter(surface_data['window_wall_ratio']) != 0.0:
+                    if surface_data['window_wall_ratio'] != 0.0:
                         # Get adjacent / opposite zone_name
                         if zone_name == surface_data['zone_name']:
                             zone_adjacent_name = surface_data['zone_adjacent_name']
@@ -1730,8 +1730,8 @@ class BuildingModel(object):
 
                         # Total adjacent zone surface area for calculating share of interior (indirect) irradiation
                         zone_adjacent_surface_area = sum(
-                            parse_parameter(zone_surface_data['surface_area'])
-                            * (1 - parse_parameter(zone_surface_data['window_wall_ratio']))
+                            zone_surface_data['surface_area']
+                            * (1 - zone_surface_data['window_wall_ratio'])
                             for zone_surface_name, zone_surface_data in pd.concat(
                                 [
                                     self.building_data.building_surfaces_exterior[
@@ -1763,19 +1763,19 @@ class BuildingModel(object):
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
                                 (
-                                    parse_parameter(zone_exterior_surface_data['surface_area'])
-                                    * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    zone_exterior_surface_data['surface_area']
+                                    * zone_exterior_surface_data['window_wall_ratio']
                                     / zone_adjacent_surface_area
                                 )  # Considers the share at the respective surface
-                                * parse_parameter(surface_data['absorptivity_window'])
-                                * parse_parameter(surface_data['surface_area'])
-                                * parse_parameter(surface_data['window_wall_ratio'])
+                                * surface_data['absorptivity_window']
+                                * surface_data['surface_area']
+                                * surface_data['window_wall_ratio']
                                 * (
                                     1.0
-                                    + parse_parameter('heat_transfer_coefficient_interior_convection')
-                                    / parse_parameter('heat_transfer_coefficient_interior_convection')
-                                    + parse_parameter('heat_transfer_coefficient_interior_convection')
-                                    / parse_parameter(surface_data['thermal_resistance_window']) ** (- 1)
+                                    + self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
+                                    / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
+                                    + self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
+                                    / surface_data['thermal_resistance_window'] ** (- 1)
                                 ) ** (- 1)
                                 / self.heat_capacity_vector[zone_name]
                             )
@@ -1783,15 +1783,15 @@ class BuildingModel(object):
                             zone_name + '_temperature',
                             zone_adjacent_name + '_temperature'
                         ] += (
-                            parse_parameter(surface_data['surface_area'])
-                            * parse_parameter(surface_data['window_wall_ratio'])
+                            surface_data['surface_area']
+                            * surface_data['window_wall_ratio']
                             * (
                                 1.0
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / parse_parameter(surface_data['thermal_resistance_window']) ** (- 1)
+                                / surface_data['thermal_resistance_window'] ** (- 1)
                             ) ** (- 1)
                             / self.heat_capacity_vector[zone_name]
                         )
@@ -1800,15 +1800,15 @@ class BuildingModel(object):
                             zone_name + '_temperature'
                         ] += (
                             - 1.0
-                            * parse_parameter(surface_data['surface_area'])
-                            * parse_parameter(surface_data['window_wall_ratio'])
+                            * surface_data['surface_area']
+                            * surface_data['window_wall_ratio']
                             * (
                                 1.0
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / parse_parameter(surface_data['thermal_resistance_window']) ** (- 1)
+                                / surface_data['thermal_resistance_window'] ** (- 1)
                             ) ** (- 1)
                             / self.heat_capacity_vector[zone_name]
                         )
@@ -1823,19 +1823,19 @@ class BuildingModel(object):
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
                                 (
-                                    parse_parameter(zone_exterior_surface_data['surface_area'])
-                                    * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                    zone_exterior_surface_data['surface_area']
+                                    * zone_exterior_surface_data['window_wall_ratio']
                                     / self.building_data.building_zones.loc[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * parse_parameter(surface_data['absorptivity_window'])
-                                * parse_parameter(surface_data['surface_area'])
-                                * parse_parameter(surface_data['window_wall_ratio'])
+                                * surface_data['absorptivity_window']
+                                * surface_data['surface_area']
+                                * surface_data['window_wall_ratio']
                                 * (1.0 - (
                                     1.0
-                                    + parse_parameter('heat_transfer_coefficient_interior_convection')
-                                    / parse_parameter('heat_transfer_coefficient_interior_convection')
-                                    + parse_parameter('heat_transfer_coefficient_interior_convection')
-                                    / parse_parameter(surface_data['thermal_resistance_window']) ** (- 1)
+                                    + self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
+                                    / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
+                                    + self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
+                                    / surface_data['thermal_resistance_window'] ** (- 1)
                                 ) ** (- 1))
                                 / self.heat_capacity_vector[zone_name]
                             )
@@ -1844,7 +1844,7 @@ class BuildingModel(object):
             """Thermal model: Adiabatic surfaces"""
 
             for surface_name, surface_data in self.building_data.building_surfaces_adiabatic.iterrows():
-                if parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
+                if surface_data['heat_capacity'] != 0.0:  # Surfaces with non-zero heat capacity
                     # Conductive heat transfer from the interior towards the core of surface
                     for zone_exterior_surface_name, zone_exterior_surface_data in (
                             self.building_data.building_surfaces_exterior[
@@ -1857,21 +1857,21 @@ class BuildingModel(object):
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
                             (
-                                parse_parameter(zone_exterior_surface_data['surface_area'])
-                                * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                zone_exterior_surface_data['surface_area']
+                                * zone_exterior_surface_data['window_wall_ratio']
                                 / self.building_data.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * parse_parameter(surface_data['absorptivity'])
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['absorptivity']
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             * (
                                 1.0
                                 + (
-                                    parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 )
                                 / (
                                     2.0
-                                    * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1)
                             / self.heat_capacity_vector[surface_name]
@@ -1881,17 +1881,17 @@ class BuildingModel(object):
                         surface_name + '_temperature'
                     ] += (
                         - 1.0
-                        * parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        * surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_interior_convection')
+                                self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             )
                             + 1.0
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_name]
@@ -1900,17 +1900,17 @@ class BuildingModel(object):
                         surface_name + '_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
-                        parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_interior_convection')
+                                self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             )
                             + 1.0
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_name]
@@ -1928,21 +1928,21 @@ class BuildingModel(object):
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
                             (
-                                parse_parameter(zone_exterior_surface_data['surface_area'])
-                                * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                zone_exterior_surface_data['surface_area']
+                                * zone_exterior_surface_data['window_wall_ratio']
                                 / self.building_data.building_zones.loc[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * parse_parameter(surface_data['absorptivity'])
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['absorptivity']
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             * (1.0 - (
                                 1.0
                                 + (
-                                    parse_parameter('heat_transfer_coefficient_interior_convection')
+                                    self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 )
                                 / (
                                     2.0
-                                    * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                    * surface_data['thermal_resistance_surface'] ** (- 1)
                                 )
                             ) ** (- 1))
                             / self.heat_capacity_vector[surface_data['zone_name']]
@@ -1951,17 +1951,17 @@ class BuildingModel(object):
                         surface_data['zone_name'] + '_temperature',
                         surface_name + '_temperature'
                     ] += (
-                        parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_interior_convection')
+                                self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             )
                             + 1.0
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_data['zone_name']]
@@ -1971,17 +1971,17 @@ class BuildingModel(object):
                         surface_data['zone_name'] + '_temperature'
                     ] += (
                         - 1.0
-                        * parse_parameter(surface_data['surface_area'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        * surface_data['surface_area']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_interior_convection')
+                                self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             )
                             + 1.0
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                         / self.heat_capacity_vector[surface_data['zone_name']]
@@ -1996,20 +1996,20 @@ class BuildingModel(object):
                     index + '_temperature',
                     index + '_temperature'
                 ] += (
-                    - parse_parameter(row['infiltration_rate'])
-                    * parse_parameter('heat_capacity_air')
-                    * parse_parameter(row['zone_area'])
-                    * parse_parameter(row['zone_height'])
+                    - row['infiltration_rate']
+                    * self.building_data.building_parameters['heat_capacity_air']
+                    * row['zone_area']
+                    * row['zone_height']
                     / self.heat_capacity_vector[index]
                 )
                 self.disturbance_matrix.at[
                     index + '_temperature',
                     'ambient_air_temperature'
                 ] += (
-                    parse_parameter(row['infiltration_rate'])
-                    * parse_parameter('heat_capacity_air')
-                    * parse_parameter(row['zone_area'])
-                    * parse_parameter(row['zone_height'])
+                    row['infiltration_rate']
+                    * self.building_data.building_parameters['heat_capacity_air']
+                    * row['zone_area']
+                    * row['zone_height']
                     / self.heat_capacity_vector[index]
                 )
 
@@ -2021,10 +2021,10 @@ class BuildingModel(object):
                         index + '_temperature',
                         index + '_window_air_flow'
                     ] += (
-                        parse_parameter('heat_capacity_air')
+                        self.building_data.building_parameters['heat_capacity_air']
                         * (
-                            parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_temperature'])
-                            - parse_parameter(self.building_data.building_scenarios['linearization_zone_air_temperature_cool'])
+                            self.building_data.building_scenarios['linearization_ambient_air_temperature']
+                            - self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
                         )
                         / self.heat_capacity_vector[index]
                     )
@@ -2036,16 +2036,16 @@ class BuildingModel(object):
                     index + '_temperature',
                     row['internal_gain_type'] + '_occupancy'
                 ] += (
-                    parse_parameter(row['internal_gain_occupancy_factor'])
-                    * parse_parameter(row['zone_area'])
+                    row['internal_gain_occupancy_factor']
+                    * row['zone_area']
                     / self.heat_capacity_vector[index]
                 )
                 self.disturbance_matrix.at[
                     index + '_temperature',
                     row['internal_gain_type'] + '_appliances'
                 ] += (
-                    parse_parameter(row['internal_gain_appliances_factor'])
-                    * parse_parameter(row['zone_area'])
+                    row['internal_gain_appliances_factor']
+                    * row['zone_area']
                     / self.heat_capacity_vector[index]
                 )
 
@@ -2411,8 +2411,8 @@ class BuildingModel(object):
                         ] += (
                             1.0
                             / zone_data['thermal_resistance_radiator_front_surfaces']
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             / zone_data['zone_surfaces_wall_area']
                             / zone_data['heat_capacitance_hull']
                         )
@@ -2422,8 +2422,8 @@ class BuildingModel(object):
                         ] += (
                             1.0
                             / zone_data['thermal_resistance_radiator_front_surfaces']
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             / zone_data['zone_surfaces_wall_area']
                             / self.heat_capacity_vector[surface_name]
                         )
@@ -2433,8 +2433,8 @@ class BuildingModel(object):
                         ] += (
                             - 1.0
                             / zone_data['thermal_resistance_radiator_front_surfaces']
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             / zone_data['zone_surfaces_wall_area']
                             / self.heat_capacity_vector[surface_name]
                         )
@@ -2446,8 +2446,8 @@ class BuildingModel(object):
                         ] += (
                             1.0
                             / zone_data['thermal_resistance_radiator_rear_surfaces']
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             / zone_data['zone_surfaces_wall_area']
                             / zone_data['heat_capacitance_hull']
                         )
@@ -2457,8 +2457,8 @@ class BuildingModel(object):
                         ] += (
                             1.0
                             / zone_data['thermal_resistance_radiator_rear_surfaces']
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             / zone_data['zone_surfaces_wall_area']
                             / self.heat_capacity_vector[surface_name]
                         )
@@ -2468,8 +2468,8 @@ class BuildingModel(object):
                         ] += (
                             - 1.0
                             / zone_data['thermal_resistance_radiator_rear_surfaces']
-                            * parse_parameter(surface_data['surface_area'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['surface_area']
+                            * (1 - surface_data['window_wall_ratio'])
                             / zone_data['zone_surfaces_wall_area']
                             / self.heat_capacity_vector[surface_name]
                         )
@@ -2482,10 +2482,10 @@ class BuildingModel(object):
                         index + '_temperature',
                         index + '_ahu_heat_air_flow'
                     ] += (
-                        parse_parameter('heat_capacity_air')
+                        self.building_data.building_parameters['heat_capacity_air']
                         * (
-                            parse_parameter(row['ahu_supply_air_temperature_setpoint'])
-                            - parse_parameter(self.building_data.building_scenarios['linearization_zone_air_temperature_heat'])
+                            row['ahu_supply_air_temperature_setpoint']
+                            - self.building_data.building_scenarios['linearization_zone_air_temperature_heat']
                         )
                         / self.heat_capacity_vector[index]
                     )
@@ -2493,10 +2493,10 @@ class BuildingModel(object):
                         index + '_temperature',
                         index + '_ahu_cool_air_flow'
                     ] += (
-                        parse_parameter('heat_capacity_air')
+                        self.building_data.building_parameters['heat_capacity_air']
                         * (
-                            parse_parameter(row['ahu_supply_air_temperature_setpoint'])
-                            - parse_parameter(self.building_data.building_scenarios['linearization_zone_air_temperature_cool'])
+                            row['ahu_supply_air_temperature_setpoint']
+                            - self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
                         )
                         / self.heat_capacity_vector[index]
                     )
@@ -2509,10 +2509,10 @@ class BuildingModel(object):
                         index + '_temperature',
                         index + '_tu_heat_air_flow'
                     ] += (
-                        parse_parameter('heat_capacity_air')
+                        self.building_data.building_parameters['heat_capacity_air']
                         * (
-                            parse_parameter(row['tu_supply_air_temperature_setpoint'])
-                            - parse_parameter(self.building_data.building_scenarios['linearization_zone_air_temperature_heat'])
+                            row['tu_supply_air_temperature_setpoint']
+                            - self.building_data.building_scenarios['linearization_zone_air_temperature_heat']
                         )
                         / self.heat_capacity_vector[index]
                     )
@@ -2520,10 +2520,10 @@ class BuildingModel(object):
                         index + '_temperature',
                         index + '_tu_cool_air_flow'
                     ] += (
-                        parse_parameter('heat_capacity_air')
+                        self.building_data.building_parameters['heat_capacity_air']
                         * (
-                            parse_parameter(row['tu_supply_air_temperature_setpoint'])
-                            - parse_parameter(self.building_data.building_scenarios['linearization_zone_air_temperature_cool'])
+                            row['tu_supply_air_temperature_setpoint']
+                            - self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
                         )
                         / self.heat_capacity_vector[index]
                     )
@@ -2539,10 +2539,8 @@ class BuildingModel(object):
                         ] += (
                             - 1.0
                             * (
-                                parse_parameter(
-                                    self.building_data.building_scenarios['linearization_ventilation_rate_per_square_meter']
-                                )
-                                / parse_parameter(row['zone_height'])
+                                self.building_data.building_scenarios['linearization_ventilation_rate_per_square_meter']
+                                / row['zone_height']
                             )
                         )
                         if pd.notnull(row['hvac_ahu_type']):
@@ -2552,9 +2550,9 @@ class BuildingModel(object):
                             ] += (
                                 - 1.0
                                 * (
-                                    parse_parameter(self.building_data.building_scenarios['linearization_co2_concentration'])
-                                    / parse_parameter(row['zone_height'])
-                                    / parse_parameter(row['zone_area'])
+                                    self.building_data.building_scenarios['linearization_co2_concentration']
+                                    / row['zone_height']
+                                    / row['zone_area']
                                 )
                             )
                             self.control_matrix.at[
@@ -2563,9 +2561,9 @@ class BuildingModel(object):
                             ] += (
                                 - 1.0
                                 * (
-                                    parse_parameter(self.building_data.building_scenarios['linearization_co2_concentration'])
-                                    / parse_parameter(row['zone_height'])
-                                    / parse_parameter(row['zone_area'])
+                                    self.building_data.building_scenarios['linearization_co2_concentration']
+                                    / row['zone_height']
+                                    / row['zone_area']
                                 )
                             )
                         if pd.notnull(row['window_type']):
@@ -2575,9 +2573,9 @@ class BuildingModel(object):
                             ] += (
                                 - 1.0
                                 * (
-                                    parse_parameter(self.building_data.building_scenarios['linearization_co2_concentration'])
-                                    / parse_parameter(row['zone_height'])
-                                    / parse_parameter(row['zone_area'])
+                                    self.building_data.building_scenarios['linearization_co2_concentration']
+                                    / row['zone_height']
+                                    / row['zone_area']
                                 )
                             )
                         # self.disturbance_matrix.at[
@@ -2585,16 +2583,16 @@ class BuildingModel(object):
                         #     'constant'
                         # ] += (
                         #     - 1.0
-                        #     * parse_parameter(self.building_data.building_scenarios['linearization_co2_concentration']
-                        #     * parse_parameter(zone_data['infiltration_rate']))
+                        #     * self.building_data.building_scenarios['linearization_co2_concentration']
+                        #     * zone_data['infiltration_rate'])
                         # )  # TODO: Revise infiltration
                         self.disturbance_matrix.at[
                             index + '_co2_concentration',
                             row['internal_gain_type'] + '_occupancy'
                         ] += (
-                            parse_parameter('co2_generation_rate_per_person')
-                            / parse_parameter(row['zone_height'])
-                            / parse_parameter(row['zone_area'])
+                            self.building_data.building_parameters['co2_generation_rate_per_person']
+                            / row['zone_height']
+                            / row['zone_area']
                         )
                         # division by zone_area since the occupancy here is in p
                         # if iterative and robust BM, no division by zone_area since the occupancy there is in p/m2
@@ -2602,9 +2600,9 @@ class BuildingModel(object):
                             index + '_co2_concentration',
                             'constant'
                         ] += (
-                            parse_parameter(self.building_data.building_scenarios['linearization_ventilation_rate_per_square_meter'])
-                            * parse_parameter(self.building_data.building_scenarios['linearization_co2_concentration'])
-                            / parse_parameter(row['zone_height'])
+                            self.building_data.building_scenarios['linearization_ventilation_rate_per_square_meter']
+                            * self.building_data.building_scenarios['linearization_co2_concentration']
+                            / row['zone_height']
                         )
 
         def define_humidity_transfer_hvac_ahu():
@@ -2618,10 +2616,8 @@ class BuildingModel(object):
                         ] += (
                             - 1.0
                             * (
-                                parse_parameter(
-                                    self.building_data.building_scenarios['linearization_ventilation_rate_per_square_meter']
-                                )
-                                / parse_parameter(row['zone_height'])
+                                self.building_data.building_scenarios['linearization_ventilation_rate_per_square_meter']
+                                / row['zone_height']
                             )
                         )
                         self.control_matrix.at[
@@ -2631,16 +2627,14 @@ class BuildingModel(object):
                             - 1.0
                             * (
                                 (
-                                    parse_parameter(
-                                        self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
-                                    )
+                                    self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
                                     - cobmo.utils.calculate_absolute_humidity_humid_air(
-                                        parse_parameter(row['ahu_supply_air_temperature_setpoint']),
-                                        parse_parameter(row['ahu_supply_air_relative_humidity_setpoint'])
+                                        row['ahu_supply_air_temperature_setpoint'],
+                                        row['ahu_supply_air_relative_humidity_setpoint']
                                     )
                                 )
-                                / parse_parameter(row['zone_height'])
-                                / parse_parameter(row['zone_area'])
+                                / row['zone_height']
+                                / row['zone_area']
                             )
                         )
                         self.control_matrix.at[
@@ -2650,16 +2644,14 @@ class BuildingModel(object):
                             - 1.0
                             * (
                                 (
-                                    parse_parameter(
-                                        self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
-                                    )
+                                    self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
                                     - cobmo.utils.calculate_absolute_humidity_humid_air(
-                                        parse_parameter(row['ahu_supply_air_temperature_setpoint']),
-                                        parse_parameter(row['ahu_supply_air_relative_humidity_setpoint'])
+                                        row['ahu_supply_air_temperature_setpoint'],
+                                        row['ahu_supply_air_relative_humidity_setpoint']
                                     )
                                 )
-                                / parse_parameter(row['zone_height'])
-                                / parse_parameter(row['zone_area'])
+                                / row['zone_height']
+                                / row['zone_area']
                             )
                         )
                         if pd.notnull(row['window_type']):
@@ -2670,15 +2662,11 @@ class BuildingModel(object):
                                 - 1.0
                                 * (
                                     (
-                                        parse_parameter(
-                                            self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
-                                        )
-                                        - parse_parameter(
-                                            self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio']
-                                        )
+                                        self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
+                                        - self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio']
                                     )
-                                    / parse_parameter(row['zone_height'])
-                                    / parse_parameter(row['zone_area'])
+                                    / row['zone_height']
+                                    / row['zone_area']
                                 )
                             )
                         self.disturbance_matrix.at[
@@ -2688,36 +2676,28 @@ class BuildingModel(object):
                             - 1.0
                             * (
                                 (
-                                    parse_parameter(
-                                        self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
-                                    )
-                                    - parse_parameter(
-                                        self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio']
-                                    )
+                                    self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
+                                    - self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio']
                                 )
-                                * parse_parameter(row['infiltration_rate'])
+                                * row['infiltration_rate']
                             )
                         )  # TODO: Revise infiltration
                         self.disturbance_matrix.at[
                             index + '_absolute_humidity',
                             row['internal_gain_type'] + '_occupancy'
                         ] += (
-                            parse_parameter('moisture_generation_rate_per_person')
-                            / parse_parameter(row['zone_height'])
-                            / parse_parameter(row['zone_area'])
-                            / parse_parameter('density_air')
+                            self.building_data.building_parameters['moisture_generation_rate_per_person']
+                            / row['zone_height']
+                            / row['zone_area']
+                            / self.building_data.building_parameters['density_air']
                         )
                         self.disturbance_matrix.at[
                             index + '_absolute_humidity',
                             'constant'
                         ] += (
-                            parse_parameter(
-                                self.building_data.building_scenarios['linearization_ventilation_rate_per_square_meter']
-                            )
-                            * parse_parameter(
-                                self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
-                            )
-                            / parse_parameter(row['zone_height'])
+                            self.building_data.building_scenarios['linearization_ventilation_rate_per_square_meter']
+                            * self.building_data.building_scenarios['linearization_zone_air_humidity_ratio']
+                            / row['zone_height']
                         )
 
         def define_storage_state_of_charge():
@@ -2731,10 +2711,10 @@ class BuildingModel(object):
                 ] += (
                     1.0
                     / (
-                        parse_parameter('water_specific_heat')
-                        * parse_parameter(self.building_data.building_scenarios['storage_sensible_temperature_delta'])
+                        self.building_data.building_parameters['water_specific_heat']
+                        * self.building_data.building_scenarios['storage_sensible_temperature_delta']
                     )
-                    * parse_parameter(self.building_data.building_scenarios['storage_round_trip_efficiency'])
+                    * self.building_data.building_scenarios['storage_round_trip_efficiency']
                 )
 
                 # Storage losses.
@@ -2759,8 +2739,8 @@ class BuildingModel(object):
                         ] += (
                             - 1.0
                             / (
-                                parse_parameter('water_specific_heat')
-                                * parse_parameter(self.building_data.building_scenarios['storage_sensible_temperature_delta'])
+                                self.building_data.building_parameters['water_specific_heat']
+                                * self.building_data.building_scenarios['storage_sensible_temperature_delta']
                             )
                         )
 
@@ -2772,8 +2752,8 @@ class BuildingModel(object):
                         ] += (
                             - 1.0
                             / (
-                                parse_parameter('water_specific_heat')
-                                * parse_parameter(self.building_data.building_scenarios['storage_sensible_temperature_delta'])
+                                self.building_data.building_parameters['water_specific_heat']
+                                * self.building_data.building_scenarios['storage_sensible_temperature_delta']
                             )
                         )
 
@@ -2784,7 +2764,7 @@ class BuildingModel(object):
                     'battery_storage_state_of_charge',
                     'battery_storage_charge_electric_power'
                 ] += (
-                    parse_parameter(self.building_data.building_scenarios['storage_round_trip_efficiency'])
+                    self.building_data.building_scenarios['storage_round_trip_efficiency']
                 )  # TODO: Make the battery loss dependent on the outdoor temperature.
 
                 # Storage losses.
@@ -2877,7 +2857,7 @@ class BuildingModel(object):
                         zone_name + '_generic_cool_thermal_power_cooling'
                     ] = (
                         1.0
-                        / parse_parameter(zone_data['generic_cooling_efficiency'])
+                        / zone_data['generic_cooling_efficiency']
                     )
 
                     # Heating power.
@@ -2890,7 +2870,7 @@ class BuildingModel(object):
                         zone_name + '_generic_heat_thermal_power_heating'
                     ] = (
                         1.0
-                        / parse_parameter(zone_data['generic_heating_efficiency'])
+                        / zone_data['generic_heating_efficiency']
                     )
 
         def define_output_hvac_radiator_power():
@@ -2920,22 +2900,22 @@ class BuildingModel(object):
                     # Obtain parameters.
                     ahu_supply_air_absolute_humidity_setpoint = (
                         cobmo.utils.calculate_absolute_humidity_humid_air(
-                            parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                            parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
+                            zone_data['ahu_supply_air_temperature_setpoint'],
+                            zone_data['ahu_supply_air_relative_humidity_setpoint']
                         )
                     )
                     # TODO: Define zone linearization temperature and humidity in database.
                     linearization_zone_air_temperature = (
                         0.5
                         * (
-                            parse_parameter(self.building_data.building_scenarios['linearization_zone_air_temperature_heat'])
-                            + parse_parameter(self.building_data.building_scenarios['linearization_zone_air_temperature_cool'])
+                            self.building_data.building_scenarios['linearization_zone_air_temperature_heat']
+                            + self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
                         )
                     )
                     linearization_zone_air_absolute_humidity = (
                         0.5
                         * (
-                            parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                            self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio']
                             + ahu_supply_air_absolute_humidity_setpoint
                         )
                     )
@@ -2945,43 +2925,43 @@ class BuildingModel(object):
                             linearization_zone_air_absolute_humidity
                         )
                         - cobmo.utils.calculate_enthalpy_humid_air(
-                            parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_temperature']),
+                            self.building_data.building_scenarios['linearization_ambient_air_temperature'],
                             linearization_zone_air_absolute_humidity
                         )
                     )
 
                     # Obtain enthalpies.
                     if (
-                        parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                        self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio']
                         <= ahu_supply_air_absolute_humidity_setpoint
                     ):
                         delta_enthalpy_ahu_cooling = min(
                             0.0,
                             cobmo.utils.calculate_enthalpy_humid_air(
-                                parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                                zone_data['ahu_supply_air_temperature_setpoint'],
+                                self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio']
                             )
                             - cobmo.utils.calculate_enthalpy_humid_air(
-                                parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_temperature']),
-                                parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                                self.building_data.building_scenarios['linearization_ambient_air_temperature'],
+                                self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio']
                             )
                         )
                         delta_enthalpy_ahu_heating = max(
                             0.0,
                             cobmo.utils.calculate_enthalpy_humid_air(
-                                parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                                zone_data['ahu_supply_air_temperature_setpoint'],
+                                self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio']
                             )
                             - cobmo.utils.calculate_enthalpy_humid_air(
-                                parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_temperature']),
-                                parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                                self.building_data.building_scenarios['linearization_ambient_air_temperature'],
+                                self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio']
                             )
                         )
                         delta_enthalpy_ahu_recovery_cooling = max(
                             delta_enthalpy_ahu_cooling,
                             min(
                                 0.0,
-                                parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
+                                zone_data['ahu_return_air_heat_recovery_efficiency']
                                 * delta_enthalpy_ahu_recovery
                             )
                         )
@@ -2989,36 +2969,36 @@ class BuildingModel(object):
                             delta_enthalpy_ahu_heating,
                             max(
                                 0.0,
-                                parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
+                                zone_data['ahu_return_air_heat_recovery_efficiency']
                                 * delta_enthalpy_ahu_recovery
                             )
                         )
                     else:
                         delta_enthalpy_ahu_cooling = (
                             cobmo.utils.calculate_dew_point_enthalpy_humid_air(
-                                parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
+                                zone_data['ahu_supply_air_temperature_setpoint'],
+                                zone_data['ahu_supply_air_relative_humidity_setpoint']
                             )
                             - cobmo.utils.calculate_enthalpy_humid_air(
-                                parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_temperature']),
-                                parse_parameter(self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio'])
+                                self.building_data.building_scenarios['linearization_ambient_air_temperature'],
+                                self.building_data.building_scenarios['linearization_ambient_air_humidity_ratio']
                             )
                         )
                         delta_enthalpy_ahu_heating = (
                             cobmo.utils.calculate_enthalpy_humid_air(
-                                parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
+                                zone_data['ahu_supply_air_temperature_setpoint'],
                                 ahu_supply_air_absolute_humidity_setpoint
                             )
                             - cobmo.utils.calculate_dew_point_enthalpy_humid_air(
-                                parse_parameter(zone_data['ahu_supply_air_temperature_setpoint']),
-                                parse_parameter(zone_data['ahu_supply_air_relative_humidity_setpoint'])
+                                zone_data['ahu_supply_air_temperature_setpoint'],
+                                zone_data['ahu_supply_air_relative_humidity_setpoint']
                             )
                         )
                         delta_enthalpy_ahu_recovery_cooling = max(
                             delta_enthalpy_ahu_cooling,
                             min(
                                 0.0,
-                                parse_parameter(zone_data['ahu_return_air_heat_recovery_efficiency'])
+                                zone_data['ahu_return_air_heat_recovery_efficiency']
                                 * delta_enthalpy_ahu_recovery
                             )
                         )
@@ -3031,7 +3011,7 @@ class BuildingModel(object):
                         zone_name + '_ahu_heat_thermal_power_cooling',
                         zone_name + '_ahu_heat_air_flow'
                     ] = (
-                        parse_parameter('density_air')
+                        self.building_data.building_parameters['density_air']
                         * (
                             abs(delta_enthalpy_ahu_cooling)
                             - abs(delta_enthalpy_ahu_recovery_cooling)
@@ -3041,18 +3021,18 @@ class BuildingModel(object):
                         zone_name + '_ahu_heat_electric_power_cooling',
                         zone_name + '_ahu_heat_air_flow'
                     ] = (
-                        parse_parameter('density_air')
+                        self.building_data.building_parameters['density_air']
                         * (
                             abs(delta_enthalpy_ahu_cooling)
                             - abs(delta_enthalpy_ahu_recovery_cooling)
                         )
-                        / parse_parameter(zone_data['ahu_cooling_efficiency'])
+                        / zone_data['ahu_cooling_efficiency']
                     )
                     self.control_output_matrix.at[
                         zone_name + '_ahu_cool_thermal_power_cooling',
                         zone_name + '_ahu_cool_air_flow'
                     ] = (
-                        parse_parameter('density_air')
+                        self.building_data.building_parameters['density_air']
                         * (
                             abs(delta_enthalpy_ahu_cooling)
                             - abs(delta_enthalpy_ahu_recovery_cooling)
@@ -3062,12 +3042,12 @@ class BuildingModel(object):
                         zone_name + '_ahu_cool_electric_power_cooling',
                         zone_name + '_ahu_cool_air_flow'
                     ] = (
-                        parse_parameter('density_air')
+                        self.building_data.building_parameters['density_air']
                         * (
                             abs(delta_enthalpy_ahu_cooling)
                             - abs(delta_enthalpy_ahu_recovery_cooling)
                         )
-                        / parse_parameter(zone_data['ahu_cooling_efficiency'])
+                        / zone_data['ahu_cooling_efficiency']
                     )
 
                     # Heating power.
@@ -3075,7 +3055,7 @@ class BuildingModel(object):
                         zone_name + '_ahu_heat_thermal_power_heating',
                         zone_name + '_ahu_heat_air_flow'
                     ] = (
-                        parse_parameter('density_air')
+                        self.building_data.building_parameters['density_air']
                         * (
                             abs(delta_enthalpy_ahu_heating)
                             - abs(delta_enthalpy_ahu_recovery_heating)
@@ -3085,18 +3065,18 @@ class BuildingModel(object):
                         zone_name + '_ahu_heat_electric_power_heating',
                         zone_name + '_ahu_heat_air_flow'
                     ] = (
-                        parse_parameter('density_air')
+                        self.building_data.building_parameters['density_air']
                         * (
                             abs(delta_enthalpy_ahu_heating)
                             - abs(delta_enthalpy_ahu_recovery_heating)
                         )
-                        / parse_parameter(zone_data['ahu_heating_efficiency'])
+                        / zone_data['ahu_heating_efficiency']
                     )
                     self.control_output_matrix.at[
                         zone_name + '_ahu_cool_thermal_power_heating',
                         zone_name + '_ahu_cool_air_flow'
                     ] = (
-                        parse_parameter('density_air')
+                        self.building_data.building_parameters['density_air']
                         * (
                             abs(delta_enthalpy_ahu_heating)
                             - abs(delta_enthalpy_ahu_recovery_heating)
@@ -3106,12 +3086,12 @@ class BuildingModel(object):
                         zone_name + '_ahu_cool_electric_power_heating',
                         zone_name + '_ahu_cool_air_flow'
                     ] = (
-                        parse_parameter('density_air')
+                        self.building_data.building_parameters['density_air']
                         * (
                             abs(delta_enthalpy_ahu_heating)
                             - abs(delta_enthalpy_ahu_recovery_heating)
                         )
-                        / parse_parameter(zone_data['ahu_heating_efficiency'])
+                        / zone_data['ahu_heating_efficiency']
                     )
 
                     # Fan power.
@@ -3119,15 +3099,15 @@ class BuildingModel(object):
                         zone_name + '_ahu_heat_electric_power_fan',
                         zone_name + '_ahu_heat_air_flow'
                     ] = (
-                        parse_parameter('density_air')
-                        * parse_parameter(zone_data['ahu_fan_efficiency'])
+                        self.building_data.building_parameters['density_air']
+                        * zone_data['ahu_fan_efficiency']
                     )
                     self.control_output_matrix.at[
                         zone_name + '_ahu_cool_electric_power_fan',
                         zone_name + '_ahu_cool_air_flow'
                     ] = (
-                        parse_parameter('density_air')
-                        * parse_parameter(zone_data['ahu_fan_efficiency'])
+                        self.building_data.building_parameters['density_air']
+                        * zone_data['ahu_fan_efficiency']
                     )
 
                     # Sensible thermal storage discharge.
@@ -3143,7 +3123,7 @@ class BuildingModel(object):
                             zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
                         ] = (
                             - 1.0
-                            / parse_parameter(zone_data['ahu_cooling_efficiency'])
+                            / zone_data['ahu_cooling_efficiency']
                         )
 
                         # Heating power.
@@ -3250,22 +3230,22 @@ class BuildingModel(object):
                         and zone_data['tu_heating_type'] == 'default'
                     ):
                         if zone_data['tu_air_intake_type'] == 'zone':
-                            delta_enthalpy_tu_cooling = parse_parameter('heat_capacity_air') * (
-                                parse_parameter(self.building_data.building_scenarios['linearization_zone_air_temperature_cool'])
-                                - parse_parameter(zone_data['tu_supply_air_temperature_setpoint'])
+                            delta_enthalpy_tu_cooling = self.building_data.building_parameters['heat_capacity_air'] * (
+                                self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
+                                - zone_data['tu_supply_air_temperature_setpoint']
                             )
-                            delta_enthalpy_tu_heating = parse_parameter('heat_capacity_air') * (
-                                parse_parameter(self.building_data.building_scenarios['linearization_zone_air_temperature_heat'])
-                                - parse_parameter(zone_data['tu_supply_air_temperature_setpoint'])
+                            delta_enthalpy_tu_heating = self.building_data.building_parameters['heat_capacity_air'] * (
+                                self.building_data.building_scenarios['linearization_zone_air_temperature_heat']
+                                - zone_data['tu_supply_air_temperature_setpoint']
                             )
                         elif zone_data['tu_air_intake_type'] == 'ahu':
-                            delta_enthalpy_tu_cooling = parse_parameter('heat_capacity_air') * (
-                                parse_parameter(self.building_data.building_scenarios['ahu_supply_air_temperature_setpoint'])
-                                - parse_parameter(zone_data['tu_supply_air_temperature_setpoint'])
+                            delta_enthalpy_tu_cooling = self.building_data.building_parameters['heat_capacity_air'] * (
+                                self.building_data.building_scenarios['ahu_supply_air_temperature_setpoint']
+                                - zone_data['tu_supply_air_temperature_setpoint']
                             )
-                            delta_enthalpy_tu_heating = parse_parameter('heat_capacity_air') * (
-                                parse_parameter(self.building_data.building_scenarios['ahu_supply_air_temperature_setpoint'])
-                                - parse_parameter(zone_data['tu_supply_air_temperature_setpoint'])
+                            delta_enthalpy_tu_heating = self.building_data.building_parameters['heat_capacity_air'] * (
+                                self.building_data.building_scenarios['ahu_supply_air_temperature_setpoint']
+                                - zone_data['tu_supply_air_temperature_setpoint']
                             )
 
                     # Cooling power.
@@ -3273,16 +3253,16 @@ class BuildingModel(object):
                         zone_name + '_tu_cool_thermal_power_cooling',
                         zone_name + '_tu_cool_air_flow'
                     ] = (
-                        parse_parameter('density_air')
+                        self.building_data.building_parameters['density_air']
                         * abs(delta_enthalpy_tu_cooling)
                     )
                     self.control_output_matrix.at[
                         zone_name + '_tu_cool_electric_power_cooling',
                         zone_name + '_tu_cool_air_flow'
                     ] = (
-                        parse_parameter('density_air')
+                        self.building_data.building_parameters['density_air']
                         * abs(delta_enthalpy_tu_cooling)
-                        / parse_parameter(zone_data['tu_cooling_efficiency'])
+                        / zone_data['tu_cooling_efficiency']
                     )
 
                     # Heating power.
@@ -3290,15 +3270,15 @@ class BuildingModel(object):
                         zone_name + '_tu_heat_electric_power_heating',
                         zone_name + '_tu_heat_air_flow'
                     ] = (
-                        parse_parameter('density_air')
+                        self.building_data.building_parameters['density_air']
                         * abs(delta_enthalpy_tu_heating)
-                        / parse_parameter(zone_data['tu_heating_efficiency'])
+                        / zone_data['tu_heating_efficiency']
                     )
                     self.control_output_matrix.at[
                         zone_name + '_tu_heat_thermal_power_heating',
                         zone_name + '_tu_heat_air_flow'
                     ] = (
-                        parse_parameter('density_air')
+                        self.building_data.building_parameters['density_air']
                         * abs(delta_enthalpy_tu_heating)
                     )
 
@@ -3307,15 +3287,15 @@ class BuildingModel(object):
                         zone_name + '_tu_heat_electric_power_fan',
                         zone_name + '_tu_heat_air_flow'
                     ] = (
-                        parse_parameter('density_air')
-                        * parse_parameter(zone_data['tu_fan_efficiency'])
+                        self.building_data.building_parameters['density_air']
+                        * zone_data['tu_fan_efficiency']
                     )
                     self.control_output_matrix.at[
                         zone_name + '_tu_cool_electric_power_fan',
                         zone_name + '_tu_cool_air_flow'
                     ] = (
-                        parse_parameter('density_air')
-                        * parse_parameter(zone_data['tu_fan_efficiency'])
+                        self.building_data.building_parameters['density_air']
+                        * zone_data['tu_fan_efficiency']
                     )
 
                     # Sensible thermal storage discharge.
@@ -3331,7 +3311,7 @@ class BuildingModel(object):
                             zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power'
                         ] = (
                             - 1.0
-                            / parse_parameter(zone_data['tu_cooling_efficiency'])
+                            / zone_data['tu_cooling_efficiency']
                         )
 
                         # Heating power.
@@ -3378,9 +3358,9 @@ class BuildingModel(object):
                         index + '_total_fresh_air_flow',
                         'constant'
                     ] += (
-                        parse_parameter(row['infiltration_rate'])
-                        * parse_parameter(row['zone_area'])
-                        * parse_parameter(row['zone_height'])
+                        row['infiltration_rate']
+                        * row['zone_area']
+                        * row['zone_height']
                     )  # TODO: Revise infiltration
 
         def define_output_ahu_fresh_air_flow():
@@ -3444,7 +3424,7 @@ class BuildingModel(object):
                     'sensible_storage_charge_cool_thermal_power'
                 ] += (
                     1.0
-                    / parse_parameter(self.building_data.building_zones['ahu_cooling_efficiency'][0])
+                    / self.building_data.building_zones['ahu_cooling_efficiency'][0]
                     if pd.notnull(self.building_data.building_zones['ahu_cooling_efficiency'][0]) else 1.0
                     * 1.0000001  # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
                 )
@@ -3509,21 +3489,21 @@ class BuildingModel(object):
         def define_output_surfaces_exterior_irradiation_gain_exterior():
 
             for surface_name, surface_data in self.building_data.building_surfaces_exterior.iterrows():
-                if parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
+                if surface_data['heat_capacity'] != 0.0:  # Surfaces with non-zero heat capacity
                     self.disturbance_output_matrix.at[
                         surface_name + '_irradiation_gain_exterior',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
-                        parse_parameter(surface_data['absorptivity'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        surface_data['absorptivity']
+                        * (1 - surface_data['window_wall_ratio'])
                     )
                 else:  # Surfaces with neglected heat capacity
                     self.disturbance_output_matrix.at[
                         surface_data['surface_name'] + '_irradiation_gain_exterior',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
-                        parse_parameter(surface_data['absorptivity'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        surface_data['absorptivity']
+                        * (1 - surface_data['window_wall_ratio'])
                     )
 
         def define_output_surfaces_exterior_convection_interior():
@@ -3531,8 +3511,8 @@ class BuildingModel(object):
             for surface_name, surface_data in self.building_data.building_surfaces_exterior.iterrows():
                 # Total zone surface area for later calculating share of interior (indirect) irradiation
                 zone_surface_area = sum(
-                    parse_parameter(zone_surface_data['surface_area'])
-                    * (1 - parse_parameter(zone_surface_data['window_wall_ratio']))
+                    zone_surface_data['surface_area']
+                    * (1 - zone_surface_data['window_wall_ratio'])
                     for zone_surface_name, zone_surface_data in pd.concat(
                         [
                             self.building_data.building_surfaces_exterior[
@@ -3552,7 +3532,7 @@ class BuildingModel(object):
                     ).iterrows()  # For all surfaces adjacent to the zone
                 )
 
-                if parse_parameter(surface_data['heat_capacity']) != 0.0:  # Surfaces with non-zero heat capacity
+                if surface_data['heat_capacity'] != 0.0:  # Surfaces with non-zero heat capacity
                     # Convective heat transfer from the surface towards zone
                     for zone_exterior_surface_name, zone_exterior_surface_data in (
                             self.building_data.building_surfaces_exterior[
@@ -3565,22 +3545,22 @@ class BuildingModel(object):
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
                             (
-                                parse_parameter(zone_exterior_surface_data['surface_area'])
-                                * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                zone_exterior_surface_data['surface_area']
+                                * zone_exterior_surface_data['window_wall_ratio']
                                 / zone_surface_area
                             )  # Considers the share at the respective surface
-                            * parse_parameter(surface_data['absorptivity'])
-                            * (1.0 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['absorptivity']
+                            * (1.0 - surface_data['window_wall_ratio'])
                             * (
                                 1.0
                                 - (
                                     1.0
                                     + (
-                                        parse_parameter('heat_transfer_coefficient_interior_convection')
+                                        self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                     )
                                     / (
                                         2.0
-                                        * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                        * surface_data['thermal_resistance_surface'] ** (- 1)
                                     )
                                 ) ** (- 1)
                             )
@@ -3589,16 +3569,16 @@ class BuildingModel(object):
                         surface_data['surface_name'] + '_convection_interior',
                         surface_name + '_temperature'
                     ] += (
-                        (1.0 - parse_parameter(surface_data['window_wall_ratio']))
+                        (1.0 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_interior_convection')
+                                self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             )
                             + 1.0
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                     )
@@ -3607,16 +3587,16 @@ class BuildingModel(object):
                         surface_data['zone_name'] + '_temperature'
                     ] += (
                         - 1.0
-                        * (1.0 - parse_parameter(surface_data['window_wall_ratio']))
+                        * (1.0 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_interior_convection')
+                                self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             )
                             + 1.0
                             / (
                                 2.0
-                                * parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1)
+                                * surface_data['thermal_resistance_surface'] ** (- 1)
                             )
                         ) ** (- 1)
                     )
@@ -3626,22 +3606,22 @@ class BuildingModel(object):
                         surface_data['surface_name'] + '_convection_interior',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
-                        parse_parameter(surface_data['absorptivity'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        surface_data['absorptivity']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / parse_parameter('heat_transfer_coefficient_interior_convection')
+                            / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                            / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                     )
                     self.disturbance_output_matrix.at[
@@ -3649,46 +3629,46 @@ class BuildingModel(object):
                         'ambient_air_temperature'
                     ] += (
                         (
-                            parse_parameter('heat_transfer_coefficient_exterior_convection')
-                            + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
+                            self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                            + surface_data['heat_transfer_coefficient_surface_ground']
                         )
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / parse_parameter('heat_transfer_coefficient_interior_convection')
+                            / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                            / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                     )
                     self.disturbance_output_matrix.at[
                         surface_data['surface_name'] + '_convection_interior',
                         'sky_temperature'
                     ] += (
-                        parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        surface_data['heat_transfer_coefficient_surface_sky']
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / parse_parameter('heat_transfer_coefficient_interior_convection')
+                            / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             + (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                            / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                     )
                     self.state_output_matrix.at[
@@ -3696,18 +3676,18 @@ class BuildingModel(object):
                         surface_data['zone_name'] + '_temperature'
                     ] += (
                         - 1.0
-                        * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                        * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
                             / (
-                                parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                + surface_data['heat_transfer_coefficient_surface_ground']
+                                + surface_data['heat_transfer_coefficient_surface_sky']
                             )
                             + 1.0
-                            / parse_parameter('heat_transfer_coefficient_interior_convection')
+                            / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                             + 1.0
-                            / (parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                            / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                     )
                     for zone_exterior_surface_name, zone_exterior_surface_data in self.building_data.building_surfaces_exterior[
@@ -3719,26 +3699,26 @@ class BuildingModel(object):
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
                             (
-                                parse_parameter(zone_exterior_surface_data['surface_area'])
-                                * parse_parameter(zone_exterior_surface_data['window_wall_ratio'])
+                                zone_exterior_surface_data['surface_area']
+                                * zone_exterior_surface_data['window_wall_ratio']
                                 / zone_surface_area
                             )  # Considers the share at the respective surface
-                            * parse_parameter(surface_data['absorptivity'])
-                            * (1 - parse_parameter(surface_data['window_wall_ratio']))
+                            * surface_data['absorptivity']
+                            * (1 - surface_data['window_wall_ratio'])
                             * (1.0 - (
                                 1.0
                                 + (
-                                    parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                    + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                    + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                    self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                    + surface_data['heat_transfer_coefficient_surface_ground']
+                                    + surface_data['heat_transfer_coefficient_surface_sky']
                                 )
-                                / parse_parameter('heat_transfer_coefficient_interior_convection')
+                                / self.building_data.building_parameters['heat_transfer_coefficient_interior_convection']
                                 + (
-                                    parse_parameter('heat_transfer_coefficient_exterior_convection')
-                                    + parse_parameter(surface_data['heat_transfer_coefficient_surface_ground'])
-                                    + parse_parameter(surface_data['heat_transfer_coefficient_surface_sky'])
+                                    self.building_data.building_parameters['heat_transfer_coefficient_exterior_convection']
+                                    + surface_data['heat_transfer_coefficient_surface_ground']
+                                    + surface_data['heat_transfer_coefficient_surface_sky']
                                 )
-                                / (parse_parameter(surface_data['thermal_resistance_surface']) ** (- 1))
+                                / (surface_data['thermal_resistance_surface'] ** (- 1))
                             ) ** (- 1))
                         )
 
@@ -3764,7 +3744,7 @@ class BuildingModel(object):
                         'grid_electric_power_cooling'
                     ] = (
                         -1.0
-                        * parse_parameter(self.building_data.building_zones['ahu_cooling_efficiency'][0])
+                        * self.building_data.building_zones['ahu_cooling_efficiency'][0]
                         if pd.notnull(self.building_data.building_zones['ahu_cooling_efficiency'][0]) else 1.0
                         # TODO: Define heating / cooling plant.
                     )
@@ -3791,7 +3771,7 @@ class BuildingModel(object):
                         'grid_electric_power_heating'
                     ] = (
                         -1.0
-                        * parse_parameter(self.building_data.building_zones['ahu_heating_efficiency'][0])
+                        * self.building_data.building_zones['ahu_heating_efficiency'][0]
                         if pd.notnull(self.building_data.building_zones['ahu_heating_efficiency'][0]) else 1.0
                         # TODO: Define heating / cooling plant.
                     )
@@ -3821,8 +3801,8 @@ class BuildingModel(object):
                         'grid_electric_power',
                         zone_data['internal_gain_type'] + '_appliances'
                     ] += (
-                        parse_parameter(zone_data['internal_gain_appliances_factor'])
-                        * parse_parameter(zone_data['zone_area'])
+                        zone_data['internal_gain_appliances_factor']
+                        * zone_data['zone_area']
                     )
                 self.control_output_matrix.loc[
                     'grid_electric_power_cooling',
@@ -4120,7 +4100,7 @@ class BuildingModel(object):
                                             int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
                                         ]
                                     )
-                                    * parse_parameter(zone_data['zone_area'])
+                                    * zone_data['zone_area']
                                 )
                             else:
                                 self.output_constraint_timeseries_minimum.at[
@@ -4135,7 +4115,7 @@ class BuildingModel(object):
                                         * (
                                             self.disturbance_timeseries[
                                                 self.building_data.building_zones["internal_gain_type"].loc[zone_name] + "_occupancy"
-                                            ].loc[timestep] * parse_parameter(zone_data['zone_area'])
+                                            ].loc[timestep] * zone_data['zone_area']
                                             + parse_parameter(
                                                 building_zone_constraint_profile['minimum_fresh_air_flow_per_area'][
                                                     int(constraint_profile_index_time(
@@ -4143,7 +4123,7 @@ class BuildingModel(object):
                                                     ))
                                                 ]
                                             )
-                                            * parse_parameter(zone_data['zone_area'])
+                                            * zone_data['zone_area']
                                         )
                                 )
                         else:
@@ -4157,7 +4137,7 @@ class BuildingModel(object):
                                             int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
                                         ]
                                     )
-                                    * parse_parameter(zone_data['zone_area'])
+                                    * zone_data['zone_area']
                                 )
                             elif pd.notnull(zone_data['window_type']):
                                 self.output_constraint_timeseries_minimum.at[
@@ -4169,7 +4149,7 @@ class BuildingModel(object):
                                             int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
                                         ]
                                     )
-                                    * parse_parameter(zone_data['zone_area'])
+                                    * zone_data['zone_area']
                                 )
                     # If a ventilation system is enabled, if DCV, then CO2 or constraint on total fresh air flow.
                     # If no DCV, then constant constraint on AHU or on windows if no AHU
@@ -4189,9 +4169,7 @@ class BuildingModel(object):
                                 )
                                 / 100,
                                 'T',
-                                parse_parameter(
-                                    self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
-                                )
+                                self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
                                 + 273.15,
                                 'P',
                                 101325
@@ -4209,9 +4187,7 @@ class BuildingModel(object):
                                 )
                                 / 100,
                                 'T',
-                                parse_parameter(
-                                    self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
-                                )
+                                self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
                                 + 273.15,
                                 'P',
                                 101325
@@ -4225,8 +4201,8 @@ class BuildingModel(object):
                             timestep,
                             'sensible_thermal_storage_state_of_charge'
                         ] = (
-                            parse_parameter(self.building_data.building_scenarios['storage_size'])
-                            * parse_parameter('water_density')  # Convert volume to mass.
+                            self.building_data.building_scenarios['storage_size']
+                            * self.building_data.building_parameters['water_density']  # Convert volume to mass.
                         )
                     if self.building_data.building_scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
                         self.output_constraint_timeseries_minimum.at[
@@ -4239,7 +4215,7 @@ class BuildingModel(object):
                         self.output_constraint_timeseries_maximum.at[
                             timestep,
                             'battery_storage_state_of_charge'
-                        ] = parse_parameter(self.building_data.building_scenarios['storage_size'])
+                        ] = self.building_data.building_scenarios['storage_size']
                     if self.building_data.building_scenarios['building_storage_type'] == 'default_battery_storage':
                         self.output_constraint_timeseries_minimum.at[
                             timestep,
@@ -4247,8 +4223,8 @@ class BuildingModel(object):
                         ] = (
                             0.0
                             # TODO: Revise implementation of depth of discharge.
-                            # + parse_parameter(self.building_data.building_scenarios['storage_size'])
-                            # * (1.0 - parse_parameter(self.building_data.building_scenarios['storage_battery_depth_of_discharge']))
+                            # + self.building_data.building_scenarios['storage_size']
+                            # * (1.0 - self.building_data.building_scenarios['storage_battery_depth_of_discharge'])
                         )
 
         def discretize_model():
