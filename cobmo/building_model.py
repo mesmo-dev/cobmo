@@ -81,19 +81,6 @@ class BuildingModel(object):
             )
         )
 
-        def parse_parameter(parameter):
-            """Parse parameter utility function.
-            - Checks if given parameter is a number.
-            - If the parameter is not a number, it is assumed to be the name of a parameter from `building_parameters`
-            """
-            # TODO: Apply parameter parsing when loading data instead when using data.
-            try:
-                return float(parameter)
-            except ValueError:
-                return self.building_data.building_parameters[parameter]
-
-        self.parse_parameter = parse_parameter
-
         # Add constant timeseries in disturbance vector, if any CO2 model or HVAC or window.
         self.define_constant = (
             pd.notnull(self.building_data.building_scenarios['co2_model_type'])
@@ -4026,12 +4013,8 @@ class BuildingModel(object):
 
             for zone_name, zone_data in self.building_data.building_zones.iterrows():
                 # Load zone_constraint_profile for each zone.
-                building_zone_constraint_profile = pd.read_sql(
-                    """
-                    SELECT * FROM building_zone_constraint_profiles 
-                    WHERE zone_constraint_profile='{}'
-                    """.format(zone_data['zone_constraint_profile']),
-                    database_connection
+                building_zone_constraint_profile = (
+                    self.building_data.building_zone_constraint_profiles_dict[zone_data['zone_constraint_profile']]
                 )
 
                 # Create zone_name function for `from_weekday` (mapping from `timestep.weekday()` to `from_weekday`).
@@ -4064,7 +4047,7 @@ class BuildingModel(object):
                     self.output_constraint_timeseries_minimum.at[
                         timestep,
                         zone_name + '_temperature'
-                    ] = parse_parameter(
+                    ] = (
                         building_zone_constraint_profile['minimum_air_temperature'][
                             int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
                         ]
@@ -4072,7 +4055,7 @@ class BuildingModel(object):
                     self.output_constraint_timeseries_maximum.at[
                         timestep,
                         zone_name + '_temperature'
-                    ] = parse_parameter(
+                    ] = (
                         building_zone_constraint_profile['maximum_air_temperature'][
                             int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
                         ]
@@ -4085,21 +4068,17 @@ class BuildingModel(object):
                                     timestep,
                                     zone_name + '_co2_concentration'
                                 ] = (
-                                    parse_parameter(
-                                        building_zone_constraint_profile['maximum_co2_concentration'][
-                                            int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                        ]
-                                    )
+                                    building_zone_constraint_profile['maximum_co2_concentration'][
+                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                    ]
                                 )
                                 self.output_constraint_timeseries_minimum.at[
                                     timestep,
                                     zone_name + '_total_fresh_air_flow'
                                 ] = (
-                                    parse_parameter(
-                                        building_zone_constraint_profile['minimum_fresh_air_flow_per_area'][
-                                            int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                        ]
-                                    )
+                                    building_zone_constraint_profile['minimum_fresh_air_flow_per_area'][
+                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                    ]
                                     * zone_data['zone_area']
                                 )
                             else:
@@ -4107,22 +4086,18 @@ class BuildingModel(object):
                                     timestep,
                                     zone_name + '_total_fresh_air_flow'
                                 ] = (
-                                        parse_parameter(
-                                            building_zone_constraint_profile['minimum_fresh_air_flow_per_person'][
-                                                int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                            ]
-                                        )
+                                        building_zone_constraint_profile['minimum_fresh_air_flow_per_person'][
+                                            int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                        ]
                                         * (
                                             self.disturbance_timeseries[
                                                 self.building_data.building_zones["internal_gain_type"].loc[zone_name] + "_occupancy"
                                             ].loc[timestep] * zone_data['zone_area']
-                                            + parse_parameter(
-                                                building_zone_constraint_profile['minimum_fresh_air_flow_per_area'][
-                                                    int(constraint_profile_index_time(
-                                                        timestep.to_datetime64().astype('int64')
-                                                    ))
-                                                ]
-                                            )
+                                            + building_zone_constraint_profile['minimum_fresh_air_flow_per_area'][
+                                                int(constraint_profile_index_time(
+                                                    timestep.to_datetime64().astype('int64')
+                                                ))
+                                            ]
                                             * zone_data['zone_area']
                                         )
                                 )
@@ -4132,11 +4107,9 @@ class BuildingModel(object):
                                     timestep,
                                     zone_name + '_total_fresh_air_flow'
                                 ] = (
-                                    parse_parameter(
-                                        building_zone_constraint_profile['minimum_fresh_air_flow_per_area_no_dcv'][
-                                            int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                        ]
-                                    )
+                                    building_zone_constraint_profile['minimum_fresh_air_flow_per_area_no_dcv'][
+                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                    ]
                                     * zone_data['zone_area']
                                 )
                             elif pd.notnull(zone_data['window_type']):
@@ -4144,11 +4117,9 @@ class BuildingModel(object):
                                     timestep,
                                     zone_name + '_window_fresh_air_flow'
                                 ] = (
-                                    parse_parameter(
-                                        building_zone_constraint_profile['minimum_fresh_air_flow_per_area_no_dcv'][
-                                            int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                        ]
-                                    )
+                                    building_zone_constraint_profile['minimum_fresh_air_flow_per_area_no_dcv'][
+                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                    ]
                                     * zone_data['zone_area']
                                 )
                     # If a ventilation system is enabled, if DCV, then CO2 or constraint on total fresh air flow.
@@ -4162,11 +4133,9 @@ class BuildingModel(object):
                             ] = humid_air_properties(
                                 'W',
                                 'R',
-                                parse_parameter(
-                                    building_zone_constraint_profile['minimum_relative_humidity'][
-                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                    ]
-                                )
+                                building_zone_constraint_profile['minimum_relative_humidity'][
+                                    int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                ]
                                 / 100,
                                 'T',
                                 self.building_data.building_scenarios['linearization_zone_air_temperature_cool']
@@ -4180,11 +4149,9 @@ class BuildingModel(object):
                             ] = humid_air_properties(
                                 'W',
                                 'R',
-                                parse_parameter(
-                                    building_zone_constraint_profile['maximum_relative_humidity'][
-                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                    ]
-                                )
+                                building_zone_constraint_profile['maximum_relative_humidity'][
+                                    int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                                ]
                                 / 100,
                                 'T',
                                 self.building_data.building_scenarios['linearization_zone_air_temperature_cool']

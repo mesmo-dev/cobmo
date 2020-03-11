@@ -88,6 +88,7 @@ class BuildingData(object):
     building_surfaces_exterior: pd.DataFrame
     building_surfaces_interior: pd.DataFrame
     building_zones: pd.DataFrame
+    building_zone_constraint_profiles_dict: dict
 
     @ multimethod
     def __init__(
@@ -199,6 +200,20 @@ class BuildingData(object):
             )
         )
         self.building_zones.index = self.building_zones['zone_name']
+        self.building_zone_constraint_profiles_dict = (
+            dict.fromkeys(self.building_zones['zone_constraint_profile'].unique())
+        )
+        for zone_constraint_profile in self.building_zone_constraint_profiles_dict:
+            self.building_zone_constraint_profiles_dict[zone_constraint_profile] = (
+                pd.read_sql(
+                    """
+                    SELECT * FROM building_zone_constraint_profiles 
+                    WHERE zone_constraint_profile = ?
+                    """,
+                    con=database_connection,
+                    params=[zone_constraint_profile]
+                )
+            )
 
         # Define parameter parsing utility function.
         @np.vectorize
@@ -306,3 +321,21 @@ class BuildingData(object):
         self.building_zones.loc[:, building_zones_numerical_columns] = (
             self.building_zones.loc[:, building_zones_numerical_columns].apply(parse_parameter)
         )
+        building_zone_constraint_profiles_numerical_columns = [
+            'minimum_air_temperature',
+            'maximum_air_temperature',
+            'minimum_fresh_air_flow_per_area',
+            'minimum_fresh_air_flow_per_person',
+            'maximum_co2_concentration',
+            'minimum_fresh_air_flow_per_area_no_dcv',
+            'minimum_relative_humidity',
+            'maximum_relative_humidity'
+        ]
+        for zone_constraint_profile in self.building_zone_constraint_profiles_dict:
+            self.building_zone_constraint_profiles_dict[zone_constraint_profile].loc[
+                :, building_zone_constraint_profiles_numerical_columns
+            ] = (
+                self.building_zone_constraint_profiles_dict[zone_constraint_profile].loc[
+                    :, building_zone_constraint_profiles_numerical_columns
+                ].apply(parse_parameter)
+            )
