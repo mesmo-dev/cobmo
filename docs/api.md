@@ -4,38 +4,32 @@
     This reference is work in progress.
 ```
 
-## `cobmo.building`
+## `cobmo.building_model`
 
-``` automodule:: cobmo.building
-   :members:
+``` automodule:: cobmo.building_model
 ```
 
 ## `cobmo.config`
 
 ``` automodule:: cobmo.config
-   :members:
 ```
 
-## `cobmo.controller`
+## `cobmo.optimization_problem`
 
-``` automodule:: cobmo.controller
-   :members:
+``` automodule:: cobmo.optimization_problem
 ```
 
 ## `cobmo.database_interface`
 
 ``` automodule:: cobmo.database_interface
-   :members:
 ```
 
 ## `cobmo.plots`
 
 ``` automodule:: cobmo.plots
-   :members:
 ```
 
 ## `cobmo.utils`
 
 ``` automodule:: cobmo.utils
-   :members:
 ```
