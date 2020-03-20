@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS "initial_state_types" (
     "initial_sensible_thermal_storage_state_of_charge" TEXT,
     "initial_battery_storage_state_of_charge" TEXT
 );
-CREATE TABLE IF NOT EXISTS "internal_gain_schedule" (
+CREATE TABLE IF NOT EXISTS "internal_gain_schedules" (
     "internal_gain_type" TEXT,
     "time_period" TEXT,
     "internal_gain_occupancy" REAL,

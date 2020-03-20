@@ -420,7 +420,7 @@ class BuildingData(object):
         # Obtain internal gain timeseries based on schedules.
         internal_gain_schedule = pd.read_sql(
             """
-            SELECT * FROM internal_gain_schedule 
+            SELECT * FROM internal_gain_schedules 
             WHERE internal_gain_type IN (
                 SELECT DISTINCT internal_gain_type FROM zones
                 JOIN zone_types USING (zone_type) 
