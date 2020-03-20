@@ -25,12 +25,12 @@ Building definition.
 
 ## `constraint_schedules`
 
-The constraint timeseries is constructed by obtaining the appropriate value for `internal_gain_occupancy` / `internal_gain_appliances` based on the `time_period` in `ddTHH:MM:SS` format. Each value is kept constant at the given value for any daytime greater than or equal to `HH:MM:SS` and any weekday greater than or equal to `dd` until the next defined `ddTHH:MM:SS`. Note that the daily schedule is repeated for any weekday greater than or equal to `dd` until the next defined `dd`. The initial value for each `zone_constraint_profile` must start at `time_period = 00T00:00:00`.
+The constraint timeseries is constructed by obtaining the appropriate value for `internal_gain_occupancy` / `internal_gain_appliances` based on the `time_period` in `ddTHH:MM` format. Each value is kept constant at the given value for any daytime greater than or equal to `HH:MM` and any weekday greater than or equal to `dd` until the next defined `ddTHH:MM`. Note that the daily schedule is repeated for any weekday greater than or equal to `dd` until the next defined `dd`. The initial value for each `zone_constraint_profile` must start at `time_period = 01T00:00`.
 
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `constraint_type` | | Constraint type identifier. |
-| `time_period` | | Time period in `ddTHH:MM:SS` format. `dd` is the weekday (`01` - Monday ... `07` - Sunday). `T` is the divider for date and time information according to ISO 8601. `HH:MM:SS` is the daytime. |
+| `time_period` | | Time period in `ddTHH:MM` format. `dd` is the weekday (`01` - Monday ... `07` - Sunday). `T` is the divider for date and time information according to ISO 8601. `HH:MM` is the daytime. |
 | `minimum_air_temperature` | °C | |
 | `maximum_air_temperature` | °C | |
 | `minimum_fresh_air_flow_per_area` | m/s | |
@@ -120,12 +120,12 @@ Initial state settings to be taken for simulation and optimization.
 
 ## `internal_gain_schedules`
 
-The internal gain timeseries is constructed by obtaining the appropriate value for `internal_gain_occupancy` / `internal_gain_appliances` based on the `time_period` in `ddTHH:MM:SS` format. Each value is kept constant at the given value for any daytime greater than or equal to `HH:MM:SS` and any weekday greater than or equal to `dd` until the next defined `ddTHH:MM:SS`. Note that the daily schedule is repeated for any weekday greater than or equal to `dd` until the next defined `dd`. The initial value for each `zone_constraint_profile` must start at `time_period = 00T00:00:00`.
+The internal gain timeseries is constructed by obtaining the appropriate value for `internal_gain_occupancy` / `internal_gain_appliances` based on the `time_period` in `ddTHH:MM` format. Each value is kept constant at the given value for any daytime greater than or equal to `HH:MM` and any weekday greater than or equal to `dd` until the next defined `ddTHH:MM`. Note that the daily schedule is repeated for any weekday greater than or equal to `dd` until the next defined `dd`. The initial value for each `zone_constraint_profile` must start at `time_period = 01T00:00`.
 
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `internal_gain_type` | | Type identifier as defined in `internal_gain_types`. |
-| `time_period` | | Time period in `ddTHH:MM:SS` format. `dd` is the weekday (`01` - Monday ... `07` - Sunday). `T` is the divider for date and time information according to ISO 8601. `HH:MM:SS` is the daytime. |
+| `time_period` | | Time period in `ddTHH:MM` format. `dd` is the weekday (`01` - Monday ... `07` - Sunday). `T` is the divider for date and time information according to ISO 8601. `HH:MM` is the daytime. |
 | `internal_gain_occupancy` | W/m² | Internal gains related to occupants.|
 | `internal_gain_appliances` | W/m² | Internal gains related to appliances. |
 
