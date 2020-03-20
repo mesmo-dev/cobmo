@@ -58,6 +58,12 @@ CREATE TABLE IF NOT EXISTS "initial_state_types" (
     "initial_sensible_thermal_storage_state_of_charge" TEXT,
     "initial_battery_storage_state_of_charge" TEXT
 );
+CREATE TABLE IF NOT EXISTS "internal_gain_schedule" (
+    "internal_gain_type" TEXT,
+    "time_period" TEXT,
+    "internal_gain_occupancy" REAL,
+    "internal_gain_appliances" REAL
+);
 CREATE TABLE IF NOT EXISTS "internal_gain_timeseries" (
     "internal_gain_type" TEXT,
     "time" TEXT,
@@ -66,6 +72,7 @@ CREATE TABLE IF NOT EXISTS "internal_gain_timeseries" (
 );
 CREATE TABLE IF NOT EXISTS "internal_gain_types" (
     "internal_gain_type" TEXT,
+    "internal_gain_definition_type", TEXT,
     "internal_gain_occupancy_factor" TEXT,
     "internal_gain_appliances_factor" TEXT
 );

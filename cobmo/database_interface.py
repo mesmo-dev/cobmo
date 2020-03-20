@@ -389,6 +389,8 @@ class BuildingData(object):
         # Obtain timeseries data.
         timestep_start_string = self.timestep_start.strftime('%Y-%m-%dT%H:%M:%S')  # Shorthand for SQL commands.
         timestep_end_string = self.timestep_end.strftime('%Y-%m-%dT%H:%M:%S')  # Shorthand for SQL commands.
+
+        # Obtain weather timeseries.
         self.weather_timeseries = (
             pd.read_sql(
                 """
@@ -406,23 +408,19 @@ class BuildingData(object):
             )
         )
         self.weather_timeseries.index = self.weather_timeseries['time']
-        self.internal_gain_timeseries = pd.read_sql(
-            """
-            SELECT * FROM internal_gain_timeseries 
-            WHERE internal_gain_type IN (
-                SELECT DISTINCT internal_gain_type FROM zones
-                JOIN zone_types USING (zone_type) 
-                WHERE building_name = (
-                    SELECT building_name from scenarios 
-                    WHERE scenario_name = ?
-                )
+        self.weather_timeseries = (
+            self.weather_timeseries.reindex(
+                self.timesteps
+            ).interpolate(
+                'quadratic'
+            ).bfill(
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+            ).ffill(
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
             )
-            AND time between ? AND ?
-            """,
-            con=database_connection,
-            params=[self.scenario_name, timestep_start_string, timestep_end_string],
-            parse_dates=['time']
         )
+
+        # Obtain electricity price timeseries.
         self.electricity_price_timeseries = (
             pd.read_sql(
                 """
@@ -439,56 +437,6 @@ class BuildingData(object):
             )
         )
         self.electricity_price_timeseries.index = self.electricity_price_timeseries['time']
-
-        # Pivot internal gain timeseries, to get one `_occupancy` / `_appliances` for each `internal_gain_type`.
-        building_internal_gain_occupancy_timeseries = self.internal_gain_timeseries.pivot(
-            index='time',
-            columns='internal_gain_type',
-            values='internal_gain_occupancy'
-        )
-        building_internal_gain_occupancy_timeseries.columns = (
-            building_internal_gain_occupancy_timeseries.columns + '_occupancy'
-        )
-        building_internal_gain_appliances_timeseries = self.internal_gain_timeseries.pivot(
-            index='time',
-            columns='internal_gain_type',
-            values='internal_gain_appliances'
-        )
-        building_internal_gain_appliances_timeseries.columns = (
-            building_internal_gain_appliances_timeseries.columns + '_appliances'
-        )
-        self.internal_gain_timeseries = pd.concat(
-            [
-                building_internal_gain_occupancy_timeseries,
-                building_internal_gain_appliances_timeseries
-            ],
-            axis='columns'
-        )
-        self.internal_gain_timeseries.index = pd.to_datetime(self.internal_gain_timeseries.index)
-
-        # Reindex / interpolate timeseries.
-        self.weather_timeseries = (
-            self.weather_timeseries.reindex(
-                self.timesteps
-            ).interpolate(
-                'quadratic'
-            ).bfill(
-                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
-            ).ffill(
-                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
-            )
-        )
-        self.internal_gain_timeseries = (
-            self.internal_gain_timeseries.reindex(
-                self.timesteps
-            ).interpolate(
-                'quadratic'
-            ).bfill(
-                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
-            ).ffill(
-                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
-            )
-        )
         self.electricity_price_timeseries = (
             self.electricity_price_timeseries.reindex(
                 self.timesteps
@@ -498,5 +446,178 @@ class BuildingData(object):
                 limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
             ).ffill(
                 limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+            )
+        )
+
+        # Obtain internal gain timeseries based on schedules.
+        internal_gain_schedule = pd.read_sql(
+            """
+            SELECT * FROM internal_gain_schedule 
+            WHERE internal_gain_type IN (
+                SELECT DISTINCT internal_gain_type FROM zones
+                JOIN zone_types USING (zone_type) 
+                JOIN internal_gain_types USING (internal_gain_type)
+                WHERE building_name = (
+                    SELECT building_name from scenarios 
+                    WHERE scenario_name = ?
+                )
+                AND internal_gain_definition_type = 'schedule'
+            )
+            """,
+            con=database_connection,
+            params=[self.scenario_name],
+            index_col='time_period'
+        )
+        if len(internal_gain_schedule) > 0:
+
+            # Parse time period index.
+            internal_gain_schedule.index = np.vectorize(pd.Period)(internal_gain_schedule.index)
+
+            # Obtain complete schedule for all weekdays.
+            internal_gain_schedule_complete = []
+            for internal_gain_type in internal_gain_schedule['internal_gain_type'].unique():
+                for day in range(1, 8):
+                    if day in internal_gain_schedule.index.day.unique():
+                        internal_gain_schedule_complete.append(
+                            internal_gain_schedule.loc[(
+                                (internal_gain_schedule.index.day == day)
+                                & (internal_gain_schedule['internal_gain_type'] == internal_gain_type)
+                            ), :]
+                        )
+                    else:
+                        internal_gain_schedule_previous = internal_gain_schedule_complete[-1].copy()
+                        internal_gain_schedule_previous.index += pd.Timedelta('1 day')
+                        internal_gain_schedule_complete.append(internal_gain_schedule_previous)
+            internal_gain_schedule_complete = pd.concat(internal_gain_schedule_complete)
+
+            # Pivot complete schedule, to get one `_occupancy` / `_appliances` for each `internal_gain_type`.
+            # TODO: Multiply internal gain factors.
+            building_internal_gain_occupancy_schedule = internal_gain_schedule_complete.pivot(
+                columns='internal_gain_type',
+                values='internal_gain_occupancy'
+            )
+            building_internal_gain_occupancy_schedule.columns = (
+                building_internal_gain_occupancy_schedule.columns + '_occupancy'
+            )
+            building_internal_gain_appliances_schedule = internal_gain_schedule_complete.pivot(
+                columns='internal_gain_type',
+                values='internal_gain_appliances'
+            )
+            building_internal_gain_appliances_schedule.columns = (
+                building_internal_gain_appliances_schedule.columns + '_appliances'
+            )
+            internal_gain_schedule_complete = pd.concat(
+                [
+                    building_internal_gain_occupancy_schedule,
+                    building_internal_gain_appliances_schedule
+                ],
+                axis='columns'
+            )
+
+            # Obtain complete schedule for each minute of the week.
+            internal_gain_schedule_complete = (
+                internal_gain_schedule_complete.reindex(
+                    pd.period_range(start='01T00:00', end='07T23:59', freq='T')
+                ).fillna(method='ffill')
+            )
+
+            # Reindex / fill internal gain schedule for given timesteps.
+            internal_gain_schedule_complete.index = (
+                pd.MultiIndex.from_arrays([
+                    internal_gain_schedule_complete.index.day - 1,
+                    internal_gain_schedule_complete.index.hour,
+                    internal_gain_schedule_complete.index.minute
+                ])
+            )
+            internal_gain_schedule = (
+                pd.DataFrame(
+                    index=pd.MultiIndex.from_arrays([
+                        self.timesteps.weekday,
+                        self.timesteps.hour,
+                        self.timesteps.minute
+                    ]),
+                    columns=internal_gain_schedule_complete.columns
+                )
+            )
+            for column in internal_gain_schedule.columns:
+                 internal_gain_schedule[column] = (
+                     internal_gain_schedule[column].fillna(internal_gain_schedule_complete[column])
+                 )
+            internal_gain_schedule.index = self.timesteps
+
+        else:
+            internal_gain_schedule = None
+
+        # Obtain internal gain timeseries based on timeseries.
+        internal_gain_timeseries = pd.read_sql(
+            """
+            SELECT * FROM internal_gain_timeseries 
+            WHERE internal_gain_type IN (
+                SELECT DISTINCT internal_gain_type FROM zones
+                JOIN zone_types USING (zone_type) 
+                JOIN internal_gain_types USING (internal_gain_type)
+                WHERE building_name = (
+                    SELECT building_name from scenarios 
+                    WHERE scenario_name = ?
+                )
+                AND internal_gain_definition_type = 'timeseries'
+            )
+            AND time between ? AND ?
+            """,
+            con=database_connection,
+            params=[self.scenario_name, timestep_start_string, timestep_end_string],
+            index_col='time',
+            parse_dates=['time']
+        )
+        if len(internal_gain_timeseries) > 0:
+
+            # Pivot internal gain timeseries, to get one `_occupancy` / `_appliances` for each `internal_gain_type`.
+            # TODO: Multiply internal gain factors.
+            building_internal_gain_occupancy_timeseries = internal_gain_timeseries.pivot(
+                columns='internal_gain_type',
+                values='internal_gain_occupancy'
+            )
+            building_internal_gain_occupancy_timeseries.columns = (
+                building_internal_gain_occupancy_timeseries.columns + '_occupancy'
+            )
+            building_internal_gain_appliances_timeseries = internal_gain_timeseries.pivot(
+                columns='internal_gain_type',
+                values='internal_gain_appliances'
+            )
+            building_internal_gain_appliances_timeseries.columns = (
+                building_internal_gain_appliances_timeseries.columns + '_appliances'
+            )
+            internal_gain_timeseries = pd.concat(
+                [
+                    building_internal_gain_occupancy_timeseries,
+                    building_internal_gain_appliances_timeseries
+                ],
+                axis='columns'
+            )
+
+            # Reindex / interpolate timeseries for given timesteps.
+            internal_gain_timeseries = (
+                internal_gain_timeseries.reindex(
+                    self.timesteps
+                ).interpolate(
+                    'quadratic'
+                ).bfill(
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+                ).ffill(
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+                )
+            )
+
+        else:
+            internal_gain_timeseries = None
+
+        # Merge schedule-based and timeseries-based internal gain timeseries.
+        self.internal_gain_timeseries = (
+            pd.concat(
+                [
+                    internal_gain_schedule,
+                    internal_gain_timeseries
+                ],
+                axis='columns'
             )
         )
