@@ -1,3 +1,11 @@
 internal_gain_type,internal_gain_definition_type,internal_gain_occupancy_factor,internal_gain_appliances_factor
-create_office_internal_gains,timeseries,internal_gain_occupancy_factor,internal_gain_appliances_factor
-wtp_office_internal_gains,schedule,7.0,21.0
+create_office,timeseries,internal_gain_occupancy_factor,internal_gain_appliances_factor
+cea_university,schedule,7.0,21.0
+cea_single_res,schedule,7.0,21.0
+cea_multi_res,schedule,7.0,21.0
+cea_school,schedule,7.0,21.0
+cea_retail,schedule,7.0,21.0
+cea_office,schedule,7.0,21.0
+cea_hotel,schedule,7.0,21.0
+cea_hospital,schedule,7.0,21.0
+cea_industrial,schedule,7.0,21.0
