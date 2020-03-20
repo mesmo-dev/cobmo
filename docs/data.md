@@ -13,6 +13,43 @@ Window blind characteristics. *Currently not used.*
 | `blind_type` | | Unique type identifier. |
 | `blind_efficiency` | - | Blind efficiency (absorbed irradiation / incident irradiation). |
 
+## `buildings`
+
+Building definition.
+
+| Column | Unit | Description |
+| --- |:---:| --- |
+| `building_name` | | Unique building identifier.|
+| `weather_type` | | Type identifier as defined in `weather_types`. |
+| `building_storage_type` | | Type identifier as defined in `storage_types`. |
+
+## `constraint_schedules`
+
+The constraint timeseries is constructed by obtaining the appropriate value for `internal_gain_occupancy` / `internal_gain_appliances` based on the `time_period` in `ddTHH:MM:SS` format. Each value is kept constant at the given value for any daytime greater than or equal to `HH:MM:SS` and any weekday greater than or equal to `dd` until the next defined `ddTHH:MM:SS`. Note that the daily schedule is repeated for any weekday greater than or equal to `dd` until the next defined `dd`. The initial value for each `zone_constraint_profile` must start at `time_period = 00T00:00:00`.
+
+| Column | Unit | Description |
+| --- |:---:| --- |
+| `constraint_type` | | Constraint type identifier. |
+| `time_period` | | Time period in `ddTHH:MM:SS` format. `dd` is the weekday (`01` - Monday ... `07` - Sunday). `T` is the divider for date and time information according to ISO 8601. `HH:MM:SS` is the daytime. |
+| `minimum_air_temperature` | °C | |
+| `maximum_air_temperature` | °C | |
+| `minimum_fresh_air_flow_per_area` | m/s | |
+| `minimum_fresh_air_flow_per_person` | m³/s/person | |
+| `maximum_co2_concentration` | ppm | |
+| `minimum_fresh_air_flow_per_area_no_dcv` | m/s | |
+| `minimum_relative_humidity` | % | |
+| `maximum_relative_humidity` | % | |
+
+## `electricity_price_timeseries`
+
+Electricity price time series definition.
+
+| Column | Unit | Description |
+| --- |:---:| --- |
+| `price_type` | | Price type identifier. |
+| `time` | | Timestamp according to ISO 8601. |
+| `price` | SGD | *Currently only in SGD* |
+
 ## `hvac_ahu_types`
 
 Air handling unit (AHU) set points and characteristics.
@@ -69,6 +106,8 @@ Terminal unit (TU) set points and characteristics.
 
 ## `initial_state_types`
 
+Initial state settings to be taken for simulation and optimization.
+
 | Column | Unit | Description |
 | --- |:---:| --- |
 | initial_state_type | | Unique type identifier. |
@@ -78,6 +117,17 @@ Terminal unit (TU) set points and characteristics.
 | initial_absolute_humidity | kg/kg | Initial zone air absolute humidity (mass of water / mass of air). |
 | initial_sensible_thermal_storage_state_of_charge | m³ | Initial stored volume of useable water layer in the sensible thermal storage. |
 | initial_battery_storage_state_of_charge | kWh | Initial stored electric energy in the battery storage.|
+
+## `internal_gain_schedules`
+
+The internal gain timeseries is constructed by obtaining the appropriate value for `internal_gain_occupancy` / `internal_gain_appliances` based on the `time_period` in `ddTHH:MM:SS` format. Each value is kept constant at the given value for any daytime greater than or equal to `HH:MM:SS` and any weekday greater than or equal to `dd` until the next defined `ddTHH:MM:SS`. Note that the daily schedule is repeated for any weekday greater than or equal to `dd` until the next defined `dd`. The initial value for each `zone_constraint_profile` must start at `time_period = 00T00:00:00`.
+
+| Column | Unit | Description |
+| --- |:---:| --- |
+| `internal_gain_type` | | Type identifier as defined in `internal_gain_types`. |
+| `time_period` | | Time period in `ddTHH:MM:SS` format. `dd` is the weekday (`01` - Monday ... `07` - Sunday). `T` is the divider for date and time information according to ISO 8601. `HH:MM:SS` is the daytime. |
+| `internal_gain_occupancy` | W/m² | Internal gains related to occupants.|
+| `internal_gain_appliances` | W/m² | Internal gains related to appliances. |
 
 ## `internal_gain_timeseries`
 
@@ -97,6 +147,7 @@ Internal gain type definitions.
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `internal_gain_type` | | Unique type identifier. |
+| `internal_gain_definition_type` | | Definition type, corresponding to definitions in `internal_gain_schedules` or `internal_gain_timeseries`. Choices: `schedule`, `timeseries`. |
 | `internal_gain_occupancy_factor` | - | Occupancy gains scaling factor. |
 | `internal_gain_appliances_factor` | - | Appliance gains scaling factor. |
 
@@ -226,89 +277,6 @@ Interior surfaces geometry.
 | `surface_area` | m² | Surface area. |
 | `surface_comment` | | Explanatory comment, e.g., description of the geometry. |
 
-## `window_types`
-
-Window characteristics.
-
-| Column | Unit | Description |
-| --- |:---:| --- |
-| `window_type` | | Unique type identifier. |
-| `thermal_resistance_window` | m²K/W | Specific thermal resistance. |
-| `absorptivity_window` | - | Irradiation gain coefficient (absorbed irradiation / incident irradiation). |
-| `emissivity_window` | - | Emissivity factor. |
-
-## `zone_constraint_profiles`
-
-Constraint profile definitions.
-
-The constraint profile time series is constructed by obtaining the appropriate value for each `minimum_air_temperature`, `maximum_air_temperature`, etc. based on `from_time` and `from_weekday`. Each constraint is kept constant at the given value for any daytime greater than or equal to `from_time` and any weekday greater than or equal to `from_weekday` until the next defined `from_time` or `from_weekday`. Note that the daily profile time series is repeated for any weekday greater than or equal to `from_weekday` until the next defined `from_weekday`. The initial value for each `zone_constraint_profile` must start at `from_time = 00:00:00` and `from_weekday = 0`.
-
-| Column | Unit | Description |
-| --- |:---:| --- |
-| `zone_constraint_profile` | | Constraint profile identifier. |
-| `from_weekday` | | Start weekday number (0 - Monday ... 6 - Sunday). | |
-| `from_time` | | Start time in HH:MM:SS format. | |
-| `minimum_air_temperature` | °C | |
-| `maximum_air_temperature` | °C | |
-| `minimum_fresh_air_flow_per_area` | m/s | |
-| `minimum_fresh_air_flow_per_person` | m³/s/person | |
-| `maximum_co2_concentration` | ppm | |
-| `minimum_fresh_air_flow_per_area_no_dcv` | m/s | |
-| `minimum_relative_humidity` | % | |
-| `maximum_relative_humidity` | % | |
-
-
-## `zone_types`
-
-Zone type characteristics.
-
-| Column | Unit | Description |
-| --- |:---:| --- |
-| `zone_type` | | Unique type identifier.|
-| `heat_capacity` | J/(m³K) | Specific heat capacity. |
-| `infiltration_rate` | 1/h | Infiltration rate. |
-| `internal_gain_type` | | Type identifier as defined in `internal_gain_types`. |
-| `window_type` | | Type identifier as defined in `window_types`. |
-| `blind_type` | | Type identifier as defined in `blind_types`. *Currently not used.* |
-| `hvac_generic_type` | | Type identifier as defined in `hvac_generic_types`. |
-| `hvac_radiator_type` | | Type identifier as defined in `hvac_radiator_types`. |
-| `hvac_ahu_type` | | Type identifier as defined in `hvac_ahu_types`. |
-| `hvac_tu_type` | | Type identifier as defined in `hvac_tu_types`. |
-| `zone_constraint_profile` | | Constraint profile identifier as defined in `zone_constraint_profiles`. |
-
-## `zones`
-
-Zone geometry.
-
-| Column | Unit | Description |
-| --- |:---:| --- |
-| `building_name` | | Building identifier as defined in `buildings`. |
-| `zone_name` | | Unique zone identifier. |
-| `zone_type` | | Type identifier as defined in `zone_types`. |
-| `zone_height` | m | Zone height (clear interior height from base to ceiling). |
-| `zone_area` | m² | Zone area (interior area excluding surfaces). |
-| `zone_comment` | | Explanatory comment, e.g., description of the geometry. |
-
-## `buildings`
-
-Building definition.
-
-| Column | Unit | Description |
-| --- |:---:| --- |
-| `building_name` | | Unique building identifier.|
-| `weather_type` | | Type identifier as defined in `weather_types`. |
-| `building_storage_type` | | Type identifier as defined in `storage_types`. |
-
-## `electricity_price_timeseries`
-
-Electricity price time series definition.
-
-| Column | Unit | Description |
-| --- |:---:| --- |
-| `price_type` | | Price type identifier. |
-| `time` | | Timestamp according to ISO 8601. |
-| `price` | SGD | *Currently only in SGD* |
-
 ## `weather_timeseries`
 
 Weather time series definition.
@@ -337,3 +305,45 @@ Additional weather and site information.
 | `latitude` | | Latitude of the weather station. |
 | `longitude` | | Longitude of the weather station. |
 | `temperature_difference_sky_ambient` | K | *To be revised.* |
+
+## `window_types`
+
+Window characteristics.
+
+| Column | Unit | Description |
+| --- |:---:| --- |
+| `window_type` | | Unique type identifier. |
+| `thermal_resistance_window` | m²K/W | Specific thermal resistance. |
+| `absorptivity_window` | - | Irradiation gain coefficient (absorbed irradiation / incident irradiation). |
+| `emissivity_window` | - | Emissivity factor. |
+
+## `zone_types`
+
+Zone type characteristics.
+
+| Column | Unit | Description |
+| --- |:---:| --- |
+| `zone_type` | | Unique type identifier.|
+| `heat_capacity` | J/(m³K) | Specific heat capacity. |
+| `infiltration_rate` | 1/h | Infiltration rate. |
+| `internal_gain_type` | | Type identifier as defined in `internal_gain_types`. |
+| `window_type` | | Type identifier as defined in `window_types`. |
+| `blind_type` | | Type identifier as defined in `blind_types`. *Currently not used.* |
+| `hvac_generic_type` | | Type identifier as defined in `hvac_generic_types`. |
+| `hvac_radiator_type` | | Type identifier as defined in `hvac_radiator_types`. |
+| `hvac_ahu_type` | | Type identifier as defined in `hvac_ahu_types`. |
+| `hvac_tu_type` | | Type identifier as defined in `hvac_tu_types`. |
+| `constraint_type` | | Constraint type identifier as defined in `constraint_schedules`. |
+
+## `zones`
+
+Zone geometry.
+
+| Column | Unit | Description |
+| --- |:---:| --- |
+| `building_name` | | Building identifier as defined in `buildings`. |
+| `zone_name` | | Unique zone identifier. |
+| `zone_type` | | Type identifier as defined in `zone_types`. |
+| `zone_height` | m | Zone height (clear interior height from base to ceiling). |
+| `zone_area` | m² | Zone area (interior area excluding surfaces). |
+| `zone_comment` | | Explanatory comment, e.g., description of the geometry. |
