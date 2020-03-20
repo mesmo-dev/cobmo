@@ -3832,231 +3832,167 @@ class BuildingModel(object):
         def define_output_constraint_timeseries():
             # TODO: Make construction / interpolation simpler and more efficient.
 
-            # Initialise constraint timeseries as +/- infinity.
+            # Instantiate constraint timeseries.
             self.output_constraint_timeseries_maximum = pd.DataFrame(
-                1.0 * np.infty,
+                +1.0 * np.infty,
                 self.timesteps,
                 self.outputs
             )
-            self.output_constraint_timeseries_minimum = -self.output_constraint_timeseries_maximum
-            # Minimum bound for "power" outputs.
+            self.output_constraint_timeseries_minimum = pd.DataFrame(
+                -1.0 * np.infty,
+                self.timesteps,
+                self.outputs
+            )
+
+            # Obtain indexing shorthands.
+            zones_ventilation_index = (
+                pd.notnull(self.building_data.zones['hvac_ahu_type'])
+                # | pd.notnull(self.building_data.zones['window_type'])  # TODO: revise window air flow.
+            )
+            zones_ahu_index = (
+                pd.notnull(self.building_data.zones['hvac_ahu_type'])
+            )
+
+            # Minimum constraint for power outputs.
             self.output_constraint_timeseries_minimum.loc[
-                :,
-                [column for column in self.output_constraint_timeseries_minimum.columns if '_power' in column]
+                :, self.outputs.str.contains('_power')
             ] = 0.0
 
-            # Minimum bound for "flow" outputs.
+            # Minimum constraint for flow outputs.
             self.output_constraint_timeseries_minimum.loc[
-                :,
-                [column for column in self.output_constraint_timeseries_minimum.columns if '_flow' in column]
+                :, self.outputs.str.contains('_flow')
             ] = 0.0
 
-            # Minimum bound for storage charge and discharge outputs.
+            # Minimum constraint for storage charge and discharge outputs.
             self.output_constraint_timeseries_minimum.loc[
-                :,
-                [column for column in self.output_constraint_timeseries_minimum.columns if '_storage_charge' in column]
+                :, self.outputs.str.contains('_storage_charge')
             ] = 0.0
             self.output_constraint_timeseries_minimum.loc[
-                :,
-                [column for column in self.output_constraint_timeseries_minimum.columns if '_storage_to_zone' in column]
+                :, self.outputs.str.contains('_storage_to_zone')
             ] = 0.0
 
-            # Minimum bound for "balance" outputs.
+            # Minimum / maximum constraint for balance outputs.
             self.output_constraint_timeseries_minimum.loc[
-                :,
-                [column for column in self.output_constraint_timeseries_minimum.columns if '_balance' in column]
+                :, self.outputs.str.contains('_balance')
             ] = 0.0
-
-            # Maximum bound for "balance" outputs.
             self.output_constraint_timeseries_maximum.loc[
-                :,
-                [column for column in self.output_constraint_timeseries_maximum.columns if '_balance' in column]
+                :, self.outputs.str.contains('_balance')
             ] = 0.0
 
-            # If a heating/cooling session is defined, the cooling/heating air flow is forced to 0.
-            # Comment: The cooling or heating coil may still be working, because of the dehumidification,
-            # however it would not appear explicitly in the output.
+            # If a heating / cooling session is defined, the cooling / heating air flow is forced to 0.
+            # TODO: Remove heating / cooling session.
             if self.building_data.scenarios['heating_cooling_session'] == 'heating':
                 self.output_constraint_timeseries_maximum.loc[
-                    :, [column for column in self.output_constraint_timeseries_minimum.columns if '_cool' in column]
-                ] = 0
+                    :,  self.outputs.str.contains('_cool')
+                ] = 0.0
             if self.building_data.scenarios['heating_cooling_session'] == 'cooling':
                 self.output_constraint_timeseries_maximum.loc[
-                    :, [column for column in self.output_constraint_timeseries_minimum.columns if '_heat' in column]
-                ] = 0
+                    :,  self.outputs.str.contains('_heat')
+                ] = 0.0
 
-            for zone_name, zone_data in self.building_data.zones.iterrows():
-                # Load zone_constraint_profile for each zone.
-                building_zone_constraint_profile = (
-                    self.building_data.zone_constraint_profiles_dict[zone_data['zone_constraint_profile']]
-                )
+            # Minimum / maximum constraint for zone air temperature.
+            self.output_constraint_timeseries_minimum.loc[
+                :, self.building_data.zones['zone_name'] + '_temperature'
+            ] = (
+                self.building_data.constraint_timeseries.loc[
+                    :, self.building_data.zones['constraint_type'] + '_minimum_air_temperature'
+                ]
+            ).values
+            self.output_constraint_timeseries_maximum.loc[
+                :, self.building_data.zones['zone_name'] + '_temperature'
+            ] = (
+                self.building_data.constraint_timeseries.loc[
+                    :, self.building_data.zones['constraint_type'] + '_maximum_air_temperature'
+                ]
+            ).values
 
-                # Create zone_name function for `from_weekday` (mapping from `timestep.weekday()` to `from_weekday`).
-                constraint_profile_index_day = scipy.interpolate.interp1d(
-                    building_zone_constraint_profile['from_weekday'],
-                    building_zone_constraint_profile['from_weekday'],
-                    kind='zero',
-                    fill_value='extrapolate'
-                )
-                for timestep in self.timesteps:
-                    # Create zone_name function for `from_time` (mapping `timestep.timestamp` to `from_time`).
-                    constraint_profile_index_time = scipy.interpolate.interp1d(
-                        pd.to_datetime(
-                            str(timestep.date())
-                            + ' '
-                            + building_zone_constraint_profile['from_time'][
-                                building_zone_constraint_profile['from_weekday']
-                                == constraint_profile_index_day(timestep.weekday())
-                            ]
-                        ).view('int64'),
-                        building_zone_constraint_profile.index[
-                            building_zone_constraint_profile['from_weekday']
-                            == constraint_profile_index_day(timestep.weekday())
-                            ].values,
-                        kind='zero',
-                        fill_value='extrapolate'
+            # Minimum constraint for zone fresh air flow.
+            self.output_constraint_timeseries_minimum.loc[
+                :, self.building_data.zones.loc[zones_ventilation_index, 'zone_name'] + '_total_fresh_air_flow'
+            ] = (
+                self.building_data.constraint_timeseries.loc[
+                    :, (
+                        self.building_data.zones.loc[zones_ventilation_index, 'constraint_type']
+                        + '_minimum_fresh_air_flow_per_area_no_dcv'
                     )
+                ].values
+                * self.building_data.zones.loc[zones_ventilation_index, 'zone_area'].values
+            )
 
-                    # Select constraint values.
-                    self.output_constraint_timeseries_minimum.at[
-                        timestep,
-                        zone_name + '_temperature'
-                    ] = (
-                        building_zone_constraint_profile['minimum_air_temperature'][
-                            int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+            # Maximum constraint for zone CO2 concentration.
+            # TODO: Revise DCV implementation (check previous constraint implementation for missing constraints).
+            if pd.notnull(self.building_data.scenarios['co2_model_type']):
+                self.output_constraint_timeseries_minimum.loc[
+                    :, self.building_data.zones.loc[zones_ventilation_index, 'zone_name'] + '_co2_concentration'
+                ] = (
+                    self.building_data.constraint_timeseries.loc[
+                        :, (
+                            self.building_data.zones.loc[zones_ventilation_index, 'constraint_type']
+                            + '_maximum_co2_concentration'
+                        )
+                    ]
+                ).values
+
+            # Minimum / maximum constraint for zone humidity concentration.
+            # TODO: Revise DCV implementation (check previous constraint implementation for missing constraints).
+            if pd.notnull(self.building_data.scenarios['humidity_model_type']):
+                self.output_constraint_timeseries_minimum.loc[
+                    :, self.building_data.zones.loc[zones_ahu_index, 'zone_name'] + '_absolute_humidity'
+                ] = (
+                    np.vectorize(cobmo.utils.calculate_absolute_humidity_humid_air)(
+                        self.building_data.scenarios['linearization_zone_air_temperature_cool'],
+                        self.building_data.constraint_timeseries.loc[
+                            :, (
+                                self.building_data.zones.loc[zones_ahu_index, 'constraint_type']
+                                + '_minimum_relative_humidity'
+                            )
                         ]
                     )
-                    self.output_constraint_timeseries_maximum.at[
-                        timestep,
-                        zone_name + '_temperature'
-                    ] = (
-                        building_zone_constraint_profile['maximum_air_temperature'][
-                            int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
+                )
+                self.output_constraint_timeseries_maximum.loc[
+                    :, self.building_data.zones.loc[zones_ahu_index, 'zone_name'] + '_absolute_humidity'
+                ] = (
+                    np.vectorize(cobmo.utils.calculate_absolute_humidity_humid_air)(
+                        self.building_data.scenarios['linearization_zone_air_temperature_cool'],
+                        self.building_data.constraint_timeseries.loc[
+                            :, (
+                                self.building_data.zones.loc[zones_ahu_index, 'constraint_type']
+                                + '_maximum_relative_humidity'
+                            )
                         ]
                     )
+                )
 
-                    if pd.notnull(zone_data['hvac_ahu_type']) | pd.notnull(zone_data['window_type']):
-                        if pd.notnull(self.building_data.scenarios['demand_controlled_ventilation_type']):
-                            if pd.notnull(self.building_data.scenarios['co2_model_type']):
-                                self.output_constraint_timeseries_maximum.at[
-                                    timestep,
-                                    zone_name + '_co2_concentration'
-                                ] = (
-                                    building_zone_constraint_profile['maximum_co2_concentration'][
-                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                    ]
-                                )
-                                self.output_constraint_timeseries_minimum.at[
-                                    timestep,
-                                    zone_name + '_total_fresh_air_flow'
-                                ] = (
-                                    building_zone_constraint_profile['minimum_fresh_air_flow_per_area'][
-                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                    ]
-                                    * zone_data['zone_area']
-                                )
-                            else:
-                                self.output_constraint_timeseries_minimum.at[
-                                    timestep,
-                                    zone_name + '_total_fresh_air_flow'
-                                ] = (
-                                    building_zone_constraint_profile['minimum_fresh_air_flow_per_person'][
-                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                    ]
-                                    * (
-                                        self.disturbance_timeseries[
-                                            self.building_data.zones["internal_gain_type"].loc[zone_name] + "_occupancy"
-                                        ].loc[timestep] * zone_data['zone_area']
-                                        + building_zone_constraint_profile['minimum_fresh_air_flow_per_area'][
-                                            int(constraint_profile_index_time(
-                                                timestep.to_datetime64().astype('int64')
-                                            ))
-                                        ]
-                                        * zone_data['zone_area']
-                                    )
-                                )
-                        else:
-                            if pd.notnull(zone_data['hvac_ahu_type']):
-                                self.output_constraint_timeseries_minimum.at[
-                                    timestep,
-                                    zone_name + '_total_fresh_air_flow'
-                                ] = (
-                                    building_zone_constraint_profile['minimum_fresh_air_flow_per_area_no_dcv'][
-                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                    ]
-                                    * zone_data['zone_area']
-                                )
-                            elif pd.notnull(zone_data['window_type']):
-                                self.output_constraint_timeseries_minimum.at[
-                                    timestep,
-                                    zone_name + '_window_fresh_air_flow'
-                                ] = (
-                                    building_zone_constraint_profile['minimum_fresh_air_flow_per_area_no_dcv'][
-                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                    ]
-                                    * zone_data['zone_area']
-                                )
-                    # If a ventilation system is enabled, if DCV, then CO2 or constraint on total fresh air flow.
-                    # If no DCV, then constant constraint on AHU or on windows if no AHU
+            # Minimum / maximum constraints for storage state of charge.
+            # TODO: Validate storage size units.
 
-                    if pd.notnull(self.building_data.scenarios['humidity_model_type']):
-                        if pd.notnull(zone_data['hvac_ahu_type']):
-                            self.output_constraint_timeseries_minimum.at[
-                                timestep,
-                                zone_name + '_absolute_humidity'
-                            ] = (
-                                cobmo.utils.calculate_absolute_humidity_humid_air(
-                                    self.building_data.scenarios['linearization_zone_air_temperature_cool'],
-                                    building_zone_constraint_profile['minimum_relative_humidity'][
-                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                    ]
-                                )
-                            )
-                            self.output_constraint_timeseries_maximum.at[
-                                timestep,
-                                zone_name + '_absolute_humidity'
-                            ] = (
-                                cobmo.utils.calculate_absolute_humidity_humid_air(
-                                    self.building_data.scenarios['linearization_zone_air_temperature_cool'],
-                                    building_zone_constraint_profile['maximum_relative_humidity'][
-                                        int(constraint_profile_index_time(timestep.to_datetime64().astype('int64')))
-                                    ]
-                                )
-                            )
+            # Sensible thermal storage.
+            if self.building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
+                self.output_constraint_timeseries_minimum.loc[
+                    :, 'sensible_thermal_storage_state_of_charge'
+                ] = 0.0
+                self.output_constraint_timeseries_maximum.loc[
+                    :, 'sensible_thermal_storage_state_of_charge'
+                ] = (
+                    self.building_data.scenarios['storage_size']
+                    * self.building_data.parameters['water_density']  # Convert volume to mass.
+                )
 
-                    # Storage state of charge constraints.
-                    # Sensible thermal storage.
-                    # TODO: Validate storage size units.
-                    if self.building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
-                        self.output_constraint_timeseries_maximum.at[
-                            timestep,
-                            'sensible_thermal_storage_state_of_charge'
-                        ] = (
-                            self.building_data.scenarios['storage_size']
-                            * self.building_data.parameters['water_density']  # Convert volume to mass.
-                        )
-                    if self.building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
-                        self.output_constraint_timeseries_minimum.at[
-                            timestep,
-                            'sensible_thermal_storage_state_of_charge'
-                        ] = 0.0
-
-                    # Battery storage.
-                    if self.building_data.scenarios['building_storage_type'] == 'default_battery_storage':
-                        self.output_constraint_timeseries_maximum.at[
-                            timestep,
-                            'battery_storage_state_of_charge'
-                        ] = self.building_data.scenarios['storage_size']
-                    if self.building_data.scenarios['building_storage_type'] == 'default_battery_storage':
-                        self.output_constraint_timeseries_minimum.at[
-                            timestep,
-                            'battery_storage_state_of_charge'
-                        ] = (
-                            0.0
-                            # TODO: Revise implementation of depth of discharge.
-                            # + self.building_data.scenarios['storage_size']
-                            # * (1.0 - self.building_data.scenarios['storage_battery_depth_of_discharge'])
-                        )
+            # Battery storage.
+            if self.building_data.scenarios['building_storage_type'] == 'default_battery_storage':
+                self.output_constraint_timeseries_minimum.loc[
+                    :, 'battery_storage_state_of_charge'
+                ] = (
+                    0.0
+                    # TODO: Revise implementation of depth of discharge.
+                    # + self.building_data.scenarios['storage_size']
+                    # * (1.0 - self.building_data.scenarios['storage_battery_depth_of_discharge'])
+                )
+                self.output_constraint_timeseries_maximum.loc[
+                    :, 'battery_storage_state_of_charge'
+                ] = (
+                    self.building_data.scenarios['storage_size']
+                )
 
         def discretize_model():
             """

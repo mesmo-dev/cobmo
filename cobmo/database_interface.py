@@ -88,14 +88,14 @@ class BuildingData(object):
     surfaces_exterior: pd.DataFrame
     surfaces_interior: pd.DataFrame
     zones: pd.DataFrame
-    zone_constraint_profiles_dict: dict
     timestep_start: pd.Timestamp
     timestep_end: pd.Timestamp
     timestep_delta: pd.Timedelta
     timesteps: pd.Index
     weather_timeseries: pd.DataFrame
-    internal_gain_timeseries: pd.DataFrame
     electricity_price_timeseries: pd.DataFrame
+    internal_gain_timeseries: pd.DataFrame
+    constraint_timeseries: pd.DataFrame
 
     @ multimethod
     def __init__(
@@ -224,20 +224,6 @@ class BuildingData(object):
             )
         )
         self.zones.index = self.zones['zone_name']
-        self.zone_constraint_profiles_dict = (
-            dict.fromkeys(self.zones['zone_constraint_profile'].unique())
-        )
-        for zone_constraint_profile in self.zone_constraint_profiles_dict:
-            self.zone_constraint_profiles_dict[zone_constraint_profile] = (
-                pd.read_sql(
-                    """
-                    SELECT * FROM zone_constraint_profiles 
-                    WHERE zone_constraint_profile = ?
-                    """,
-                    con=database_connection,
-                    params=[zone_constraint_profile]
-                )
-            )
 
         # Define parameter parsing utility function.
         @np.vectorize
@@ -345,24 +331,6 @@ class BuildingData(object):
         self.zones.loc[:, zones_numerical_columns] = (
             self.zones.loc[:, zones_numerical_columns].apply(parse_parameter)
         )
-        zone_constraint_profiles_numerical_columns = [
-            'minimum_air_temperature',
-            'maximum_air_temperature',
-            'minimum_fresh_air_flow_per_area',
-            'minimum_fresh_air_flow_per_person',
-            'maximum_co2_concentration',
-            'minimum_fresh_air_flow_per_area_no_dcv',
-            'minimum_relative_humidity',
-            'maximum_relative_humidity'
-        ]
-        for zone_constraint_profile in self.zone_constraint_profiles_dict:
-            self.zone_constraint_profiles_dict[zone_constraint_profile].loc[
-                :, zone_constraint_profiles_numerical_columns
-            ] = (
-                self.zone_constraint_profiles_dict[zone_constraint_profile].loc[
-                    :, zone_constraint_profiles_numerical_columns
-                ].apply(parse_parameter)
-            )
 
         # Obtain timestep data.
         if timestep_start is not None:
@@ -594,3 +562,107 @@ class BuildingData(object):
                 axis='columns'
             )
         )
+
+        # Obtain constraint timeseries based on schedules.
+        constraint_schedule = pd.read_sql(
+            """
+            SELECT * FROM constraint_schedules 
+            WHERE constraint_type IN (
+                SELECT DISTINCT constraint_type FROM zones
+                JOIN zone_types USING (zone_type) 
+                WHERE building_name = (
+                    SELECT building_name from scenarios 
+                    WHERE scenario_name = ?
+                )
+            )
+            """,
+            con=database_connection,
+            params=[self.scenario_name],
+            index_col='time_period'
+        )
+        if len(constraint_schedule) > 0:
+
+            # Parse parameters.
+            constraint_schedule_numerical_columns = [
+                'minimum_air_temperature',
+                'maximum_air_temperature',
+                'minimum_fresh_air_flow_per_area',
+                'minimum_fresh_air_flow_per_person',
+                'maximum_co2_concentration',
+                'minimum_fresh_air_flow_per_area_no_dcv',
+                'minimum_relative_humidity',
+                'maximum_relative_humidity'
+            ]
+            constraint_schedule.loc[
+                :, constraint_schedule_numerical_columns
+            ] = (
+                constraint_schedule.loc[
+                    :, constraint_schedule_numerical_columns
+                ].apply(parse_parameter)
+            )
+
+            # Parse time period index.
+            constraint_schedule.index = np.vectorize(pd.Period)(constraint_schedule.index)
+
+            # Obtain complete schedule for all weekdays.
+            # TODO: Check if '01T00:00:00' is defined for each schedule.
+            constraint_schedule_complete = []
+            for constraint_type in constraint_schedule['constraint_type'].unique():
+                for day in range(1, 8):
+                    if day in constraint_schedule.index.day.unique():
+                        constraint_schedule_complete.append(
+                            constraint_schedule.loc[(
+                                (constraint_schedule.index.day == day)
+                                & (constraint_schedule['constraint_type'] == constraint_type)
+                            ), :]
+                        )
+                    else:
+                        constraint_schedule_previous = constraint_schedule_complete[-1].copy()
+                        constraint_schedule_previous.index += pd.Timedelta('1 day')
+                        constraint_schedule_complete.append(constraint_schedule_previous)
+            constraint_schedule_complete = pd.concat(constraint_schedule_complete)
+
+            # Pivot complete schedule.
+            constraint_schedule_complete = constraint_schedule_complete.pivot(
+                columns='constraint_type',
+                values=constraint_schedule_complete.columns[constraint_schedule_complete.columns != 'constraint_type']
+            )
+            constraint_schedule_complete.columns = (
+                constraint_schedule_complete.columns.map(lambda x: '_'.join(x[::-1]))
+            )
+
+            # Obtain complete schedule for each minute of the week.
+            constraint_schedule_complete = (
+                constraint_schedule_complete.reindex(
+                    pd.period_range(start='01T00:00', end='07T23:59', freq='T')
+                ).fillna(method='ffill')
+            )
+
+            # Reindex / fill internal gain schedule for given timesteps.
+            constraint_schedule_complete.index = (
+                pd.MultiIndex.from_arrays([
+                    constraint_schedule_complete.index.day - 1,
+                    constraint_schedule_complete.index.hour,
+                    constraint_schedule_complete.index.minute
+                ])
+            )
+            constraint_schedule = (
+                pd.DataFrame(
+                    index=pd.MultiIndex.from_arrays([
+                        self.timesteps.weekday,
+                        self.timesteps.hour,
+                        self.timesteps.minute
+                    ]),
+                    columns=constraint_schedule_complete.columns
+                )
+            )
+            for column in constraint_schedule.columns:
+                 constraint_schedule[column] = (
+                     constraint_schedule[column].fillna(constraint_schedule_complete[column])
+                 )
+            constraint_schedule.index = self.timesteps
+
+        else:
+            constraint_schedule = None
+
+        self.constraint_timeseries = constraint_schedule

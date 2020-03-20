@@ -8,6 +8,18 @@ CREATE TABLE IF NOT EXISTS "buildings" (
     "weather_type" TEXT,
     "building_storage_type" TEXT
 );
+CREATE TABLE IF NOT EXISTS "constraint_schedules" (
+    "constraint_type" TEXT,
+    "time_period" TEXT,
+    "minimum_air_temperature" TEXT,
+    "maximum_air_temperature" TEXT,
+    "minimum_fresh_air_flow_per_area" TEXT,
+    "minimum_fresh_air_flow_per_person" TEXT,
+    "maximum_co2_concentration" TEXT,
+    "minimum_fresh_air_flow_per_area_no_dcv" TEXT,
+    "minimum_relative_humidity" TEXT,
+    "maximum_relative_humidity" TEXT
+);
 CREATE TABLE IF NOT EXISTS "electricity_price_timeseries" (
     "price_type" TEXT,
     "time" TEXT,
@@ -186,19 +198,6 @@ CREATE TABLE IF NOT EXISTS "weather_types" (
     "longitude" REAL,
     "temperature_difference_sky_ambient" REAL
 );
-CREATE TABLE IF NOT EXISTS "zone_constraint_profiles" (
-    "zone_constraint_profile" TEXT,
-    "from_weekday" INTEGER,
-    "from_time" TEXT,
-    "minimum_air_temperature" TEXT,
-    "maximum_air_temperature" TEXT,
-    "minimum_fresh_air_flow_per_area" TEXT,
-    "minimum_fresh_air_flow_per_person" TEXT,
-    "maximum_co2_concentration" TEXT,
-    "minimum_fresh_air_flow_per_area_no_dcv" TEXT,
-    "minimum_relative_humidity" TEXT,
-    "maximum_relative_humidity" TEXT
-);
 CREATE TABLE IF NOT EXISTS "zone_types" (
     "zone_type" TEXT,
     "heat_capacity" TEXT,
@@ -210,7 +209,7 @@ CREATE TABLE IF NOT EXISTS "zone_types" (
     "hvac_radiator_type" TEXT,
     "hvac_ahu_type" TEXT,
     "hvac_tu_type" TEXT,
-    "zone_constraint_profile" TEXT
+    "constraint_type" TEXT
 );
 CREATE TABLE IF NOT EXISTS "zones" (
     "building_name" TEXT,
