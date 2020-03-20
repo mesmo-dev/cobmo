@@ -283,8 +283,8 @@ class BuildingModel(object):
                 ]),
 
                 # Internal gains.
-                pd.Series(self.building_data.zones['internal_gain_type'].unique() + '_occupancy'),
-                pd.Series(self.building_data.zones['internal_gain_type'].unique() + '_appliances'),
+                pd.Series(self.building_data.zones['internal_gain_type'].unique() + '_internal_gain_occupancy'),
+                pd.Series(self.building_data.zones['internal_gain_type'].unique() + '_internal_gain_appliances'),
 
                 # Constant (workaround for constant model terms).
                 (pd.Series(['constant']) if self.define_constant else None)
@@ -1996,7 +1996,7 @@ class BuildingModel(object):
             for zone_name, zone_data in self.building_data.zones.iterrows():
                 self.disturbance_matrix.at[
                     zone_name + '_temperature',
-                    zone_data['internal_gain_type'] + '_occupancy'
+                    zone_data['internal_gain_type'] + '_internal_gain_occupancy'
                 ] += (
                     zone_data['internal_gain_occupancy_factor']
                     * zone_data['zone_area']
@@ -2004,7 +2004,7 @@ class BuildingModel(object):
                 )
                 self.disturbance_matrix.at[
                     zone_name + '_temperature',
-                    zone_data['internal_gain_type'] + '_appliances'
+                    zone_data['internal_gain_type'] + '_internal_gain_appliances'
                 ] += (
                     zone_data['internal_gain_appliances_factor']
                     * zone_data['zone_area']
@@ -2550,7 +2550,7 @@ class BuildingModel(object):
                         # )  # TODO: Revise infiltration
                         self.disturbance_matrix.at[
                             zone_name + '_co2_concentration',
-                            zone_data['internal_gain_type'] + '_occupancy'
+                            zone_data['internal_gain_type'] + '_internal_gain_occupancy'
                         ] += (
                             self.building_data.parameters['co2_generation_rate_per_person']
                             / zone_data['zone_height']
@@ -2646,7 +2646,7 @@ class BuildingModel(object):
                         )  # TODO: Revise infiltration
                         self.disturbance_matrix.at[
                             zone_name + '_absolute_humidity',
-                            zone_data['internal_gain_type'] + '_occupancy'
+                            zone_data['internal_gain_type'] + '_internal_gain_occupancy'
                         ] += (
                             self.building_data.parameters['moisture_generation_rate_per_person']
                             / zone_data['zone_height']
@@ -3760,7 +3760,7 @@ class BuildingModel(object):
                 for zone_name, zone_data in self.building_data.zones.iterrows():
                     self.disturbance_output_matrix.loc[
                         'grid_electric_power',
-                        zone_data['internal_gain_type'] + '_appliances'
+                        zone_data['internal_gain_type'] + '_internal_gain_appliances'
                     ] += (
                         zone_data['internal_gain_appliances_factor']
                         * zone_data['zone_area']

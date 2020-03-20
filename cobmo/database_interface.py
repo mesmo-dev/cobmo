@@ -474,6 +474,7 @@ class BuildingData(object):
             internal_gain_schedule.index = np.vectorize(pd.Period)(internal_gain_schedule.index)
 
             # Obtain complete schedule for all weekdays.
+            # TODO: Check if '01T00:00:00' is defined for each schedule.
             internal_gain_schedule_complete = []
             for internal_gain_type in internal_gain_schedule['internal_gain_type'].unique():
                 for day in range(1, 8):
@@ -490,28 +491,14 @@ class BuildingData(object):
                         internal_gain_schedule_complete.append(internal_gain_schedule_previous)
             internal_gain_schedule_complete = pd.concat(internal_gain_schedule_complete)
 
-            # Pivot complete schedule, to get one `_occupancy` / `_appliances` for each `internal_gain_type`.
+            # Pivot complete schedule.
             # TODO: Multiply internal gain factors.
-            building_internal_gain_occupancy_schedule = internal_gain_schedule_complete.pivot(
+            internal_gain_schedule_complete = internal_gain_schedule_complete.pivot(
                 columns='internal_gain_type',
-                values='internal_gain_occupancy'
+                values=['internal_gain_occupancy', 'internal_gain_appliances']
             )
-            building_internal_gain_occupancy_schedule.columns = (
-                building_internal_gain_occupancy_schedule.columns + '_occupancy'
-            )
-            building_internal_gain_appliances_schedule = internal_gain_schedule_complete.pivot(
-                columns='internal_gain_type',
-                values='internal_gain_appliances'
-            )
-            building_internal_gain_appliances_schedule.columns = (
-                building_internal_gain_appliances_schedule.columns + '_appliances'
-            )
-            internal_gain_schedule_complete = pd.concat(
-                [
-                    building_internal_gain_occupancy_schedule,
-                    building_internal_gain_appliances_schedule
-                ],
-                axis='columns'
+            internal_gain_schedule_complete.columns = (
+                internal_gain_schedule_complete.columns.map(lambda x: '_'.join(x[::-1]))
             )
 
             # Obtain complete schedule for each minute of the week.
@@ -571,28 +558,14 @@ class BuildingData(object):
         )
         if len(internal_gain_timeseries) > 0:
 
-            # Pivot internal gain timeseries, to get one `_occupancy` / `_appliances` for each `internal_gain_type`.
+            # Pivot timeseries.
             # TODO: Multiply internal gain factors.
-            building_internal_gain_occupancy_timeseries = internal_gain_timeseries.pivot(
+            internal_gain_timeseries = internal_gain_timeseries.pivot(
                 columns='internal_gain_type',
-                values='internal_gain_occupancy'
+                values=['internal_gain_occupancy', 'internal_gain_appliances']
             )
-            building_internal_gain_occupancy_timeseries.columns = (
-                building_internal_gain_occupancy_timeseries.columns + '_occupancy'
-            )
-            building_internal_gain_appliances_timeseries = internal_gain_timeseries.pivot(
-                columns='internal_gain_type',
-                values='internal_gain_appliances'
-            )
-            building_internal_gain_appliances_timeseries.columns = (
-                building_internal_gain_appliances_timeseries.columns + '_appliances'
-            )
-            internal_gain_timeseries = pd.concat(
-                [
-                    building_internal_gain_occupancy_timeseries,
-                    building_internal_gain_appliances_timeseries
-                ],
-                axis='columns'
+            internal_gain_timeseries.columns = (
+                internal_gain_timeseries.columns.map(lambda x: '_'.join(x[::-1]))
             )
 
             # Reindex / interpolate timeseries for given timesteps.
