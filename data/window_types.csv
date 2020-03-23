@@ -2,3 +2,16 @@ window_type,thermal_resistance_window,absorptivity_window,emissivity_window
 create_exterior_window,thermal_resistance_exterior_window,absorptivity_exterior_window,emissivity_exterior_window
 create_interior_window,thermal_resistance_interior_window,absorptivity_interior_window,emissivity_interior_window
 wtp_window,0.00765753,0.85,0.85
+window_single_glazed,0.208333333,0.85,0.89
+window_double_glazed,0.322580645,0.75,0.89
+window_double_glazed_argon,0.769230769,0.75,0.89
+window_double_glazed_lowe,0.909090909,0.67,0.02
+window_triple_glazed,1.01010101,0.7,0.89
+window_triple_glazed_lowe,1.666666667,0.5,0.02
+window_double,0.833333333,0.75,0.89
+window_single_glazed_HDB,0.185185185,0.85,0.89
+window_NTU,0.555555556,0.29,0.89
+window_sinberbest,0.454545455,0.2,0.89
+window_greenmark_industrial,0.185185185,0.6,0.89
+window_greenmark_nonresidential,0.357142857,0.4,0.89
+window_greenmark_residential,0.322580645,0.75,0.89

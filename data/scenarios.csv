@@ -48,3 +48,5 @@ wtp_mix_medium_density_19,wtp_mix_medium_density_19,create_parameters,create_lin
 wtp_mix_medium_density_20,wtp_mix_medium_density_20,create_parameters,create_linearization,wtp_initial_state,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 wtp_mix_medium_density_21,wtp_mix_medium_density_21,create_parameters,create_linearization,wtp_initial_state,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 wtp_mix_medium_density_22,wtp_mix_medium_density_22,create_parameters,create_linearization,wtp_initial_state,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
+lasalle_college,lasalle_college,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale_market,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
+sp_graduates,sp_graduates,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale_market,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
