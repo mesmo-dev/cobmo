@@ -12,8 +12,8 @@ import cobmo.utils
 
 # Settings.
 scenario_name = 'scenario_default'
-price_type = 'wholesale_market'
-# Choices: 'wholesale_market', 'retailer_peak_offpeak', 'wholesale_squeezed_20', 'wholesale_squeezed_40'
+price_type = 'wholesale'
+# Choices: 'wholesale', 'retailer_peak_offpeak', 'wholesale_squeezed_20', 'wholesale_squeezed_40'
 # 'wholesale_squeezed_60', 'wholesale_squeezed_80'
 building_storage_type = 'default_battery_storage'
 # Choices: 'default_sensible_thermal_storage', 'default_battery_storage'

@@ -1,6 +1,6 @@
 scenario_name,building_name,parameter_set,linearization_type,initial_state_type,demand_controlled_ventilation_type,co2_model_type,humidity_model_type,heating_cooling_session,price_type,time_start,time_end,time_step
-scenario_default,create_level8_4zones_a,create_parameters,create_linearization,create_initial_state,,,,,wholesale_market,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-scenario_full,create_level8_4zones_a,create_parameters,create_linearization,create_initial_state,demand_controlled_ventilation_default,co2_model_default,humidity_model_default,cooling,wholesale_market,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
+scenario_default,create_level8_4zones_a,create_parameters,create_linearization,create_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
+scenario_full,create_level8_4zones_a,create_parameters,create_linearization,create_initial_state,demand_controlled_ventilation_default,co2_model_default,humidity_model_default,cooling,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 paper_pesgm_2020,create_level8_4zones_a,create_parameters,create_linearization,create_initial_state,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 validation_1zone_radiator,validation_1zone_radiator,create_parameters,create_linearization,mse_initial_state,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 validation_1zone_no_window_no_mass,validation_1zone_no_window_no_mass,create_parameters,create_linearization,create_initial_state,,,,,,2017-01-01T00:00:00,2017-02-01T00:00:00,00:30:00

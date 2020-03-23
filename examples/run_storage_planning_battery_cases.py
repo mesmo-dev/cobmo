@@ -13,8 +13,8 @@ import cobmo.utils
 
 # Settings.
 scenario_name = 'scenario_default'
-price_type = 'wholesale_market'
-# Choices: 'wholesale_market', 'retailer_peak_offpeak', 'wholesale_squeezed_20', 'wholesale_squeezed_40',
+price_type = 'wholesale'
+# Choices: 'wholesale', 'retailer_peak_offpeak', 'wholesale_squeezed_20', 'wholesale_squeezed_40',
 # 'wholesale_squeezed_60', 'wholesale_squeezed_80'
 case = 'best'  # IRENA battery parameters case.
 # Choices: 'best', 'reference', 'worst'
