@@ -30,4 +30,4 @@ roof_concrete_dark_paint,1800000,6.666666667,0.85,0.94,,,
 roof_greenmark_industrial,1360000,0.909090909,0.85,0.94,window_greenmark_industrial,0,1
 roof_greenmark_nonresidential,1360000,1.25,0.85,0.94,window_greenmark_nonresidential,0,1
 roof_greenmark_residential,1360000,1.25,0.85,0.94,window_greenmark_residential,0,1
-floor_concrete,1800000,0.344827586,0.6,0.95,,,
+floor_concrete,1800000,0.344827586,0.6,0.95,window_greenmark_nonresidential,0,
