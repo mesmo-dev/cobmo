@@ -5,3 +5,4 @@ create_level8_open_plan_office,heat_capacity_zone,infiltration_rate,create_offic
 create_level8_group_office,heat_capacity_zone,infiltration_rate,create_office,,,,,create_ahu,,create_office_constraints
 wtp_office,47142.9,2.565e-05,cea_office,,,,,wtp_ahu,,wtp_office_constraints
 university,heat_capacity_zone,infiltration_rate,cea_university,,,,,wtp_ahu,,cea_university
+retail,heat_capacity_zone,infiltration_rate,cea_retail,,,,,wtp_ahu,,cea_retail

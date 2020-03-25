@@ -370,3 +370,8 @@ sp_graduates,zone_1,east,surface_exterior_east,wall_greenmark_nonresidential,144
 sp_graduates,zone_1,south,surface_exterior_south,wall_greenmark_nonresidential,468,
 sp_graduates,zone_1,west,surface_exterior_west,wall_greenmark_nonresidential,144,
 sp_graduates,zone_1,horizontal,surface_exterior_roof,roof_greenmark_nonresidential,6126,
+bugis_point,zone_1,north,surface_exterior_north,wall_greenmark_nonresidential,462,
+bugis_point,zone_1,east,surface_exterior_east,wall_greenmark_nonresidential,245,
+bugis_point,zone_1,south,surface_exterior_south,wall_greenmark_nonresidential,462,
+bugis_point,zone_1,west,surface_exterior_west,wall_greenmark_nonresidential,245,
+bugis_point,zone_1,horizontal,surface_exterior_roof,roof_greenmark_nonresidential,243,

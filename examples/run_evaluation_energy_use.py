@@ -13,9 +13,10 @@ import cobmo.database_interface
 def main():
 
     # Settings.
-    scenario_name = 'scenario_default'
+    # scenario_name = 'scenario_default'
     # scenario_name = 'lasalle_college'
     # scenario_name = 'sp_graduates'
+    scenario_name = 'bugis_point'
     results_path = os.path.join(cobmo.config.results_path, f'run_evaluation_energy_use_{cobmo.config.timestamp}')
 
     # Instantiate results directory.

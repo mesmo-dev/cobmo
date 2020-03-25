@@ -659,3 +659,4 @@ create_level8_14zones,zone14,surface_adiabatic_49,create_interior_base_ceiling_c
 create_level8_14zones,zone14,surface_adiabatic_50,create_interior_base_ceiling_concrete,64.2712,
 validation_1zone_no_window_no_mass,zone_1,surface_floor_1,validation_floor,25,5*5
 validation_1zone_no_window,zone_1,surface_floor_1,validation_floor,25,5*5
+bugis_point,zone_1,surface_adiabatic_1,floor_concrete,243,
