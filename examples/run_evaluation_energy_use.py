@@ -50,7 +50,6 @@ def main():
     output_vector_optimization.to_csv(os.path.join(results_path, 'output_vector_optimization.csv'))
 
     # Obtain energy use intensity (EUI).
-    print()
     energy_use_timeseries = (
         output_vector_optimization['grid_electric_power']  # in W
         / building.building_data.zones.loc[:, 'zone_area'].sum()  # in W/m²
@@ -87,7 +86,7 @@ def main():
 
     # Print energy use intensity (EUI).
     print(f"energy_use_timeseries = \n{energy_use_timeseries.to_string()}")
-    print(f"energy_use_timestep = \n{energy_use_timestep} kWh/m²")
+    print(f"energy_use_timestep = {energy_use_timestep} kWh/m²")
     print(f"energy_use_day = {energy_use_day} kWh/m²")
     print(f"energy_use_week = {energy_use_week} kWh/m²")
     print(f"energy_use_month = {energy_use_month} kWh/m²")
