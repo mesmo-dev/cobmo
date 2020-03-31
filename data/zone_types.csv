@@ -6,3 +6,10 @@ create_level8_group_office,heat_capacity_zone,infiltration_rate,create_office,,,
 wtp_office,47142.9,2.565e-05,cea_office,,,,,wtp_ahu,,wtp_office_constraints
 university,heat_capacity_zone,infiltration_rate,cea_university,,,,,wtp_ahu,,cea_university
 retail,heat_capacity_zone,infiltration_rate,cea_retail,,,,,wtp_ahu,,cea_retail
+single_res,heat_capacity_zone,infiltration_rate,cea_single_res,,,,,wtp_ahu,,cea_single_res
+multi_res,heat_capacity_zone,infiltration_rate,cea_multi_res,,,,,wtp_ahu,,cea_multi_res
+school,heat_capacity_zone,infiltration_rate,cea_school,,,,,wtp_ahu,,cea_school
+office,heat_capacity_zone,infiltration_rate,cea_office,,,,,wtp_ahu,,cea_office
+hotel,heat_capacity_zone,infiltration_rate,cea_hotel,,,,,wtp_ahu,,cea_hotel
+hospital,heat_capacity_zone,infiltration_rate,cea_hospital,,,,,wtp_ahu,,cea_hospital
+industrial,heat_capacity_zone,infiltration_rate,cea_industrial,,,,,wtp_ahu,,cea_industrial
