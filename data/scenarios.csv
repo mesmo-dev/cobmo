@@ -6,12 +6,8 @@ scenario_name,building_name,parameter_set,linearization_type,initial_state_type,
 44414529,44414529,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 44414530,44414530,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 44414531,44414531,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-44414531,44414531,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-44414531,44414531,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-44414531,44414531,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 44414534,44414534,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 44414539,44414539,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-45098518,45098518,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 45098518,45098518,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 45098519,45098519,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 45098520,45098520,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
@@ -40,7 +36,6 @@ scenario_name,building_name,parameter_set,linearization_type,initial_state_type,
 46595417,46595417,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 46595418,46595418,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 46595597,46595597,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-47126588,47126588,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 47126588,47126588,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 47126589,47126589,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 47134077,47134077,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
@@ -132,7 +127,6 @@ scenario_name,building_name,parameter_set,linearization_type,initial_state_type,
 159679958,159679958,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 164176023,164176023,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 164177174,164177174,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-164177174,164177174,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 164177177,164177177,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 164177179,164177179,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 164177180,164177180,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
@@ -176,7 +170,6 @@ scenario_name,building_name,parameter_set,linearization_type,initial_state_type,
 171999306,171999306,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 171999314,171999314,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 171999325,171999325,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-171999325,171999325,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 171999336,171999336,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 171999340,171999340,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 171999341,171999341,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
@@ -204,7 +197,6 @@ scenario_name,building_name,parameter_set,linearization_type,initial_state_type,
 172024967,172024967,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 172024968,172024968,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 172024969,172024969,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-172024969,172024969,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 172024970,172024970,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 172024971,172024971,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 172024972,172024972,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
@@ -221,7 +213,6 @@ scenario_name,building_name,parameter_set,linearization_type,initial_state_type,
 172269373,172269373,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 172269374,172269374,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 172269375,172269375,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-172270393,172270393,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 172270393,172270393,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 172270395,172270395,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 172270399,172270399,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
@@ -339,7 +330,6 @@ scenario_name,building_name,parameter_set,linearization_type,initial_state_type,
 231917957,231917957,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 243427705,243427705,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 243427888,243427888,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-243430507,243430507,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 243430507,243430507,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 243430556,243430556,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 251796138,251796138,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
@@ -566,7 +556,6 @@ scenario_name,building_name,parameter_set,linearization_type,initial_state_type,
 394341516,394341516,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 395113920,395113920,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 395907258,395907258,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-406900506,406900506,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 406900506,406900506,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 406900756,406900756,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 407926393,407926393,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
