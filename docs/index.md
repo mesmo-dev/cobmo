@@ -14,6 +14,7 @@ Please note that the repository is under active development and the interface ma
     :maxdepth: 2
 
     intro
+    Technical documentation <./_static/technical_documentation.pdf#http://>
     api
     data
     contributing

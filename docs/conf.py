@@ -50,6 +50,10 @@ master_doc = 'index'
 #   This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'README.md']
 
+# HTML static path.
+# Copy these files to the `_static` directory when compiling.
+html_static_path = ['technical_documentation.pdf']
+
 # HTML theme settings.
 # - The theme to use for HTML and HTML Help pages.  See the documentation for
 #   a list of builtin themes.
