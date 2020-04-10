@@ -259,8 +259,8 @@ class BuildingModel(object):
 
                 # Electric / thermal grid connection.
                 pd.Series([
-                    'grid_electric_power_cooling',
-                    'grid_electric_power_heating'
+                    'plant_thermal_power_cooling',
+                    'plant_thermal_power_heating'
                 ]) if connect_electric_grid else None,
                 pd.Series(['grid_thermal_power_cooling']) if connect_thermal_grid_cooling else None,
                 pd.Series(['grid_thermal_power_heating']) if connect_thermal_grid_heating else None
@@ -495,8 +495,8 @@ class BuildingModel(object):
                     connect_thermal_grid_heating
                 ]) else None,
                 pd.Series([
-                    'grid_electric_power_cooling',
-                    'grid_electric_power_heating',
+                    'plant_thermal_power_cooling',
+                    'plant_thermal_power_heating',
                     'grid_electric_power'
                 ]) if connect_electric_grid else None,
                 pd.Series(['grid_thermal_power_cooling']) if connect_thermal_grid_cooling else None,
@@ -3702,13 +3702,8 @@ class BuildingModel(object):
                 if connect_electric_grid:
                     self.control_output_matrix.at[
                         'grid_thermal_power_cooling_balance',
-                        'grid_electric_power_cooling'
-                    ] = (
-                        -1.0
-                        * self.building_data.zones['ahu_cooling_efficiency'][0]
-                        if pd.notnull(self.building_data.zones['ahu_cooling_efficiency'][0]) else 1.0
-                        # TODO: Define heating / cooling plant.
-                    )
+                        'plant_thermal_power_cooling'
+                    ] = -1.0
                 if connect_thermal_grid_cooling:
                     self.control_output_matrix.at[
                         'grid_thermal_power_cooling_balance',
@@ -3729,13 +3724,8 @@ class BuildingModel(object):
                 if connect_electric_grid:
                     self.control_output_matrix.at[
                         'grid_thermal_power_heating_balance',
-                        'grid_electric_power_heating'
-                    ] = (
-                        -1.0
-                        * self.building_data.zones['ahu_heating_efficiency'][0]
-                        if pd.notnull(self.building_data.zones['ahu_heating_efficiency'][0]) else 1.0
-                        # TODO: Define heating / cooling plant.
-                    )
+                        'plant_thermal_power_heating'
+                    ] = -1.0
                 if connect_thermal_grid_heating:
                     self.control_output_matrix.at[
                         'grid_thermal_power_heating_balance',
@@ -3753,10 +3743,24 @@ class BuildingModel(object):
                         :
                     ].sum(axis=0)
                 )
-                self.control_output_matrix.loc[
+                self.control_output_matrix.at[
                     'grid_electric_power',
-                    ['grid_electric_power_heating', 'grid_electric_power_cooling']
-                ] = 1.0
+                    'plant_thermal_power_cooling'
+                ] = (
+                    1.0
+                    / self.building_data.zones['ahu_cooling_efficiency'][0]
+                    if pd.notnull(self.building_data.zones['ahu_cooling_efficiency'][0]) else 1.0
+                    # TODO: Define heating / cooling plant.
+                )
+                self.control_output_matrix.at[
+                    'grid_electric_power',
+                    'plant_thermal_power_heating'
+                ] = (
+                    1.0
+                    / self.building_data.zones['ahu_heating_efficiency'][0]
+                    if pd.notnull(self.building_data.zones['ahu_heating_efficiency'][0]) else 1.0
+                    # TODO: Define heating / cooling plant.
+                )
                 for zone_name, zone_data in self.building_data.zones.iterrows():
                     self.disturbance_output_matrix.loc[
                         'grid_electric_power',
@@ -3765,13 +3769,13 @@ class BuildingModel(object):
                         zone_data['internal_gain_appliances_factor']
                         * zone_data['zone_area']
                     )
-                self.control_output_matrix.loc[
-                    'grid_electric_power_cooling',
-                    'grid_electric_power_cooling'
+                self.control_output_matrix.at[
+                    'plant_thermal_power_cooling',
+                    'plant_thermal_power_cooling'
                 ] = 1.0
-                self.control_output_matrix.loc[
-                    'grid_electric_power_heating',
-                    'grid_electric_power_heating'
+                self.control_output_matrix.at[
+                    'plant_thermal_power_heating',
+                    'plant_thermal_power_heating'
                 ] = 1.0
 
             # Thermal cooling grid power.
