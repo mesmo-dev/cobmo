@@ -2812,11 +2812,11 @@ class BuildingModel(object):
                     # Cooling power.
                     self.control_output_matrix.at[
                         zone_name + '_generic_cool_thermal_power_cooling',
-                        zone_name + '_generic_cool_thermal_power_cooling'
+                        zone_name + '_generic_cool_thermal_power'
                     ] = 1.0
                     self.control_output_matrix.at[
                         zone_name + '_generic_cool_electric_power_cooling',
-                        zone_name + '_generic_cool_thermal_power_cooling'
+                        zone_name + '_generic_cool_thermal_power'
                     ] = (
                         1.0
                         / zone_data['generic_cooling_efficiency']
@@ -2825,11 +2825,11 @@ class BuildingModel(object):
                     # Heating power.
                     self.control_output_matrix.at[
                         zone_name + '_generic_heat_thermal_power_heating',
-                        zone_name + '_generic_heat_thermal_power_heating'
+                        zone_name + '_generic_heat_thermal_power'
                     ] = 1.0
                     self.control_output_matrix.at[
                         zone_name + '_generic_heat_electric_power_heating',
-                        zone_name + '_generic_heat_thermal_power_heating'
+                        zone_name + '_generic_heat_thermal_power'
                     ] = (
                         1.0
                         / zone_data['generic_heating_efficiency']
