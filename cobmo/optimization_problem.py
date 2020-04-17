@@ -17,7 +17,7 @@ class OptimizationProblem(object):
             building,
             problem_type='operation',
             # Choices: 'operation', 'storage_planning', 'storage_planning_baseline', 'load_reduction',
-            # 'price_sensitivity'
+            # 'price_sensitivity', 'maximum_load'
             output_vector_reference=None,
             load_reduction_start_time=None,
             load_reduction_end_time=None,
@@ -146,11 +146,22 @@ class OptimizationProblem(object):
         for output in self.building.outputs:
             for timestep in self.building.timesteps:
                 # Minimum.
-                self.problem.constraints.add(
-                    self.problem.variable_output_vector[timestep, output]
-                    >=
-                    self.building.output_constraint_timeseries_minimum.loc[timestep, output]
-                )
+                if (
+                    ((self.problem_type == 'maximum_load') and ('temperature' in output))
+                    and (timestep != self.building.timesteps[0])
+                ):
+                    self.problem.constraints.add(
+                        self.problem.variable_output_vector[timestep, output]
+                        ==
+                        self.building.output_constraint_timeseries_minimum.loc[timestep, output]
+                    )
+                    # print(timestep, self.building.output_constraint_timeseries_minimum.loc[timestep, output])
+                else:
+                    self.problem.constraints.add(
+                        self.problem.variable_output_vector[timestep, output]
+                        >=
+                        self.building.output_constraint_timeseries_minimum.loc[timestep, output]
+                    )
 
                 # Maximum.
                 if (
@@ -172,6 +183,8 @@ class OptimizationProblem(object):
                             self.problem.variable_storage_size[0]
                             * self.building.building_data.scenarios['storage_battery_depth_of_discharge']
                         )
+                elif (self.problem_type == 'maximum_load') and ('temperature' in output):
+                    continue
                 else:
                     self.problem.constraints.add(
                         self.problem.variable_output_vector[timestep, output]
