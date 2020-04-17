@@ -25,13 +25,13 @@ def main():
     building = cobmo.building_model.BuildingModel(scenario_name)
 
     # Print building model matrices and disturbance timeseries.
-    print(f"state_matrix = \n{building.state_matrix.to_string()}")
-    print(f"control_matrix = \n{building.control_matrix.to_string()}")
-    print(f"disturbance_matrix = \n{building.disturbance_matrix.to_string()}")
-    print(f"state_output_matrix = \n{building.state_output_matrix.to_string()}")
-    print(f"control_output_matrix = \n{building.control_output_matrix.to_string()}")
-    print(f"disturbance_output_matrix = \n{building.disturbance_output_matrix.to_string()}")
-    print(f"disturbance_timeseries = \n{building.disturbance_timeseries.to_string()}")
+    print(f"state_matrix = \n{building.state_matrix}")
+    print(f"control_matrix = \n{building.control_matrix}")
+    print(f"disturbance_matrix = \n{building.disturbance_matrix}")
+    print(f"state_output_matrix = \n{building.state_output_matrix}")
+    print(f"control_output_matrix = \n{building.control_output_matrix}")
+    print(f"disturbance_output_matrix = \n{building.disturbance_output_matrix}")
+    print(f"disturbance_timeseries = \n{building.disturbance_timeseries}")
 
     # Store building model matrices and disturbance timeseries as CSV.
     building.state_matrix.to_csv(os.path.join(results_path, 'building_state_matrix.csv'))
@@ -62,9 +62,9 @@ def main():
     )
 
     # Print simulation results.
-    print(f"control_vector_simulation = \n{control_vector_simulation.to_string()}")
-    print(f"state_vector_simulation = \n{state_vector_simulation.to_string()}")
-    print(f"output_vector_simulation = \n{output_vector_simulation.to_string()}")
+    print(f"control_vector_simulation = \n{control_vector_simulation}")
+    print(f"state_vector_simulation = \n{state_vector_simulation}")
+    print(f"output_vector_simulation = \n{output_vector_simulation}")
 
     # Store simulation results as CSV.
     control_vector_simulation.to_csv(os.path.join(results_path, 'control_vector_simulation.csv'))
