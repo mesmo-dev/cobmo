@@ -79,7 +79,7 @@ def main():
     # Load validation data.
     output_vector_validation = pd.read_csv(
         os.path.join(
-            os.path.dirname(os.path.normpath(__file__)), '..', 'data', 'validation', scenario_name + '.csv'
+            os.path.dirname(os.path.normpath(__file__)), '..', 'data', 'validation_data', scenario_name + '.csv'
         ),
         index_col='time',
         parse_dates=True,
