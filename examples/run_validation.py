@@ -16,7 +16,7 @@ def main():
 
     # Settings.
     scenario_name = 'validation_1zone_no_window_no_mass'
-    results_path = os.path.join(cobmo.config.results_path, f'run_example_{cobmo.config.timestamp}')
+    results_path = os.path.join(cobmo.config.results_path, f'run_validation_{cobmo.config.timestamp}')
 
     # Instantiate results directory.
     os.mkdir(results_path)
