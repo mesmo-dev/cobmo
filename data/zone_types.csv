@@ -3,4 +3,3 @@ validation_zone_empty,heat_capacity_zone,infiltration_rate,create_office,,,defau
 validation_zone_empty_radiator,heat_capacity_zone,infiltration_rate,create_office,,,,mse_radiator_type_12,,,create_office_constraints
 create_level8_open_plan_office,heat_capacity_zone,infiltration_rate,create_office,,,,,create_ahu,,create_office_constraints
 create_level8_group_office,heat_capacity_zone,infiltration_rate,create_office,,,,,create_ahu,,create_office_constraints
-wtp_office,47142.9,2.565e-05,cea_office,,,,,wtp_ahu,,wtp_office_constraints

@@ -2,8 +2,3 @@ constraint_type,time_period,minimum_air_temperature,maximum_air_temperature,mini
 create_office_constraints,01T00:00,5.0,35.0,0.0,0.0,3000.0,0.0,0.0,100.0
 create_office_constraints,01T06:30,18.0,23.0,0.0006,0.0025,1000.0,0.0014,0.0,70.0
 create_office_constraints,01T18:00,5.0,35.0,0.0,0.0,3000.0,0.0,0.0,100.0
-wtp_office_constraints,01T00:00,21.0,37.0,0.0,0.0,3000.0,0.0,0.0,100.0
-wtp_office_constraints,01T07:00,21.0,25.0,0.0,0.0,3000.0,0.0,0.0,100.0
-wtp_office_constraints,06T00:00,21.0,37.0,0.0,0.0,3000.0,0.0,0.0,100.0
-wtp_office_constraints,06T07:00,21.0,25.0,0.0,0.0,3000.0,0.0,0.0,100.0
-wtp_office_constraints,06T20:00,21.0,37.0,0.0,0.0,3000.0,0.0,0.0,100.0
