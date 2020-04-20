@@ -17,7 +17,7 @@ class OptimizationProblem(object):
             building,
             problem_type='operation',
             # Choices: 'operation', 'storage_planning', 'storage_planning_baseline', 'load_reduction',
-            # 'price_sensitivity', 'maximum_load'
+            # 'price_sensitivity', 'maximum_load', 'minimum_load'
             output_vector_reference=None,
             load_reduction_start_time=None,
             load_reduction_end_time=None,
@@ -146,16 +146,17 @@ class OptimizationProblem(object):
         for output in self.building.outputs:
             for timestep in self.building.timesteps:
                 # Minimum.
-                if (
-                    ((self.problem_type == 'maximum_load') and ('temperature' in output))
-                    and (timestep != self.building.timesteps[0])
-                ):
-                    self.problem.constraints.add(
-                        self.problem.variable_output_vector[timestep, output]
-                        ==
-                        self.building.output_constraint_timeseries_minimum.loc[timestep, output]
-                    )
-                    # print(timestep, self.building.output_constraint_timeseries_minimum.loc[timestep, output])
+                # if running maximum load problem, set the temperature at each timestep to be the minimum allowed,
+                # except for the initial timestep
+                if ('temperature' in output) and (self.problem_type == 'maximum_load'):
+                    if timestep == self.building.timesteps[0]:
+                        pass
+                    else:
+                        self.problem.constraints.add(
+                            self.problem.variable_output_vector[timestep, output]
+                            ==
+                            self.building.output_constraint_timeseries_minimum.loc[timestep, output]
+                        )
                 else:
                     self.problem.constraints.add(
                         self.problem.variable_output_vector[timestep, output]
@@ -183,8 +184,6 @@ class OptimizationProblem(object):
                             self.problem.variable_storage_size[0]
                             * self.building.building_data.scenarios['storage_battery_depth_of_discharge']
                         )
-                elif (self.problem_type == 'maximum_load') and ('temperature' in output):
-                    continue
                 else:
                     self.problem.constraints.add(
                         self.problem.variable_output_vector[timestep, output]
@@ -270,13 +269,17 @@ class OptimizationProblem(object):
         # Operation cost (OPEX).
         for timestep in self.building.timesteps:
             for output in self.building.outputs:
-                if ('electric_power' in output) and not ('storage_to_zone' in output):
-                    self.operation_cost += (
-                        self.problem.variable_output_vector[timestep, output]
-                        * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
-                        * self.electricity_price_timeseries.loc[timestep, 'price']
-                        * self.operation_cost_factor
-                    )
+                if self.problem_type in ['minimum_load', 'maximum_load']:
+                    if output == 'grid_electric_power':
+                        self.operation_cost += self.problem.variable_output_vector[timestep, output]
+                else:
+                    if ('electric_power' in output) and not ('storage_to_zone' in output):
+                        self.operation_cost += (
+                            self.problem.variable_output_vector[timestep, output]
+                            * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
+                            * self.electricity_price_timeseries.loc[timestep, 'price']
+                            * self.operation_cost_factor
+                        )
 
         # Investment cost (CAPEX).
         if self.problem_type == 'storage_planning':
