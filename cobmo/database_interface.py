@@ -6,6 +6,7 @@ import numpy as np
 import os
 import pandas as pd
 import sqlite3
+import typing
 
 import cobmo.config
 
@@ -15,12 +16,14 @@ logger = cobmo.config.get_logger(__name__)
 def recreate_database(
         database_path: str = cobmo.config.database_path,
         database_schema_path: str = os.path.join(cobmo.config.cobmo_path, 'cobmo', 'database_schema.sql'),
-        csv_path: str = cobmo.config.data_path
+        data_path: str = cobmo.config.data_path,
+        additional_data_paths: typing.List[str] = None
 ) -> None:
     """Recreate SQLITE database from SQL schema file and CSV files."""
 
-    # Connect SQLITE database (creates file, if none).
+    # Connect SQLITE database. Creates file, if none.
     database_connection = sqlite3.connect(database_path)
+    database_connection.text_factory = str  # Allows UTF-8 data to be stored.
     cursor = database_connection.cursor()
 
     # Remove old data, if any.
@@ -33,31 +36,32 @@ def recreate_database(
         """
     )
 
-    # Recreate SQLITE database (schema) from SQL file.
+    # Recreate SQLITE database schema from SQL schema file.
     with open(database_schema_path, 'r') as database_schema_file:
         cursor.executescript(database_schema_file.read())
     database_connection.commit()
 
     # Import CSV files into SQLITE database.
-    database_connection.text_factory = str  # Allows utf-8 data to be stored.
-    cursor = database_connection.cursor()
-    for file in glob.glob(os.path.join(csv_path, '*.csv')):
-        # Obtain table name.
-        table_name = os.path.splitext(os.path.basename(file))[0]
+    csv_paths = ([data_path] + additional_data_paths) if additional_data_paths is not None else [data_path]
+    for csv_path in csv_paths:
+        for file in glob.glob(os.path.join(csv_path, '**', '*.csv'), recursive=True):
 
-        # Delete existing table content.
-        cursor.execute("DELETE FROM {}".format(table_name))
-        database_connection.commit()
+            # Exclude CSV files from some folders.
+            if os.path.basename(os.path.dirname(file)) not in ['storage_data', 'validation']:
 
-        # Write new table content.
-        logger.debug(f"Loading {file} into database.")
-        table = pd.read_csv(file)
-        table.to_sql(
-            table_name,
-            con=database_connection,
-            if_exists='append',
-            index=False
-        )
+                # Obtain table name.
+                table_name = os.path.splitext(os.path.basename(file))[0]
+
+                # Write new table content.
+                logger.debug(f"Loading {file} into database.")
+                table = pd.read_csv(file)
+                table.to_sql(
+                    table_name,
+                    con=database_connection,
+                    if_exists='append',
+                    index=False
+                )
+
     cursor.close()
     database_connection.close()
 
