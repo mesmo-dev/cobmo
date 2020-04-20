@@ -15,14 +15,19 @@ import cobmo.utils
 def main():
 
     # Settings.
-    scenario_name = 'validation_1zone_no_window_no_mass'
+    scenario_name = 'validation_1zone_no_window'
     results_path = os.path.join(cobmo.config.results_path, f'run_validation_{cobmo.config.timestamp}')
 
     # Instantiate results directory.
     os.mkdir(results_path)
 
     # Obtain building model.
-    building = cobmo.building_model.BuildingModel(scenario_name)
+    building = (
+        cobmo.building_model.BuildingModel(
+            scenario_name,
+            with_validation_outputs=True
+        )
+    )
 
     # Print building model matrices and disturbance timeseries.
     print(f"state_matrix = \n{building.state_matrix}")
