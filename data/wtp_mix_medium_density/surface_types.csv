@@ -1,3 +1,0 @@
-surface_type,heat_capacity,thermal_resistance_surface,absorptivity,emissivity,window_type,window_wall_ratio,sky_view_factor
-wtp_wall,0.0,0.00127183,0.6,0.95,wtp_window,0.29,0.5
-wtp_roof,0.0,0.748398,0.6,0.94,wtp_window,0.0,1.0
