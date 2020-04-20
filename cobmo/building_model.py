@@ -63,7 +63,8 @@ class BuildingModel(object):
             timestep_delta=None,
             connect_electric_grid=True,
             connect_thermal_grid_cooling=False,
-            connect_thermal_grid_heating=False
+            connect_thermal_grid_heating=False,
+            with_validation_outputs=False
     ):
 
         # Store scenario name.
@@ -482,8 +483,10 @@ class BuildingModel(object):
                 ) else None,
 
                 # Validation outputs.
-                self.building_data.surfaces_exterior['surface_name'] + '_irradiation_gain_exterior',
-                self.building_data.surfaces_exterior['surface_name'] + '_convection_interior',
+                pd.concat([
+                    self.building_data.surfaces_exterior['surface_name'] + '_irradiation_gain_exterior',
+                    self.building_data.surfaces_exterior['surface_name'] + '_convection_interior'
+                ]) if with_validation_outputs else None,
 
                 # Electric / thermal grid connection.
                 pd.Series(['grid_thermal_power_cooling_balance']) if any([
@@ -2812,11 +2815,11 @@ class BuildingModel(object):
                     # Cooling power.
                     self.control_output_matrix.at[
                         zone_name + '_generic_cool_thermal_power_cooling',
-                        zone_name + '_generic_cool_thermal_power_cooling'
+                        zone_name + '_generic_cool_thermal_power'
                     ] = 1.0
                     self.control_output_matrix.at[
                         zone_name + '_generic_cool_electric_power_cooling',
-                        zone_name + '_generic_cool_thermal_power_cooling'
+                        zone_name + '_generic_cool_thermal_power'
                     ] = (
                         1.0
                         / zone_data['generic_cooling_efficiency']
@@ -2825,11 +2828,11 @@ class BuildingModel(object):
                     # Heating power.
                     self.control_output_matrix.at[
                         zone_name + '_generic_heat_thermal_power_heating',
-                        zone_name + '_generic_heat_thermal_power_heating'
+                        zone_name + '_generic_heat_thermal_power'
                     ] = 1.0
                     self.control_output_matrix.at[
                         zone_name + '_generic_heat_electric_power_heating',
-                        zone_name + '_generic_heat_thermal_power_heating'
+                        zone_name + '_generic_heat_thermal_power'
                     ] = (
                         1.0
                         / zone_data['generic_heating_efficiency']
@@ -4088,8 +4091,9 @@ class BuildingModel(object):
         define_output_grid()
 
         # Define validation outputs.
-        define_output_surfaces_exterior_irradiation_gain_exterior()
-        define_output_surfaces_exterior_convection_interior()
+        if with_validation_outputs:
+            define_output_surfaces_exterior_irradiation_gain_exterior()
+            define_output_surfaces_exterior_convection_interior()
 
         # Define timeseries.
         define_disturbance_timeseries()

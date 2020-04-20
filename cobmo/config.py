@@ -3,6 +3,7 @@
 import datetime
 import logging
 import os
+import pandas as pd
 
 # Path definitions.
 cobmo_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
@@ -19,6 +20,17 @@ solver_output = False  # If True, activate verbose solver output.
 
 # Test settings.
 test_scenario_name = 'scenario_default'
+
+# Pandas settings.
+# - These settings ensure that that data frames are always printed in full, rather than cropped.
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+try:
+    pd.set_option('display.max_colwidth', None)
+except ValueError:
+    # This is provided for compatibility with older versions of Pandas.
+    pd.set_option('display.max_colwidth', 0)
 
 # Logger settings.
 logging_level = logging.INFO
