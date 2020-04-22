@@ -17,12 +17,13 @@ class OptimizationProblem(object):
             building,
             problem_type='operation',
             # Choices: 'operation', 'storage_planning', 'storage_planning_baseline', 'load_reduction',
-            # 'price_sensitivity', 'maximum_load', 'minimum_load'
+            # 'price_sensitivity', 'maximum_load', 'minimum_load', 'load_maximization'
             output_vector_reference=None,
             load_reduction_start_time=None,
             load_reduction_end_time=None,
             price_sensitivity_factor=None,
             price_sensitivity_timestep=None,
+            load_maximization_time=None
     ):
         time_start = time.clock()
         self.building = building
@@ -30,6 +31,7 @@ class OptimizationProblem(object):
         self.output_vector_reference = output_vector_reference
         self.load_reduction_start_time = load_reduction_start_time
         self.load_reduction_end_time = load_reduction_end_time
+        self.load_maximization_time = load_maximization_time
         self.price_sensitivity_factor = price_sensitivity_factor
         self.price_sensitivity_timestep = price_sensitivity_timestep
 
@@ -152,6 +154,13 @@ class OptimizationProblem(object):
                     if timestep == self.building.timesteps[0]:
                         pass
                     else:
+                        self.problem.constraints.add(
+                            self.problem.variable_output_vector[timestep, output]
+                            ==
+                            self.building.output_constraint_timeseries_minimum.loc[timestep, output]
+                        )
+                elif ('temperature' in output) and (self.problem_type == 'load_maximization'):
+                    if timestep == (self.load_maximization_time + pd.to_timedelta('0.5h')):
                         self.problem.constraints.add(
                             self.problem.variable_output_vector[timestep, output]
                             ==
