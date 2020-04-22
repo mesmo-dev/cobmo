@@ -14,7 +14,7 @@ import cobmo.database_interface
 def main():
 
     # Settings.
-    scenario_name = '172097381'
+    scenario_name = '152598430'
     results_path = os.path.join(cobmo.config.results_path, f'run_evaluation_bidding_strategy_{cobmo.config.timestamp}')
 
     # Instantiate results directory.
@@ -40,7 +40,7 @@ def main():
     ) = optimization_problem.solve()
 
     timesteps = building.timesteps
-    building_bids = pd.DataFrame(0.0, timesteps, ['P_min', 'P_max', 'C_min', 'C_max'])
+    building_bids = pd.DataFrame(0.0, timesteps, ['P_min', 'P_max', 'C_min', 'C_max', 'm', 'b'])
     building_bids.loc[:, 'P_min'] = output_vector_optimization.loc[:, 'grid_electric_power'].values
     building_bids.loc[timesteps, 'C_min'] = building.electricity_price_timeseries.loc[timesteps, 'price'].values
     n=1
@@ -76,6 +76,8 @@ def main():
         ))
         n+=1
 
+    building_bids['m'] = (building_bids['C_min'] - building_bids['C_max'])/(building_bids['P_min'] - building_bids['P_max'])
+    building_bids['b'] = building_bids['C_min'] - building_bids['P_min']*building_bids['m']
     # # Print optimization results.
     # print(f"operation_cost = {operation_cost}")
     # print(f"control_vector_optimization = \n{control_vector_optimization.to_string()}")
@@ -89,13 +91,13 @@ def main():
     building_bids.to_csv(os.path.join(results_path, 'building_bids.csv'))
 
     # Plot bidding curves
-    for timestep in timesteps:
-        fig,ax = plt.subplots(figsize=(5,5))
-        x = building_bids.loc[timestep, ['P_min', 'P_max']].values
-        y = building_bids.loc[timestep, ['C_min', 'C_max']].values
-        ax.plot(x,y)
-        ax.axhline(0, color='black')
-        plt.show()
+    # for timestep in timesteps:
+    #     fig,ax = plt.subplots(figsize=(5,5))
+    #     x = building_bids.loc[timestep, ['P_min', 'P_max']].values
+    #     y = building_bids.loc[timestep, ['C_min', 'C_max']].values
+    #     ax.plot(x,y)
+    #     ax.axhline(0, color='black')
+    #     plt.show()
 
     # Print results path.
     print(f"Results are stored in: {results_path}")
