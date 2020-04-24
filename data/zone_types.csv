@@ -13,3 +13,4 @@ office,heat_capacity_zone,infiltration_rate,cea_office,,,,,wtp_ahu,,cea_office
 hotel,heat_capacity_zone,infiltration_rate,cea_hotel,,,,,wtp_ahu,,cea_hotel
 hospital,heat_capacity_zone,infiltration_rate,cea_hospital,,,,,wtp_ahu,,cea_hospital
 industrial,heat_capacity_zone,infiltration_rate,cea_industrial,,,,,wtp_ahu,,cea_industrial
+other,heat_capacity_zone,infiltration_rate,cea_retail,,,,,wtp_ahu,,cea_retail
