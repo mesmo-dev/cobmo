@@ -10,7 +10,7 @@ Please note that the repository is under active development and the interface ma
 
 ## Documentation
 
-The preliminary CoBMo documentation is located at: [cobmo.readthedocs.io](https://cobmo.readthedocs.io/)
+The preliminary documentation is located at [tumcreate-estl.github.io/cobmo](https://tumcreate-estl.github.io/cobmo).
 
 ## Installation
 
