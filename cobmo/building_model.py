@@ -484,6 +484,15 @@ class BuildingModel(object):
 
                 # Validation outputs.
                 pd.concat([
+                    self.building_data.surfaces_adiabatic['surface_name'][
+                        self.building_data.surfaces_adiabatic['heat_capacity'] != 0.0
+                    ] + '_temperature',
+                    self.building_data.surfaces_exterior['surface_name'][
+                        self.building_data.surfaces_exterior['heat_capacity'] != 0.0
+                    ] + '_temperature',
+                    self.building_data.surfaces_interior['surface_name'][
+                        self.building_data.surfaces_interior['heat_capacity'] != 0.0
+                    ] + '_temperature',
                     self.building_data.surfaces_exterior['surface_name'] + '_irradiation_gain_exterior',
                     self.building_data.surfaces_exterior['surface_name'] + '_convection_interior'
                 ]) if with_validation_outputs else None,
@@ -3450,6 +3459,21 @@ class BuildingModel(object):
                             zone_name + '_battery_storage_to_zone_tu_heat_electric_power'
                         ] = 1.0
 
+        def define_output_surface_temperature():
+
+            for surface_name, surface_data in (
+                    pd.concat([
+                        self.building_data.surfaces_adiabatic,
+                        self.building_data.surfaces_exterior,
+                        self.building_data.surfaces_interior
+                    ], sort=False)
+            ).iterrows():
+                if surface_data['heat_capacity'] != 0.0:  # Surfaces with non-zero heat capacity
+                    self.state_output_matrix.at[
+                        surface_name + '_temperature',
+                        surface_name + '_temperature'
+                    ] = 1.0
+
         def define_output_surfaces_exterior_irradiation_gain_exterior():
 
             for surface_name, surface_data in self.building_data.surfaces_exterior.iterrows():
@@ -4092,6 +4116,7 @@ class BuildingModel(object):
 
         # Define validation outputs.
         if with_validation_outputs:
+            define_output_surface_temperature()
             define_output_surfaces_exterior_irradiation_gain_exterior()
             define_output_surfaces_exterior_convection_interior()
 
