@@ -98,7 +98,7 @@ class BuildingData(object):
     timesteps: pd.Index
     weather_timeseries: pd.DataFrame
     electricity_price_timeseries: pd.DataFrame
-    internal_gain_timeseries: pd.DataFrame
+    internal_gain_timeseries: pd.DataFrame = None  # Defaults to None if no internal gain type is defined.
     constraint_timeseries: pd.DataFrame
 
     @ multimethod
@@ -212,7 +212,7 @@ class BuildingData(object):
                 """
                 SELECT * FROM zones 
                 JOIN zone_types USING (zone_type) 
-                JOIN internal_gain_types USING (internal_gain_type) 
+                LEFT JOIN internal_gain_types USING (internal_gain_type) 
                 LEFT JOIN blind_types USING (blind_type) 
                 LEFT JOIN hvac_generic_types USING (hvac_generic_type) 
                 LEFT JOIN hvac_radiator_types USING (hvac_radiator_type) 
@@ -557,15 +557,16 @@ class BuildingData(object):
             internal_gain_timeseries = None
 
         # Merge schedule-based and timeseries-based internal gain timeseries.
-        self.internal_gain_timeseries = (
-            pd.concat(
-                [
-                    internal_gain_schedule,
-                    internal_gain_timeseries
-                ],
-                axis='columns'
+        if (internal_gain_schedule is not None) or (internal_gain_timeseries is not None):
+            self.internal_gain_timeseries = (
+                pd.concat(
+                    [
+                        internal_gain_schedule,
+                        internal_gain_timeseries
+                    ],
+                    axis='columns'
+                )
             )
-        )
 
         # Obtain constraint timeseries based on schedules.
         constraint_schedule = pd.read_sql(
