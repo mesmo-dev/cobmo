@@ -3869,7 +3869,11 @@ class BuildingModel(object):
                 self.electricity_price_timeseries = self.building_data.electricity_price_timeseries
 
         def define_output_constraint_timeseries():
-            # TODO: Make construction / interpolation simpler and more efficient.
+
+            # Do not define constraints, if `constraint_type` not defined for any zones.
+            if any(pd.isnull(self.building_data.zones.loc[:, 'constraint_type'])):
+                logger.debug('Skipping definition of constraint timeseries due to missing constraint type definition.')
+                return
 
             # Instantiate constraint timeseries.
             self.output_constraint_timeseries_maximum = pd.DataFrame(
