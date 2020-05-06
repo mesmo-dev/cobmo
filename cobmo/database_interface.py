@@ -46,8 +46,8 @@ def recreate_database(
     for csv_path in csv_paths:
         for file in glob.glob(os.path.join(csv_path, '**', '*.csv'), recursive=True):
 
-            # Exclude CSV files from some folders.
-            if os.path.basename(os.path.dirname(file)) not in ['storage_data', 'validation_data']:
+            # Exclude CSV files from supplementary data folders.
+            if os.path.join('data', 'supplementary_data') not in file:
 
                 # Obtain table name.
                 table_name = os.path.splitext(os.path.basename(file))[0]

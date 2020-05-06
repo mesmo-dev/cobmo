@@ -291,7 +291,7 @@ def calculate_tank_diameter_height(
 
 def get_battery_parameters(
         battery_parameters_path=(
-            os.path.join(cobmo.config.data_path, 'storage_data', 'battery_storage_parameters.csv')
+            os.path.join(cobmo.config.data_path, 'supplementary_data', 'storage', 'battery_storage_parameters.csv')
         ),
         cost_conversion_factor=1.37  # USD to SGD (as of October 2019).
 ):
