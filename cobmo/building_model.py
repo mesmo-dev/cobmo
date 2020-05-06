@@ -4166,18 +4166,18 @@ class BuildingModel(object):
         )
 
         # Iterative simulation of state space equations
+        # TODO: Check `timestep + 1` (This was added to match with EnergyPlus outputs)
         for timestep in range(len(self.timesteps) - 1):
             state_vector.iloc[timestep + 1, :] = (
                 np.dot(self.state_matrix.values, state_vector.iloc[timestep, :].values)
                 + np.dot(self.control_matrix.values, control_vector.iloc[timestep, :].values)
-                + np.dot(self.disturbance_matrix.values, disturbance_timeseries.iloc[timestep, :].values)
+                + np.dot(self.disturbance_matrix.values, disturbance_timeseries.iloc[timestep + 1, :].values)
             )
-        for timestep in range(1, len(self.timesteps)):
-            # TODO: Check `timestep - 1` (This was added to match with EnergyPlus outputs)
-            output_vector.iloc[timestep - 1, :] = (
+        for timestep in range(len(self.timesteps) - 1):
+            output_vector.iloc[timestep, :] = (
                 np.dot(self.state_output_matrix.values, state_vector.iloc[timestep, :].values)
                 + np.dot(self.control_output_matrix.values, control_vector.iloc[timestep, :].values)
-                + np.dot(self.disturbance_output_matrix.values, disturbance_timeseries.iloc[timestep, :].values)
+                + np.dot(self.disturbance_output_matrix.values, disturbance_timeseries.iloc[timestep + 1, :].values)
             )
 
         return (
