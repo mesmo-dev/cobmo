@@ -3,8 +3,8 @@ scenario_default,create_level8_4zones_a,create_parameters,create_linearization,c
 scenario_full,create_level8_4zones_a,create_parameters,create_linearization,create_initial_state,demand_controlled_ventilation_default,co2_model_default,humidity_model_default,cooling,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 paper_pesgm_2020,create_level8_4zones_a,create_parameters,create_linearization,create_initial_state,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 validation_1zone_radiator,validation_1zone_radiator,create_parameters,create_linearization,mse_initial_state,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-validation_1zone_no_window_no_mass,validation_1zone_no_window_no_mass,create_parameters,create_linearization,create_initial_state,,,,,,2017-01-01T00:00:00,2017-02-01T00:00:00,00:30:00
-validation_1zone_no_window,validation_1zone_no_window,create_parameters,create_linearization,create_initial_state,,,,,,2017-01-01T00:00:00,2017-02-01T00:00:00,00:30:00
+validation_1zone_no_window_no_mass,validation_1zone_no_window_no_mass,create_parameters,create_linearization,create_initial_state,,,,,,2017-01-01T00:30:00,2017-02-01T00:00:00,00:30:00
+validation_1zone_no_window,validation_1zone_no_window,create_parameters,create_linearization,create_initial_state,,,,,,2017-01-01T00:30:00,2017-02-01T00:00:00,00:30:00
 create_level8_1zone,create_level8_1zone,create_parameters,create_linearization,create_initial_state,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 create_level8_2zones,create_level8_2zones,create_parameters,create_linearization,create_initial_state,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 create_level8_3zones,create_level8_3zones,create_parameters,create_linearization,create_initial_state,,,,,,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00

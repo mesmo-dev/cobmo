@@ -239,14 +239,14 @@ validation_1zone_no_window_no_mass,zone_1,south,surface_exterior_1,validation_wa
 validation_1zone_no_window_no_mass,zone_1,east,surface_exterior_2,validation_wall_no_window_no_mass,20,5*4
 validation_1zone_no_window_no_mass,zone_1,north,surface_exterior_3,validation_wall_no_window_no_mass,20,5*4
 validation_1zone_no_window_no_mass,zone_1,west,surface_exterior_4,validation_wall_no_window_no_mass,20,5*4
-validation_1zone_no_window_no_mass,zone_1,horizontal,surface_roof_1,validation_roof_no_mass,25,5*5
+validation_1zone_no_window_no_mass,zone_1,horizontal,surface_roof,validation_roof_no_mass,25,5*5
 validation_1zone_no_window,zone_1,south,surface_exterior_1,validation_wall_no_window,20,5*4
 validation_1zone_no_window,zone_1,east,surface_exterior_2,validation_wall_no_window,20,5*4
 validation_1zone_no_window,zone_1,north,surface_exterior_3,validation_wall_no_window,20,5*4
 validation_1zone_no_window,zone_1,west,surface_exterior_4,validation_wall_no_window,20,5*4
-validation_1zone_no_window,zone_1,horizontal,surface_roof_1,validation_roof,25,5*5
+validation_1zone_no_window,zone_1,horizontal,surface_roof,validation_roof,25,5*5
 validation_1zone_radiator,zone_1,south,surface_exterior_1,validation_wall_no_window,20,5*4
 validation_1zone_radiator,zone_1,east,surface_exterior_2,validation_wall_no_window,20,5*4
 validation_1zone_radiator,zone_1,north,surface_exterior_3,validation_wall_no_window,20,5*4
 validation_1zone_radiator,zone_1,west,surface_exterior_4,validation_wall_no_window,20,5*4
-validation_1zone_radiator,zone_1,horizontal,surface_roof_1,validation_roof,25,5*5
+validation_1zone_radiator,zone_1,horizontal,surface_roof,validation_roof,25,5*5
