@@ -17,7 +17,7 @@ class OptimizationProblem(object):
             building,
             problem_type='operation',
             # Choices: 'operation', 'storage_planning', 'storage_planning_baseline', 'load_reduction',
-            # 'price_sensitivity', 'load_maximization', 'load_minimization'
+            # 'price_sensitivity', 'load_maximization', 'load_minimization', 'robust_optimization'
             output_vector_reference=None,
             load_reduction_start_time=None,
             load_reduction_end_time=None,
@@ -37,6 +37,7 @@ class OptimizationProblem(object):
 
         # Copy `electricity_price_timeseries` to allow local modifications.
         self.electricity_price_timeseries = self.building.electricity_price_timeseries.copy()
+        self.electricity_price_distribution_timeseries = self.building.electricity_price_distribution_timeseries.copy()
 
         self.problem = pyo.ConcreteModel()
         self.solver = pyo.SolverFactory(cobmo.config.solver_name)
@@ -80,6 +81,12 @@ class OptimizationProblem(object):
                 [0],
                 domain=pyo.NonNegativeReals
             )
+        # TODO: rename variables, move gamma to input
+        if self.problem_type == 'robust_optimization':
+            self.problem.variable_z = pyo.Var(domain=pyo.NonNegativeReals)
+            self.problem.variable_gamma = len(self.building.timesteps)
+            self.problem.variable_q = pyo.Var(self.building.timesteps, domain=pyo.NonNegativeReals)
+            self.problem.variable_y = pyo.Var(self.building.timesteps, domain=pyo.NonNegativeReals)
 
         # Define constraints.
         self.problem.constraints = pyo.ConstraintList()
@@ -236,6 +243,22 @@ class OptimizationProblem(object):
                         )
                     )
 
+        # Robust optimization additional constraints
+        elif self.problem_type == 'robust_optimization':
+            for timestep in self.building.timesteps:
+                self.problem.constraints.add(
+                    self.problem.variable_z + self.problem.variable_q[timestep]
+                    >=
+                    (self.electricity_price_distribution_timeseries.loc[timestep, 'delta_lower']
+                     * self.problem.variable_y[timestep])
+                )
+                self.problem.constraints.add(
+                    (self.problem.variable_output_vector[timestep, 'grid_electric_power']
+                    * timestep_delta.seconds / 3600.0 / 1000.0)
+                    <=
+                    self.problem.variable_y[timestep]
+                )
+
         # Define components of the objective.
         self.operation_cost = 0.0
         self.investment_cost = 0.0
@@ -270,6 +293,16 @@ class OptimizationProblem(object):
                 if self.problem_type == 'load_minimization':
                     if output == 'grid_electric_power':
                         self.operation_cost += self.problem.variable_output_vector[timestep, output]
+                elif self.problem_type == 'robust_optimization':
+                    if output == 'grid_electric_power':
+                        self.operation_cost += (
+                            self.problem.variable_output_vector[timestep, output]
+                            * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
+                            * self.electricity_price_distribution_timeseries.loc[timestep, 'price_mean']
+                            * self.operation_cost_factor
+                            + self.problem.variable_z * self.problem.variable_gamma
+                            + self.problem.variable_q[timestep]
+                        )
                 else:
                     if ('electric_power' in output) and not ('storage_to_zone' in output):
                         self.operation_cost += (
