@@ -78,6 +78,11 @@ def main():
     )
     control_vector_simulation.loc[:, 'zone_1_generic_cool_thermal_power'] = 0.0
 
+    # Use ambient temperature as sky temperature.
+    building.disturbance_timeseries.loc[:, 'sky_temperature'] = (
+        building.disturbance_timeseries.loc[:, 'ambient_air_temperature']
+    )
+
     # Run simulation.
     (
         state_vector_simulation,
