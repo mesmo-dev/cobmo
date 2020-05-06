@@ -51,15 +51,32 @@ def main():
     building.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_disturbance_output_matrix.csv'))
     building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
 
-    # Define initial state and control vector.
+    # Load validation data.
+    output_vector_validation = (
+        pd.read_csv(
+            os.path.join(validation_data_path, scenario_name + '.csv'),
+            index_col='time',
+            parse_dates=True,
+        ).reindex(
+            building.timesteps
+        )  # Do not interpolate here, because it defeats the purpose of validation.
+    )
+    output_vector_validation.columns.name = 'output_name'  # For compatibility with output_vector.
+
+    # Define initial state.
     state_vector_initial = building.state_vector_initial
-    state_vector_initial.loc[building.states.str.contains('temperature')] = 24.0  # in °C
+    for state in building.states:
+        if state in output_vector_validation.columns:
+            # Set initial state to match validation data.
+            state_vector_initial.at[state] = output_vector_validation.loc[:, state].iat[0]
+
+    # Define control vector.
     control_vector_simulation = pd.DataFrame(
         0.0,
         building.timesteps,
         building.controls
     )
-    control_vector_simulation.loc[:, 'zone_1_generic_cool_thermal_power'] = 200.0
+    control_vector_simulation.loc[:, 'zone_1_generic_cool_thermal_power'] = 0.0
 
     # Run simulation.
     (
@@ -79,18 +96,6 @@ def main():
     control_vector_simulation.to_csv(os.path.join(results_path, 'control_vector_simulation.csv'))
     state_vector_simulation.to_csv(os.path.join(results_path, 'state_vector_simulation.csv'))
     output_vector_simulation.to_csv(os.path.join(results_path, 'output_vector_simulation.csv'))
-
-    # Load validation data.
-    output_vector_validation = (
-        pd.read_csv(
-            os.path.join(validation_data_path, scenario_name + '.csv'),
-            index_col='time',
-            parse_dates=True,
-        ).reindex(
-            building.timesteps
-        )  # Do not interpolate here, because it defeats the purpose of validation.
-    )
-    output_vector_validation.columns.name = 'output_name'  # For compatibility with output_vector.
 
     # Run error calculation function.
     (
