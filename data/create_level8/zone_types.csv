@@ -1,0 +1,3 @@
+zone_type,heat_capacity,infiltration_rate,internal_gain_type,window_type,blind_type,hvac_generic_type,hvac_radiator_type,hvac_ahu_type,hvac_tu_type,constraint_type
+create_level8_open_plan_office,heat_capacity_zone,infiltration_rate,create_office,,,,,create_ahu,,create_office_constraints
+create_level8_group_office,heat_capacity_zone,infiltration_rate,create_office,,,,,create_ahu,,create_office_constraints
