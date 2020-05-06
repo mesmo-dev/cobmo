@@ -34,6 +34,7 @@ class BuildingModel(object):
     state_vector_initial: pd.Series
     disturbance_timeseries: pd.DataFrame
     electricity_price_timeseries: pd.DataFrame
+    electricity_price_distribution_timeseries: pd.DataFrame
     output_constraint_timeseries_maximum: pd.DataFrame
     output_constraint_timeseries_minimum: pd.DataFrame
 
@@ -3829,6 +3830,9 @@ class BuildingModel(object):
             else:
                 self.electricity_price_timeseries = self.building_data.electricity_price_timeseries
 
+        def define_electricity_price_distribution_timeseries():
+            self.electricity_price_distribution_timeseries = self.building_data.electricity_price_distribution_timeseries
+
         def define_output_constraint_timeseries():
             # TODO: Make construction / interpolation simpler and more efficient.
 
@@ -4090,6 +4094,7 @@ class BuildingModel(object):
         # Define timeseries.
         define_disturbance_timeseries()
         define_electricity_price_timeseries()
+        define_electricity_price_distribution_timeseries()
         define_output_constraint_timeseries()
 
         # Convert to time discrete model.

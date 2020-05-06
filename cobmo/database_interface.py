@@ -473,7 +473,6 @@ class BuildingData(object):
                     electricity_price_range[column].fillna(electricity_price_range_complete[column])
                 )
             electricity_price_range.index = self.timesteps
-            print(electricity_price_range)
         else:
             electricity_price_range = None
 
