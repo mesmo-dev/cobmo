@@ -110,13 +110,13 @@ Initial state settings to be taken for simulation and optimization.
 
 | Column | Unit | Description |
 | --- |:---:| --- |
-| initial_state_type | | Unique type identifier. |
-| initial_zone_temperature | °C | Initial zone air temperature. |
-| initial_surface_temperature | °C | Initial surface temperature. |
-| initial_co2_concentration | ppm | Initial zone air CO₂ concentration. |
-| initial_absolute_humidity | kg/kg | Initial zone air absolute humidity (mass of water / mass of air). |
-| initial_sensible_thermal_storage_state_of_charge | m³ | Initial stored volume of useable water layer in the sensible thermal storage. |
-| initial_battery_storage_state_of_charge | kWh | Initial stored electric energy in the battery storage.|
+| `initial_state_type` | | Unique type identifier. |
+| `initial_zone_temperature` | °C | Initial zone air temperature. |
+| `initial_surface_temperature` | °C | Initial surface temperature. |
+| `initial_co2_concentration` | ppm | Initial zone air CO₂ concentration. |
+| `initial_absolute_humidity` | kg/kg | Initial zone air absolute humidity (mass of water / mass of air). |
+| `initial_sensible_thermal_storage_state_of_charge` | m³ | Initial stored volume of useable water layer in the sensible thermal storage. |
+| `initial_battery_storage_state_of_charge` | kWh | Initial stored electric energy in the battery storage.|
 
 ## `internal_gain_schedules`
 
