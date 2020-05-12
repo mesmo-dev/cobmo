@@ -300,9 +300,10 @@ class OptimizationProblem(object):
                             * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
                             * self.electricity_price_distribution_timeseries.loc[timestep, 'price_mean']
                             * self.operation_cost_factor
-                            + self.problem.variable_z * self.problem.variable_gamma
                             + self.problem.variable_q[timestep]
                         )
+                    if timestep == self.building.timesteps[-1]:
+                        self.operation_cost += self.problem.variable_z * self.problem.variable_gamma
                 else:
                     if ('electric_power' in output) and not ('storage_to_zone' in output):
                         self.operation_cost += (
