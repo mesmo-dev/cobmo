@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS "internal_gain_timeseries" (
 );
 CREATE TABLE IF NOT EXISTS "internal_gain_types" (
     "internal_gain_type" TEXT,
-    "internal_gain_definition_type", TEXT,
+    "internal_gain_definition_type" TEXT,
     "internal_gain_occupancy_factor" TEXT,
     "internal_gain_appliances_factor" TEXT
 );
