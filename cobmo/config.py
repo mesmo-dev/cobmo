@@ -19,7 +19,7 @@ solver_name = 'gurobi'  # Must be valid input string for Pyomo's `SolverFactory`
 solver_output = False  # If True, activate verbose solver output.
 
 # Test settings.
-test_scenario_name = 'scenario_default'
+test_scenario_name = 'create_level8_4zones_a'
 
 # Pandas settings.
 # - These settings ensure that that data frames are always printed in full, rather than cropped.

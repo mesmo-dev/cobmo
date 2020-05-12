@@ -29,13 +29,24 @@ extensions = [
 # Extension settings.
 # - sphinx.ext.autodoc: <https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html>
 # - sphinx.ext.napoleon: <https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html>
-autoclass_content = 'both'
 autodoc_default_options = {
     'members': None,
     'undoc-members': None,
     'show-inheritance': None
 }
 autodoc_typehints = 'none'
+autodoc_mock_imports = [
+    'CoolProp',
+    'hvplot',
+    'matplotlib',
+    'multimethod',
+    'numpy',
+    'pandas',
+    'pvlib',
+    'pyomo',
+    'scipy',
+    'seaborn'
+]
 napoleon_use_ivar = True
 
 # Source settings.
@@ -62,7 +73,10 @@ html_theme = 'sphinx_rtd_theme'
 templates_path = ['templates']
 
 # Sphinx multiversion settings.
-smv_remote_whitelist = r'^.*$'  # Include all remote branches in builds.
+# - Explicitly include all branches, tags from all remotes.
+smv_tag_whitelist = r'^.*$'
+smv_branch_whitelist = r'^.*$'
+smv_remote_whitelist = r'^.*$'
 
 # Recommonmark settings.
 # - Documentation: <https://recommonmark.readthedocs.io/en/latest/auto_structify.html>

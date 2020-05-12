@@ -1,0 +1,6 @@
+surface_type,heat_capacity,thermal_resistance_surface,absorptivity,emissivity,window_type,window_wall_ratio,sky_view_factor
+validation_wall_no_window_no_mass,0,2.290965,0.75,0.9,,0.0,0.5
+validation_floor,190471.40,0.0586839441,0.65,0.9,,0.0,
+validation_roof_no_mass,0,5.456,0.75,0.9,,0.0,1.0
+validation_wall_no_window,1904.7140,2.290965,0.75,0.9,,0.0,0.5
+validation_roof,1904.7140,5.456,0.75,0.9,,0.0,1.0

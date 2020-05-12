@@ -1,0 +1,4 @@
+building_name,zone_name,zone_type,zone_height,zone_area,zone_comment
+validation_1zone_no_window_no_mass,zone_1,validation_zone_empty,4,25,5*5
+validation_1zone_no_window,zone_1,validation_zone_empty,4,25,5*5
+validation_1zone_radiator,zone_1,validation_zone_empty_radiator,4,25,5*5

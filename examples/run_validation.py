@@ -17,6 +17,10 @@ def main():
     # Settings.
     scenario_name = 'validation_1zone_no_window'
     results_path = os.path.join(cobmo.config.results_path, f'run_validation_{cobmo.config.timestamp}')
+    validation_data_path = os.path.join(cobmo.config.data_path, 'supplementary_data', 'validation')
+
+    # Recreate database.
+    cobmo.database_interface.recreate_database()
 
     # Instantiate results directory.
     os.mkdir(results_path)
@@ -47,15 +51,37 @@ def main():
     building.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_disturbance_output_matrix.csv'))
     building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
 
-    # Define initial state and control vector.
+    # Load validation data.
+    output_vector_validation = (
+        pd.read_csv(
+            os.path.join(validation_data_path, scenario_name + '.csv'),
+            index_col='time',
+            parse_dates=True,
+        ).reindex(
+            building.timesteps
+        )  # Do not interpolate here, because it defeats the purpose of validation.
+    )
+    output_vector_validation.columns.name = 'output_name'  # For compatibility with output_vector.
+
+    # Define initial state.
     state_vector_initial = building.state_vector_initial
-    state_vector_initial.loc[building.states.str.contains('temperature')] = 24.0  # in °C
+    for state in building.states:
+        if state in output_vector_validation.columns:
+            # Set initial state to match validation data.
+            state_vector_initial.at[state] = output_vector_validation.loc[:, state].iat[0]
+
+    # Define control vector.
     control_vector_simulation = pd.DataFrame(
         0.0,
         building.timesteps,
         building.controls
     )
-    control_vector_simulation.loc[:, 'zone_1_generic_cool_thermal_power'] = 200.0
+    control_vector_simulation.loc[:, 'zone_1_generic_cool_thermal_power'] = 0.0
+
+    # Use ambient temperature as sky temperature.
+    building.disturbance_timeseries.loc[:, 'sky_temperature'] = (
+        building.disturbance_timeseries.loc[:, 'ambient_air_temperature']
+    )
 
     # Run simulation.
     (
@@ -76,18 +102,6 @@ def main():
     state_vector_simulation.to_csv(os.path.join(results_path, 'state_vector_simulation.csv'))
     output_vector_simulation.to_csv(os.path.join(results_path, 'output_vector_simulation.csv'))
 
-    # Load validation data.
-    output_vector_validation = pd.read_csv(
-        os.path.join(
-            os.path.dirname(os.path.normpath(__file__)), '..', 'data', 'validation_data', scenario_name + '.csv'
-        ),
-        index_col='time',
-        parse_dates=True,
-    ).reindex(
-        building.timesteps
-    )  # Do not interpolate here, because it defeats the purpose of validation.
-    output_vector_validation.columns.name = 'output_name'  # For compatibility with output_vector.
-
     # Run error calculation function.
     (
         error_summary,
@@ -97,60 +111,77 @@ def main():
         output_vector_simulation,
     )
 
+    # Print error summary.
+    print("error_timeseries = ")
+    print(error_timeseries.head())
+    print("error_summary = ")
+    print(error_summary)
+
+    # Store error summary as CSV.
+    error_summary.to_csv(os.path.join(results_path, 'error_summary.csv'))
+    error_timeseries.to_csv(os.path.join(results_path, 'error_timeseries.csv'))
+
     # Combine data for plotting.
-    zone_temperature_comparison = pd.concat(
-        [
-            output_vector_validation.loc[:, output_vector_validation.columns.str.contains('temperature')],
-            output_vector_simulation.loc[:, output_vector_simulation.columns.str.contains('temperature')],
-        ],
-        keys=[
-            'expected',
-            'simulated',
-        ],
-        names=[
-            'type',
-            'output_name'
-        ],
-        axis=1
+    zone_temperature_comparison = (
+        pd.concat(
+            [
+                output_vector_validation.loc[:, (
+                    output_vector_validation.columns.str.contains('zone')
+                    & output_vector_validation.columns.str.contains('temperature')
+                )],
+                output_vector_simulation.loc[:, (
+                    output_vector_simulation.columns.str.contains('zone')
+                    & output_vector_simulation.columns.str.contains('temperature')
+                )],
+            ],
+            keys=['expected', 'simulated'],
+            names=['type', 'output_name'],
+            axis=1
+        )
     )
-    surface_irradiation_gain_exterior_comparison = pd.concat(
-        [
-            output_vector_validation.loc[:, output_vector_validation.columns.str.contains('irradiation_gain')],
-            output_vector_simulation.loc[:, output_vector_simulation.columns.str.contains('irradiation_gain')],
-        ],
-        keys=[
-            'expected',
-            'simulated',
-        ],
-        names=[
-            'type',
-            'output_name'
-        ],
-        axis=1
+    surface_temperature_comparison = (
+        pd.concat(
+            [
+                output_vector_validation.loc[:, (
+                    output_vector_validation.columns.str.contains('surface')
+                    & output_vector_validation.columns.str.contains('temperature')
+                )],
+                output_vector_simulation.loc[:, (
+                    output_vector_simulation.columns.str.contains('surface')
+                    & output_vector_simulation.columns.str.contains('temperature')
+                )],
+            ],
+            keys=['expected', 'simulated'],
+            names=['type', 'output_name'],
+            axis=1
+        )
     )
-    surface_convection_interior_comparison = pd.concat(
-        [
-            output_vector_validation.loc[:, output_vector_validation.columns.str.contains(
-                'convection_interior'
-            )],
-            output_vector_simulation.loc[:, output_vector_simulation.columns.str.contains(
-                'convection_interior'
-            )],
-        ],
-        keys=[
-            'expected',
-            'simulated',
-        ],
-        names=[
-            'type',
-            'output_name'
-        ],
-        axis=1
+    surface_irradiation_gain_exterior_comparison = (
+        pd.concat(
+            [
+                output_vector_validation.loc[:, output_vector_validation.columns.str.contains('irradiation_gain')],
+                output_vector_simulation.loc[:, output_vector_simulation.columns.str.contains('irradiation_gain')],
+            ],
+            keys=['expected', 'simulated',],
+            names=['type', 'output_name'],
+            axis=1
+        )
+    )
+    surface_convection_interior_comparison = (
+        pd.concat(
+            [
+                output_vector_validation.loc[:, output_vector_validation.columns.str.contains('convection_interior')],
+                output_vector_simulation.loc[:, output_vector_simulation.columns.str.contains('convection_interior')],
+            ],
+            keys=['expected', 'simulated',],
+            names=['type', 'output_name'],
+            axis=1
+        )
     )
 
     # Hvplot has no default options.
     # Workaround: Pass this dict to every new plot.
-    hvplot_default_options = dict(width=1500, height=300)
+    hvplot_default_options = dict(width=1500, height=400)
 
     # Generate plot handles.
     thermal_power_plot = (
@@ -211,16 +242,25 @@ def main():
         by=['type', 'output_name'],
         **hvplot_default_options
     )
+    surface_temperature_plot = (
+        surface_temperature_comparison.stack().stack().rename('surface_temperature').reset_index()
+    ).hvplot.line(
+        x='time',
+        y='surface_temperature',
+        by=['type', 'output_name'],
+        **hvplot_default_options
+    )
     zone_temperature_error_plot = (
-        error_timeseries.loc[
-            :, error_timeseries.columns.str.contains('temperature')
-        ].stack().rename('zone_temperature_error').reset_index()
+        error_timeseries.loc[:, (
+            error_timeseries.columns.str.contains('zone')
+            & error_timeseries.columns.str.contains('temperature')
+        )].stack().rename('zone_temperature_error').reset_index()
     ).hvplot.area(
         x='time',
         y='zone_temperature_error',
         by='output_name',
-        stacked = False,
-        alpha = 0.5,
+        stacked=False,
+        alpha=0.5,
         **hvplot_default_options
     )
     error_table = (
@@ -241,6 +281,7 @@ def main():
             + sky_temperature_plot
             + surface_convection_interior_plot
             + ambient_air_temperature_plot
+            + surface_temperature_plot
             + zone_temperature_plot
             + zone_temperature_error_plot
             + error_table
@@ -249,18 +290,13 @@ def main():
             thermal_power="Thermal power [W]",
             ambient_air_temperature="Ambient air temp. [°C]",
             irradiation="Irradiation [W/m²]",
+            surface_temperature="Surface temperature [°C]",
             zone_temperature="Zone temperature [°C]",
             zone_temperature_error="Zone temp. error [K]",
         ).cols(1),
         # Plots open in browser and are also stored in results directory.
         filename=os.path.join(results_path, 'validation_plots.html')
     )
-
-    # Print error summary for debugging.
-    print("error_timeseries = ")
-    print(error_timeseries.head())
-    print("error_summary = ")
-    print(error_summary)
 
     # Print results path.
     print(f"Results are stored in: {results_path}")

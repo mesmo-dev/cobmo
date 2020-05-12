@@ -11,7 +11,7 @@ import cobmo.utils
 
 
 # Settings.
-scenario_name = 'scenario_default'
+scenario_name = 'create_level8_4zones_a'
 price_type = 'wholesale'
 # Choices: 'wholesale', 'retailer_peak_offpeak', 'wholesale_squeezed_20', 'wholesale_squeezed_40'
 # 'wholesale_squeezed_60', 'wholesale_squeezed_80'
