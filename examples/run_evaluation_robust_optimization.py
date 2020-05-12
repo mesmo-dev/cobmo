@@ -29,7 +29,7 @@ def main():
     # Obtain and solve baseline optimization problem.
     optimization_problem = cobmo.optimization_problem.OptimizationProblem(
         building,
-        problem_type='minimum_load'
+        problem_type='robust_optimization'
     )
     (
         control_vector_optimization,
