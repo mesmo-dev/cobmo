@@ -1,2 +1,4 @@
 scenario_name,building_name,parameter_set,linearization_type,initial_state_type,demand_controlled_ventilation_type,co2_model_type,humidity_model_type,heating_cooling_session,price_type,time_start,time_end,time_step
-scenario_example_full,create_level8_4zones_a,create_parameters,create_linearization,create_initial_state,demand_controlled_ventilation_default,co2_model_default,humidity_model_default,cooling,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
+lasalle_college,lasalle_college,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
+sp_graduates,sp_graduates,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
+bugis_point,bugis_point,create_parameters,create_linearization,wtp_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
