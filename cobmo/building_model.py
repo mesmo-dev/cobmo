@@ -34,6 +34,7 @@ class BuildingModel(object):
     state_vector_initial: pd.Series
     disturbance_timeseries: pd.DataFrame
     electricity_price_timeseries: pd.DataFrame
+    electricity_price_distribution_timeseries: pd.DataFrame
     output_constraint_timeseries_maximum: pd.DataFrame
     output_constraint_timeseries_minimum: pd.DataFrame
 
@@ -3868,6 +3869,11 @@ class BuildingModel(object):
             else:
                 self.electricity_price_timeseries = self.building_data.electricity_price_timeseries
 
+        def define_electricity_price_distribution_timeseries():
+            self.electricity_price_distribution_timeseries = (
+                self.building_data.electricity_price_distribution_timeseries
+            )
+
         def define_output_constraint_timeseries():
 
             # Do not define constraints, if `constraint_type` not defined for any zones.
@@ -4047,7 +4053,6 @@ class BuildingModel(object):
                 self.state_matrix.values
                 * self.timestep_delta.seconds
             )
-
             control_matrix_discrete = (
                 np.linalg.matrix_power(
                     self.state_matrix.values,
@@ -4135,6 +4140,7 @@ class BuildingModel(object):
         # Define timeseries.
         define_disturbance_timeseries()
         define_electricity_price_timeseries()
+        define_electricity_price_distribution_timeseries()
         define_output_constraint_timeseries()
 
         # Convert to time discrete model.

@@ -8,3 +8,4 @@ office,1211.025,5.50E-05,cea_office,,,,,cea_ahu,,cea_office
 hotel,1211.025,5.50E-05,cea_hotel,,,,,cea_ahu,,cea_hotel
 hospital,1211.025,5.50E-05,cea_hospital,,,,,cea_ahu,,cea_hospital
 industrial,1211.025,5.50E-05,cea_industrial,,,,,cea_ahu,,cea_industrial
+other,1211.025,5.50E-05,cea_retail,,,,,cea_ahu,,cea_retail
