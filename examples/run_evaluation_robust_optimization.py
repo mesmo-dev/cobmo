@@ -82,9 +82,9 @@ def main():
 
     # # Print optimization results.
     # print(f"operation_cost = {operation_cost}")
-    # print(f"control_vector_optimization = \n{control_vector_optimization.to_string()}")
-    # print(f"state_vector_optimization = \n{state_vector_optimization.to_string()}")
-    # print(f"output_vector_optimization = \n{output_vector_optimization.to_string()}")
+    # print(f"control_vector_optimization = \n{control_vector_optimization}")
+    # print(f"state_vector_optimization = \n{state_vector_optimization}")
+    # print(f"output_vector_optimization = \n{output_vector_optimization}")
     #
     # Store optimization results as CSV.
     control_vector_optimization.to_csv(os.path.join(results_path, 'control_vector_optimization.csv'))
