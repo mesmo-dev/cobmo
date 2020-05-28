@@ -39,7 +39,7 @@ class TestBuilding(unittest.TestCase):
     def test_building_model_any_scenario(self, scenario_name):
         # Get result.
         time_start = time.time()
-        cobmo.building_model.BuildingModel(scenario_name, database_connection)
+        cobmo.building_model.BuildingModel(scenario_name)
         time_duration = time.time() - time_start
         logger.info(f"Test BuildingModel for scenario '{scenario_name}': Completed in {time_duration:.6f} seconds.")
 

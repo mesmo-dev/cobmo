@@ -152,7 +152,7 @@ if run_simulation:
             print("Starting baseline case.")
 
             # Obtain building model object for the baseline case.
-            building_baseline = cobmo.building_model.BuildingModel(scenario_name, database_connection)
+            building_baseline = cobmo.building_model.BuildingModel(scenario_name)
 
             # Run controller for the baseline case.
             controller_baseline = cobmo.optimization_problem.OptimizationProblem(
@@ -176,7 +176,7 @@ if run_simulation:
             print("Starting storage case.")
 
             # Obtain building model object for the storage case.
-            building_storage = cobmo.building_model.BuildingModel(scenario_name, database_connection)
+            building_storage = cobmo.building_model.BuildingModel(scenario_name)
 
             # Run controller for the storage case.
             controller_storage = cobmo.optimization_problem.OptimizationProblem(

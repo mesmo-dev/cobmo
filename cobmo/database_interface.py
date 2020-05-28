@@ -102,27 +102,10 @@ class BuildingData(object):
     internal_gain_timeseries: pd.DataFrame = None  # Defaults to None if not defined.
     constraint_timeseries: pd.DataFrame
 
-    @ multimethod
     def __init__(
             self,
             scenario_name: str,
-            **kwargs
-    ) -> None:
-
-        # Obtain database connection.
-        database_connection = connect_database()
-
-        self.__init__(
-            scenario_name,
-            database_connection,
-            **kwargs
-        )
-
-    @ multimethod
-    def __init__(
-            self,
-            scenario_name: str,
-            database_connection: sqlite3.Connection,
+            database_connection=connect_database(),
             timestep_start=None,
             timestep_end=None,
             timestep_delta=None

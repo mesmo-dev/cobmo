@@ -42,23 +42,6 @@ class BuildingModel(object):
     def __init__(
             self,
             scenario_name: str,
-            **kwargs
-    ):
-
-        # Obtain database connection.
-        database_connection = cobmo.database_interface.connect_database()
-
-        self.__init__(
-            scenario_name,
-            database_connection,
-            **kwargs
-        )
-
-    @multimethod
-    def __init__(
-            self,
-            scenario_name: str,
-            database_connection: sqlite3.Connection,
             timestep_start=None,
             timestep_end=None,
             timestep_delta=None,
@@ -75,10 +58,9 @@ class BuildingModel(object):
         self.building_data = (
             cobmo.database_interface.BuildingData(
                 self.scenario_name,
-                database_connection,
-                timestep_start,
-                timestep_end,
-                timestep_delta
+                timestep_start=timestep_start,
+                timestep_end=timestep_end,
+                timestep_delta=timestep_delta
             )
         )
 
