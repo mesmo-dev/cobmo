@@ -747,7 +747,10 @@ class BuildingModel(object):
 
             # Calculate heat transfer coefficients.
             for surface_name, surface_data in building_data.surfaces_exterior.iterrows():
-                surface_data['heat_transfer_coefficient_surface_sky'] = (
+                building_data.surfaces_exterior.at[
+                    surface_name,
+                    'heat_transfer_coefficient_surface_sky'
+                ] = (
                     4.0
                     * building_data.parameters['stefan_boltzmann_constant']
                     * surface_data['emissivity']
@@ -760,7 +763,10 @@ class BuildingModel(object):
                         + 273.15
                     ) ** 3
                 )
-                surface_data['heat_transfer_coefficient_surface_ground'] = (
+                building_data.surfaces_exterior.at[
+                    surface_name,
+                    'heat_transfer_coefficient_surface_ground'
+                ] = (
                     4.0
                     * building_data.parameters['stefan_boltzmann_constant']
                     * surface_data['emissivity']
@@ -774,7 +780,10 @@ class BuildingModel(object):
                     ) ** 3
                 )
                 if pd.notnull(surface_data['window_type']):
-                    surface_data['heat_transfer_coefficient_window_sky'] = (
+                    building_data.surfaces_exterior.at[
+                        surface_name,
+                        'heat_transfer_coefficient_window_sky'
+                    ] = (
                         4.0
                         * building_data.parameters['stefan_boltzmann_constant']
                         * surface_data['emissivity_window']
@@ -787,7 +796,10 @@ class BuildingModel(object):
                             + 273.15
                         ) ** 3
                     )
-                    surface_data['heat_transfer_coefficient_window_ground'] = (
+                    building_data.surfaces_exterior.at[
+                        surface_name,
+                        'heat_transfer_coefficient_window_ground'
+                    ] = (
                         4.0
                         * building_data.parameters['stefan_boltzmann_constant']
                         * surface_data['emissivity_window']
