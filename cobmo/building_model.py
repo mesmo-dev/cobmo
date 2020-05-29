@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import scipy.linalg
 import scipy.interpolate
+import typing
 
 import cobmo.config
 import cobmo.database_interface
@@ -28,7 +29,7 @@ class BuildingModel(object):
     Syntax
         ``BuildingModel(scenario_name)``: Instantiate building model for given `scenario_name`.
 
-    Arguments:
+    Parameters:
         scenario_name (str): CoBMo building scenario name, as defined in the data table `scenarios`.
 
     Keyword Arguments:
@@ -112,6 +113,7 @@ class BuildingModel(object):
         self.scenario_name = scenario_name
 
         # Obtain building data.
+        # TODO: Match timestep defintions with FLEDGE.
         building_data = (
             cobmo.database_interface.BuildingData(
                 self.scenario_name,
@@ -4187,46 +4189,69 @@ class BuildingModel(object):
 
     def simulate(
             self,
-            state_initial,
-            control_vector,
+            control_vector: pd.DataFrame,
+            state_vector_initial=None,
             disturbance_timeseries=None
-    ):
-        """Simulate building model with given initial state and control timeseries.
+    ) -> typing.Tuple[pd.DataFrame, pd.DataFrame]:
+        """Simulate building model for given control vector timeseries to obtain state vector timeseries and
+        output vector timeseries.
 
-        - Time horizon is derived from scenario definition in database.
-        - Disturbance timeseries is derived from database.
-        - TODO: Automatically create initial state from database.
+        - The simulation is based on the iterative solution of the state space equations.
+        - The required initial state vector and disturbance timeseries are obtained from
+        the building model definition or can be provided through keyword arguments.
+
+        Syntax
+            `building_model.simulate(control_vector)`: Simulate `building_model` for given `control_vector`.
+
+        Parameters:
+            control_vector (pd.DataFrame): Control vector timeseries, as dataframe with control variables as columns and
+                timesteps as rows.
+
+        Keyword Arguments:
+            state_vector_initial (pd.Series): Initial state vector values, as series with state variables as index.
+                Defaults to the initial state vector in the building model definition.
+            disturbance_timeseries (pd.DataFrame): Disturbance vector timeseries, sa dataframe with disturbance
+                variables as columns and timesteps as rows. Defaults to the disturbance timeseries in the building
+                model definition.
+
+        Returns:
+            typing.Tuple[pd.DataFrame, pd.DataFrame]: State vector timeseries, as dataframe with state variables as rows
+                and timesteps as columns. Output vector timeseries, as dataframe with output variables as rows and
+                timesteps as columns.
         """
-        # Default values
+
+        # Obtain initial state vector and disturbance timeseries.
+        if state_vector_initial is None:
+            state_vector_initial = self.state_vector_initial
         if disturbance_timeseries is None:
             disturbance_timeseries = self.disturbance_timeseries
 
-        # Initialize state and output timeseries
+        # Initialize state and output timeseries.
         state_vector = pd.DataFrame(
             np.nan,
             self.timesteps,
             self.states
         )
-        state_vector.iloc[0, :] = state_initial
+        state_vector.loc[self.timesteps[0], :] = state_vector_initial
         output_vector = pd.DataFrame(
             np.nan,
             self.timesteps,
             self.outputs
         )
 
-        # Iterative simulation of state space equations
-        # TODO: Check `timestep + 1` (This was added to match with EnergyPlus outputs)
+        # Iterative solution of the state space equations.
+        # - The following equations directly use the underlying numpy arrays for faster evaluation.
         for timestep in range(len(self.timesteps) - 1):
-            state_vector.iloc[timestep + 1, :] = (
-                np.dot(self.state_matrix.values, state_vector.iloc[timestep, :].values)
-                + np.dot(self.control_matrix.values, control_vector.iloc[timestep, :].values)
-                + np.dot(self.disturbance_matrix.values, disturbance_timeseries.iloc[timestep + 1, :].values)
+            state_vector.values[timestep + 1, :] = (
+                self.state_matrix.values @ state_vector.values[timestep, :]
+                + self.control_matrix.values @ control_vector.values[timestep, :]
+                + self.disturbance_matrix.values @ disturbance_timeseries.values[timestep, :]
             )
-        for timestep in range(len(self.timesteps) - 1):
-            output_vector.iloc[timestep, :] = (
-                np.dot(self.state_output_matrix.values, state_vector.iloc[timestep, :].values)
-                + np.dot(self.control_output_matrix.values, control_vector.iloc[timestep, :].values)
-                + np.dot(self.disturbance_output_matrix.values, disturbance_timeseries.iloc[timestep + 1, :].values)
+        for timestep in range(len(self.timesteps)):
+            output_vector.values[timestep, :] = (
+                self.state_output_matrix.values @ state_vector.values[timestep, :]
+                + self.control_output_matrix.values @ control_vector.values[timestep, :]
+                + self.disturbance_output_matrix.values @ disturbance_timeseries.values[timestep, :]
             )
 
         return (

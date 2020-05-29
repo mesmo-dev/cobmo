@@ -88,8 +88,8 @@ def main():
         state_vector_simulation,
         output_vector_simulation
     ) = building.simulate(
-        state_initial=state_vector_initial,
-        control_vector=control_vector_simulation
+        control_vector_simulation,
+        state_vector_initial=state_vector_initial
     )
 
     # Print simulation results.
