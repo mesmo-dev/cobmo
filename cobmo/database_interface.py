@@ -661,7 +661,8 @@ class BuildingData(object):
     ):
         """Parse parameters into a dataframe.
         - Applies `parse_parameter` for all string columns.
-        - Columns in `excluded_columns` are not parsed. By default this includes `_name`, `_type`, `connection` columns.
+        - Columns in `excluded_columns` are not parsed. By default this includes `_name`, `_type`, `_comment`
+          `parameter_set`, `time` columns.
         """
 
         # Define excluded columns. By default, all columns containing the following strings are excluded:
