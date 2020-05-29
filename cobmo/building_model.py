@@ -35,7 +35,7 @@ class BuildingModel(object):
     Keyword Arguments:
         timestep_start (pd.Timestamp): If provided, will used in place of `timestep_start` in the scenario definition.
         timestep_end (pd.Timestamp): If provided, will used in place of `timestep_end` in the scenario definition.
-        timestep_delta (pd.Timedelta): If provided, will used in place of `timestep_delta` in the scenario definition.
+        timestep_interval (pd.Timedelta): If provided, will used in place of `timestep_interval` in the scenario definition.
         connect_electric_grid (bool): If true, the output variable `grid_electric_power` will be defined to express the
             total electric power demand at the electric grid connection point. Additionally, the control variables
             `plant_thermal_power_cooling` / `plant_thermal_power_heating` will be defined to enable controlling how much
@@ -61,7 +61,7 @@ class BuildingModel(object):
         disturbances (pd.Index): Index set of the disturbance variables.
         outputs (pd.Index): Index set of the output variables.
         timesteps (pd.Index): Index set of the timesteps.
-        timestep_delta (pd.Timedelta): Timestep interval, assuming a constant interval between all timesteps.
+        timestep_interval (pd.Timedelta): Timestep interval, assuming a constant interval between all timesteps.
         state_matrix (pd.DataFrame): State matrix.
         control_matrix (pd.DataFrame): Control matrix.
         disturbance_matrix (pd.DataFrame): Disturbance matrix.
@@ -83,7 +83,7 @@ class BuildingModel(object):
     disturbances: pd.Index
     outputs: pd.Index
     timesteps: pd.Index
-    timestep_delta: pd.Timedelta
+    timestep_interval: pd.Timedelta
     state_matrix: pd.DataFrame
     control_matrix: pd.DataFrame
     disturbance_matrix: pd.DataFrame
@@ -102,7 +102,7 @@ class BuildingModel(object):
             scenario_name: str,
             timestep_start=None,
             timestep_end=None,
-            timestep_delta=None,
+            timestep_interval=None,
             connect_electric_grid=True,
             connect_thermal_grid_cooling=False,
             connect_thermal_grid_heating=False,
@@ -119,7 +119,7 @@ class BuildingModel(object):
                 self.scenario_name,
                 timestep_start=timestep_start,
                 timestep_end=timestep_end,
-                timestep_delta=timestep_delta
+                timestep_interval=timestep_interval
             )
         )
 
@@ -565,7 +565,7 @@ class BuildingModel(object):
 
         # Obtain timesteps.
         self.timesteps = building_data.timesteps
-        self.timestep_delta = building_data.timestep_delta
+        self.timestep_interval = building_data.timestep_interval
 
         # Instantiate state space model matrices.
         self.state_matrix = pd.DataFrame(
@@ -4092,7 +4092,7 @@ class BuildingModel(object):
 
             state_matrix_discrete = scipy.linalg.expm(
                 self.state_matrix.values
-                * self.timestep_delta.seconds
+                * self.timestep_interval.seconds
             )
             control_matrix_discrete = (
                 np.linalg.matrix_power(

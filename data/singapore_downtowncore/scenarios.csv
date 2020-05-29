@@ -1,4 +1,4 @@
-scenario_name,building_name,parameter_set,linearization_type,initial_state_type,demand_controlled_ventilation_type,co2_model_type,humidity_model_type,heating_cooling_session,price_type,time_start,time_end,time_step
+scenario_name,building_name,parameter_set,linearization_type,initial_state_type,demand_controlled_ventilation_type,co2_model_type,humidity_model_type,heating_cooling_session,price_type,timestep_start,timestep_end,timestep_interval
 39487263,39487263,create_parameters,create_linearization,cea_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 43755562,43755562,create_parameters,create_linearization,cea_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
 43755568,43755568,create_parameters,create_linearization,cea_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00

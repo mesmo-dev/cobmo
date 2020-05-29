@@ -128,9 +128,9 @@ CREATE TABLE IF NOT EXISTS "scenarios" (
     "humidity_model_type" TEXT,
     "heating_cooling_session" TEXT,
     "price_type" TEXT,
-    "time_start" TEXT,
-    "time_end" TEXT,
-    "time_step" TEXT
+    "timestep_start" TEXT,
+    "timestep_end" TEXT,
+    "timestep_interval" TEXT
 );
 CREATE TABLE IF NOT EXISTS "storage_types" (
     "building_storage_type" TEXT,

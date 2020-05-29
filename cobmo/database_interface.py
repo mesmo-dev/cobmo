@@ -98,7 +98,7 @@ class BuildingData(object):
             is established.
         timestep_start (pd.Timestamp): If provided, will used in place of `timestep_start` in the scenario definition.
         timestep_end (pd.Timestamp): If provided, will used in place of `timestep_end` in the scenario definition.
-        timestep_delta (pd.Timedelta): If provided, will used in place of `timestep_delta` in the scenario definition.
+        timestep_interval (pd.Timedelta): If provided, will used in place of `timestep_interval` in the scenario definition.
 
     Attributes:
         scenario_name (str): CoBMo building scenario name
@@ -110,7 +110,7 @@ class BuildingData(object):
         zones (pd.DataFrame): Zones table, containing only data related to the given scenario.
         timestep_start (pd.Timestamp): Start timestep.
         timestep_end (pd.Timestamp): End timestep.
-        timestep_delta (pd.Timedelta): Time interval between timesteps.
+        timestep_interval (pd.Timedelta): Time interval between timesteps.
         timesteps (pd.Index): Index set of the timesteps.
         weather_timeseries (pd.DataFrame): Weather timeseries for the given scenario.
         electricity_price_timeseries (pd.DataFrame): Electricity price timeseries for the given scenario.
@@ -129,7 +129,7 @@ class BuildingData(object):
     zones: pd.DataFrame
     timestep_start: pd.Timestamp
     timestep_end: pd.Timestamp
-    timestep_delta: pd.Timedelta
+    timestep_interval: pd.Timedelta
     timesteps: pd.Index
     weather_timeseries: pd.DataFrame
     electricity_price_timeseries: pd.DataFrame
@@ -143,7 +143,7 @@ class BuildingData(object):
             database_connection=connect_database(),
             timestep_start=None,
             timestep_end=None,
-            timestep_delta=None
+            timestep_interval=None
     ) -> None:
 
         # Store scenario name.
@@ -359,20 +359,20 @@ class BuildingData(object):
         if timestep_start is not None:
             self.timestep_start = pd.Timestamp(timestep_start)
         else:
-            self.timestep_start = pd.Timestamp(self.scenarios['time_start'])
+            self.timestep_start = pd.Timestamp(self.scenarios['timestep_start'])
         if timestep_end is not None:
             self.timestep_end = pd.Timestamp(timestep_end)
         else:
-            self.timestep_end = pd.Timestamp(self.scenarios['time_end'])
-        if timestep_delta is not None:
-            self.timestep_delta = pd.Timedelta(timestep_delta)
+            self.timestep_end = pd.Timestamp(self.scenarios['timestep_end'])
+        if timestep_interval is not None:
+            self.timestep_interval = pd.Timedelta(timestep_interval)
         else:
-            self.timestep_delta = pd.Timedelta(self.scenarios['time_step'])
+            self.timestep_interval = pd.Timedelta(self.scenarios['timestep_interval'])
         self.timesteps = pd.Index(
             pd.date_range(
                 start=self.timestep_start,
                 end=self.timestep_end,
-                freq=self.timestep_delta
+                freq=self.timestep_interval
             ),
             name='time'
         )
@@ -405,9 +405,9 @@ class BuildingData(object):
             ).interpolate(
                 'quadratic'
             ).bfill(
-                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
             ).ffill(
-                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
             )
         )
 
@@ -434,9 +434,9 @@ class BuildingData(object):
             ).interpolate(
                 'quadratic'
             ).bfill(
-                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
             ).ffill(
-                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
             )
         )
 
@@ -627,9 +627,9 @@ class BuildingData(object):
                 ).interpolate(
                     'quadratic'
                 ).bfill(
-                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
                 ).ffill(
-                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_delta))
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
                 )
             )
 

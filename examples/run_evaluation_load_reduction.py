@@ -170,14 +170,14 @@ for time_duration in set_time_duration:
             )
 
             # Calculate results.
-            # TODO: Move timestep_delta into building model.
-            timestep_delta = building.timesteps[1] - building.timesteps[0]
+            # TODO: Move timestep_interval into building model.
+            timestep_interval = building.timesteps[1] - building.timesteps[0]
             baseline_energy = (
                 output_vector_baseline.loc[
                     timestep:(timestep + time_duration),
                     output_vector_baseline.columns.str.contains('electric_power')
                 ].sum().sum()
-                * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
+                * timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
             )
             load_reduction_percent = - investment_cost_load_reduction  # In percent.
             load_reduction_energy = (
