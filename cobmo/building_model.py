@@ -3969,17 +3969,6 @@ class BuildingModel(object):
                 :, self.outputs.str.contains('_balance')
             ] = 0.0
 
-            # If a heating / cooling session is defined, the cooling / heating air flow is forced to 0.
-            # TODO: Remove heating / cooling session.
-            if building_data.scenarios['heating_cooling_session'] == 'heating':
-                self.output_constraint_timeseries_maximum.loc[
-                    :,  self.outputs.str.contains('_cool')
-                ] = 0.0
-            if building_data.scenarios['heating_cooling_session'] == 'cooling':
-                self.output_constraint_timeseries_maximum.loc[
-                    :,  self.outputs.str.contains('_heat')
-                ] = 0.0
-
             # Minimum / maximum constraint for zone air temperature.
             self.output_constraint_timeseries_minimum.loc[
                 :, building_data.zones['zone_name'] + '_temperature'

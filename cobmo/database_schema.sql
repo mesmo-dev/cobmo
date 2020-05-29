@@ -126,7 +126,6 @@ CREATE TABLE IF NOT EXISTS "scenarios" (
     "demand_controlled_ventilation_type" TEXT,
     "co2_model_type" TEXT,
     "humidity_model_type" TEXT,
-    "heating_cooling_session" TEXT,
     "price_type" TEXT,
     "timestep_start" TEXT,
     "timestep_end" TEXT,
