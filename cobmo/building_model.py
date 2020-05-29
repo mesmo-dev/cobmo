@@ -1,11 +1,9 @@
 """Building model module."""
 
-from multimethod import multimethod
 import numpy as np
 import pandas as pd
 import scipy.linalg
 import scipy.interpolate
-import sqlite3
 
 import cobmo.config
 import cobmo.database_interface
@@ -15,7 +13,69 @@ logger = cobmo.config.get_logger(__name__)
 
 
 class BuildingModel(object):
-    """Building model object."""
+    """Building model object consisting of the state space model for the given scenario. The model includes
+    index sets for states / controls / disturbances / outputs, the state / control / disturbance / state-output /
+    control-output / disturbance-output matrices and disturbance / electricity price / output constraint timeseries.
+
+    - The building model object constructs the state space model matrices and index sets
+      according to the building model equations which are documented CoBMo's technical documentation.
+    - The required `building_data` object for the given scenario is obtained from the database
+      through `cobmo.database_interface`.
+    - The building can be connected to the electric grid, the thermal grid or both, which is controlled through the
+      keyword arguments `connect_electric_grid` / `connect_thermal_grid_cooling` / `connect_thermal_grid_heating`
+      as explained below.
+
+    Syntax
+        ``BuildingModel(scenario_name)``: Instantiate building model for given `scenario_name`.
+
+    Arguments:
+        scenario_name (str): CoBMo building scenario name, as defined in the data table `scenarios`.
+
+    Keyword Arguments:
+        timestep_start (pd.Timestamp): If provided, will used in place of `timestep_start` in the scenario definition.
+        timestep_end (pd.Timestamp): If provided, will used in place of `timestep_end` in the scenario definition.
+        timestep_delta (pd.Timedelta): If provided, will used in place of `timestep_delta` in the scenario definition.
+        connect_electric_grid (bool): If true, the output variable `grid_electric_power` will be defined to express the
+            total electric power demand at the electric grid connection point. Additionally, the control variables
+            `plant_thermal_power_cooling` / `plant_thermal_power_heating` will be defined to enable controlling how much
+            of the thermal demand is supplied through a local cooling / heating plant, hence translating the
+            thermal demand into electric demand.
+        connect_thermal_grid_cooling (bool): If true, the output variable `grid_thermal_power_cooling` will be defined
+            to express the thermal power cooling demand at the thermal cooling grid (district cooling system)
+            connection point. Additionally, the control variable `grid_thermal_power_cooling` will be defined to
+            allow controlling how much of the thermal demand is supplied through the thermal grid connection (as
+            opposed to supplying it through a local cooling plant.
+        connect_thermal_grid_heating (bool): If true, the output variable `grid_thermal_power_cooling` will be defined
+            to express the thermal power heating demand at the thermal heating grid (district heating system)
+            connection point. Additionally, the control variable `grid_thermal_power_heating` will be defined to
+            allow controlling how much of the thermal demand is supplied through the thermal grid connection (as
+            opposed to supplying it through a local heating plant.
+        with_validation_outputs (bool): If true, additional validation output variables for the surface temperature,
+            surface exterior irradiation heat transfer and surface interior convection heat transfer will be defined.
+
+    Attributes:
+        scenario_name (str): CoBMo building scenario name.
+        building_data (cobmo.database_interface.BuildingData): CoBMo scenario data object.
+        states (pd.Index): Index set of the state variables.
+        controls (pd.Index): Index set of the control variables.
+        disturbances (pd.Index): Index set of the disturbance variables.
+        outputs (pd.Index): Index set of the output variables.
+        timesteps (pd.Index): Index set of the timesteps.
+        timestep_delta (pd.Timedelta): Timestep interval, assuming a constant interval between all timesteps.
+        state_matrix (pd.DataFrame): State matrix.
+        control_matrix (pd.DataFrame): Control matrix.
+        disturbance_matrix (pd.DataFrame): Disturbance matrix.
+        state_output_matrix (pd.DataFrame): State output matrix.
+        control_output_matrix (pd.DataFrame): Control output matrix.
+        disturbance_output_matrix (pd.DataFrame): Disturbance output matrix.
+        state_vector_initial (pd.Series): Initial state vector, describing the state variable values at
+            the first timestep.
+        disturbance_timeseries (pd.DataFrame): Disturbance timeseries.
+        electricity_price_timeseries (pd.DataFrame): Electricity price timeseries.
+        electricity_price_distribution_timeseries (pd.DataFrame): Electricity price value distribution timeseries.
+        output_constraint_timeseries_maximum (pd.DataFrame): Maximum output constraint timeseries.
+        output_constraint_timeseries_minimum (pd.DataFrame): Minimum output constraint timeseries.
+    """
 
     scenario_name: str
     building_data: cobmo.database_interface.BuildingData
@@ -38,7 +98,6 @@ class BuildingModel(object):
     output_constraint_timeseries_maximum: pd.DataFrame
     output_constraint_timeseries_minimum: pd.DataFrame
 
-    @multimethod
     def __init__(
             self,
             scenario_name: str,
