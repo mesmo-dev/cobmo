@@ -1,7 +1,6 @@
 """Database interface function definitions."""
 
 import glob
-from multimethod import multimethod
 import numpy as np
 import os
 import pandas as pd
@@ -84,8 +83,44 @@ def connect_database(
 
 
 class BuildingData(object):
-    """Building data object."""
+    """Building data object consisting of building data items for the given scenario. The data items are loaded from
+    the database on instantiation. Furthermore, parameters in the data tables are substituted with their numerical
+    values and timeseries definitions are interpolated from timeseries tables or parsed from schedules where applicable.
 
+    Syntax
+        `BuildingData(scenario_name): Instantiate building data object for given `scenario_name`.
+
+    Parameters:
+        scenario_name (str): CoBMo building scenario name, as defined in the data table `scenarios`.
+
+    Keyword Arguments:
+        database_connection (sqlite3.Connection): Database connection object. If not provided, a new connection
+            is established.
+        timestep_start (pd.Timestamp): If provided, will used in place of `timestep_start` in the scenario definition.
+        timestep_end (pd.Timestamp): If provided, will used in place of `timestep_end` in the scenario definition.
+        timestep_delta (pd.Timedelta): If provided, will used in place of `timestep_delta` in the scenario definition.
+
+    Attributes:
+        scenario_name (str): CoBMo building scenario name
+        scenarios (pd.Series): Scenarios table, containing only the row related to the given scenario.
+        parameters (pd.Series): Parameters table, containing only data related to the given scenario.
+        surfaces_adiabatic (pd.DataFrame): Adiabatic surfaces table, containing only data related to the given scenario.
+        surfaces_exterior (pd.DataFrame): Exterior surfaces table, containing only data related to the given scenario.
+        surfaces_interior (pd.DataFrame): Interior surfaces table, containing only data related to the given scenario.
+        zones (pd.DataFrame): Zones table, containing only data related to the given scenario.
+        timestep_start (pd.Timestamp): Start timestep.
+        timestep_end (pd.Timestamp): End timestep.
+        timestep_delta (pd.Timedelta): Time interval between timesteps.
+        timesteps (pd.Index): Index set of the timesteps.
+        weather_timeseries (pd.DataFrame): Weather timeseries for the given scenario.
+        electricity_price_timeseries (pd.DataFrame): Electricity price timeseries for the given scenario.
+        electricity_price_distribution_timeseries (pd.DataFrame): Electricity price distribution timeseries for
+            the given scenario.
+        internal_gain_timeseries (pd.DataFrame): Internal gain timeseries for the given scenario.
+        constraint_timeseries (pd.DataFrame): Constraint timeseries for the given scenario.
+    """
+
+    scenario_name: str
     scenarios: pd.Series
     parameters: pd.Series
     surfaces_adiabatic: pd.DataFrame
