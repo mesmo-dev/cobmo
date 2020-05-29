@@ -102,8 +102,8 @@ class BuildingData(object):
 
     Attributes:
         scenario_name (str): CoBMo building scenario name
-        scenarios (pd.Series): Scenarios table, containing only the row related to the given scenario.
         parameters (pd.Series): Parameters table, containing only data related to the given scenario.
+        scenarios (pd.Series): Scenarios table, containing only the row related to the given scenario.
         surfaces_adiabatic (pd.DataFrame): Adiabatic surfaces table, containing only data related to the given scenario.
         surfaces_exterior (pd.DataFrame): Exterior surfaces table, containing only data related to the given scenario.
         surfaces_interior (pd.DataFrame): Interior surfaces table, containing only data related to the given scenario.
@@ -121,8 +121,8 @@ class BuildingData(object):
     """
 
     scenario_name: str
-    scenarios: pd.Series
     parameters: pd.Series
+    scenarios: pd.Series
     surfaces_adiabatic: pd.DataFrame
     surfaces_exterior: pd.DataFrame
     surfaces_interior: pd.DataFrame
@@ -149,9 +149,25 @@ class BuildingData(object):
         # Store scenario name.
         self.scenario_name = scenario_name
 
-        # Obtain building data.
-        self.scenarios = (
+        # Obtain parameters.
+        self.parameters = (
             pd.read_sql(
+                """
+                SELECT parameter_name, parameter_value FROM parameters 
+                WHERE parameter_set IN (
+                    'constants',
+                    (SELECT parameter_set FROM scenarios WHERE scenario_name = ?)
+                )
+                """,
+                con=database_connection,
+                params=[scenario_name],
+                index_col='parameter_name'
+            ).iloc[:, 0]  # Convert to Series for shorter indexing.
+        )
+
+        # Obtain scenarios.
+        self.scenarios = (
+            self.parse_parameters_dataframe(pd.read_sql(
                 """
                 SELECT * FROM scenarios 
                 JOIN buildings USING (building_name) 
@@ -162,21 +178,12 @@ class BuildingData(object):
                 """,
                 con=database_connection,
                 params=[self.scenario_name]
-            ).iloc[0]  # Convert to Series for shorter indexing.
+            )).iloc[0]  # Convert to Series for shorter indexing.
         )
-        self.parameters = (
-            pd.read_sql(
-                """
-                SELECT parameter_name, parameter_value FROM parameters 
-                WHERE parameter_set IN ('constants', ?)
-                """,
-                con=database_connection,
-                params=[self.scenarios['parameter_set']],
-                index_col='parameter_name'
-            ).iloc[:, 0]  # Convert to Series for shorter indexing.
-        )
+
+        # Obtain surface definitions.
         self.surfaces_adiabatic = (
-            pd.read_sql(
+            self.parse_parameters_dataframe(pd.read_sql(
                 """
                 SELECT * FROM surfaces_adiabatic 
                 JOIN surface_types USING (surface_type) 
@@ -189,11 +196,11 @@ class BuildingData(object):
                 """,
                 con=database_connection,
                 params=[scenario_name]
-            )
+            ))
         )
         self.surfaces_adiabatic.index = self.surfaces_adiabatic['surface_name']
         self.surfaces_exterior = (
-            pd.read_sql(
+            self.parse_parameters_dataframe(pd.read_sql(
                 """
                 SELECT * FROM surfaces_exterior 
                 JOIN surface_types USING (surface_type) 
@@ -206,11 +213,11 @@ class BuildingData(object):
                 """,
                 con=database_connection,
                 params=[self.scenario_name]
-            )
+            ))
         )
         self.surfaces_exterior.index = self.surfaces_exterior['surface_name']
         self.surfaces_interior = (
-            pd.read_sql(
+            self.parse_parameters_dataframe(pd.read_sql(
                 """
                 SELECT * FROM surfaces_interior 
                 JOIN surface_types USING (surface_type) 
@@ -223,11 +230,13 @@ class BuildingData(object):
                 """,
                 con=database_connection,
                 params=[self.scenario_name]
-            )
+            ))
         )
         self.surfaces_interior.index = self.surfaces_interior['surface_name']
+
+        # Obtain zone definitions.
         self.zones = (
-            pd.read_sql(
+            self.parse_parameters_dataframe(pd.read_sql(
                 """
                 SELECT * FROM zones 
                 JOIN zone_types USING (zone_type) 
@@ -244,116 +253,9 @@ class BuildingData(object):
                 """,
                 con=database_connection,
                 params=[self.scenario_name]
-            )
+            ))
         )
         self.zones.index = self.zones['zone_name']
-
-        # Define parameter parsing utility function.
-        @np.vectorize
-        def parse_parameter(parameter_string):
-            """Parse parameter utility function.
-            - Convert given parameter string as `np.float`.
-            - If the parameter string is the name of a parameter from `parameters`, return that parameter.
-            - If the parameter string is `None`, `NaN` is returned.
-            """
-            try:
-                return np.float(parameter_string)
-            except ValueError:
-                return self.parameters[parameter_string]
-            except TypeError:
-                return np.nan
-
-        # Parse parameters.
-        scenarios_numerical_columns = [
-            'linearization_zone_air_temperature_heat',
-            'linearization_zone_air_temperature_cool',
-            'linearization_surface_temperature',
-            'linearization_exterior_surface_temperature',
-            'linearization_internal_gain_occupancy',
-            'linearization_internal_gain_appliances',
-            'linearization_ambient_air_temperature',
-            'linearization_sky_temperature',
-            'linearization_ambient_air_humidity_ratio',
-            'linearization_zone_air_humidity_ratio',
-            'linearization_irradiation',
-            'linearization_co2_concentration',
-            'linearization_ventilation_rate_per_square_meter',
-            'initial_zone_temperature',
-            'initial_surface_temperature',
-            'initial_co2_concentration',
-            'initial_absolute_humidity',
-            'initial_sensible_thermal_storage_state_of_charge',
-            'initial_battery_storage_state_of_charge',
-            'storage_size',
-            'storage_round_trip_efficiency',
-            'storage_battery_depth_of_discharge',
-            'storage_sensible_temperature_delta',
-            'storage_lifetime',
-            'storage_planning_energy_installation_cost',
-            'storage_planning_power_installation_cost',
-            'storage_planning_fixed_installation_cost'
-        ]
-        self.scenarios.loc[scenarios_numerical_columns] = (
-            self.scenarios.loc[scenarios_numerical_columns].apply(parse_parameter)
-        )
-        building_surfaces_numerical_columns = [
-            'surface_area',
-            'heat_capacity',
-            'thermal_resistance_surface',
-            'absorptivity',
-            'emissivity',
-            'window_wall_ratio',
-            'sky_view_factor',
-            'thermal_resistance_window',
-            'absorptivity_window',
-            'emissivity_window',
-            'zone_height',
-            'zone_area'
-        ]
-        self.surfaces_adiabatic.loc[:, building_surfaces_numerical_columns] = (
-            self.surfaces_adiabatic.loc[:, building_surfaces_numerical_columns].apply(parse_parameter)
-        )
-        self.surfaces_exterior.loc[:, building_surfaces_numerical_columns] = (
-            self.surfaces_exterior.loc[:, building_surfaces_numerical_columns].apply(parse_parameter)
-        )
-        self.surfaces_interior.loc[:, building_surfaces_numerical_columns] = (
-            self.surfaces_interior.loc[:, building_surfaces_numerical_columns].apply(parse_parameter)
-        )
-        zones_numerical_columns = [
-            'zone_area',
-            'zone_height',
-            'heat_capacity',
-            'infiltration_rate',
-            'internal_gain_occupancy_factor',
-            'internal_gain_appliances_factor',
-            'blind_efficiency',
-            'generic_heating_efficiency',
-            'generic_cooling_efficiency',
-            'radiator_supply_temperature_nominal',
-            'radiator_return_temperature_nominal',
-            'radiator_panel_number',
-            'radiator_panel_area',
-            'radiator_panel_thickness',
-            'radiator_water_volume',
-            'radiator_convection_coefficient',
-            'radiator_emissivity',
-            'radiator_hull_conductivity',
-            'radiator_hull_heat_capacity',
-            'radiator_fin_effectiveness',
-            'ahu_supply_air_temperature_setpoint',
-            'ahu_supply_air_relative_humidity_setpoint',
-            'ahu_fan_efficiency',
-            'ahu_cooling_efficiency',
-            'ahu_heating_efficiency',
-            'ahu_return_air_heat_recovery_efficiency',
-            'tu_supply_air_temperature_setpoint',
-            'tu_fan_efficiency',
-            'tu_cooling_efficiency',
-            'tu_heating_efficiency'
-        ]
-        self.zones.loc[:, zones_numerical_columns] = (
-            self.zones.loc[:, zones_numerical_columns].apply(parse_parameter)
-        )
 
         # Obtain timestep data.
         if timestep_start is not None:
@@ -649,42 +551,25 @@ class BuildingData(object):
             )
 
         # Obtain constraint timeseries based on schedules.
-        constraint_schedule = pd.read_sql(
-            """
-            SELECT * FROM constraint_schedules 
-            WHERE constraint_type IN (
-                SELECT DISTINCT constraint_type FROM zones
-                JOIN zone_types USING (zone_type) 
-                WHERE building_name = (
-                    SELECT building_name from scenarios 
-                    WHERE scenario_name = ?
+        constraint_schedule = (
+            self.parse_parameters_dataframe(pd.read_sql(
+                """
+                SELECT * FROM constraint_schedules 
+                WHERE constraint_type IN (
+                    SELECT DISTINCT constraint_type FROM zones
+                    JOIN zone_types USING (zone_type) 
+                    WHERE building_name = (
+                        SELECT building_name from scenarios 
+                        WHERE scenario_name = ?
+                    )
                 )
-            )
-            """,
-            con=database_connection,
-            params=[self.scenario_name],
-            index_col='time_period'
+                """,
+                con=database_connection,
+                params=[self.scenario_name],
+                index_col='time_period'
+            ))
         )
         if len(constraint_schedule) > 0:
-
-            # Parse parameters.
-            constraint_schedule_numerical_columns = [
-                'minimum_air_temperature',
-                'maximum_air_temperature',
-                'minimum_fresh_air_flow_per_area',
-                'minimum_fresh_air_flow_per_person',
-                'maximum_co2_concentration',
-                'minimum_fresh_air_flow_per_area_no_dcv',
-                'minimum_relative_humidity',
-                'maximum_relative_humidity'
-            ]
-            constraint_schedule.loc[
-                :, constraint_schedule_numerical_columns
-            ] = (
-                constraint_schedule.loc[
-                    :, constraint_schedule_numerical_columns
-                ].apply(parse_parameter)
-            )
 
             # Parse time period index.
             constraint_schedule.index = np.vectorize(pd.Period)(constraint_schedule.index)
@@ -751,3 +636,53 @@ class BuildingData(object):
             constraint_schedule = None
 
         self.constraint_timeseries = constraint_schedule
+
+    def parse_parameter(
+            self,
+            parameter_string: str
+    ):
+        """Parse parameter string to numerical value.
+        - Replace strings that match `parameter_name` with `parameter_value`.
+        - Other strings are are directly parsed into numbers.
+        - If a string doesn't match any match `parameter_name` and cannot be parsed, it is replaced with NaN.
+        """
+
+        try:
+            return np.float(parameter_string)
+        except ValueError:
+            return self.parameters[parameter_string]
+        except TypeError:
+            return np.nan
+
+    def parse_parameters_dataframe(
+            self,
+            dataframe: pd.DataFrame,
+            excluded_columns: list = None
+    ):
+        """Parse parameters into a dataframe.
+        - Applies `parse_parameter` for all string columns.
+        - Columns in `excluded_columns` are not parsed. By default this includes `_name`, `_type`, `connection` columns.
+        """
+
+        # Define excluded columns. By default, all columns containing the following strings are excluded:
+        # `_name`, `_type`, `connection`
+        if excluded_columns is None:
+            excluded_columns = []
+        excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('_name')])
+        excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('_type')])
+        excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('_comment')])
+        excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('parameter_set')])
+        excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('time')])
+
+        # Select non-excluded, string columns and apply `parse_parameter`.
+        selected_columns = (
+            dataframe.columns[
+                ~dataframe.columns.isin(excluded_columns)
+                & (dataframe.dtypes == object)  # `object` represents string type.
+            ]
+        )
+        dataframe.loc[:, selected_columns] = (
+            dataframe.loc[:, selected_columns].applymap(self.parse_parameter)
+        )
+
+        return dataframe

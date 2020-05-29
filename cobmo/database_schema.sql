@@ -133,14 +133,14 @@ CREATE TABLE IF NOT EXISTS "scenarios" (
 );
 CREATE TABLE IF NOT EXISTS "storage_types" (
     "building_storage_type" TEXT,
-    "storage_size" REAL,
-    "storage_round_trip_efficiency" REAL,
-    "storage_battery_depth_of_discharge"  REAL,
-    "storage_sensible_temperature_delta" REAL,
-    "storage_lifetime"  REAL,
-    "storage_planning_energy_installation_cost"   REAL,
-    "storage_planning_power_installation_cost"  REAL,
-    "storage_planning_fixed_installation_cost"  REAL
+    "storage_size" TEXT,
+    "storage_round_trip_efficiency" TEXT,
+    "storage_battery_depth_of_discharge"  TEXT,
+    "storage_sensible_temperature_delta" TEXT,
+    "storage_lifetime"  TEXT,
+    "storage_planning_energy_installation_cost"   TEXT,
+    "storage_planning_power_installation_cost"  TEXT,
+    "storage_planning_fixed_installation_cost"  TEXT
 );
 CREATE TABLE IF NOT EXISTS "surface_types" (
     "surface_type" TEXT,
