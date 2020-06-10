@@ -9,16 +9,14 @@ import cobmo.building_model
 import cobmo.config
 import cobmo.optimization_problem
 import cobmo.database_interface
+import cobmo.utils
 
 
 def main():
 
     # Settings.
     scenario_name = '43755562'
-    results_path = os.path.join(cobmo.config.config['paths']['results'], f'run_evaluation_minimum_load_{cobmo.config.timestamp}')
-
-    # Instantiate results directory.
-    os.mkdir(results_path)
+    results_path = cobmo.utils.get_results_path(f'run_evaluation_minimum_load_{scenario_name}')
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.database_interface.recreate_database()

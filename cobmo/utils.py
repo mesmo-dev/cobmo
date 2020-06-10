@@ -1,6 +1,7 @@
 """Utility functions module."""
 
 from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
+import datetime
 import itertools
 import matplotlib.pyplot as plt
 import matplotlib.ticker
@@ -8,6 +9,7 @@ import numpy as np
 import os
 import pandas as pd
 import pvlib
+import re
 import seaborn
 import typing
 
@@ -461,3 +463,38 @@ def calculate_discounted_payback_time(
         simple_payback_time,
         discounted_payback_time,
     )
+
+
+def get_timestamp(
+        time: datetime.datetime = None
+) -> str:
+    """Generate formatted timestamp string, e.g., for saving results with timestamp."""
+
+    if time is None:
+        time = datetime.datetime.now()
+
+    return time.strftime('%Y-%m-%d_%H-%M-%S')
+
+
+def get_results_path(
+        name: str,
+) -> str:
+    """Generate results path, which is a new subfolder in the results directory. The subfolder name is
+    assembled of the given name string and current timestamp. The new subfolder is
+    created on disk along with this.
+    """
+
+    # Obtain results path.
+    results_path = (
+        os.path.join(
+            cobmo.config.config['paths']['results'],
+            # Remove non-alphanumeric characters, except `_`, then append timestamp string.
+            re.sub(r'\W+', '', f'{name}_') + cobmo.utils.get_timestamp()
+        )
+    )
+
+    # Instantiate results directory.
+    # TODO: Catch error if dir exists.
+    os.mkdir(results_path)
+
+    return results_path

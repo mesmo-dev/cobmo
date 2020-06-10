@@ -8,16 +8,14 @@ import cobmo.building_model
 import cobmo.config
 import cobmo.optimization_problem
 import cobmo.database_interface
+import cobmo.utils
 
 
 def main():
 
     # Settings.
     scenario_name = 'create_level8_4zones_a'
-    results_path = os.path.join(cobmo.config.config['paths']['results'], f'run_evaluation_energy_use_{cobmo.config.timestamp}')
-
-    # Instantiate results directory.
-    os.mkdir(results_path)
+    results_path = cobmo.utils.get_results_path(f'run_evaluation_energy_use_{scenario_name}')
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.database_interface.recreate_database()

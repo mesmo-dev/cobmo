@@ -16,14 +16,11 @@ def main():
 
     # Settings.
     scenario_name = 'validation_1zone_no_window'
-    results_path = os.path.join(cobmo.config.config['paths']['results'], f'run_validation_{cobmo.config.timestamp}')
+    results_path = cobmo.utils.get_results_path(f'run_validation_{scenario_name}')
     validation_data_path = os.path.join(cobmo.config.config['paths']['data'], 'supplementary_data', 'validation')
 
-    # Recreate database.
+    # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.database_interface.recreate_database()
-
-    # Instantiate results directory.
-    os.mkdir(results_path)
 
     # Obtain building model.
     building = (
