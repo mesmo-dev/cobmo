@@ -96,9 +96,9 @@ class BuildingData(object):
     Keyword Arguments:
         database_connection (sqlite3.Connection): Database connection object. If not provided, a new connection
             is established.
-        timestep_start (pd.Timestamp): If provided, will used in place of `timestep_start` in the scenario definition.
-        timestep_end (pd.Timestamp): If provided, will used in place of `timestep_end` in the scenario definition.
-        timestep_interval (pd.Timedelta): If provided, will used in place of `timestep_interval` in the scenario definition.
+        timestep_start (pd.Timestamp): If provided, will used in place of `timestep_start` from the scenario definition.
+        timestep_end (pd.Timestamp): If provided, will used in place of `timestep_end` from the scenario definition.
+        timestep_interval (pd.Timedelta): If provided, will used in place of `timestep_interval` from the scenario definition.
 
     Attributes:
         scenario_name (str): CoBMo building scenario name

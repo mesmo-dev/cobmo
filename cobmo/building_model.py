@@ -33,9 +33,9 @@ class BuildingModel(object):
         scenario_name (str): CoBMo building scenario name, as defined in the data table `scenarios`.
 
     Keyword Arguments:
-        timestep_start (pd.Timestamp): If provided, will used in place of `timestep_start` in the scenario definition.
-        timestep_end (pd.Timestamp): If provided, will used in place of `timestep_end` in the scenario definition.
-        timestep_interval (pd.Timedelta): If provided, will used in place of `timestep_interval` in the scenario definition.
+        timestep_start (pd.Timestamp): If provided, will used in place of `timestep_start` from the scenario definition.
+        timestep_end (pd.Timestamp): If provided, will used in place of `timestep_end` from the scenario definition.
+        timestep_interval (pd.Timedelta): If provided, will used in place of `timestep_interval` from the scenario definition.
         connect_electric_grid (bool): If true, the output variable `grid_electric_power` will be defined to express the
             total electric power demand at the electric grid connection point. Additionally, the control variables
             `plant_thermal_power_cooling` / `plant_thermal_power_heating` will be defined to enable controlling how much
