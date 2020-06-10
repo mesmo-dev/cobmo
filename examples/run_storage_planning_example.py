@@ -6,7 +6,7 @@ import pandas as pd
 import cobmo.building_model
 import cobmo.config
 import cobmo.optimization_problem
-import cobmo.database_interface
+import cobmo.data_interface
 import cobmo.utils
 
 
@@ -28,7 +28,7 @@ def main():
     print("pricing_method = {}".format(price_type))
 
     # Obtain a connection to the database.
-    database_connection = cobmo.database_interface.connect_database()
+    database_connection = cobmo.data_interface.connect_database()
 
     # Load selected database tables for modification.
     scenarios = pd.read_sql(

@@ -19,9 +19,9 @@
 ``` automodule:: cobmo.optimization_problem
 ```
 
-## `cobmo.database_interface`
+## `cobmo.data_interface`
 
-``` automodule:: cobmo.database_interface
+``` automodule:: cobmo.data_interface
 ```
 
 ## `cobmo.plots`

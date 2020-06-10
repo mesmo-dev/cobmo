@@ -7,7 +7,7 @@ import scipy.interpolate
 import typing
 
 import cobmo.config
-import cobmo.database_interface
+import cobmo.data_interface
 import cobmo.utils
 
 logger = cobmo.config.get_logger(__name__)
@@ -21,7 +21,7 @@ class BuildingModel(object):
     - The building model object constructs the state space model matrices and index sets
       according to the building model equations which are documented CoBMo's technical documentation.
     - The required `building_data` object for the given scenario is obtained from the database
-      through `cobmo.database_interface`.
+      through `cobmo.data_interface`.
     - The building can be connected to the electric grid, the thermal grid or both, which is controlled through the
       keyword arguments `connect_electric_grid` / `connect_thermal_grid_cooling` / `connect_thermal_grid_heating`
       as explained below.
@@ -115,7 +115,7 @@ class BuildingModel(object):
         # Obtain building data.
         # TODO: Match timestep defintions with FLEDGE.
         building_data = (
-            cobmo.database_interface.BuildingData(
+            cobmo.data_interface.BuildingData(
                 self.scenario_name,
                 timestep_start=timestep_start,
                 timestep_end=timestep_end,

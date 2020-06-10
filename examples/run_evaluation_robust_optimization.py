@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 import cobmo.building_model
 import cobmo.config
 import cobmo.optimization_problem
-import cobmo.database_interface
+import cobmo.data_interface
 import cobmo.utils
 
 
@@ -19,7 +19,7 @@ def main():
     results_path = cobmo.utils.get_results_path(f'run_evaluation_robust_optimization_{scenario_name}')
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
-    cobmo.database_interface.recreate_database()
+    cobmo.data_interface.recreate_database()
 
     # Obtain building model.
     building = cobmo.building_model.BuildingModel(scenario_name)

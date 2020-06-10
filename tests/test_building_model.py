@@ -7,12 +7,12 @@ import unittest
 
 import cobmo.building_model
 import cobmo.config
-import cobmo.database_interface
+import cobmo.data_interface
 
 logger = cobmo.config.get_logger(__name__)
 
 # Obtain database connection.
-database_connection = cobmo.database_interface.connect_database()
+database_connection = cobmo.data_interface.connect_database()
 
 # Obtain scenario names.
 scenario_names = (

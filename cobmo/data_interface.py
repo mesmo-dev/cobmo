@@ -13,16 +13,12 @@ logger = cobmo.config.get_logger(__name__)
 
 
 def recreate_database(
-        database_path: str = cobmo.config.config['paths']['database'],
-        database_schema_path: str = os.path.join(cobmo.config.base_path, 'cobmo', 'database_schema.sql'),
-        data_path: str = cobmo.config.config['paths']['data'],
-        additional_data_paths: typing.List[str] = None
+        additional_data_paths: typing.List[str] = cobmo.config.config['paths']['additional_data']
 ) -> None:
-    """Recreate SQLITE database from SQL schema file and CSV files."""
+    """Recreate SQLITE database from SQL schema file and CSV files in the data path / additional data paths."""
 
-    # Connect SQLITE database. Creates file, if none.
-    database_connection = sqlite3.connect(database_path)
-    database_connection.text_factory = str  # Allows UTF-8 data to be stored.
+    # Connect SQLITE database (creates file, if none).
+    database_connection = sqlite3.connect(cobmo.config.config['paths']['database'])
     cursor = database_connection.cursor()
 
     # Remove old data, if any.
@@ -36,24 +32,29 @@ def recreate_database(
     )
 
     # Recreate SQLITE database schema from SQL schema file.
-    with open(database_schema_path, 'r') as database_schema_file:
+    with open(os.path.join(cobmo.config.base_path, 'cobmo', 'data_schema.sql'), 'r') as database_schema_file:
         cursor.executescript(database_schema_file.read())
     database_connection.commit()
 
     # Import CSV files into SQLITE database.
-    csv_paths = ([data_path] + additional_data_paths) if additional_data_paths is not None else [data_path]
-    for csv_path in csv_paths:
-        for file in glob.glob(os.path.join(csv_path, '**', '*.csv'), recursive=True):
+    # - Import only from data path, if no additional data paths are specified.
+    data_paths = (
+        [cobmo.config.config['paths']['data']] + additional_data_paths
+        if additional_data_paths is not None
+        else [cobmo.config.config['paths']['data']]
+    )
+    for data_path in data_paths:
+        for csv_file in glob.glob(os.path.join(data_path, '**', '*.csv'), recursive=True):
 
             # Exclude CSV files from supplementary data folders.
-            if os.path.join('data', 'supplementary_data') not in file:
+            if os.path.join('data', 'supplementary_data') not in csv_file:
 
                 # Obtain table name.
-                table_name = os.path.splitext(os.path.basename(file))[0]
+                table_name = os.path.splitext(os.path.basename(csv_file))[0]
 
                 # Write new table content.
-                logger.debug(f"Loading {file} into database.")
-                table = pd.read_csv(file)
+                logger.debug(f"Loading {csv_file} into database.")
+                table = pd.read_csv(csv_file)
                 table.to_sql(
                     table_name,
                     con=database_connection,
@@ -65,20 +66,16 @@ def recreate_database(
     database_connection.close()
 
 
-def connect_database(
-        database_path: str = cobmo.config.config['paths']['database']
-) -> sqlite3.Connection:
-    """Connect to the database at given `data_path` and return connection handle."""
+def connect_database() -> sqlite3.Connection:
+    """Connect to the database and return connection handle."""
 
     # Recreate database, if no database exists.
-    if not os.path.isfile(database_path):
-        logger.debug(f"Database does not exist and is recreated at: {database_path}")
-        recreate_database(
-            database_path=database_path
-        )
+    if not os.path.isfile(cobmo.config.config['paths']['database']):
+        logger.debug(f"Database does not exist and is recreated at: {cobmo.config.config['paths']['database']}")
+        recreate_database()
 
-    # Obtain connection.
-    database_connection = sqlite3.connect(database_path)
+    # Obtain connection handle.
+    database_connection = sqlite3.connect(cobmo.config.config['paths']['database'])
     return database_connection
 
 
@@ -665,8 +662,7 @@ class BuildingData(object):
           `parameter_set`, `time` columns.
         """
 
-        # Define excluded columns. By default, all columns containing the following strings are excluded:
-        # `_name`, `_type`, `connection`
+        # Define excluded columns.
         if excluded_columns is None:
             excluded_columns = []
         excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('_name')])
