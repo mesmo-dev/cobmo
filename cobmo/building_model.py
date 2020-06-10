@@ -123,6 +123,10 @@ class BuildingModel(object):
             )
         )
 
+        # Store building data.
+        # TODO: Remove building data object dependencies.
+        self.building_data = building_data
+
         # Add constant timeseries in disturbance vector, if any CO2 model or HVAC or window.
         self.define_constant = (
             pd.notnull(building_data.scenarios['co2_model_type'])
