@@ -25,7 +25,7 @@ run_simulation = True  # Please note: Change `read_path` manually for plotting w
 # Set results path and create the directory.
 results_path = (
     os.path.join(
-        cobmo.config.results_path,
+        cobmo.config.config['paths']['results'],
         'run_bes_cases__' + case + '__' + '{:.2f}'.format(interest_rate) + '__' + price_type + '__' + cobmo.config.timestamp
     )
 )

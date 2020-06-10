@@ -17,7 +17,7 @@ import cobmo.utils
 scenario_name = 'validation_1zone_radiator'
 
 # Set results path and create the directory.
-results_path = os.path.join(cobmo.config.results_path, 'run_example_' + cobmo.config.timestamp)
+results_path = os.path.join(cobmo.config.config['paths']['results'], 'run_example_' + cobmo.config.timestamp)
 os.mkdir(results_path)
 
 # Obtain a connection to the database.

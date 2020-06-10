@@ -16,8 +16,8 @@ def main():
 
     # Settings.
     scenario_name = 'validation_1zone_no_window'
-    results_path = os.path.join(cobmo.config.results_path, f'run_validation_{cobmo.config.timestamp}')
-    validation_data_path = os.path.join(cobmo.config.data_path, 'supplementary_data', 'validation')
+    results_path = os.path.join(cobmo.config.config['paths']['results'], f'run_validation_{cobmo.config.timestamp}')
+    validation_data_path = os.path.join(cobmo.config.config['paths']['data'], 'supplementary_data', 'validation')
 
     # Recreate database.
     cobmo.database_interface.recreate_database()

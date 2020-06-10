@@ -14,7 +14,7 @@ def main():
 
     # Settings.
     scenario_name = 'create_level8_4zones_a'
-    results_path = os.path.join(cobmo.config.results_path, f'run_example_{cobmo.config.timestamp}')
+    results_path = os.path.join(cobmo.config.config['paths']['results'], f'run_example_{cobmo.config.timestamp}')
 
     # Instantiate results directory.
     os.mkdir(results_path)

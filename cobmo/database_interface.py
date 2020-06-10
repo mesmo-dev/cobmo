@@ -13,9 +13,9 @@ logger = cobmo.config.get_logger(__name__)
 
 
 def recreate_database(
-        database_path: str = cobmo.config.database_path,
-        database_schema_path: str = os.path.join(cobmo.config.cobmo_path, 'cobmo', 'database_schema.sql'),
-        data_path: str = cobmo.config.data_path,
+        database_path: str = cobmo.config.config['paths']['database'],
+        database_schema_path: str = os.path.join(cobmo.config.base_path, 'cobmo', 'database_schema.sql'),
+        data_path: str = cobmo.config.config['paths']['data'],
         additional_data_paths: typing.List[str] = None
 ) -> None:
     """Recreate SQLITE database from SQL schema file and CSV files."""
@@ -66,7 +66,7 @@ def recreate_database(
 
 
 def connect_database(
-        database_path: str = cobmo.config.database_path
+        database_path: str = cobmo.config.config['paths']['database']
 ) -> sqlite3.Connection:
     """Connect to the database at given `data_path` and return connection handle."""
 

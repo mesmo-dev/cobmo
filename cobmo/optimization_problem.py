@@ -40,7 +40,7 @@ class OptimizationProblem(object):
         self.electricity_price_distribution_timeseries = self.building.electricity_price_distribution_timeseries.copy()
 
         self.problem = pyo.ConcreteModel()
-        self.solver = pyo.SolverFactory(cobmo.config.solver_name)
+        self.solver = pyo.SolverFactory(cobmo.config.config['optimization']['solver_name'])
         self.result = None
 
         # Define variables.
@@ -355,7 +355,7 @@ class OptimizationProblem(object):
         time_start = time.clock()
         self.result = self.solver.solve(
             self.problem,
-            tee=cobmo.config.solver_output  # If True, activate verbose solver output.
+            tee=cobmo.config.config['optimization']['show_solver_output']  # If True, activate verbose solver output.
         )
 
         # Print solve time for debugging.

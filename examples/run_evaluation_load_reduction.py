@@ -17,7 +17,7 @@ import cobmo.utils
 scenario_name = 'paper_pesgm_2020'
 
 # Set results path and create the directory.
-results_path = os.path.join(cobmo.config.results_path, 'run_evaluation_load_reduction_' + cobmo.config.timestamp)
+results_path = os.path.join(cobmo.config.config['paths']['results'], 'run_evaluation_load_reduction_' + cobmo.config.timestamp)
 os.mkdir(results_path)
 os.mkdir(os.path.join(results_path, 'plots'))
 os.mkdir(os.path.join(results_path, 'details'))

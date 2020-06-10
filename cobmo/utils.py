@@ -1,6 +1,7 @@
-"""Utility function definitions."""
+"""Utility functions module."""
 
 from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
+import itertools
 import matplotlib.pyplot as plt
 import matplotlib.ticker
 import numpy as np
@@ -8,8 +9,31 @@ import os
 import pandas as pd
 import pvlib
 import seaborn
+import typing
 
 import cobmo.config
+
+
+def starmap(
+        function: typing.Callable,
+        argument_sequence: typing.List[tuple]
+) -> list:
+    """Utility function to execute a function for a sequence of arguments, effectively replacing a for-loop.
+    Allows running repeated function calls in-parallel, based on Python's `multiprocessing` module.
+
+    - If configuration parameter `run_parallel` is set to True, execution is passed to `starmap`
+      of `multiprocessing.Pool`, hence running the function calls in parallel.
+    - Otherwise, execution is passed to `itertools.starmap`, which is the non-parallel equivalent.
+    """
+
+    if cobmo.config.config['multiprocessing']['run_parallel']:
+        if cobmo.config.parallel_pool is None:
+            cobmo.config.parallel_pool = cobmo.config.get_parallel_pool()
+        results = cobmo.config.parallel_pool.starmap(function, argument_sequence)
+    else:
+        results = itertools.starmap(function, argument_sequence)
+
+    return results
 
 
 def calculate_absolute_humidity_humid_air(
@@ -291,7 +315,7 @@ def calculate_tank_diameter_height(
 
 def get_battery_parameters(
         battery_parameters_path=(
-            os.path.join(cobmo.config.data_path, 'supplementary_data', 'storage', 'battery_storage_parameters.csv')
+            os.path.join(cobmo.config.config['paths']['data'], 'supplementary_data', 'storage', 'battery_storage_parameters.csv')
         ),
         cost_conversion_factor=1.37  # USD to SGD (as of October 2019).
 ):
@@ -316,7 +340,7 @@ def calculate_discounted_payback_time(
         interest_rate=0.06,
         investment_type='',
         save_plots=False,
-        results_path=cobmo.config.results_path,
+        results_path=cobmo.config.config['paths']['results'],
         file_id=''
 ):
     """Calculate simple / discounted payback time in years."""

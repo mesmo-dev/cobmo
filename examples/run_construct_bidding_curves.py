@@ -14,8 +14,8 @@ import cobmo.database_interface
 def main():
 
     # Settings.
-    scenarios = pd.read_csv(os.path.join(cobmo.config.data_path, 'scenarios.csv'))
-    results_path = os.path.join(cobmo.config.results_path, f'run_construct_bidding_curves_{cobmo.config.timestamp}')
+    scenarios = pd.read_csv(os.path.join(cobmo.config.config['paths']['data'], 'scenarios.csv'))
+    results_path = os.path.join(cobmo.config.config['paths']['results'], f'run_construct_bidding_curves_{cobmo.config.timestamp}')
 
     # Instantiate results directory.
     os.mkdir(results_path)

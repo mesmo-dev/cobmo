@@ -23,7 +23,7 @@ save_csv = True
 # Set results path and create the directory.
 results_path = (
     os.path.join(
-        cobmo.config.results_path,
+        cobmo.config.config['paths']['results'],
         'run_storage_single__' + building_storage_type + '__' + price_type + '__' + cobmo.config.timestamp
     )
 )

@@ -17,7 +17,7 @@ class TestDatabaseInterface(unittest.TestCase):
         # Get result.
         time_start = time.time()
         cobmo.database_interface.recreate_database(
-            database_path=os.path.join(cobmo.config.data_path, 'database.sqlite')
+            database_path=os.path.join(cobmo.config.config['paths']['data'], 'database.sqlite')
         )
         time_duration = time.time() - time_start
         logger.info(f"Test recreate_database: Completed in {time_duration:.6f} seconds.")
@@ -38,7 +38,7 @@ class TestDatabaseInterface(unittest.TestCase):
     def test_building_data(self):
         # Get result.
         time_start = time.time()
-        cobmo.database_interface.BuildingData(cobmo.config.test_scenario_name)
+        cobmo.database_interface.BuildingData(cobmo.config.config['tests']['scenario_name'])
         time_duration = time.time() - time_start
         logger.info(f"Test BuildingData: Completed in {time_duration:.6f} seconds.")
 
