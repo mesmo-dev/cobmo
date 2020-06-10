@@ -672,8 +672,9 @@ class BuildingData(object):
         excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('_name')])
         excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('_type')])
         excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('_comment')])
-        excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('parameter_set')])
-        excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('time')])
+        excluded_columns.extend(dataframe.columns[dataframe.columns.isin(
+            ['parameter_set', 'time', 'time_period', 'timestep_start', 'timestep_end', 'timestep_interval', 'time_zone']
+        )])
 
         # Select non-excluded, string columns and apply `parse_parameter`.
         selected_columns = (
