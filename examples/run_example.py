@@ -17,9 +17,6 @@ def main():
     scenario_name = 'create_level8_4zones_a'
     results_path = cobmo.utils.get_results_path(f'run_example_{scenario_name}')
 
-    # Instantiate results directory.
-    os.mkdir(results_path)
-
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.data_interface.recreate_database()
 
