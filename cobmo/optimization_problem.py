@@ -25,7 +25,7 @@ class OptimizationProblem(object):
             price_sensitivity_timestep=None,
             load_maximization_time=None
     ):
-        time_start = time.clock()
+        time_start = time.time()
         self.building = building
         self.problem_type = problem_type
         self.output_vector_reference = output_vector_reference
@@ -346,23 +346,23 @@ class OptimizationProblem(object):
         )
 
         # Print setup time for debugging.
-        logger.debug("OptimizationProblem setup time: {:.2f} seconds".format(time.clock() - time_start))
+        logger.debug("OptimizationProblem setup time: {:.2f} seconds".format(time.time() - time_start))
 
     def solve(self):
         """Invoke solver on Pyomo problem."""
 
         # Solve problem.
-        time_start = time.clock()
+        time_start = time.time()
         self.result = self.solver.solve(
             self.problem,
             tee=cobmo.config.config['optimization']['show_solver_output']  # If True, activate verbose solver output.
         )
 
         # Print solve time for debugging.
-        logger.debug("OptimizationProblem solve time: {:.2f} seconds".format(time.clock() - time_start))
+        logger.debug("OptimizationProblem solve time: {:.2f} seconds".format(time.time() - time_start))
 
         # Retrieve results.
-        time_start = time.clock()
+        time_start = time.time()
         control_vector = pd.DataFrame(
             0.0,
             self.building.timesteps,
@@ -411,7 +411,7 @@ class OptimizationProblem(object):
             storage_size = None
 
         # Print results compilation time for debugging.
-        logger.debug("OptimizationProblem results compilation time: {:.2f} seconds".format(time.clock() - time_start))
+        logger.debug("OptimizationProblem results compilation time: {:.2f} seconds".format(time.time() - time_start))
 
         return (
             control_vector,

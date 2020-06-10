@@ -110,7 +110,7 @@ def main():
             columns=set_years
         )
 
-        time_start = time.clock()
+        time_start = time.time()
         counter = 0
         for battery_technology in set_battery_technologies:
             for year in set_years:
@@ -234,7 +234,7 @@ def main():
                 )
 
         # Print status info.
-        print("Simulation total solve time: {:.2f} minutes".format((time.clock() - time_start) / 60.0))
+        print("Simulation total solve time: {:.2f} minutes".format((time.time() - time_start) / 60.0))
 
         # Create `efficiency` and `energy_cost` dataframes for plotting.
         efficiency = battery_parameters['round_trip_efficiency'][:, :, case].unstack()
