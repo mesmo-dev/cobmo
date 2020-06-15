@@ -85,7 +85,7 @@ class BuildingData(object):
     values and timeseries definitions are interpolated from timeseries tables or parsed from schedules where applicable.
 
     Syntax
-        `BuildingData(scenario_name): Instantiate building data object for given `scenario_name`.
+        ``BuildingData(scenario_name)``: Instantiate building data object for given `scenario_name`.
 
     Parameters:
         scenario_name (str): CoBMo building scenario name, as defined in the data table `scenarios`.
