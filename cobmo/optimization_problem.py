@@ -3,21 +3,52 @@
 import pandas as pd
 import pyomo.environ as pyo
 import time as time
+import typing
 
+import cobmo.building_model
 import cobmo.config
 
 logger = cobmo.config.get_logger(__name__)
 
 
 class OptimizationProblem(object):
-    """Optimization problem object."""
+    """Optimization problem object consisting of the pyomo problem object which encapsulates optimization variables,
+    constraints and objective function definitions for given building model object and problem type.
+
+    - The `problem_type` keyword argument can be utilized to differentiate constraint and objective function definitions
+      depending on the optimization problem type, e.g., optimal operation vs. optimal storage planning.
+
+    Syntax
+        ``OptimizationProblem(building_model)``: Instantiate optimization problem for given `scenario_name`.
+        the problem type defaults to `operation`, if not specified as keyword argument.
+
+    Parameters:
+        building_model (cobmo.building_model.BuildingModel): Building model object.
+
+    Keyword Arguments:
+        problem_type (str): Optimization problem type. Choices: `operation`, `storage_planning`,
+            `storage_planning_baseline`, `load_reduction`, `price_sensitivity`, `load_maximization`,
+            `load_minimization`, `robust_optimization`. Default: `operation`
+        output_vector_reference (pd.DataFrame): Only for problem type `load_reduction`. Defines the reference
+            for which the load reduction is calculated.
+        load_reduction_start_time (pd.Timestamp): Only for problem type `load_reduction`. Defines the start time
+            for which the load reduction is calculated.
+        load_reduction_end_time (pd.Timestamp): Only for problem type `load_reduction`. Defines the end time
+            for which the load reduction is calculated.
+        price_sensitivity_factor: np.float: Only for problem type `price_sensitivity`. Defines the factor with which
+            the price value is modified.
+        price_sensitivity_timestep (pd.Timedelta): Only for problem type `price_sensitivity`. Defines the timstep for
+            which the price value is modified.
+        load_maximization_time (pd.Timestamp): Only for problem type `load_maximization`. Defines the timestep at
+            which the load is maximized.
+    """
 
     def __init__(
             self,
-            building,
+            building: cobmo.building_model.BuildingModel,
             problem_type='operation',
-            # Choices: 'operation', 'storage_planning', 'storage_planning_baseline', 'load_reduction',
-            # 'price_sensitivity', 'load_maximization', 'load_minimization', 'robust_optimization'
+            # Choices: `operation`, `storage_planning`, `storage_planning_baseline`, `load_reduction`,
+            # `price_sensitivity`, `load_maximization`, `load_minimization`, `robust_optimization`.
             output_vector_reference=None,
             load_reduction_start_time=None,
             load_reduction_end_time=None,
@@ -31,9 +62,9 @@ class OptimizationProblem(object):
         self.output_vector_reference = output_vector_reference
         self.load_reduction_start_time = load_reduction_start_time
         self.load_reduction_end_time = load_reduction_end_time
-        self.load_maximization_time = load_maximization_time
         self.price_sensitivity_factor = price_sensitivity_factor
         self.price_sensitivity_timestep = price_sensitivity_timestep
+        self.load_maximization_time = load_maximization_time
 
         # Copy `electricity_price_timeseries` to allow local modifications.
         self.electricity_price_timeseries = self.building.electricity_price_timeseries.copy()
@@ -349,7 +380,18 @@ class OptimizationProblem(object):
         logger.debug("OptimizationProblem setup time: {:.2f} seconds".format(time.time() - time_start))
 
     def solve(self):
-        """Invoke solver on Pyomo problem."""
+        """Solve the optimization and return the optimal solution results, i.e., control vector timeseries,
+        state vector timeseries, output vector timeseries, operation cost and storage size.
+
+        - Invokes the optimization solver defined in `config.yml` or `config_default.yml` on the pyomo problem object.
+        - If problem type is `load_reduction`, the returned investment cost value is the load reduction value.
+        - If problem type is not `storage_planning` or `storage_planning_baseline`, storage size is returned as None.
+
+        Returns:
+            typing.Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, np.float, np.float, np.float]: Tuple of
+            control vector timeseries, state vector timeseries, output vector timeseries, operation cost,
+            and storage size.
+        """
 
         # Solve problem.
         time_start = time.time()
