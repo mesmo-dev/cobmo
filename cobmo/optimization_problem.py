@@ -131,12 +131,10 @@ class OptimizationProblem(object):
             )
 
         # State equation constraint.
-        # TODO: Move timestep_interval into building model.
-        timestep_interval = self.building.timesteps[1] - self.building.timesteps[0]
         for state in self.building.states:
             for timestep in self.building.timesteps[:-1]:
                 self.problem.constraints.add(
-                    self.problem.variable_state_vector[timestep + timestep_interval, state]
+                    self.problem.variable_state_vector[timestep + self.building.timestep_interval, state]
                     ==
                     (
                         sum(
@@ -187,7 +185,7 @@ class OptimizationProblem(object):
             for timestep in self.building.timesteps:
                 # Minimum.
                 if ('temperature' in output) and (self.problem_type == 'load_maximization'):
-                    if timestep == (self.load_maximization_time + pd.to_timedelta('0.5h')):
+                    if timestep == (self.load_maximization_time + self.building.timestep_interval):
                         self.problem.constraints.add(
                             self.problem.variable_output_vector[timestep, output]
                             ==
@@ -256,21 +254,12 @@ class OptimizationProblem(object):
                     (timestep >= self.load_reduction_start_time)
                     and (timestep < self.load_reduction_end_time)
                 ):
-                    # TODO: Introduce total electric demand in building outputs.
                     self.problem.constraints.add(
-                        sum(
-                            self.problem.variable_output_vector[timestep, output]
-                            if (('electric_power' in output) and not ('storage_to_zone' in output)) else 0.0
-                            for output in self.building.outputs
-                        )
+                        self.problem.variable_output_vector[timestep, 'grid_electric_power']
                         ==
                         (
                             (1.0 - (self.problem.variable_load_reduction[0] / 100.0))
-                            * sum(
-                                self.output_vector_reference.loc[timestep, output]
-                                if (('electric_power' in output) and not ('storage_to_zone' in output)) else 0.0
-                                for output in self.building.outputs
-                            )
+                            * self.problem.variable_output_vector[timestep, 'grid_electric_power']
                         )
                     )
 
@@ -284,8 +273,10 @@ class OptimizationProblem(object):
                      * self.problem.variable_y[timestep])
                 )
                 self.problem.constraints.add(
-                    (self.problem.variable_output_vector[timestep, 'grid_electric_power']
-                    * timestep_interval.seconds / 3600.0 / 1000.0)
+                    (
+                        self.problem.variable_output_vector[timestep, 'grid_electric_power']
+                        * self.building.timestep_interval.seconds / 3600.0 / 1000.0
+                    )
                     <=
                     self.problem.variable_y[timestep]
                 )
@@ -298,7 +289,7 @@ class OptimizationProblem(object):
         if (self.problem_type == 'storage_planning') or (self.problem_type == 'storage_planning_baseline'):
             # Define operation cost factor to scale operation cost to the lifetime of storage.
             self.operation_cost_factor = (
-                (pd.to_timedelta('1y') / pd.to_timedelta(timestep_interval))  # Theoretical number of time steps in a year.
+                (pd.to_timedelta('1y') / pd.to_timedelta(self.building.timestep_interval))  # Time steps per year.
                 / len(self.building.timesteps)  # Actual number of time steps.
                 * self.building.building_data.scenarios['storage_lifetime']  # Storage lifetime in years.
                 * 14.0  # 14 levels at CREATE Tower. # TODO: Check if considered properly in storage size.
@@ -328,7 +319,7 @@ class OptimizationProblem(object):
                     if output == 'grid_electric_power':
                         self.operation_cost += (
                             self.problem.variable_output_vector[timestep, output]
-                            * timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
+                            * self.building.timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
                             * self.electricity_price_distribution_timeseries.loc[timestep, 'price_mean']
                             * self.operation_cost_factor
                             + self.problem.variable_q[timestep]
@@ -336,10 +327,10 @@ class OptimizationProblem(object):
                     if timestep == self.building.timesteps[-1]:
                         self.operation_cost += self.problem.variable_z * self.problem.variable_gamma
                 else:
-                    if ('electric_power' in output) and not ('storage_to_zone' in output):
+                    if output == 'grid_electric_power':
                         self.operation_cost += (
                             self.problem.variable_output_vector[timestep, output]
-                            * timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
+                            * self.building.timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
                             * self.electricity_price_timeseries.loc[timestep, 'price']
                             * self.operation_cost_factor
                         )
