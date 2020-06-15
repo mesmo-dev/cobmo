@@ -7,20 +7,18 @@ import pandas as pd
 import cobmo.building_model
 import cobmo.config
 import cobmo.optimization_problem
-import cobmo.database_interface
+import cobmo.data_interface
+import cobmo.utils
 
 
 def main():
 
     # Settings.
     scenario_name = 'create_level8_4zones_a'
-    results_path = os.path.join(cobmo.config.results_path, f'run_example_{cobmo.config.timestamp}')
-
-    # Instantiate results directory.
-    os.mkdir(results_path)
+    results_path = cobmo.utils.get_results_path(f'run_example_{scenario_name}')
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
-    cobmo.database_interface.recreate_database()
+    cobmo.data_interface.recreate_database()
 
     # Obtain building model.
     building = cobmo.building_model.BuildingModel(scenario_name)
@@ -44,17 +42,18 @@ def main():
     building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
 
     # Define exemplary control timeseries and run simulation.
-    control_vector_simulation = pd.DataFrame(
-        np.ones((len(building.timesteps), len(building.controls))),
-        index=building.timesteps,
-        columns=building.controls
+    control_vector_simulation = (
+        pd.DataFrame(
+            np.ones((len(building.timesteps), len(building.controls))),
+            index=building.timesteps,
+            columns=building.controls
+        )
     )
     (
         state_vector_simulation,
         output_vector_simulation
     ) = building.simulate(
-        state_initial=building.state_vector_initial,
-        control_vector=control_vector_simulation
+        control_vector_simulation
     )
 
     # Print simulation results.

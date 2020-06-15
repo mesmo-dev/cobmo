@@ -8,7 +8,7 @@ import pandas as pd
 
 import cobmo.building_model
 import cobmo.config
-import cobmo.database_interface
+import cobmo.data_interface
 import cobmo.utils
 
 
@@ -16,14 +16,11 @@ def main():
 
     # Settings.
     scenario_name = 'validation_1zone_no_window'
-    results_path = os.path.join(cobmo.config.results_path, f'run_validation_{cobmo.config.timestamp}')
-    validation_data_path = os.path.join(cobmo.config.data_path, 'supplementary_data', 'validation')
+    results_path = cobmo.utils.get_results_path(f'run_validation_{scenario_name}')
+    validation_data_path = os.path.join(cobmo.config.config['paths']['data'], 'supplementary_data', 'validation')
 
-    # Recreate database.
-    cobmo.database_interface.recreate_database()
-
-    # Instantiate results directory.
-    os.mkdir(results_path)
+    # Recreate / overwrite database, to incorporate changes in the CSV files.
+    cobmo.data_interface.recreate_database()
 
     # Obtain building model.
     building = (
@@ -88,8 +85,8 @@ def main():
         state_vector_simulation,
         output_vector_simulation
     ) = building.simulate(
-        state_initial=state_vector_initial,
-        control_vector=control_vector_simulation
+        control_vector_simulation,
+        state_vector_initial=state_vector_initial
     )
 
     # Print simulation results.

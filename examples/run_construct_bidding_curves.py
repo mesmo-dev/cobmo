@@ -8,20 +8,18 @@ from matplotlib import pyplot as plt
 import cobmo.building_model
 import cobmo.config
 import cobmo.optimization_problem
-import cobmo.database_interface
+import cobmo.data_interface
+import cobmo.utils
 
 
 def main():
 
     # Settings.
-    scenarios = pd.read_csv(os.path.join(cobmo.config.data_path, 'scenarios.csv'))
-    results_path = os.path.join(cobmo.config.results_path, f'run_construct_bidding_curves_{cobmo.config.timestamp}')
-
-    # Instantiate results directory.
-    os.mkdir(results_path)
+    scenarios = pd.read_csv(os.path.join(cobmo.config.config['paths']['data'], 'scenarios.csv'))
+    results_path = cobmo.utils.get_results_path('run_construct_bidding_curves')
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
-    cobmo.database_interface.recreate_database()
+    cobmo.data_interface.recreate_database()
 
     # Obtain building model.
     for scenario_name in scenarios['scenario_name'][:20]:

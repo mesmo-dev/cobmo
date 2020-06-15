@@ -9,19 +9,14 @@
 ``` automodule:: cobmo.building_model
 ```
 
-## `cobmo.config`
-
-``` automodule:: cobmo.config
-```
-
 ## `cobmo.optimization_problem`
 
 ``` automodule:: cobmo.optimization_problem
 ```
 
-## `cobmo.database_interface`
+## `cobmo.data_interface`
 
-``` automodule:: cobmo.database_interface
+``` automodule:: cobmo.data_interface
 ```
 
 ## `cobmo.plots`
@@ -32,4 +27,9 @@
 ## `cobmo.utils`
 
 ``` automodule:: cobmo.utils
+```
+
+## `cobmo.config`
+
+``` automodule:: cobmo.config
 ```

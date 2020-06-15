@@ -34,17 +34,18 @@ The `examples` directory contains several run scripts which demonstrate possible
 - `run_validation.py`: Run script for building model validation.
 - `run_evaluation_load_reduction.py`: Run script for evaluating demand side flexibility in terms of load reduction.
 - `run_evaluation_price_sensitivity.py`: Run script for evaluating demand side flexibility in terms of price sensitivity.
+- (Further example scripts for development / testing of new features may not yet be documented here.)
 
 ## Papers
 
 The following papers have been prepared with CoBMo:
 
-- Anthony Vautrin, Sebastian Troitzsch, Srikkanth Ramachandran, and Thomas Hamacher (2019). **Demand Controlled Ventilation for Electric Demand Side Flexibility.** IBPSA Building Simulation Conference.
-    - A preliminary implementation of CoBMo was used to prepare the results for this paper.
-    - The related scripts are currently not included in the repository.
-- [Submitted.] Sebastian Troitzsch, and Thomas Hamacher. **Control-oriented Thermal Building Modelling.**
+- [Preprint] Troitzsch, S., & Hamacher, T., **Control-oriented Thermal Building Modelling**, in IEEE PES General Meeting, Montreal, Canada, 2020. [`doi:10.36227/techrxiv.11923587`](https://doi.org/10.36227/techrxiv.11923587)
     - CoBMo [version 0.3.0](https://github.com/TUMCREATE-ESTL/cobmo/releases/tag/0.3.0) was used to prepare the results for this paper.
     - The related scripts are [`examples/run_evaluation_load_reduction.py`](https://github.com/TUMCREATE-ESTL/cobmo/blob/0.3.0/examples/run_evaluation_load_reduction.py) and [`examples/run_evaluation_price_sensitivity.py`](https://github.com/TUMCREATE-ESTL/cobmo/blob/0.3.0/examples/run_evaluation_price_sensitivity.py).
+- Vautrin, A., Troitzsch, S., Ramachandran, S., & Hamacher, T., **Demand Controlled Ventilation for Electric Demand Side Flexibility**, in IBPSA Building Simulation Conference, Rome, Italy, 2019. [`doi:10.26868/25222708.2019.210968`](https://doi.org/10.26868/25222708.2019.210968)
+    - A preliminary implementation of CoBMo was used to prepare the results for this paper.
+    - The related scripts are currently not included in the repository.
 
 ## Contributing
 

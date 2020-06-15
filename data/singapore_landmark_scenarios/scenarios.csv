@@ -1,4 +1,4 @@
-scenario_name,building_name,parameter_set,linearization_type,initial_state_type,demand_controlled_ventilation_type,co2_model_type,humidity_model_type,heating_cooling_session,price_type,time_start,time_end,time_step
-lasalle_college,lasalle_college,,create_linearization,cea_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-sp_graduates,sp_graduates,,create_linearization,cea_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
-bugis_point,bugis_point,,create_linearization,cea_initial_state,,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
+scenario_name,building_name,parameter_set,linearization_type,initial_state_type,demand_controlled_ventilation_type,co2_model_type,humidity_model_type,price_type,timestep_start,timestep_end,timestep_interval
+lasalle_college,lasalle_college,,create_linearization,cea_initial_state,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
+sp_graduates,sp_graduates,,create_linearization,cea_initial_state,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
+bugis_point,bugis_point,,create_linearization,cea_initial_state,,,,wholesale,2017-01-02T00:00:00,2017-01-03T00:00:00,00:30:00
