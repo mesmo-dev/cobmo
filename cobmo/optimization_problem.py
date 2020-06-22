@@ -364,7 +364,7 @@ class OptimizationProblem(object):
                             self.operation_cost += (
                                     self.problem.variable_output_vector[timestep, output]
                                     * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
-                                    * self.price_forecast.loc[timestep, 'expected_price']
+                                    * self.actual_dispatch.loc[timestep, 'clearing_price']
                                     * self.operation_cost_factor
                             )
                         elif timestep == self.price_scenario_timestep:
