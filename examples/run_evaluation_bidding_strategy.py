@@ -20,7 +20,7 @@ def main():
     # Settings.
     scenario_name = '43755562'
     results_path = cobmo.utils.get_results_path(f'run_evaluation_bidding_strategy_{scenario_name}')
-    price_data_path = os.path.join(cobmo.config.supplementary_data_path, 'clearing_price')
+    price_data_path = os.path.join(cobmo.config.config['paths']['supplementary_data'], 'clearing_price')
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.data_interface.recreate_database()

@@ -4,12 +4,13 @@ import cobmo.config
 import os
 import pandas as pd
 
+import cobmo.utils
+
 
 def main():
-    results_path = os.path.join(cobmo.config.results_path, f'run_forecast_model_{cobmo.config.timestamp}')
-    price_data_path = os.path.join(cobmo.config.supplementary_data_path, 'clearing_price')
 
-    os.mkdir(results_path)
+    results_path = cobmo.utils.get_results_path(f'run_forecast_model')
+    price_data_path = os.path.join(cobmo.config.config['paths']['supplementary_data'], 'clearing_price')
 
     forecast_model = forecast.forecast_model.forecastModel()
     timestep = forecast_model.df['timestep'].iloc[-1]

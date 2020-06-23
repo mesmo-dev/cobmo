@@ -7,7 +7,6 @@ import os
 import pandas as pd
 import yaml
 
-supplementary_data_path = os.path.join(data_path, 'supplementary_data')
 
 def get_config() -> dict:
     """Load the configuration dictionary.
