@@ -74,8 +74,9 @@ def main():
 
     # Calculate baseline daily cost
     daily_cost_baseline = (
-                                  actual_dispatch['clearing_price'] * actual_dispatch['actual_dispatch_flat']
-                          ).sum() * building.timestep_delta.seconds / 3600 / 1e6
+        actual_dispatch['clearing_price'] * actual_dispatch['actual_dispatch_flat'].sum()
+        * building.timestep_interval.seconds / 3600 / 1e6
+    )
     print(f'Daily cost (baseline): {daily_cost_baseline} $')
 
     # Obtain and solve optimization problem with bidding strategy
@@ -126,8 +127,9 @@ def main():
         price_forecast.index = new_timesteps
 
     daily_cost_optimized = (
-                                  actual_dispatch['clearing_price'] * actual_dispatch['actual_dispatch']
-                          ).sum() * building.timestep_delta.seconds / 3600 / 1e6
+        actual_dispatch['clearing_price'] * actual_dispatch['actual_dispatch'].sum()
+        * building.timestep_interval.seconds / 3600 / 1e6
+    )
     print(f'Daily cost (optimized): {daily_cost_optimized} $')
 
     actual_dispatch.to_csv(os.path.join(results_path, 'actual_dispatch.csv'))

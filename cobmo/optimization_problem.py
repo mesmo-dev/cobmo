@@ -224,7 +224,7 @@ class OptimizationProblem(object):
                             self.problem.variable_output_vector[timestep, output]
                             <=
                             self.problem.variable_storage_size[0]
-                            * self.building.parse_parameter('water_density')
+                            * self.building.parse_parameter('water_density')  # TODO: Replace parse_parameter.
                         )
                     elif 'battery' in self.building.building_data.scenarios['building_storage_type']:
                         self.problem.constraints.add(
@@ -314,7 +314,7 @@ class OptimizationProblem(object):
                 )
                 self.problem.constraints.add(
                     (self.problem.variable_output_vector[timestep, 'grid_electric_power']
-                    * timestep_delta.seconds / 3600.0 / 1000.0)
+                    * self.building.timestep_interval.seconds / 3600.0 / 1000.0)
                     <=
                     self.problem.variable_y[timestep]
                 )
@@ -368,15 +368,15 @@ class OptimizationProblem(object):
                     if output == 'grid_electric_power':
                         if timestep == self.price_scenario_timestep:
                             self.operation_cost += (
-                                    self.problem.variable_output_vector[timestep, output]
-                                    * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
-                                    * self.price_point
-                                    * self.operation_cost_factor
+                                self.problem.variable_output_vector[timestep, output]
+                                * self.building.timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
+                                * self.price_point
+                                * self.operation_cost_factor
                             )
                         else:
                             self.operation_cost += (
                                 self.problem.variable_output_vector[timestep, output]
-                                * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
+                                * self.building.timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
                                 * self.electricity_price_distribution_timeseries.loc[timestep, 'price_mean']
                                 * self.operation_cost_factor
                             )
@@ -384,25 +384,25 @@ class OptimizationProblem(object):
                     if output == 'grid_electric_power':
                         if timestep < self.price_scenario_timestep:
                             self.operation_cost += (
-                                    self.problem.variable_output_vector[timestep, output]
-                                    * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
-                                    * self.actual_dispatch.loc[timestep, 'clearing_price']
-                                    * self.operation_cost_factor
+                                self.problem.variable_output_vector[timestep, output]
+                                * self.building.timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
+                                * self.actual_dispatch.loc[timestep, 'clearing_price']
+                                * self.operation_cost_factor
                             )
                         elif timestep == self.price_scenario_timestep:
                             self.operation_cost += (
-                                    self.problem.variable_output_vector[timestep, output]
-                                    * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
-                                    * self.price_point
-                                    * self.operation_cost_factor
+                                self.problem.variable_output_vector[timestep, output]
+                                * self.building.timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
+                                * self.price_point
+                                * self.operation_cost_factor
                             )
                         else:
                             self.operation_cost += (
-                                    self.problem.variable_output_vector[timestep, output]
-                                    * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
-                                    * self.price_forecast.loc[timestep, 'expected_price']
-                                    * self.operation_cost_factor
-                                    + self.problem.variable_q[timestep]
+                                self.problem.variable_output_vector[timestep, output]
+                                * self.building.timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
+                                * self.price_forecast.loc[timestep, 'expected_price']
+                                * self.operation_cost_factor
+                                + self.problem.variable_q[timestep]
                             )
                     if timestep == self.building.timesteps[-1]:
                         self.operation_cost += self.problem.variable_z * self.problem.variable_gamma
