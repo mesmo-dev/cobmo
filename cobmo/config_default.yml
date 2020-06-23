@@ -4,6 +4,7 @@
 paths:
   additional_data: []
   data: ./data
+  supplementary_data: ./data/supplementary_data
   database: ./data/database.sqlite
   results: ./results
 multiprocessing:

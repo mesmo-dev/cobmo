@@ -28,7 +28,7 @@ class OptimizationProblem(object):
     Keyword Arguments:
         problem_type (str): Optimization problem type. Choices: `operation`, `storage_planning`,
             `storage_planning_baseline`, `load_reduction`, `price_sensitivity`, `load_maximization`,
-            `load_minimization`, `robust_optimization`. Default: `operation`
+            `load_minimization`, `robust_optimization`, `price_scenario`, `rolling_forecast`. Default: `operation`
         output_vector_reference (pd.DataFrame): Only for problem type `load_reduction`. Defines the reference
             for which the load reduction is calculated.
         load_reduction_start_time (pd.Timestamp): Only for problem type `load_reduction`. Defines the start time
@@ -48,13 +48,18 @@ class OptimizationProblem(object):
             building: cobmo.building_model.BuildingModel,
             problem_type='operation',
             # Choices: `operation`, `storage_planning`, `storage_planning_baseline`, `load_reduction`,
-            # `price_sensitivity`, `load_maximization`, `load_minimization`, `robust_optimization`.
+            # `price_sensitivity`, `load_maximization`, `load_minimization`, `robust_optimization`,
+            # `price_scenario`, `rolling_forecast`.
             output_vector_reference=None,
             load_reduction_start_time=None,
             load_reduction_end_time=None,
             price_sensitivity_factor=None,
             price_sensitivity_timestep=None,
-            load_maximization_time=None
+            load_maximization_time=None,
+            price_scenario_timestep=None,
+            price_point=None,
+            price_forecast=None,
+            actual_dispatch=None
     ):
         time_start = time.time()
         self.building = building
@@ -65,6 +70,10 @@ class OptimizationProblem(object):
         self.price_sensitivity_factor = price_sensitivity_factor
         self.price_sensitivity_timestep = price_sensitivity_timestep
         self.load_maximization_time = load_maximization_time
+        self.price_scenario_timestep = price_scenario_timestep
+        self.price_point = price_point
+        self.price_forecast = price_forecast
+        self.actual_dispatch = actual_dispatch
 
         # Copy `electricity_price_timeseries` to allow local modifications.
         self.electricity_price_timeseries = self.building.electricity_price_timeseries.copy()
@@ -116,6 +125,12 @@ class OptimizationProblem(object):
         if self.problem_type == 'robust_optimization':
             self.problem.variable_z = pyo.Var(domain=pyo.NonNegativeReals)
             self.problem.variable_gamma = len(self.building.timesteps)
+            self.problem.variable_q = pyo.Var(self.building.timesteps, domain=pyo.NonNegativeReals)
+            self.problem.variable_y = pyo.Var(self.building.timesteps, domain=pyo.NonNegativeReals)
+
+        if self.problem_type == 'rolling_forecast':
+            self.problem.variable_z = pyo.Var(domain=pyo.NonNegativeReals)
+            self.problem.variable_gamma = len(self.building.timesteps)/2
             self.problem.variable_q = pyo.Var(self.building.timesteps, domain=pyo.NonNegativeReals)
             self.problem.variable_y = pyo.Var(self.building.timesteps, domain=pyo.NonNegativeReals)
 
@@ -281,6 +296,29 @@ class OptimizationProblem(object):
                     self.problem.variable_y[timestep]
                 )
 
+        elif self.problem_type == 'rolling_forecast':
+            for timestep in self.building.timesteps:
+                if timestep < self.price_scenario_timestep:
+                    self.problem.constraints.add(
+                        self.problem.variable_output_vector[timestep, 'grid_electric_power'] == \
+                        self.actual_dispatch.at[timestep, 'actual_dispatch']
+                    )
+                    continue
+                elif timestep == self.price_scenario_timestep:
+                    continue
+                self.problem.constraints.add(
+                    self.problem.variable_z + self.problem.variable_q[timestep]
+                    >=
+                    ((self.price_forecast.loc[timestep, 'upper_limit']-self.price_forecast.loc[timestep, 'expected_price'])
+                     * self.problem.variable_y[timestep])
+                )
+                self.problem.constraints.add(
+                    (self.problem.variable_output_vector[timestep, 'grid_electric_power']
+                    * timestep_delta.seconds / 3600.0 / 1000.0)
+                    <=
+                    self.problem.variable_y[timestep]
+                )
+
         # Define components of the objective.
         self.operation_cost = 0.0
         self.investment_cost = 0.0
@@ -324,6 +362,48 @@ class OptimizationProblem(object):
                             * self.operation_cost_factor
                             + self.problem.variable_q[timestep]
                         )
+                    if timestep == self.building.timesteps[-1]:
+                        self.operation_cost += self.problem.variable_z * self.problem.variable_gamma
+                elif self.problem_type == 'price_scenario':
+                    if output == 'grid_electric_power':
+                        if timestep == self.price_scenario_timestep:
+                            self.operation_cost += (
+                                    self.problem.variable_output_vector[timestep, output]
+                                    * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
+                                    * self.price_point
+                                    * self.operation_cost_factor
+                            )
+                        else:
+                            self.operation_cost += (
+                                self.problem.variable_output_vector[timestep, output]
+                                * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
+                                * self.electricity_price_distribution_timeseries.loc[timestep, 'price_mean']
+                                * self.operation_cost_factor
+                            )
+                elif self.problem_type == 'rolling_forecast':
+                    if output == 'grid_electric_power':
+                        if timestep < self.price_scenario_timestep:
+                            self.operation_cost += (
+                                    self.problem.variable_output_vector[timestep, output]
+                                    * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
+                                    * self.actual_dispatch.loc[timestep, 'clearing_price']
+                                    * self.operation_cost_factor
+                            )
+                        elif timestep == self.price_scenario_timestep:
+                            self.operation_cost += (
+                                    self.problem.variable_output_vector[timestep, output]
+                                    * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
+                                    * self.price_point
+                                    * self.operation_cost_factor
+                            )
+                        else:
+                            self.operation_cost += (
+                                    self.problem.variable_output_vector[timestep, output]
+                                    * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
+                                    * self.price_forecast.loc[timestep, 'expected_price']
+                                    * self.operation_cost_factor
+                                    + self.problem.variable_q[timestep]
+                            )
                     if timestep == self.building.timesteps[-1]:
                         self.operation_cost += self.problem.variable_z * self.problem.variable_gamma
                 else:
