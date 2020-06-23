@@ -8,3 +8,5 @@ cea_office,schedule,4.5,12.0
 cea_hotel,schedule,3.5,10.0
 cea_hospital,schedule,3.5,18.0
 cea_industrial,schedule,6.0,50.0
+sit_university,schedule,3.5,12.0
+jtc_office,schedule,4.5,12.0
