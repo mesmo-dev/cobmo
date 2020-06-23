@@ -7,20 +7,18 @@ import pandas as pd
 import cobmo.building_model
 import cobmo.config
 import cobmo.optimization_problem
-import cobmo.database_interface
+import cobmo.data_interface
+import cobmo.utils
 
 
 def main():
 
     # Settings.
     scenario_name = 'create_level8_4zones_a'
-    results_path = os.path.join(cobmo.config.results_path, f'run_evaluation_energy_use_{cobmo.config.timestamp}')
-
-    # Instantiate results directory.
-    os.mkdir(results_path)
+    results_path = cobmo.utils.get_results_path(f'run_evaluation_energy_use_{scenario_name}')
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
-    cobmo.database_interface.recreate_database()
+    cobmo.data_interface.recreate_database()
 
     # Obtain building model.
     building = cobmo.building_model.BuildingModel(scenario_name)
@@ -53,29 +51,29 @@ def main():
     energy_use_timeseries = (
         output_vector_optimization['grid_electric_power']  # in W
         / building.building_data.zones.loc[:, 'zone_area'].sum()  # in W/m²
-        * (building.timestep_delta.seconds / 3600)  # in Wh/m²
+        * (building.timestep_interval.seconds / 3600)  # in Wh/m²
         / 1000  # in kWh/m²
     )
     energy_use_timestep = energy_use_timeseries.mean()
     energy_use_day = (
         energy_use_timeseries.sum()
         / len(building.timesteps)
-        * (pd.to_timedelta('1d') / building.timestep_delta)
+        * (pd.to_timedelta('1d') / building.timestep_interval)
     )
     energy_use_week = (
         energy_use_timeseries.sum()
         / len(building.timesteps)
-        * (pd.to_timedelta('1w') / building.timestep_delta)
+        * (pd.to_timedelta('1w') / building.timestep_interval)
     )
     energy_use_month = (
         energy_use_timeseries.sum()
         / len(building.timesteps)
-        * (pd.to_timedelta('1y') / 12 / building.timestep_delta)
+        * (pd.to_timedelta('1y') / 12 / building.timestep_interval)
     )
     energy_use_year = (
         energy_use_timeseries.sum()
         / len(building.timesteps)
-        * (pd.to_timedelta('1y') / building.timestep_delta)
+        * (pd.to_timedelta('1y') / building.timestep_interval)
     )
     energy_use_timeseries = round(energy_use_timeseries, 2)
     energy_use_timestep = round(energy_use_timestep, 2)

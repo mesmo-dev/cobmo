@@ -3,22 +3,53 @@
 import pandas as pd
 import pyomo.environ as pyo
 import time as time
+import typing
 
+import cobmo.building_model
 import cobmo.config
 
 logger = cobmo.config.get_logger(__name__)
 
 
 class OptimizationProblem(object):
-    """Optimization problem object."""
+    """Optimization problem object consisting of the pyomo problem object which encapsulates optimization variables,
+    constraints and objective function definitions for given building model object and problem type.
+
+    - The `problem_type` keyword argument can be utilized to differentiate constraint and objective function definitions
+      depending on the optimization problem type, e.g., optimal operation vs. optimal storage planning.
+
+    Syntax
+        ``OptimizationProblem(building_model)``: Instantiate optimization problem for given `scenario_name`.
+        the problem type defaults to `operation`, if not specified as keyword argument.
+
+    Parameters:
+        building_model (cobmo.building_model.BuildingModel): Building model object.
+
+    Keyword Arguments:
+        problem_type (str): Optimization problem type. Choices: `operation`, `storage_planning`,
+            `storage_planning_baseline`, `load_reduction`, `price_sensitivity`, `load_maximization`,
+            `load_minimization`, `robust_optimization`, `price_scenario`, `rolling_forecast`. Default: `operation`
+        output_vector_reference (pd.DataFrame): Only for problem type `load_reduction`. Defines the reference
+            for which the load reduction is calculated.
+        load_reduction_start_time (pd.Timestamp): Only for problem type `load_reduction`. Defines the start time
+            for which the load reduction is calculated.
+        load_reduction_end_time (pd.Timestamp): Only for problem type `load_reduction`. Defines the end time
+            for which the load reduction is calculated.
+        price_sensitivity_factor: np.float: Only for problem type `price_sensitivity`. Defines the factor with which
+            the price value is modified.
+        price_sensitivity_timestep (pd.Timedelta): Only for problem type `price_sensitivity`. Defines the timstep for
+            which the price value is modified.
+        load_maximization_time (pd.Timestamp): Only for problem type `load_maximization`. Defines the timestep at
+            which the load is maximized.
+    """
 
     def __init__(
             self,
-            building,
+            building: cobmo.building_model.BuildingModel,
             problem_type='operation',
-            # Choices: 'operation', 'storage_planning', 'storage_planning_baseline', 'load_reduction',
-            # 'price_sensitivity', 'load_maximization', 'load_minimization', 'robust_optimization',
-            # 'price_scenario', 'rolling_forecast'
+            # Choices: `operation`, `storage_planning`, `storage_planning_baseline`, `load_reduction`,
+            # `price_sensitivity`, `load_maximization`, `load_minimization`, `robust_optimization`,
+            # `price_scenario`, `rolling_forecast`.
             output_vector_reference=None,
             load_reduction_start_time=None,
             load_reduction_end_time=None,
@@ -30,15 +61,15 @@ class OptimizationProblem(object):
             price_forecast=None,
             actual_dispatch=None
     ):
-        time_start = time.clock()
+        time_start = time.time()
         self.building = building
         self.problem_type = problem_type
         self.output_vector_reference = output_vector_reference
         self.load_reduction_start_time = load_reduction_start_time
         self.load_reduction_end_time = load_reduction_end_time
-        self.load_maximization_time = load_maximization_time
         self.price_sensitivity_factor = price_sensitivity_factor
         self.price_sensitivity_timestep = price_sensitivity_timestep
+        self.load_maximization_time = load_maximization_time
         self.price_scenario_timestep = price_scenario_timestep
         self.price_point = price_point
         self.price_forecast = price_forecast
@@ -49,7 +80,7 @@ class OptimizationProblem(object):
         self.electricity_price_distribution_timeseries = self.building.electricity_price_distribution_timeseries.copy()
 
         self.problem = pyo.ConcreteModel()
-        self.solver = pyo.SolverFactory(cobmo.config.solver_name)
+        self.solver = pyo.SolverFactory(cobmo.config.config['optimization']['solver_name'])
         self.result = None
 
         # Define variables.
@@ -115,12 +146,10 @@ class OptimizationProblem(object):
             )
 
         # State equation constraint.
-        # TODO: Move timestep_delta into building model.
-        timestep_delta = self.building.timesteps[1] - self.building.timesteps[0]
         for state in self.building.states:
             for timestep in self.building.timesteps[:-1]:
                 self.problem.constraints.add(
-                    self.problem.variable_state_vector[timestep + timestep_delta, state]
+                    self.problem.variable_state_vector[timestep + self.building.timestep_interval, state]
                     ==
                     (
                         sum(
@@ -171,7 +200,7 @@ class OptimizationProblem(object):
             for timestep in self.building.timesteps:
                 # Minimum.
                 if ('temperature' in output) and (self.problem_type == 'load_maximization'):
-                    if timestep == (self.load_maximization_time + pd.to_timedelta('0.5h')):
+                    if timestep == (self.load_maximization_time + self.building.timestep_interval):
                         self.problem.constraints.add(
                             self.problem.variable_output_vector[timestep, output]
                             ==
@@ -240,21 +269,12 @@ class OptimizationProblem(object):
                     (timestep >= self.load_reduction_start_time)
                     and (timestep < self.load_reduction_end_time)
                 ):
-                    # TODO: Introduce total electric demand in building outputs.
                     self.problem.constraints.add(
-                        sum(
-                            self.problem.variable_output_vector[timestep, output]
-                            if (('electric_power' in output) and not ('storage_to_zone' in output)) else 0.0
-                            for output in self.building.outputs
-                        )
+                        self.problem.variable_output_vector[timestep, 'grid_electric_power']
                         ==
                         (
                             (1.0 - (self.problem.variable_load_reduction[0] / 100.0))
-                            * sum(
-                                self.output_vector_reference.loc[timestep, output]
-                                if (('electric_power' in output) and not ('storage_to_zone' in output)) else 0.0
-                                for output in self.building.outputs
-                            )
+                            * self.problem.variable_output_vector[timestep, 'grid_electric_power']
                         )
                     )
 
@@ -268,8 +288,10 @@ class OptimizationProblem(object):
                      * self.problem.variable_y[timestep])
                 )
                 self.problem.constraints.add(
-                    (self.problem.variable_output_vector[timestep, 'grid_electric_power']
-                    * timestep_delta.seconds / 3600.0 / 1000.0)
+                    (
+                        self.problem.variable_output_vector[timestep, 'grid_electric_power']
+                        * self.building.timestep_interval.seconds / 3600.0 / 1000.0
+                    )
                     <=
                     self.problem.variable_y[timestep]
                 )
@@ -305,7 +327,7 @@ class OptimizationProblem(object):
         if (self.problem_type == 'storage_planning') or (self.problem_type == 'storage_planning_baseline'):
             # Define operation cost factor to scale operation cost to the lifetime of storage.
             self.operation_cost_factor = (
-                (pd.to_timedelta('1y') / pd.to_timedelta(timestep_delta))  # Theoretical number of time steps in a year.
+                (pd.to_timedelta('1y') / pd.to_timedelta(self.building.timestep_interval))  # Time steps per year.
                 / len(self.building.timesteps)  # Actual number of time steps.
                 * self.building.building_data.scenarios['storage_lifetime']  # Storage lifetime in years.
                 * 14.0  # 14 levels at CREATE Tower. # TODO: Check if considered properly in storage size.
@@ -335,7 +357,7 @@ class OptimizationProblem(object):
                     if output == 'grid_electric_power':
                         self.operation_cost += (
                             self.problem.variable_output_vector[timestep, output]
-                            * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
+                            * self.building.timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
                             * self.electricity_price_distribution_timeseries.loc[timestep, 'price_mean']
                             * self.operation_cost_factor
                             + self.problem.variable_q[timestep]
@@ -385,10 +407,10 @@ class OptimizationProblem(object):
                     if timestep == self.building.timesteps[-1]:
                         self.operation_cost += self.problem.variable_z * self.problem.variable_gamma
                 else:
-                    if ('electric_power' in output) and not ('storage_to_zone' in output):
+                    if output == 'grid_electric_power':
                         self.operation_cost += (
                             self.problem.variable_output_vector[timestep, output]
-                            * timestep_delta.seconds / 3600.0 / 1000.0  # W in kWh.
+                            * self.building.timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
                             * self.electricity_price_timeseries.loc[timestep, 'price']
                             * self.operation_cost_factor
                         )
@@ -426,23 +448,34 @@ class OptimizationProblem(object):
         )
 
         # Print setup time for debugging.
-        logger.debug("OptimizationProblem setup time: {:.2f} seconds".format(time.clock() - time_start))
+        logger.debug("OptimizationProblem setup time: {:.2f} seconds".format(time.time() - time_start))
 
     def solve(self):
-        """Invoke solver on Pyomo problem."""
+        """Solve the optimization and return the optimal solution results, i.e., control vector timeseries,
+        state vector timeseries, output vector timeseries, operation cost and storage size.
+
+        - Invokes the optimization solver defined in `config.yml` or `config_default.yml` on the pyomo problem object.
+        - If problem type is `load_reduction`, the returned investment cost value is the load reduction value.
+        - If problem type is not `storage_planning` or `storage_planning_baseline`, storage size is returned as None.
+
+        Returns:
+            typing.Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, np.float, np.float, np.float]: Tuple of
+            control vector timeseries, state vector timeseries, output vector timeseries, operation cost,
+            and storage size.
+        """
 
         # Solve problem.
-        time_start = time.clock()
+        time_start = time.time()
         self.result = self.solver.solve(
             self.problem,
-            tee=cobmo.config.solver_output  # If True, activate verbose solver output.
+            tee=cobmo.config.config['optimization']['show_solver_output']  # If True, activate verbose solver output.
         )
 
         # Print solve time for debugging.
-        logger.debug("OptimizationProblem solve time: {:.2f} seconds".format(time.clock() - time_start))
+        logger.debug("OptimizationProblem solve time: {:.2f} seconds".format(time.time() - time_start))
 
         # Retrieve results.
-        time_start = time.clock()
+        time_start = time.time()
         control_vector = pd.DataFrame(
             0.0,
             self.building.timesteps,
@@ -491,7 +524,7 @@ class OptimizationProblem(object):
             storage_size = None
 
         # Print results compilation time for debugging.
-        logger.debug("OptimizationProblem results compilation time: {:.2f} seconds".format(time.clock() - time_start))
+        logger.debug("OptimizationProblem results compilation time: {:.2f} seconds".format(time.time() - time_start))
 
         return (
             control_vector,

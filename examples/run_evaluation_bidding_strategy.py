@@ -9,7 +9,8 @@ import datetime as dt
 import cobmo.building_model
 import cobmo.config
 import cobmo.optimization_problem
-import cobmo.database_interface
+import cobmo.data_interface
+import cobmo.utils
 
 import forecast.build_model, forecast.forecast_model
 
@@ -18,14 +19,11 @@ def main():
 
     # Settings.
     scenario_name = '43755562'
-    results_path = os.path.join(cobmo.config.results_path, f'run_evaluation_bidding_strategy_{cobmo.config.timestamp}')
+    results_path = cobmo.utils.get_results_path(f'run_evaluation_bidding_strategy_{scenario_name}')
     price_data_path = os.path.join(cobmo.config.supplementary_data_path, 'clearing_price')
 
-    # Instantiate results directory.
-    os.mkdir(results_path)
-
     # Recreate / overwrite database, to incorporate changes in the CSV files.
-    cobmo.database_interface.recreate_database()
+    cobmo.data_interface.recreate_database()
 
     # Obtain building model.
     building = cobmo.building_model.BuildingModel(scenario_name)

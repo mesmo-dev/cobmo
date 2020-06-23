@@ -199,11 +199,10 @@ Building scenario definitions.
 | `demand_controlled_ventilation_type` | | *Currently not used.* |
 | `co2_model_type` | | *Currently not used.* |
 | `humidity_model_type` | | *Currently not used.* |
-| `heating_cooling_session` | | *Currently not used.* |
 | `price_type` | | Type identifier as defined in `electricity_price_timeseries`. |
-| `time_start` | | Timestamp according to ISO 8601. |
-| `time_end` | | Timestamp according to ISO 8601. |
-| `time_step` | | Time step length in seconds. |
+| `timestep_start` | | Start timestep in format `yyyy-mm-ddTHH:MM:SS` (according to ISO 8601). |
+| `timestep_end` | | End timestep in format `yyyy-mm-ddTHH:MM:SS` (according to ISO 8601). |
+| `timestep_interval` | | Time interval in format `HH:MM:SS` |
 
 ## `storage_types`
 
