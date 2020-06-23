@@ -18,6 +18,7 @@ import cobmo.utils
 def main():
 
     # Settings.
+    used_space_share = 0.8
     scenario_names = [
         'primo_1_SIT_P1_W1',
         'primo_2_SIT_P1_W3',
@@ -48,6 +49,7 @@ def main():
     cobmo.data_interface.recreate_database()
 
     # Run each scenario.
+    electric_power_timeseries = []
     results = []
     for scenario_name in scenario_names:
 
@@ -87,7 +89,7 @@ def main():
         # Obtain energy use intensity (EUI).
         energy_use_timeseries = (
             output_vector_optimization['grid_electric_power']  # in W
-            / building.building_data.zones.loc[:, 'zone_area'].sum()  # in W/m²
+            / (building.building_data.zones.loc[:, 'zone_area'].sum() / used_space_share)  # in W/m²
             * (building.timestep_interval.seconds / 3600)  # in Wh/m²
             / 1000  # in kWh/m²
         )
@@ -150,9 +152,13 @@ def main():
         energy_use_timeseries.to_csv(os.path.join(results_path_scenario, 'energy_use_timeseries.csv'))
 
         # Append results.
+        electric_power_timeseries.append(output_vector_optimization.loc[:, 'grid_electric_power'].rename(scenario_name))
         results.append(energy_use_summary.rename(scenario_name))
 
     # Process / print / store results.
+    electric_power_timeseries = pd.concat(electric_power_timeseries, axis='columns')
+    print(f"electric_power_timeseries {electric_power_timeseries}")
+    electric_power_timeseries.to_csv(os.path.join(results_path_main, 'electric_power_timeseries.csv'))
     results = pd.concat(results, axis='columns')
     print(f"results {results}")
     results.to_csv(os.path.join(results_path_main, 'results.csv'))
