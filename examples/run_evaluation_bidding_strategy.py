@@ -45,15 +45,17 @@ def main():
     # actual_dispatch['clearing_price'] = price_forecast['expected_price'].copy()
 
     def determine_dispatch_quantity(bids, actual_price):
-        for i in range(len(bids)-1):
-            if bids.index[i] <= actual_price <= bids.index[i+1]:
-                price_ceiling = bids.index[i+1]
+        if actual_price < bids.index[0]:
+            dispatch_quantity = bids.loc[bids.index[0], 'P']
+        elif actual_price > bids.index[-1]:
+            dispatch_quantity = bids.loc[bids.index[-1], 'P']
+        for i in range(len(bids) - 1):
+            if bids.index[i] <= actual_price <= bids.index[i + 1]:
+                price_ceiling = bids.index[i + 1]
                 price_floor = bids.index[i]
                 # dispatch_quantity = bids.loc[price_floor, 'P'] + (actual_price-price_floor)/(price_ceiling-price_floor)*(bids.loc[price_ceiling, 'P']-bids.loc[price_floor, 'P'])
                 dispatch_quantity = bids.loc[price_ceiling, 'P']
-                print(dispatch_quantity)
-                return dispatch_quantity
-        return bids['P'].iloc[-1] # Return minimum consumption if price is higher than upper bound
+        return dispatch_quantity  # Return minimum consumption if price is higher than upper bound
 
     # Obtain and solve baseline optimization problem.
     baseline_problem = cobmo.optimization_problem.OptimizationProblem(
