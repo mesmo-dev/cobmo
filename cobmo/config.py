@@ -70,6 +70,7 @@ def get_config() -> dict:
     )
     complete_config['paths']['database'] = get_full_path(complete_config['paths']['database'])
     complete_config['paths']['results'] = get_full_path(complete_config['paths']['results'])
+    complete_config['paths']['supplementary_data'] = get_full_path(complete_config['paths']['supplementary_data'])
 
     # If not running as main process, set `run_parallel` to False.
     # - Workaround to avoid that subprocesses / workers infinitely spawn further subprocesses / workers.
