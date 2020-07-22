@@ -274,7 +274,7 @@ class OptimizationProblem(object):
                         ==
                         (
                             (1.0 - (self.problem.variable_load_reduction[0] / 100.0))
-                            * self.problem.variable_output_vector[timestep, 'grid_electric_power']
+                            * self.output_vector_reference.at[timestep, 'grid_electric_power']
                         )
                     )
 
