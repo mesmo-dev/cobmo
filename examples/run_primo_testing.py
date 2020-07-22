@@ -18,31 +18,54 @@ import cobmo.utils
 def main():
 
     # Settings.
-    used_space_share = 0.8
     scenario_names = [
-        'primo_1_SIT_P1_W1',
-        'primo_2_SIT_P1_W3',
-        'primo_3_SIT_P1_W5',
-        'primo_4_SIT_P1_W6',
-        'primo_5_SIT_P1_W7',
-        'primo_7_SIT_P2_E1',
-        'primo_8_SIT_P2_E2',
-        'primo_9_SIT_P2_E3',
-        'primo_10_SIT_P2_E4',
-        'primo_11_SIT_P2_E5',
-        'primo_12_SIT_P2_E6',
-        'primo_13_JTC_CC1_Tower_1',
-        'primo_14_JTC_CC1_Tower_2',
-        'primo_15_JTC_CC1_Tower_3',
-        'primo_16_JTC_CC1_Tower_4',
-        'primo_17_JTC_CC1_Podium',
-        'primo_18_JTC_CC2_Tower_5',
-        'primo_19_JTC_CC2_Tower_6',
-        'primo_20_JTC_CC2_Tower_7',
-        'primo_21_JTC_CC3_Tower_8',
-        'primo_22_JTC_CC3_Tower_9',
-        'primo_23_JTC_CC3_Tower_10'
+        'singapore_pdd_w1',
+        'singapore_pdd_w3',
+        'singapore_pdd_w5',
+        'singapore_pdd_w6',
+        'singapore_pdd_w7',
+        'singapore_pdd_e1',
+        'singapore_pdd_e2',
+        'singapore_pdd_e3',
+        'singapore_pdd_e4',
+        'singapore_pdd_e5',
+        'singapore_pdd_e6',
+        'singapore_pdd_tower_1',
+        'singapore_pdd_tower_2',
+        'singapore_pdd_tower_3',
+        'singapore_pdd_tower_4',
+        'singapore_pdd_podium',
+        'singapore_pdd_tower_5',
+        'singapore_pdd_tower_6',
+        'singapore_pdd_tower_7',
+        'singapore_pdd_tower_8',
+        'singapore_pdd_tower_9',
+        'singapore_pdd_tower_10'
     ]
+    building_gross_floor_area = {
+        'singapore_pdd_w1': 23404.6,
+        'singapore_pdd_w3': 44284.6,
+        'singapore_pdd_w5': 30164.6,
+        'singapore_pdd_w6': 9596.6,
+        'singapore_pdd_w7': 13843.8,
+        'singapore_pdd_e1': 22965.4,
+        'singapore_pdd_e2': 46176.8,
+        'singapore_pdd_e3': 8853.6,
+        'singapore_pdd_e4': 1861,
+        'singapore_pdd_e5': 10493.7,
+        'singapore_pdd_e6': 39438.8,
+        'singapore_pdd_tower_1': 29856,
+        'singapore_pdd_tower_2': 20604,
+        'singapore_pdd_tower_3': 25312,
+        'singapore_pdd_tower_4': 5140,
+        'singapore_pdd_podium': 15341,
+        'singapore_pdd_tower_5': 21574,
+        'singapore_pdd_tower_6': 20483,
+        'singapore_pdd_tower_7': 49274,
+        'singapore_pdd_tower_8': 36185,
+        'singapore_pdd_tower_9': 12365,
+        'singapore_pdd_tower_10': 67413
+    }
     results_path_main = cobmo.utils.get_results_path(f'run_primo_testing')
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
@@ -89,7 +112,11 @@ def main():
         # Obtain energy use intensity (EUI).
         energy_use_timeseries = (
             output_vector_optimization['grid_electric_power']  # in W
-            / (building.building_data.zones.loc[:, 'zone_area'].sum() / used_space_share)  # in W/m²
+            / (
+                building_gross_floor_area[scenario_name]
+                if scenario_name in building_gross_floor_area.keys()
+                else building.building_data.zones.loc[:, 'zone_area'].sum()
+            )  # in W/m²
             * (building.timestep_interval.seconds / 3600)  # in Wh/m²
             / 1000  # in kWh/m²
         )
