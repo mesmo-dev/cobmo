@@ -31,14 +31,14 @@ The constraint timeseries is constructed by obtaining the appropriate value for 
 | --- |:---:| --- |
 | `constraint_type` | | Constraint type identifier. |
 | `time_period` | | Time period in `ddTHH:MM` format. `dd` is the weekday (`01` - Monday ... `07` - Sunday). `T` is the divider for date and time information according to ISO 8601. `HH:MM` is the daytime. |
-| `minimum_air_temperature` | °C | |
-| `maximum_air_temperature` | °C | |
-| `minimum_fresh_air_flow_per_area` | m/s | |
-| `minimum_fresh_air_flow_per_person` | m³/s/person | |
-| `maximum_co2_concentration` | ppm | |
-| `minimum_fresh_air_flow_per_area_no_dcv` | m/s | |
-| `minimum_relative_humidity` | % | |
-| `maximum_relative_humidity` | % | |
+| `minimum_air_temperature` | °C | Maximum indoor air temperature. |
+| `maximum_air_temperature` | °C | Maximum indoor air temperature. |
+| `minimum_fresh_air_flow_per_area` | m³/s/m² | Minimum fresh air supply for removing building emissions. *Currently not used.*|
+| `minimum_fresh_air_flow_per_person` | m³/s/person | Minimum fresh air supply for removing occupant emissions. *Currently not used.* |
+| `maximum_co2_concentration` | ppm | Maximum indoor air CO₂ concentration. *Currently not used.* |
+| `minimum_fresh_air_flow_per_area_no_dcv` | m³/s/m² | Minimum fresh air supply based on floor area (includes ventilation requirements due to occupancy). |
+| `minimum_relative_humidity` | % | Minimum indoor air relative humidity. *Currently not used.* |
+| `maximum_relative_humidity` | % | Maximum indoor air relative humidity. *Currently not used.* |
 
 ## `electricity_price_timeseries`
 
