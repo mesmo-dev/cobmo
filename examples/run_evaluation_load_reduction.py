@@ -122,7 +122,7 @@ def main():
                     results_path, 'details', '{} - {} state_vector.csv'.format(time_duration, timestep).replace(':', '-')
                 ))
                 control_vector_load_reduction.to_csv(os.path.join(
-                    results_path, 'details', '{} - {} output_vectord.csv'.format(time_duration, timestep).replace(':', '-')
+                    results_path, 'details', '{} - {} output_vector.csv'.format(time_duration, timestep).replace(':', '-')
                 ))
 
                 # Plot demand comparison for debugging.
