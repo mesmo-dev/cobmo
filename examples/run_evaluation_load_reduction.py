@@ -179,7 +179,10 @@ def main():
                     ].sum().sum()
                     * timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
                 )
-                load_reduction_percent = - investment_cost_load_reduction  # In percent.
+                load_reduction_percent = (
+                    -1.0
+                    * controller_load_reduction.problem.variable_load_reduction[0].value  # In percent.
+                )
                 load_reduction_energy = (
                     (load_reduction_percent / 100.0)
                     * baseline_energy

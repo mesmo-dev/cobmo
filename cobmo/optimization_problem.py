@@ -439,7 +439,10 @@ class OptimizationProblem(object):
                 )
         elif self.problem_type == 'load_reduction':
             # TODO: Introduce dedicated cost for demand side flexibility indicators.
-            self.investment_cost -= self.problem.variable_load_reduction[0]  # In percent.
+            self.investment_cost -= (
+                1e6  # Large weight for this part of the objective, to obtain maximum theoretical load reduction.
+                * self.problem.variable_load_reduction[0]  # In percent.
+            )
 
         # Define objective.
         self.problem.objective = pyo.Objective(
