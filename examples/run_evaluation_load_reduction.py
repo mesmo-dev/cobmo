@@ -27,21 +27,19 @@ def main():
     cobmo.data_interface.recreate_database()
 
     # Obtain building model.
-    building = cobmo.building_model.BuildingModel(scenario_name)
+    building_model = cobmo.building_model.BuildingModel(scenario_name)
 
     # Save building model matrices to CSV for debugging.
-    building.state_matrix.to_csv(os.path.join(results_path, 'building_state_matrix.csv'))
-    building.control_matrix.to_csv(os.path.join(results_path, 'building_control_matrix.csv'))
-    building.disturbance_matrix.to_csv(os.path.join(results_path, 'building_disturbance_matrix.csv'))
-    building.state_output_matrix.to_csv(os.path.join(results_path, 'building_state_output_matrix.csv'))
-    building.control_output_matrix.to_csv(os.path.join(results_path, 'building_control_output_matrix.csv'))
-    building.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_disturbance_output_matrix.csv'))
-    building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
+    building_model.state_matrix.to_csv(os.path.join(results_path, 'building_state_matrix.csv'))
+    building_model.control_matrix.to_csv(os.path.join(results_path, 'building_control_matrix.csv'))
+    building_model.disturbance_matrix.to_csv(os.path.join(results_path, 'building_disturbance_matrix.csv'))
+    building_model.state_output_matrix.to_csv(os.path.join(results_path, 'building_state_output_matrix.csv'))
+    building_model.control_output_matrix.to_csv(os.path.join(results_path, 'building_control_output_matrix.csv'))
+    building_model.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_disturbance_output_matrix.csv'))
+    building_model.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
 
     # Setup / solve optimization problem for baseline case.
-    optimization_problem_baseline = cobmo.optimization_problem.OptimizationProblem(
-        building
-    )
+    optimization_problem_baseline = cobmo.optimization_problem.OptimizationProblem(building_model)
     (
         control_vector_baseline,
         state_vector_baseline,
@@ -66,7 +64,7 @@ def main():
             for time_duration in np.arange(0.5, 6.5, 0.5)
         ])
     )
-    timesteps = building.timesteps
+    timesteps = building_model.timesteps
     load_reduction_energy_results = pd.DataFrame(
         None,
         timesteps,
@@ -87,7 +85,7 @@ def main():
     optimization_problem_load_reduction = None
     for time_duration in set_time_duration:
         for timestep in timesteps:
-            if (timestep + time_duration) > building.timesteps[-1]:
+            if (timestep + time_duration) > building_model.timesteps[-1]:
                 break  # Interrupt loop if end time goes beyond building model time horizon.
             elif (
                 output_vector_baseline.loc[timestep, output_vector_baseline.columns.str.contains('electric_power')]
@@ -102,7 +100,7 @@ def main():
                 # - If optimization problem already exists, only redefine load reduction constraints.
                 if optimization_problem_load_reduction is None:
                     optimization_problem_load_reduction = cobmo.optimization_problem.OptimizationProblem(
-                        building,
+                        building_model,
                         problem_type='load_reduction',
                         output_vector_reference=output_vector_baseline,
                         load_reduction_start_time=timestep,
@@ -181,14 +179,12 @@ def main():
                 )
 
                 # Calculate results.
-                # TODO: Move timestep_interval into building model.
-                timestep_interval = building.timesteps[1] - building.timesteps[0]
                 baseline_energy = (
                     output_vector_baseline.loc[
                         timestep:(timestep + time_duration),
                         output_vector_baseline.columns.str.contains('electric_power')
                     ].sum().sum()
-                    * timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
+                    * building_model.timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
                 )
                 load_reduction_percent = (
                     -1.0
