@@ -18,30 +18,33 @@ import cobmo.utils
 def main():
 
     # Settings.
-    scenario_names = [
+    sit_scenario_names = [
         'singapore_pdd_w1',
         'singapore_pdd_w3',
-        'singapore_pdd_w5',
-        'singapore_pdd_w6',
-        'singapore_pdd_w7',
-        'singapore_pdd_e1',
-        'singapore_pdd_e2',
-        'singapore_pdd_e3',
-        'singapore_pdd_e4',
-        'singapore_pdd_e5',
-        'singapore_pdd_e6',
-        'singapore_pdd_tower_1',
-        'singapore_pdd_tower_2',
-        'singapore_pdd_tower_3',
-        'singapore_pdd_tower_4',
-        'singapore_pdd_podium',
-        'singapore_pdd_tower_5',
-        'singapore_pdd_tower_6',
-        'singapore_pdd_tower_7',
-        'singapore_pdd_tower_8',
-        'singapore_pdd_tower_9',
-        'singapore_pdd_tower_10'
+        # 'singapore_pdd_w5',
+        # 'singapore_pdd_w6',
+        # 'singapore_pdd_w7',
+        # 'singapore_pdd_e1',
+        # 'singapore_pdd_e2',
+        # 'singapore_pdd_e3',
+        # 'singapore_pdd_e4',
+        # 'singapore_pdd_e5',
+        # 'singapore_pdd_e6'
     ]
+    jtc_scenario_names = [
+        'singapore_pdd_tower_1',
+        # 'singapore_pdd_tower_2',
+        # 'singapore_pdd_tower_3',
+        # 'singapore_pdd_tower_4',
+        # 'singapore_pdd_podium',
+        # 'singapore_pdd_tower_5',
+        # 'singapore_pdd_tower_6',
+        # 'singapore_pdd_tower_7',
+        # 'singapore_pdd_tower_8',
+        # 'singapore_pdd_tower_9',
+        # 'singapore_pdd_tower_10'
+    ]
+    scenario_names = [*sit_scenario_names, *jtc_scenario_names]
     building_gross_floor_area = {
         'singapore_pdd_w1': 23404.6,
         'singapore_pdd_w3': 44284.6,
@@ -71,9 +74,13 @@ def main():
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.data_interface.recreate_database()
 
+    # Instantiate results collection variables.
+    state_vector_collection = dict().fromkeys(scenario_names)
+    control_vector_collection = dict().fromkeys(scenario_names)
+    output_vector_collection = dict().fromkeys(scenario_names)
+    energy_use_summary_collection = []
+
     # Run each scenario.
-    electric_power_timeseries = []
-    results = []
     for scenario_name in scenario_names:
 
         # Print progress.
@@ -179,16 +186,53 @@ def main():
         energy_use_timeseries.to_csv(os.path.join(results_path_scenario, 'energy_use_timeseries.csv'))
 
         # Append results.
-        electric_power_timeseries.append(output_vector_optimization.loc[:, 'grid_electric_power'].rename(scenario_name))
-        results.append(energy_use_summary.rename(scenario_name))
+        state_vector_collection[scenario_name] = state_vector_optimization
+        control_vector_collection[scenario_name] = control_vector_optimization
+        output_vector_collection[scenario_name] = output_vector_optimization
+        energy_use_summary_collection.append(energy_use_summary.rename(scenario_name))
 
-    # Process / print / store results.
-    electric_power_timeseries = pd.concat(electric_power_timeseries, axis='columns')
-    print(f"electric_power_timeseries {electric_power_timeseries}")
+    # Merge results collections.
+    state_vector_collection = pd.concat(state_vector_collection, axis='columns')
+    control_vector_collection = pd.concat(control_vector_collection, axis='columns')
+    output_vector_collection = pd.concat(output_vector_collection, axis='columns')
+    energy_use_summary_collection = pd.concat(energy_use_summary_collection, axis='columns')
+    # Set multi-index level names for more convenient processing.
+    state_vector_collection.columns.set_names('scenario_name', level=0, inplace=True)
+    control_vector_collection.columns.set_names('scenario_name', level=0, inplace=True)
+    output_vector_collection.columns.set_names('scenario_name', level=0, inplace=True)
+
+    # Obtain cooling / electric power timeseries.
+    cooling_power_timeseries = output_vector_collection.loc[:, (slice(None), 'plant_thermal_power_cooling')]
+    cooling_power_timeseries = cooling_power_timeseries.groupby('scenario_name', axis='columns').sum()
+    cooling_power_timeseries.loc[:, 'pdd_total'] = cooling_power_timeseries.sum(axis='columns')
+    cooling_power_timeseries.loc[:, 'sit_total'] = (
+        cooling_power_timeseries.loc[:, cooling_power_timeseries.columns.isin(sit_scenario_names)].sum(axis='columns')
+    )
+    cooling_power_timeseries.loc[:, 'jtc_total'] = (
+        cooling_power_timeseries.loc[:, cooling_power_timeseries.columns.isin(jtc_scenario_names)].sum(axis='columns')
+    )
+    electric_power_timeseries = output_vector_collection.loc[:, (slice(None), 'grid_electric_power')]
+    electric_power_timeseries = electric_power_timeseries.groupby('scenario_name', axis='columns').sum()
+    electric_power_timeseries.loc[:, 'pdd_total'] = electric_power_timeseries.sum(axis='columns')
+    electric_power_timeseries.loc[:, 'sit_total'] = (
+        electric_power_timeseries.loc[:, electric_power_timeseries.columns.isin(sit_scenario_names)].sum(axis='columns')
+    )
+    electric_power_timeseries.loc[:, 'jtc_total'] = (
+        electric_power_timeseries.loc[:, electric_power_timeseries.columns.isin(jtc_scenario_names)].sum(axis='columns')
+    )
+
+    # Print results.
+    print(f"cooling_power_timeseries = \n{cooling_power_timeseries}")
+    print(f"electric_power_timeseries = \n{electric_power_timeseries}")
+    print(f"energy_use_summary = \n{energy_use_summary_collection}")
+
+    # Store results.
+    state_vector_collection.to_csv(os.path.join(results_path_main, 'state_vector_collection.csv'))
+    control_vector_collection.to_csv(os.path.join(results_path_main, 'control_vector_collection.csv'))
+    output_vector_collection.to_csv(os.path.join(results_path_main, 'output_vector_collection.csv'))
+    energy_use_summary_collection.to_csv(os.path.join(results_path_main, 'results.csv'))
+    cooling_power_timeseries.to_csv(os.path.join(results_path_main, 'cooling_power_timeseries.csv'))
     electric_power_timeseries.to_csv(os.path.join(results_path_main, 'electric_power_timeseries.csv'))
-    results = pd.concat(results, axis='columns')
-    print(f"results {results}")
-    results.to_csv(os.path.join(results_path_main, 'results.csv'))
 
     # Print results path.
     print(f"Results are stored in: {results_path_main}")
