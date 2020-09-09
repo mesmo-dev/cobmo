@@ -38,8 +38,8 @@ def main():
     building.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_disturbance_output_matrix.csv'))
     building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
 
-    # Run controller for baseline case.
-    controller_baseline = cobmo.optimization_problem.OptimizationProblem(
+    # Setup / solve optimization problem for baseline case.
+    optimization_problem_baseline = cobmo.optimization_problem.OptimizationProblem(
         building
     )
     (
@@ -49,7 +49,7 @@ def main():
         operation_cost_baseline,
         investment_cost_baseline,  # Zero when running (default) operation problem.
         storage_size_baseline  # Zero when running (default) operation problem.
-    ) = controller_baseline.solve()
+    ) = optimization_problem_baseline.solve()
 
     # Print operation cost for debugging.
     print("operation_cost_baseline = {}".format(operation_cost_baseline))
@@ -84,6 +84,7 @@ def main():
     )
 
     # Iterate load reduction calculation.
+    optimization_problem_load_reduction = None
     for time_duration in set_time_duration:
         for timestep in timesteps:
             if (timestep + time_duration) > building.timesteps[-1]:
@@ -97,22 +98,32 @@ def main():
                 # Print status info.
                 print("Calculate load reduction for: time_duration = {} / timestep = {}".format(time_duration, timestep))
 
-                # Run controller for load reduction case.
-                controller_load_reduction = cobmo.optimization_problem.OptimizationProblem(
-                    building,
-                    problem_type='load_reduction',
-                    output_vector_reference=output_vector_baseline,
-                    load_reduction_start_time=timestep,
-                    load_reduction_end_time=timestep + time_duration
-                )
+                # Define optimization problem.
+                # - If optimization problem already exists, only redefine load reduction constraints.
+                if optimization_problem_load_reduction is None:
+                    optimization_problem_load_reduction = cobmo.optimization_problem.OptimizationProblem(
+                        building,
+                        problem_type='load_reduction',
+                        output_vector_reference=output_vector_baseline,
+                        load_reduction_start_time=timestep,
+                        load_reduction_end_time=timestep + time_duration
+                    )
+                else:
+                    optimization_problem_load_reduction.define_load_reduction_constraints(
+                        output_vector_reference=output_vector_baseline,
+                        load_reduction_start_time=timestep,
+                        load_reduction_end_time=timestep + time_duration
+                    )
+
+                # Solve optimization problem.
                 (
                     control_vector_load_reduction,
                     state_vector_load_reduction,
                     output_vector_load_reduction,
                     operation_cost_load_reduction,
-                    investment_cost_load_reduction,  # Represents load reduction.
+                    investment_cost_load_reduction,
                     storage_size_load_reduction
-                ) = controller_load_reduction.solve()
+                ) = optimization_problem_load_reduction.solve()
 
                 # Save controller timeseries to CSV for debugging.
                 control_vector_load_reduction.to_csv(os.path.join(
@@ -181,7 +192,7 @@ def main():
                 )
                 load_reduction_percent = (
                     -1.0
-                    * controller_load_reduction.problem.variable_load_reduction[0].value  # In percent.
+                    * optimization_problem_load_reduction.problem.variable_load_reduction[0].value  # In percent.
                 )
                 load_reduction_energy = (
                     (load_reduction_percent / 100.0)
