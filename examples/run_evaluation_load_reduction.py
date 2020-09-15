@@ -1,7 +1,7 @@
 """Run script for evaluating demand side flexibility in terms of load reduction."""
 
-import hvplot
-import hvplot.pandas
+import matplotlib.dates
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
@@ -16,12 +16,14 @@ import cobmo.utils
 def main():
 
     # Settings.
-    scenario_name = 'paper_pesgm_2020'
+    scenario_name = 'singapore_pdd_jtc_tower_2'
+    time_intervals = (
+        pd.Index([
+            pd.to_timedelta('{}h'.format(time_duration))
+            for time_duration in np.arange(0.5, 3.5, 0.5)
+        ])
+    )
     results_path = cobmo.utils.get_results_path(f'run_evaluation_load_reduction_{scenario_name}')
-
-    # Instantiate results subfolders.
-    os.mkdir(os.path.join(results_path, 'plots'))
-    os.mkdir(os.path.join(results_path, 'details'))
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.data_interface.recreate_database()
@@ -49,43 +51,21 @@ def main():
         storage_size_baseline  # Zero when running (default) operation problem.
     ) = optimization_problem_baseline.solve()
 
-    # Print operation cost for debugging.
-    print("operation_cost_baseline = {}".format(operation_cost_baseline))
-
     # Save controller timeseries to CSV for debugging.
-    control_vector_baseline.to_csv(os.path.join(results_path, 'control_vector_baseline.csv'))
-    state_vector_baseline.to_csv(os.path.join(results_path, 'state_vector_baseline.csv'))
-    output_vector_baseline.to_csv(os.path.join(results_path, 'output_vector_baseline.csv'))
+    control_vector_baseline.to_csv(os.path.join(results_path, 'baseline_control_vector.csv'))
+    state_vector_baseline.to_csv(os.path.join(results_path, 'baseline_state_vector.csv'))
+    output_vector_baseline.to_csv(os.path.join(results_path, 'baseline_output_vector.csv'))
 
-    # Instantiate load reduction iteration variables.
-    set_time_duration = (
-        pd.Index([
-            pd.to_timedelta('{}h'.format(time_duration))
-            for time_duration in np.arange(0.5, 6.5, 0.5)
-        ])
-    )
-    timesteps = building_model.timesteps
-    load_reduction_energy_results = pd.DataFrame(
-        None,
-        timesteps,
-        set_time_duration
-    )
-    load_reduction_power_results = pd.DataFrame(
-        None,
-        timesteps,
-        set_time_duration
-    )
-    load_reduction_percent_results = pd.DataFrame(
-        None,
-        timesteps,
-        set_time_duration
-    )
+    # Instantiate results collection variables.
+    load_reduction_energy_collection = pd.DataFrame(None, index=building_model.timesteps, columns=time_intervals)
+    load_reduction_power_collection = pd.DataFrame(None, index=building_model.timesteps, columns=time_intervals)
+    load_reduction_percent_collection = pd.DataFrame(None, index=building_model.timesteps, columns=time_intervals)
 
     # Iterate load reduction calculation.
     optimization_problem_load_reduction = None
-    for time_duration in set_time_duration:
-        for timestep in timesteps:
-            if (timestep + time_duration) > building_model.timesteps[-1]:
+    for time_interval in time_intervals:
+        for timestep in building_model.timesteps:
+            if (timestep + time_interval) > building_model.timesteps[-1]:
                 break  # Interrupt loop if end time goes beyond building model time horizon.
             elif (
                 output_vector_baseline.loc[timestep, output_vector_baseline.columns.str.contains('electric_power')]
@@ -94,7 +74,7 @@ def main():
                 continue  # Skip loop if there is no baseline demand in the start timestep (no reduction possible).
             else:
                 # Print status info.
-                print("Calculate load reduction for: time_duration = {} / timestep = {}".format(time_duration, timestep))
+                print(f"Calculate load reduction at time step {timestep} for {time_interval}")
 
                 # Define optimization problem.
                 # - If optimization problem already exists, only redefine load reduction constraints.
@@ -104,13 +84,13 @@ def main():
                         problem_type='load_reduction',
                         output_vector_reference=output_vector_baseline,
                         load_reduction_start_time=timestep,
-                        load_reduction_end_time=timestep + time_duration
+                        load_reduction_end_time=timestep + time_interval
                     )
                 else:
                     optimization_problem_load_reduction.define_load_reduction_constraints(
                         output_vector_reference=output_vector_baseline,
                         load_reduction_start_time=timestep,
-                        load_reduction_end_time=timestep + time_duration
+                        load_reduction_end_time=timestep + time_interval
                     )
 
                 # Solve optimization problem.
@@ -123,67 +103,9 @@ def main():
                     storage_size_load_reduction
                 ) = optimization_problem_load_reduction.solve()
 
-                # Save controller timeseries to CSV for debugging.
-                control_vector_load_reduction.to_csv(os.path.join(
-                    results_path, 'details', '{} - {} control_vector.csv'.format(time_duration, timestep).replace(':', '-')
-                ))
-                control_vector_load_reduction.to_csv(os.path.join(
-                    results_path, 'details', '{} - {} state_vector.csv'.format(time_duration, timestep).replace(':', '-')
-                ))
-                control_vector_load_reduction.to_csv(os.path.join(
-                    results_path, 'details', '{} - {} output_vector.csv'.format(time_duration, timestep).replace(':', '-')
-                ))
-
-                # Plot demand comparison for debugging.
-                electric_power_comparison = pd.concat(
-                    [
-                        output_vector_baseline.loc[:, output_vector_baseline.columns.str.contains('electric_power')].sum(axis=1),
-                        output_vector_load_reduction.loc[:, output_vector_load_reduction.columns.str.contains('electric_power')].sum(axis=1),
-                    ],
-                    keys=[
-                        'baseline',
-                        'load_reduction',
-                    ],
-                    names=[
-                        'type'
-                    ],
-                    axis=1
-                )
-
-                # Hvplot has no default options.
-                # Workaround: Pass this dict to every new plot.
-                hvplot_default_options = dict(width=1500, height=300)
-
-                electric_power_plot = (
-                    electric_power_comparison.stack().rename('electric_power').reset_index()
-                ).hvplot.step(
-                    x='time',
-                    y='electric_power',
-                    by=['type'],
-                    **hvplot_default_options
-                )
-
-                # Define layout and labels / render plots.
-                hvplot.save(
-                    (
-                        electric_power_plot
-                    ).redim.label(
-                        time="Date / time",
-                        electric_power="Electric power [W]",
-                    ),
-                    # ).cols(1),
-                    # Plots open in are also stored in results directory.
-                    filename=os.path.join(
-                        results_path, 'plots', '{} - {}.html'.format(time_duration, timestep).replace(':', '-')
-                    )
-                )
-
-                # Calculate results.
+                # Calculate load reduction.
                 baseline_energy = (
-                    output_vector_baseline.loc[
-                        timestep:(timestep + time_duration),
-                        output_vector_baseline.columns.str.contains('electric_power')
-                    ].sum().sum()
+                    output_vector_baseline.loc[timestep:(timestep + time_interval), 'grid_electric_power'].sum()
                     * building_model.timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
                 )
                 load_reduction_percent = (
@@ -196,38 +118,100 @@ def main():
                 )  # in kWh.
                 load_reduction_power = (
                     load_reduction_energy
-                    / (time_duration.total_seconds() / 3600.0)  # kWh in kW.
+                    / (time_interval.total_seconds() / 3600.0)  # kWh in kW.
                 )
 
                 # Print results.
-                print("load_reduction_energy = {}".format(load_reduction_energy))
-                print("load_reduction_power = {}".format(load_reduction_power))
-                print("load_reduction_percent = {}".format(load_reduction_percent))
+                print(f"load_reduction_energy = {load_reduction_energy}")
+                print(f"load_reduction_power = {load_reduction_power}")
+                print(f"load_reduction_percent = {load_reduction_percent}")
 
-                # Store results.
-                load_reduction_energy_results.at[timestep, time_duration] = load_reduction_energy
-                load_reduction_power_results.at[timestep, time_duration] = load_reduction_power
-                load_reduction_percent_results.at[timestep, time_duration] = load_reduction_percent
+                # Store results to collection variables.
+                load_reduction_energy_collection.at[timestep, time_interval] = load_reduction_energy
+                load_reduction_power_collection.at[timestep, time_interval] = load_reduction_power
+                load_reduction_percent_collection.at[timestep, time_interval] = load_reduction_percent
 
-    # Aggregate load reduction results.
-    load_reduction_energy_mean = load_reduction_energy_results.mean()
-    load_reduction_power_mean = load_reduction_power_results.mean()
-    load_reduction_percent_mean = load_reduction_percent_results.mean()
+                # Save results to CSV.
+                control_vector_load_reduction.to_csv(os.path.join(
+                    results_path,
+                    cobmo.utils.get_alphanumeric_string(f'load_reduction_{time_interval}_{timestep}_control_vector')
+                    + '.csv'
+                ))
+                state_vector_load_reduction.to_csv(os.path.join(
+                    results_path,
+                    cobmo.utils.get_alphanumeric_string(f'load_reduction_{time_interval}_{timestep}_state_vector')
+                    + '.csv'
+                ))
+                output_vector_load_reduction.to_csv(os.path.join(
+                    results_path,
+                    cobmo.utils.get_alphanumeric_string(f'load_reduction_{time_interval}_{timestep}_output_vector')
+                    + '.csv'
+                ))
 
-    # Print load reduction results for debugging.
-    print("load_reduction_percent_results = \n{}".format(load_reduction_percent_results))
-    print("load_reduction_percent_mean = \n{}".format(load_reduction_percent_mean))
+                # Plot load reduction vs baseline.
+                plt.figure()
+                plt.title(f"Load reduction at time step {timestep} for {time_interval}")
+                plt.plot(
+                    output_vector_baseline.loc[:, 'grid_electric_power'],
+                    label='Baseline',
+                    drawstyle='steps-post'
+                )
+                plt.plot(
+                    output_vector_load_reduction.loc[:, 'grid_electric_power'],
+                    label='Load reduction',
+                    drawstyle='steps-post'
+                )
+                plt.gca().xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%H:%M'))
+                plt.legend()
+                # plt.show()
+                plt.savefig(os.path.join(
+                    results_path,
+                    cobmo.utils.get_alphanumeric_string(f'plot_load_reduction_{time_interval}_{timestep}') + '.png'
+                ))
+                plt.close()
+
+    # Add mean / min / max values.
+    load_reduction_energy_collection.loc['mean', :] = (
+        load_reduction_energy_collection.loc[building_model.timesteps, :].mean()
+    )
+    load_reduction_energy_collection.loc['max', :] = (
+        load_reduction_energy_collection.loc[building_model.timesteps, :].max()
+    )
+    load_reduction_energy_collection.loc['min', :] = (
+        load_reduction_energy_collection.loc[building_model.timesteps, :].min()
+    )
+    load_reduction_power_collection.loc['mean', :] = (
+        load_reduction_power_collection.loc[building_model.timesteps, :].mean()
+    )
+    load_reduction_power_collection.loc['max', :] = (
+        load_reduction_power_collection.loc[building_model.timesteps, :].max()
+    )
+    load_reduction_power_collection.loc['min', :] = (
+        load_reduction_power_collection.loc[building_model.timesteps, :].min()
+    )
+    load_reduction_percent_collection.loc['mean', :] = (
+        load_reduction_percent_collection.loc[building_model.timesteps, :].mean()
+    )
+    load_reduction_percent_collection.loc['max', :] = (
+        load_reduction_percent_collection.loc[building_model.timesteps, :].max()
+    )
+    load_reduction_percent_collection.loc['min', :] = (
+        load_reduction_percent_collection.loc[building_model.timesteps, :].min()
+    )
+
+    # Print results.
+    print(f"load_reduction_energy_collection = \n{load_reduction_energy_collection}")
+    print(f"load_reduction_power_collection = \n{load_reduction_power_collection}")
+    print(f"load_reduction_percent_results = \n{load_reduction_percent_collection}")
 
     # Save results to CSV.
-    load_reduction_energy_results.to_csv(os.path.join(results_path, 'load_reduction_energy_results.csv'))
-    load_reduction_power_results.to_csv(os.path.join(results_path, 'load_reduction_power_results.csv'))
-    load_reduction_percent_results.to_csv(os.path.join(results_path, 'load_reduction_percent_results.csv'))
-    load_reduction_energy_mean.to_csv(os.path.join(results_path, 'load_reduction_energy_mean.csv'))
-    load_reduction_power_mean.to_csv(os.path.join(results_path, 'load_reduction_power_mean.csv'))
-    load_reduction_percent_mean.to_csv(os.path.join(results_path, 'load_reduction_percent_mean.csv'))
+    load_reduction_energy_collection.to_csv(os.path.join(results_path, 'load_reduction_energy_results.csv'))
+    load_reduction_power_collection.to_csv(os.path.join(results_path, 'load_reduction_power_results.csv'))
+    load_reduction_percent_collection.to_csv(os.path.join(results_path, 'load_reduction_percent_results.csv'))
 
-    # Print results path for debugging.
-    print("Results are stored in: " + results_path)
+    # Launch & print results path.
+    cobmo.utils.launch(results_path)
+    print(f"Results are stored in {results_path}")
 
 
 if __name__ == '__main__':
