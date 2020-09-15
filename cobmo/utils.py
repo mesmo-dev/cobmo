@@ -11,6 +11,8 @@ import pandas as pd
 import pvlib
 import re
 import seaborn
+import subprocess
+import sys
 import typing
 
 import cobmo.config
@@ -498,3 +500,13 @@ def get_results_path(
     os.mkdir(results_path)
 
     return results_path
+
+def launch(path):
+    """Launch the file at given path with its associated application. If path is a directory, open in file explorer."""
+
+    if sys.platform == 'win32':
+        os.startfile(path)
+    elif sys.platform == 'darwin':
+        subprocess.call(['open', path])
+    else:
+        subprocess.call(['xdg-open', path])
