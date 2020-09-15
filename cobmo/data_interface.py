@@ -146,6 +146,30 @@ class BuildingData(object):
         # Store scenario name.
         self.scenario_name = scenario_name
 
+        # Obtain scenario.
+        scenarios = (
+            self.parse_parameters_dataframe(pd.read_sql(
+                """
+                SELECT * FROM scenarios 
+                JOIN buildings USING (building_name) 
+                JOIN linearization_types USING (linearization_type) 
+                LEFT JOIN initial_state_types USING (initial_state_type) 
+                LEFT JOIN storage_types USING (building_storage_type) 
+                WHERE scenario_name = ?
+                """,
+                con=database_connection,
+                params=[self.scenario_name]
+            ))
+        )
+        # Raise error, if scenario not found.
+        try:
+            assert len(scenarios) > 0
+        except AssertionError:
+            logger.exception(f"No scenario found for scenario name '{scenario_name}'.")
+            raise
+        # Convert to Series for shorter indexing.
+        self.scenarios = scenarios.iloc[0]
+
         # Obtain parameters.
         self.parameters = (
             pd.read_sql(
@@ -160,22 +184,6 @@ class BuildingData(object):
                 params=[scenario_name],
                 index_col='parameter_name'
             ).iloc[:, 0]  # Convert to Series for shorter indexing.
-        )
-
-        # Obtain scenarios.
-        self.scenarios = (
-            self.parse_parameters_dataframe(pd.read_sql(
-                """
-                SELECT * FROM scenarios 
-                JOIN buildings USING (building_name) 
-                JOIN linearization_types USING (linearization_type) 
-                LEFT JOIN initial_state_types USING (initial_state_type) 
-                LEFT JOIN storage_types USING (building_storage_type) 
-                WHERE scenario_name = ?
-                """,
-                con=database_connection,
-                params=[self.scenario_name]
-            )).iloc[0]  # Convert to Series for shorter indexing.
         )
 
         # Obtain surface definitions.
