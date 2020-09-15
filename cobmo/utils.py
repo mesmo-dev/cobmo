@@ -467,6 +467,14 @@ def calculate_discounted_payback_time(
     )
 
 
+def get_alphanumeric_string(
+        string: str
+):
+    """Create lowercase alphanumeric string from given string, replacing non-alphanumeric characters with underscore."""
+
+    return re.sub(r'\W+', '_', string).strip('_').lower()
+
+
 def get_timestamp(
         time: datetime.datetime = None
 ) -> str:
