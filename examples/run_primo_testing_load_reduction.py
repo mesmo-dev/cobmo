@@ -100,11 +100,20 @@ def main():
         load_reduction_power_collection = pd.DataFrame(None, index=building_model.timesteps, columns=time_intervals)
         load_reduction_percent_collection = pd.DataFrame(None, index=building_model.timesteps, columns=time_intervals)
 
+        # Obtain timesteps during which the HVAC system is expected to be active (operational hours).
+        timesteps = (
+            building_model.timesteps[(
+                building_model.output_constraint_timeseries_maximum
+                != building_model.output_constraint_timeseries_maximum.max()
+            ).any(axis='columns')]
+        )
+        timesteps = building_model.timesteps if len(timesteps) == 0 else timesteps
+
         # Iterate load reduction calculation.
         optimization_problem_load_reduction = None
         for time_interval in time_intervals:
-            for timestep in building_model.timesteps:
-                if (timestep + time_interval) > building_model.timesteps[-1]:
+            for timestep in timesteps:
+                if (timestep + time_interval) > timesteps[-1]:
                     break  # Interrupt loop if end time goes beyond building model time horizon.
                 elif (
                         output_vector_baseline.loc[timestep, output_vector_baseline.columns.str.contains('electric_power')]
@@ -171,33 +180,15 @@ def main():
                     load_reduction_percent_collection.at[timestep, time_interval] = load_reduction_percent
 
         # Add mean / min / max values.
-        load_reduction_energy_collection.loc['mean', :] = (
-            load_reduction_energy_collection.loc[building_model.timesteps, :].mean()
-        )
-        load_reduction_energy_collection.loc['max', :] = (
-            load_reduction_energy_collection.loc[building_model.timesteps, :].max()
-        )
-        load_reduction_energy_collection.loc['min', :] = (
-            load_reduction_energy_collection.loc[building_model.timesteps, :].min()
-        )
-        load_reduction_power_collection.loc['mean', :] = (
-            load_reduction_power_collection.loc[building_model.timesteps, :].mean()
-        )
-        load_reduction_power_collection.loc['max', :] = (
-            load_reduction_power_collection.loc[building_model.timesteps, :].max()
-        )
-        load_reduction_power_collection.loc['min', :] = (
-            load_reduction_power_collection.loc[building_model.timesteps, :].min()
-        )
-        load_reduction_percent_collection.loc['mean', :] = (
-            load_reduction_percent_collection.loc[building_model.timesteps, :].mean()
-        )
-        load_reduction_percent_collection.loc['max', :] = (
-            load_reduction_percent_collection.loc[building_model.timesteps, :].max()
-        )
-        load_reduction_percent_collection.loc['min', :] = (
-            load_reduction_percent_collection.loc[building_model.timesteps, :].min()
-        )
+        load_reduction_energy_collection.loc['mean', :] = load_reduction_energy_collection.mean()
+        load_reduction_energy_collection.loc['max', :] = load_reduction_energy_collection.max()
+        load_reduction_energy_collection.loc['min', :] = load_reduction_energy_collection.min()
+        load_reduction_power_collection.loc['mean', :] = load_reduction_power_collection.mean()
+        load_reduction_power_collection.loc['max', :] = load_reduction_power_collection.max()
+        load_reduction_power_collection.loc['min', :] = load_reduction_power_collection.min()
+        load_reduction_percent_collection.loc['mean', :] = load_reduction_percent_collection.mean()
+        load_reduction_percent_collection.loc['max', :] = load_reduction_percent_collection.max()
+        load_reduction_percent_collection.loc['min', :] = load_reduction_percent_collection.min()
 
         # Print results.
         print(f"load_reduction_energy_collection = \n{load_reduction_energy_collection}")

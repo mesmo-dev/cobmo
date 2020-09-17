@@ -215,6 +215,9 @@ def main():
     cooling_power_timeseries.loc[:, 'jtc_total'] = (
         cooling_power_timeseries.loc[:, cooling_power_timeseries.columns.isin(jtc_scenario_names)].sum(axis='columns')
     )
+    cooling_power_timeseries.loc[:, 'pdd_total_rt'] = cooling_power_timeseries.loc[:, 'pdd_total'] * 0.000284345
+    cooling_power_timeseries.loc[:, 'sit_total_rt'] = cooling_power_timeseries.loc[:, 'sit_total'] * 0.000284345
+    cooling_power_timeseries.loc[:, 'jtc_total_rt'] = cooling_power_timeseries.loc[:, 'jtc_total'] * 0.000284345
     electric_power_timeseries = output_vector_collection.loc[:, (slice(None), 'grid_electric_power')]
     electric_power_timeseries = electric_power_timeseries.groupby('scenario_name', axis='columns').sum()
     electric_power_timeseries.loc[:, 'pdd_total'] = electric_power_timeseries.sum(axis='columns')
@@ -238,7 +241,8 @@ def main():
     cooling_power_timeseries.to_csv(os.path.join(results_path_main, 'cooling_power_timeseries.csv'))
     electric_power_timeseries.to_csv(os.path.join(results_path_main, 'electric_power_timeseries.csv'))
 
-    # Print results path.
+    # Launch & print results path.
+    cobmo.utils.launch(results_path_main)
     print(f"Results are stored in: {results_path_main}")
 
 
