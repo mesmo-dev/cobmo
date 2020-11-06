@@ -7,6 +7,8 @@
 import numpy as np
 import os
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 
 import cobmo.building_model
 import cobmo.config
@@ -225,8 +227,6 @@ def main():
     )
 
     # Print results.
-    print(f"cooling_power_timeseries = \n{cooling_power_timeseries}")
-    print(f"electric_power_timeseries = \n{electric_power_timeseries}")
     print(f"energy_use_summary = \n{energy_use_summary_collection}")
 
     # Store results.
@@ -236,6 +236,153 @@ def main():
     energy_use_summary_collection.to_csv(os.path.join(results_path_main, 'results.csv'))
     cooling_power_timeseries.to_csv(os.path.join(results_path_main, 'cooling_power_timeseries.csv'))
     electric_power_timeseries.to_csv(os.path.join(results_path_main, 'electric_power_timeseries.csv'))
+
+    # Load validation data.
+    validation_cooling_power_timeseries = (
+        pd.read_csv(
+            os.path.join(cobmo.config.base_path, 'data', 'supplementary_data', 'validation', 'singapore_pdd.csv'),
+            parse_dates=['time'],
+            index_col='time'
+        )
+    )
+
+    # Plots for debugging.
+    px.defaults.width = 1000  # Plotly figure width.
+
+    # Cooling power.
+    for scenario_name in [*scenario_names, 'sit_total', 'jtc_total', 'pdd_total']:
+        values = (
+            pd.concat(
+                {
+                    'Reference': validation_cooling_power_timeseries.loc[:, scenario_name] / 1e3,
+                    'Simulation': cooling_power_timeseries.loc[:, scenario_name] / 1e6
+                },
+                axis='columns'
+            )
+        )
+        figure = px.line(values, line_shape='hv')
+        figure.update_traces(fill='tozeroy')
+        figure.update_layout(
+            title=f'Scenario: {scenario_name}',
+            yaxis_title='Cooling demand (thermal power) [MW]',
+            xaxis_title=None,
+            xaxis=go.layout.XAxis(tickformat='%H:%M', ticklabelmode='period'),
+            font=go.layout.Font(size=15),
+            legend=go.layout.Legend(x=0.99, xanchor='auto', y=0.99, yanchor='auto')
+        )
+        # figure.show()
+        figure.write_image(os.path.join(results_path_main, f'cooling_power_{scenario_name}.png'))
+
+    # Zone area.
+    for scenario_name in scenario_names:
+        building_model = cobmo.building_model.BuildingModel(scenario_name)
+        figure = px.pie(building_model.building_data.zones, values='zone_area', names='zone_name')
+        figure.update_layout(
+            title=f'Scenario: {scenario_name}',
+            font=go.layout.Font(size=15),
+        )
+        # figure.show()
+        figure.write_image(os.path.join(results_path_main, f'zone_area_{scenario_name}.png'))
+
+    # Internal gains.
+    for scenario_name in scenario_names:
+        building_model = cobmo.building_model.BuildingModel(scenario_name)
+        for internal_gain_type in building_model.building_data.internal_gain_timeseries.columns:
+            values = 100.0 * building_model.building_data.internal_gain_timeseries.loc[:, internal_gain_type]
+            figure = px.line(values, line_shape='hv')
+            figure.update_traces(fill='tozeroy')
+            figure.update_layout(
+                title=f'Type: {internal_gain_type}',
+                yaxis_title='Internal gain [%]',
+                xaxis_title=None,
+                xaxis=go.layout.XAxis(tickformat='%H:%M', ticklabelmode='period'),
+                font=go.layout.Font(size=15),
+                showlegend=False
+            )
+            # figure.show()
+            figure.write_image(os.path.join(results_path_main, f'internal_gain_{internal_gain_type}.png'))
+
+    # Temperature constraints.
+    for scenario_name in scenario_names:
+        building_model = cobmo.building_model.BuildingModel(scenario_name)
+        for zone_name in building_model.building_data.zones.index:
+            output = zone_name + '_temperature'
+            figure = go.Figure()
+            figure.add_trace(
+                go.Scatter(
+                    x=building_model.timesteps,
+                    y=building_model.output_constraint_timeseries_maximum.loc[:, output].values,
+                    name='Maximum',
+                    line=go.scatter.Line(width=3, shape='hv')
+                )
+            )
+            figure.add_trace(
+                go.Scatter(
+                    x=building_model.timesteps,
+                    y=output_vector_collection.loc[:, (scenario_name, output)].values,
+                    name='Actual',
+                    line=go.scatter.Line(shape='hv')
+                )
+            )
+            figure.add_trace(
+                go.Scatter(
+                    x=building_model.timesteps,
+                    y=building_model.output_constraint_timeseries_minimum.loc[:, output].values,
+                    name='Minimum',
+                    line=go.scatter.Line(width=3, shape='hv')
+                )
+            )
+            figure.update_layout(
+                title=f'Scenario: {scenario_name} / Zone: {zone_name}',
+                yaxis_title='Temperature [°C]',
+                xaxis_title=None,
+                xaxis=go.layout.XAxis(tickformat='%H:%M', ticklabelmode='period'),
+                font=go.layout.Font(size=15),
+                legend=go.layout.Legend(x=0.99, xanchor='auto', y=0.99, yanchor='auto')
+            )
+            # figure.show()
+            figure.write_image(os.path.join(results_path_main, f'temperature_{scenario_name}_{output}.png'))
+
+    # Fresh air flow constraints.
+    for scenario_name in scenario_names:
+        building_model = cobmo.building_model.BuildingModel(scenario_name)
+        for zone_name in building_model.building_data.zones.index:
+            output = zone_name + '_total_fresh_air_flow'
+            figure = go.Figure()
+            figure.add_trace(
+                go.Scatter(
+                    x=building_model.timesteps,
+                    y=(
+                        building_model.output_constraint_timeseries_minimum.loc[:, output].values
+                        / building_model.building_data.zones.loc[zone_name, 'zone_area']
+                        * 1000
+                    ),
+                    name='Minimum',
+                    line=go.scatter.Line(width=3, shape='hv')
+                )
+            )
+            figure.add_trace(
+                go.Scatter(
+                    x=building_model.timesteps,
+                    y=(
+                        output_vector_collection.loc[:, (scenario_name, output)].values
+                        / building_model.building_data.zones.loc[zone_name, 'zone_area']
+                        * 1000
+                    ),
+                    name='Actual',
+                    line=go.scatter.Line(shape='hv')
+                )
+            )
+            figure.update_layout(
+                title=f'Scenario: {scenario_name} / Zone: {zone_name}',
+                yaxis_title='Fresh air flow [l/s/m²]',
+                xaxis_title=None,
+                xaxis=go.layout.XAxis(tickformat='%H:%M', ticklabelmode='period'),
+                font=go.layout.Font(size=15),
+                legend=go.layout.Legend(x=0.99, xanchor='auto', y=0.99, yanchor='auto')
+            )
+            # figure.show()
+            figure.write_image(os.path.join(results_path_main, f'fresh_air_{scenario_name}_{output}.png'))
 
     # Launch & print results path.
     cobmo.utils.launch(results_path_main)
