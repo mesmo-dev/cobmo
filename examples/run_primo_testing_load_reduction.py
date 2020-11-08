@@ -55,15 +55,9 @@ def main():
     cobmo.data_interface.recreate_database()
 
     # Instantiate results collection variables.
-    load_reduction_energy_mean_collection = pd.DataFrame(None, index=scenario_names, columns=time_intervals)
-    load_reduction_power_mean_collection = pd.DataFrame(None, index=scenario_names, columns=time_intervals)
-    load_reduction_percent_mean_collection = pd.DataFrame(None, index=scenario_names, columns=time_intervals)
-    load_reduction_energy_min_collection = pd.DataFrame(None, index=scenario_names, columns=time_intervals)
-    load_reduction_power_min_collection = pd.DataFrame(None, index=scenario_names, columns=time_intervals)
-    load_reduction_percent_min_collection = pd.DataFrame(None, index=scenario_names, columns=time_intervals)
-    load_reduction_energy_max_collection = pd.DataFrame(None, index=scenario_names, columns=time_intervals)
-    load_reduction_power_max_collection = pd.DataFrame(None, index=scenario_names, columns=time_intervals)
-    load_reduction_percent_max_collection = pd.DataFrame(None, index=scenario_names, columns=time_intervals)
+    load_reduction_energy_collections = list()
+    load_reduction_power_collections = list()
+    load_reduction_percent_collections = list()
 
     for scenario_name in scenario_names:
 
@@ -96,9 +90,15 @@ def main():
         output_vector_baseline.to_csv(os.path.join(results_path, f'{scenario_name}_baseline_output_vector.csv'))
 
         # Instantiate results collection variables.
-        load_reduction_energy_collection = pd.DataFrame(None, index=building_model.timesteps, columns=time_intervals)
-        load_reduction_power_collection = pd.DataFrame(None, index=building_model.timesteps, columns=time_intervals)
-        load_reduction_percent_collection = pd.DataFrame(None, index=building_model.timesteps, columns=time_intervals)
+        load_reduction_energy_collection = (
+            pd.DataFrame(None, index=building_model.timesteps, columns=pd.Index(time_intervals, name='time_interval'))
+        )
+        load_reduction_power_collection = (
+            pd.DataFrame(None, index=building_model.timesteps, columns=pd.Index(time_intervals, name='time_interval'))
+        )
+        load_reduction_percent_collection = (
+            pd.DataFrame(None, index=building_model.timesteps, columns=pd.Index(time_intervals, name='time_interval'))
+        )
 
         # Obtain timesteps during which the HVAC system is expected to be active (operational hours).
         timesteps = (
@@ -179,54 +179,42 @@ def main():
                     load_reduction_power_collection.at[timestep, time_interval] = load_reduction_power
                     load_reduction_percent_collection.at[timestep, time_interval] = load_reduction_percent
 
-        # Add mean / min / max values.
-        load_reduction_energy_collection.loc['mean', :] = load_reduction_energy_collection.mean()
-        load_reduction_energy_collection.loc['max', :] = load_reduction_energy_collection.max()
-        load_reduction_energy_collection.loc['min', :] = load_reduction_energy_collection.min()
-        load_reduction_power_collection.loc['mean', :] = load_reduction_power_collection.mean()
-        load_reduction_power_collection.loc['max', :] = load_reduction_power_collection.max()
-        load_reduction_power_collection.loc['min', :] = load_reduction_power_collection.min()
-        load_reduction_percent_collection.loc['mean', :] = load_reduction_percent_collection.mean()
-        load_reduction_percent_collection.loc['max', :] = load_reduction_percent_collection.max()
-        load_reduction_percent_collection.loc['min', :] = load_reduction_percent_collection.min()
-
         # Print results.
         print(f"load_reduction_energy_collection = \n{load_reduction_energy_collection}")
         print(f"load_reduction_power_collection = \n{load_reduction_power_collection}")
         print(f"load_reduction_percent_results = \n{load_reduction_percent_collection}")
 
         # Save results to CSV.
-        load_reduction_energy_collection.to_csv(os.path.join(results_path, f'{scenario_name}_load_reduction_energy_results.csv'))
-        load_reduction_power_collection.to_csv(os.path.join(results_path, f'{scenario_name}_load_reduction_power_results.csv'))
-        load_reduction_percent_collection.to_csv(os.path.join(results_path, f'{scenario_name}_load_reduction_percent_results.csv'))
+        load_reduction_energy_collection.to_csv(os.path.join(results_path, f'{scenario_name}_load_reduction_energy.csv'))
+        load_reduction_power_collection.to_csv(os.path.join(results_path, f'{scenario_name}_load_reduction_power.csv'))
+        load_reduction_percent_collection.to_csv(os.path.join(results_path, f'{scenario_name}_load_reduction_percent.csv'))
 
         # Store results to collection variables.
-        load_reduction_energy_mean_collection.loc[scenario_name, :] = load_reduction_energy_collection.loc['mean', :]
-        load_reduction_power_mean_collection.loc[scenario_name, :] = load_reduction_power_collection.loc['mean', :]
-        load_reduction_percent_mean_collection.loc[scenario_name, :] = load_reduction_percent_collection.loc['mean', :]
-        load_reduction_energy_min_collection.loc[scenario_name, :] = load_reduction_energy_collection.loc['min', :]
-        load_reduction_power_min_collection.loc[scenario_name, :] = load_reduction_power_collection.loc['min', :]
-        load_reduction_percent_min_collection.loc[scenario_name, :] = load_reduction_percent_collection.loc['min', :]
-        load_reduction_energy_max_collection.loc[scenario_name, :] = load_reduction_energy_collection.loc['max', :]
-        load_reduction_power_max_collection.loc[scenario_name, :] = load_reduction_power_collection.loc['max', :]
-        load_reduction_percent_max_collection.loc[scenario_name, :] = load_reduction_percent_collection.loc['max', :]
+        load_reduction_energy_collections.append(load_reduction_energy_collection)
+        load_reduction_power_collections.append(load_reduction_power_collection)
+        load_reduction_percent_collections.append(load_reduction_percent_collection)
+
+    # Merge collection variables.
+    load_reduction_energy_collections = (
+        pd.concat(load_reduction_energy_collections, axis='columns', keys=scenario_names, names=['scenario_name'])
+    )
+    load_reduction_power_collections = (
+        pd.concat(load_reduction_power_collections, axis='columns', keys=scenario_names, names=['scenario_name'])
+    )
+    load_reduction_percent_collections = (
+        pd.concat(load_reduction_percent_collections, axis='columns', keys=scenario_names, names=['scenario_name'])
+    )
 
     # Save results to CSV.
-    load_reduction_energy_mean_collection.to_csv(os.path.join(results_path, 'load_reduction_energy_mean.csv'))
-    load_reduction_power_mean_collection.to_csv(os.path.join(results_path, 'load_reduction_power_mean.csv'))
-    load_reduction_percent_mean_collection.to_csv(os.path.join(results_path, 'load_reduction_percent_mean.csv'))
-    load_reduction_energy_min_collection.to_csv(os.path.join(results_path, 'load_reduction_energy_min.csv'))
-    load_reduction_power_min_collection.to_csv(os.path.join(results_path, 'load_reduction_power_min.csv'))
-    load_reduction_percent_min_collection.to_csv(os.path.join(results_path, 'load_reduction_percent_min.csv'))
-    load_reduction_energy_max_collection.to_csv(os.path.join(results_path, 'load_reduction_energy_max.csv'))
-    load_reduction_power_max_collection.to_csv(os.path.join(results_path, 'load_reduction_power_max.csv'))
-    load_reduction_percent_max_collection.to_csv(os.path.join(results_path, 'load_reduction_percent_max.csv'))
+    load_reduction_energy_collections.to_csv(os.path.join(results_path, 'load_reduction_energy.csv'))
+    load_reduction_power_collections.to_csv(os.path.join(results_path, 'load_reduction_power.csv'))
+    load_reduction_percent_collections.to_csv(os.path.join(results_path, 'load_reduction_percent.csv'))
 
     # Plots.
 
     # Load reduction total.
-    values = load_reduction_percent_min_collection.abs().max().copy()
-    values.index = (load_reduction_percent_min_collection.columns.seconds / 3600).astype(str) + 'h'
+    values = load_reduction_percent_collections.abs().max().groupby('time_interval').max().copy()
+    values.index = (values.index.seconds / 3600).astype(str) + 'h'
     figure = go.Figure()
     figure.add_trace(go.Bar(
         x=values.index,
@@ -239,8 +227,8 @@ def main():
     figure.write_image(os.path.join(results_path, 'load_reduction_percent_max_aggregate.png'))
 
     # Load reduction buildings.
-    values = load_reduction_percent_min_collection.abs().T.copy()
-    values.index = (load_reduction_percent_min_collection.columns.seconds / 3600).astype(str) + 'h'
+    values = load_reduction_percent_collections.abs().max().unstack(level='scenario_name').copy()
+    values.index = (values.index.seconds / 3600).astype(str) + 'h'
     figure = go.Figure()
     for column in values.columns:
         figure.add_trace(go.Bar(
@@ -249,8 +237,9 @@ def main():
             name=column
         ))
     figure.update_layout(
-        xaxis_title='Load reduction duration',
-        yaxis_title='Maximum load reduction [%]'
+        # xaxis_title='Load reduction duration',
+        yaxis_title='Maximum load reduction [%]',
+        legend=go.layout.Legend(orientation='h')
     )
     figure.write_image(os.path.join(results_path, 'load_reduction_percent_max_buildings.png'))
 
