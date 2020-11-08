@@ -61,17 +61,11 @@ def main():
 
     for scenario_name in scenario_names:
 
+        # Print progress.
+        print(f"Starting scenario: {scenario_name}")
+
         # Obtain building model.
         building_model = cobmo.building_model.BuildingModel(scenario_name)
-
-        # Save building model matrices to CSV for debugging.
-        building_model.state_matrix.to_csv(os.path.join(results_path, f'{scenario_name}_building_state_matrix.csv'))
-        building_model.control_matrix.to_csv(os.path.join(results_path, f'{scenario_name}_building_control_matrix.csv'))
-        building_model.disturbance_matrix.to_csv(os.path.join(results_path, f'{scenario_name}_building_disturbance_matrix.csv'))
-        building_model.state_output_matrix.to_csv(os.path.join(results_path, f'{scenario_name}_building_state_output_matrix.csv'))
-        building_model.control_output_matrix.to_csv(os.path.join(results_path, f'{scenario_name}_building_control_output_matrix.csv'))
-        building_model.disturbance_output_matrix.to_csv(os.path.join(results_path, f'{scenario_name}_building_disturbance_output_matrix.csv'))
-        building_model.disturbance_timeseries.to_csv(os.path.join(results_path, f'{scenario_name}_building_disturbance_timeseries.csv'))
 
         # Setup / solve optimization problem for baseline case.
         optimization_problem_baseline = cobmo.optimization_problem.OptimizationProblem(building_model)
@@ -83,11 +77,6 @@ def main():
             investment_cost_baseline,  # Zero when running (default) operation problem.
             storage_size_baseline  # Zero when running (default) operation problem.
         ) = optimization_problem_baseline.solve()
-
-        # Save controller timeseries to CSV for debugging.
-        control_vector_baseline.to_csv(os.path.join(results_path, f'{scenario_name}_baseline_control_vector.csv'))
-        state_vector_baseline.to_csv(os.path.join(results_path, f'{scenario_name}_baseline_state_vector.csv'))
-        output_vector_baseline.to_csv(os.path.join(results_path, f'{scenario_name}_baseline_output_vector.csv'))
 
         # Instantiate results collection variables.
         load_reduction_energy_collection = (
@@ -113,6 +102,7 @@ def main():
         optimization_problem_load_reduction = None
         for time_interval in time_intervals:
             for timestep in timesteps:
+
                 if (timestep + time_interval) > timesteps[-1]:
                     break  # Interrupt loop if end time goes beyond building model time horizon.
                 elif (
@@ -121,7 +111,8 @@ def main():
                 ).all():
                     continue  # Skip loop if there is no baseline demand in the start timestep (no reduction possible).
                 else:
-                    # Print status info.
+
+                    # Print progress.
                     print(f"Calculate load reduction at time step {timestep} for {time_interval}")
 
                     # Define optimization problem.
@@ -142,31 +133,24 @@ def main():
                         )
 
                     # Solve optimization problem.
-                    (
-                        control_vector_load_reduction,
-                        state_vector_load_reduction,
-                        output_vector_load_reduction,
-                        operation_cost_load_reduction,
-                        investment_cost_load_reduction,
-                        storage_size_load_reduction
-                    ) = optimization_problem_load_reduction.solve()
+                    optimization_problem_load_reduction.solve()
 
                     # Calculate load reduction.
                     baseline_energy = (
-                            output_vector_baseline.loc[timestep:(timestep + time_interval), 'grid_electric_power'].sum()
-                            * building_model.timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
+                        output_vector_baseline.loc[timestep:(timestep + time_interval), 'grid_electric_power'].sum()
+                        * building_model.timestep_interval.seconds / 3600.0 / 1000.0  # W in kWh.
                     )
                     load_reduction_percent = (
-                            -1.0
-                            * optimization_problem_load_reduction.problem.variable_load_reduction[0].value  # In percent.
+                        -1.0
+                        * optimization_problem_load_reduction.problem.variable_load_reduction[0].value  # In percent.
                     )
                     load_reduction_energy = (
-                            (load_reduction_percent / 100.0)
-                            * baseline_energy
+                        (load_reduction_percent / 100.0)
+                        * baseline_energy
                     )  # in kWh.
                     load_reduction_power = (
-                            load_reduction_energy
-                            / (time_interval.total_seconds() / 3600.0)  # kWh in kW.
+                        load_reduction_energy
+                        / (time_interval.total_seconds() / 3600.0)  # kWh in kW.
                     )
 
                     # Print results.
@@ -182,7 +166,7 @@ def main():
         # Print results.
         print(f"load_reduction_energy_collection = \n{load_reduction_energy_collection}")
         print(f"load_reduction_power_collection = \n{load_reduction_power_collection}")
-        print(f"load_reduction_percent_results = \n{load_reduction_percent_collection}")
+        print(f"load_reduction_percent_collection = \n{load_reduction_percent_collection}")
 
         # Save results to CSV.
         load_reduction_energy_collection.to_csv(os.path.join(results_path, f'{scenario_name}_load_reduction_energy.csv'))
