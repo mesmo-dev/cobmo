@@ -3,6 +3,8 @@
 import numpy as np
 import os
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 
 import cobmo.building_model
 import cobmo.config
@@ -219,6 +221,38 @@ def main():
     load_reduction_energy_max_collection.to_csv(os.path.join(results_path, 'load_reduction_energy_max.csv'))
     load_reduction_power_max_collection.to_csv(os.path.join(results_path, 'load_reduction_power_max.csv'))
     load_reduction_percent_max_collection.to_csv(os.path.join(results_path, 'load_reduction_percent_max.csv'))
+
+    # Plots.
+
+    # Load reduction total.
+    values = load_reduction_percent_min_collection.abs().max().copy()
+    values.index = (load_reduction_percent_min_collection.columns.seconds / 3600).astype(str) + 'h'
+    figure = go.Figure()
+    figure.add_trace(go.Bar(
+        x=values.index,
+        y=values.values
+    ))
+    figure.update_layout(
+        xaxis_title='Load reduction duration',
+        yaxis_title='Maximum load reduction [%]'
+    )
+    figure.write_image(os.path.join(results_path, 'load_reduction_percent_max_aggregate.png'))
+
+    # Load reduction buildings.
+    values = load_reduction_percent_min_collection.abs().T.copy()
+    values.index = (load_reduction_percent_min_collection.columns.seconds / 3600).astype(str) + 'h'
+    figure = go.Figure()
+    for column in values.columns:
+        figure.add_trace(go.Bar(
+            x=values.index,
+            y=values.loc[:, column].values,
+            name=column
+        ))
+    figure.update_layout(
+        xaxis_title='Load reduction duration',
+        yaxis_title='Maximum load reduction [%]'
+    )
+    figure.write_image(os.path.join(results_path, 'load_reduction_percent_max_buildings.png'))
 
     # Launch & print results path.
     cobmo.utils.launch(results_path)
