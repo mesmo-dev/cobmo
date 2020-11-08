@@ -28,19 +28,17 @@ def main():
         'singapore_pdd_sit_e6'
     ]
     jtc_scenario_names = [
-        'singapore_pdd_jtc_tower_1',
-        'singapore_pdd_jtc_podium_1',
-        'singapore_pdd_jtc_tower_2',
-        'singapore_pdd_jtc_podium_2',
-        'singapore_pdd_jtc_tower_3',
-        'singapore_pdd_jtc_podium_3',
-        'singapore_pdd_jtc_tower_4',
-        'singapore_pdd_jtc_tower_5',
-        'singapore_pdd_jtc_tower_6',
-        'singapore_pdd_jtc_tower_7',
-        'singapore_pdd_jtc_tower_8',
-        'singapore_pdd_jtc_tower_9',
-        'singapore_pdd_jtc_tower_10'
+        'singapore_pdd_jtc_t1',
+        'singapore_pdd_jtc_t2',
+        'singapore_pdd_jtc_t3',
+        'singapore_pdd_jtc_t4',
+        'singapore_pdd_jtc_t5',
+        'singapore_pdd_jtc_t6',
+        'singapore_pdd_jtc_t7',
+        'singapore_pdd_jtc_t8',
+        'singapore_pdd_jtc_t9',
+        'singapore_pdd_jtc_t10',
+        'singapore_pdd_jtc_podium'
     ]
     scenario_names = [*sit_scenario_names, *jtc_scenario_names]
     time_intervals = (
