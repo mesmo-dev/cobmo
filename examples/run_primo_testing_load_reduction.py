@@ -196,21 +196,30 @@ def main():
 
     # Plots.
 
-    # Load reduction total.
+    # Load reduction aggregate.
+    figure = go.Figure()
     values = load_reduction_percent_collections.abs().max().groupby('time_interval').max().copy()
     values.index = (values.index.seconds / 3600).astype(str) + 'h'
-    figure = go.Figure()
     figure.add_trace(go.Bar(
         x=values.index,
-        y=values.values
+        y=values.values,
+        name='Maximum reduction'
+    ))
+    values = load_reduction_percent_collections.abs().mean().groupby('time_interval').mean().copy()
+    values.index = (values.index.seconds / 3600).astype(str) + 'h'
+    figure.add_trace(go.Bar(
+        x=values.index,
+        y=values.values,
+        name='Average reduction'
     ))
     figure.update_layout(
         xaxis_title='Load reduction duration',
-        yaxis_title='Maximum load reduction [%]'
+        yaxis_title='Load reduction [%]',
+        legend=go.layout.Legend(x=0.99, xanchor='auto', y=0.99, yanchor='auto')
     )
-    figure.write_image(os.path.join(results_path, 'load_reduction_percent_max_aggregate.png'))
+    figure.write_image(os.path.join(results_path, 'load_reduction_percent_aggregate.pdf'))
 
-    # Load reduction buildings.
+    # Load reduction maximum buildings.
     values = load_reduction_percent_collections.abs().max().unstack(level='scenario_name').copy()
     values.index = (values.index.seconds / 3600).astype(str) + 'h'
     figure = go.Figure()
@@ -218,14 +227,90 @@ def main():
         figure.add_trace(go.Bar(
             x=values.index,
             y=values.loc[:, column].values,
-            name=column
+            name=column[14:].replace("_", " ").upper()
         ))
     figure.update_layout(
         # xaxis_title='Load reduction duration',
         yaxis_title='Maximum load reduction [%]',
-        legend=go.layout.Legend(orientation='h')
+        legend=go.layout.Legend(orientation='h', title='Building: ')
     )
-    figure.write_image(os.path.join(results_path, 'load_reduction_percent_max_buildings.png'))
+    figure.write_image(os.path.join(results_path, 'load_reduction_percent_max_buildings.pdf'))
+
+    # Load reduction mean buildings.
+    values = load_reduction_percent_collections.abs().mean().unstack(level='scenario_name').copy()
+    values.index = (values.index.seconds / 3600).astype(str) + 'h'
+    figure = go.Figure()
+    for column in values.columns:
+        figure.add_trace(go.Bar(
+            x=values.index,
+            y=values.loc[:, column].values,
+            name=column[14:].replace("_", " ").upper()
+        ))
+    figure.update_layout(
+        # xaxis_title='Load reduction duration',
+        yaxis_title='Average load reduction [%]',
+        legend=go.layout.Legend(orientation='h', title='Building: ')
+    )
+    figure.write_image(os.path.join(results_path, 'load_reduction_percent_mean_buildings.pdf'))
+
+    # Load reduction maximum aggregate timeseries.
+    values = load_reduction_percent_collections.abs().fillna(0.0).groupby('time_interval', axis='columns').max().copy()
+    values.columns = (values.columns.seconds / 3600).astype(str) + 'h'
+    figure = go.Figure()
+    for column in values.columns:
+        figure.add_trace(go.Scatter(
+            x=values.index,
+            y=values.loc[:, column].values,
+            name=column,
+            line=go.scatter.Line(shape='hv'),
+            fill='tozeroy'
+        ))
+    figure.update_layout(
+        xaxis=go.layout.XAxis(tickformat='%H:%M'),
+        yaxis_title='Maximum load reduction [%]',
+        legend=go.layout.Legend(orientation='h', title='Load reduction duration: ')
+    )
+    figure.write_image(os.path.join(results_path, 'load_reduction_percent_timeseries_max.pdf'))
+
+    # Load reduction mean aggregate timeseries.
+    values = load_reduction_percent_collections.abs().fillna(0.0).groupby('time_interval', axis='columns').mean().copy()
+    values.columns = (values.columns.seconds / 3600).astype(str) + 'h'
+    figure = go.Figure()
+    for column in values.columns:
+        figure.add_trace(go.Scatter(
+            x=values.index,
+            y=values.loc[:, column].values,
+            name=column,
+            line=go.scatter.Line(shape='hv'),
+            fill='tozeroy'
+        ))
+    figure.update_layout(
+        xaxis=go.layout.XAxis(tickformat='%H:%M'),
+        yaxis_title='Average load reduction [%]',
+        legend=go.layout.Legend(orientation='h', title='Load reduction duration: ')
+    )
+    figure.write_image(os.path.join(results_path, 'load_reduction_percent_timeseries_mean.pdf'))
+
+    # Load reduction building timeseries.
+    for scenario_name in scenario_names:
+        values = load_reduction_percent_collections.loc[:, (scenario_name, slice(None))].abs().fillna(0.0).copy()
+        values.columns = (values.columns.get_level_values('time_interval').seconds / 3600).astype(str) + 'h'
+        figure = go.Figure()
+        for column in values.columns:
+            figure.add_trace(go.Scatter(
+                x=values.index,
+                y=values.loc[:, column].values,
+                name=column,
+                line=go.scatter.Line(shape='hv'),
+                fill='tozeroy'
+            ))
+        figure.update_layout(
+            title=f'Building: {scenario_name[14:].replace("_", " ").upper()}',
+            xaxis=go.layout.XAxis(tickformat='%H:%M'),
+            yaxis_title='Load reduction [%]',
+            legend=go.layout.Legend(orientation='h', title='Load reduction duration: ')
+        )
+        figure.write_image(os.path.join(results_path, f'load_reduction_percent_timeseries_{scenario_name}.pdf'))
 
     # Launch & print results path.
     cobmo.utils.launch(results_path)
