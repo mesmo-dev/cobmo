@@ -21,3 +21,6 @@ logs:
 plots:
   matplotlib_style: seaborn-colorblind
   plotly_font_family: Arial
+  plotly_font_size: 15
+  plotly_figure_width: 1000
+  plotly_figure_height: 500
