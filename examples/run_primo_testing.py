@@ -243,11 +243,12 @@ def main():
             os.path.join(cobmo.config.base_path, 'data', 'supplementary_data', 'validation', 'singapore_pdd.csv'),
             parse_dates=['time'],
             index_col='time'
-        )
+        ).reindex(state_vector_collection.index).fillna(method='ffill')
+        # Reindex / fill to align simulation / validation timesteps index.
+        # - Note: Expecting validation data for correct time period and in hourly timestep interval.
     )
 
     # Plots for debugging.
-    px.defaults.width = 1000  # Plotly figure width.
 
     # Cooling power.
     for scenario_name in [*scenario_names, 'sit_total', 'jtc_total', 'pdd_total']:
@@ -263,26 +264,29 @@ def main():
         figure = px.line(values, line_shape='hv')
         figure.update_traces(fill='tozeroy')
         figure.update_layout(
-            title=f'Scenario: {scenario_name}',
+            title=(
+                f'Building: {scenario_name[14:].replace("_", " ").upper()}'
+                if scenario_name in scenario_names
+                else None
+            ),
             yaxis_title='Cooling demand (thermal power) [MW]',
             xaxis_title=None,
             xaxis=go.layout.XAxis(tickformat='%H:%M', ticklabelmode='period'),
-            font=go.layout.Font(size=15),
             legend=go.layout.Legend(x=0.99, xanchor='auto', y=0.99, yanchor='auto')
         )
         # figure.show()
-        figure.write_image(os.path.join(results_path_main, f'cooling_power_{scenario_name}.png'))
+        figure.write_image(os.path.join(results_path_main, f'cooling_power_{scenario_name}.pdf'))
 
     # Zone area.
     for scenario_name in scenario_names:
         building_model = cobmo.building_model.BuildingModel(scenario_name)
         figure = px.pie(building_model.building_data.zones, values='zone_area', names='zone_name')
         figure.update_layout(
-            title=f'Scenario: {scenario_name}',
+            title=f'Building: {scenario_name[14:].replace("_", " ").upper()}',
             font=go.layout.Font(size=15),
         )
         # figure.show()
-        figure.write_image(os.path.join(results_path_main, f'zone_area_{scenario_name}.png'))
+        figure.write_image(os.path.join(results_path_main, f'zone_area_{scenario_name}.pdf'))
 
     # Internal gains.
     for scenario_name in scenario_names:
@@ -296,11 +300,10 @@ def main():
                 yaxis_title='Internal gain [%]',
                 xaxis_title=None,
                 xaxis=go.layout.XAxis(tickformat='%H:%M', ticklabelmode='period'),
-                font=go.layout.Font(size=15),
                 showlegend=False
             )
             # figure.show()
-            figure.write_image(os.path.join(results_path_main, f'internal_gain_{internal_gain_type}.png'))
+            figure.write_image(os.path.join(results_path_main, f'internal_gain_{internal_gain_type}.pdf'))
 
     # Temperature constraints.
     for scenario_name in scenario_names:
@@ -333,15 +336,14 @@ def main():
                 )
             )
             figure.update_layout(
-                title=f'Scenario: {scenario_name} / Zone: {zone_name}',
+                title=f'Building: {scenario_name[14:].replace("_", " ").upper()} / Zone: {zone_name}',
                 yaxis_title='Temperature [°C]',
                 xaxis_title=None,
                 xaxis=go.layout.XAxis(tickformat='%H:%M', ticklabelmode='period'),
-                font=go.layout.Font(size=15),
                 legend=go.layout.Legend(x=0.99, xanchor='auto', y=0.99, yanchor='auto')
             )
             # figure.show()
-            figure.write_image(os.path.join(results_path_main, f'temperature_{scenario_name}_{output}.png'))
+            figure.write_image(os.path.join(results_path_main, f'temperature_{scenario_name}_{output}.pdf'))
 
     # Fresh air flow constraints.
     for scenario_name in scenario_names:
@@ -374,15 +376,14 @@ def main():
                 )
             )
             figure.update_layout(
-                title=f'Scenario: {scenario_name} / Zone: {zone_name}',
+                title=f'Building: {scenario_name[14:].replace("_", " ").upper()} / Zone: {zone_name}',
                 yaxis_title='Fresh air flow [l/s/m²]',
                 xaxis_title=None,
                 xaxis=go.layout.XAxis(tickformat='%H:%M', ticklabelmode='period'),
-                font=go.layout.Font(size=15),
                 legend=go.layout.Legend(x=0.99, xanchor='auto', y=0.99, yanchor='auto')
             )
             # figure.show()
-            figure.write_image(os.path.join(results_path_main, f'fresh_air_{scenario_name}_{output}.png'))
+            figure.write_image(os.path.join(results_path_main, f'fresh_air_{scenario_name}_{output}.pdf'))
 
     # Launch & print results path.
     cobmo.utils.launch(results_path_main)
