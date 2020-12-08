@@ -61,12 +61,14 @@ class OptimizationProblem(object):
             price_forecast=None,
             actual_dispatch=None
     ):
+
+        # TODO: Only store absolutely necessary parameters.
         time_start = time.time()
         self.building = building
         self.problem_type = problem_type
-        self.output_vector_reference = output_vector_reference
-        self.load_reduction_start_time = load_reduction_start_time
-        self.load_reduction_end_time = load_reduction_end_time
+        # self.output_vector_reference = output_vector_reference
+        # self.load_reduction_start_time = load_reduction_start_time
+        # self.load_reduction_end_time = load_reduction_end_time
         self.price_sensitivity_factor = price_sensitivity_factor
         self.price_sensitivity_timestep = price_sensitivity_timestep
         self.load_maximization_time = load_maximization_time
@@ -264,19 +266,11 @@ class OptimizationProblem(object):
 
         # Demand side flexibility auxiliary constraints.
         elif self.problem_type == 'load_reduction':
-            for timestep in self.building.timesteps:
-                if (
-                    (timestep >= self.load_reduction_start_time)
-                    and (timestep < self.load_reduction_end_time)
-                ):
-                    self.problem.constraints.add(
-                        self.problem.variable_output_vector[timestep, 'grid_electric_power']
-                        ==
-                        (
-                            (1.0 - (self.problem.variable_load_reduction[0] / 100.0))
-                            * self.problem.variable_output_vector[timestep, 'grid_electric_power']
-                        )
-                    )
+            self.define_load_reduction_constraints(
+                output_vector_reference,
+                load_reduction_start_time,
+                load_reduction_end_time
+            )
 
         # Robust optimization additional constraints.
         elif self.problem_type == 'robust_optimization':
@@ -439,7 +433,10 @@ class OptimizationProblem(object):
                 )
         elif self.problem_type == 'load_reduction':
             # TODO: Introduce dedicated cost for demand side flexibility indicators.
-            self.investment_cost -= self.problem.variable_load_reduction[0]  # In percent.
+            self.investment_cost -= (
+                1e6  # Large weight for this part of the objective, to obtain maximum theoretical load reduction.
+                * self.problem.variable_load_reduction[0]  # In percent.
+            )
 
         # Define objective.
         self.problem.objective = pyo.Objective(
@@ -449,6 +446,35 @@ class OptimizationProblem(object):
 
         # Print setup time for debugging.
         logger.debug("OptimizationProblem setup time: {:.2f} seconds".format(time.time() - time_start))
+
+    def define_load_reduction_constraints(
+            self,
+            output_vector_reference,
+            load_reduction_start_time,
+            load_reduction_end_time
+    ):
+        """Define additional constraints for load reduction problem."""
+
+        # Remove existing load reduction constraints, if any.
+        if self.problem.find_component('load_reduction_constraints') is not None:
+            self.problem.del_component('load_reduction_constraints')
+            self.problem.del_component('load_reduction_constraints_index')
+
+        # Define load reduction constraints.
+        self.problem.load_reduction_constraints = pyo.ConstraintList()
+        for timestep in self.building.timesteps:
+            if (
+                (timestep >= load_reduction_start_time)
+                and (timestep < load_reduction_end_time)
+            ):
+                self.problem.load_reduction_constraints.add(
+                    self.problem.variable_output_vector[timestep, 'grid_electric_power']
+                    ==
+                    (
+                        (1.0 - (self.problem.variable_load_reduction[0] / 100.0))
+                        * output_vector_reference.at[timestep, 'grid_electric_power']
+                    )
+                )
 
     def solve(self):
         """Solve the optimization and return the optimal solution results, i.e., control vector timeseries,

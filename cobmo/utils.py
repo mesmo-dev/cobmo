@@ -11,6 +11,8 @@ import pandas as pd
 import pvlib
 import re
 import seaborn
+import subprocess
+import sys
 import typing
 
 import cobmo.config
@@ -465,6 +467,14 @@ def calculate_discounted_payback_time(
     )
 
 
+def get_alphanumeric_string(
+        string: str
+):
+    """Create lowercase alphanumeric string from given string, replacing non-alphanumeric characters with underscore."""
+
+    return re.sub(r'\W+', '_', string).strip('_').lower()
+
+
 def get_timestamp(
         time: datetime.datetime = None
 ) -> str:
@@ -498,3 +508,13 @@ def get_results_path(
     os.mkdir(results_path)
 
     return results_path
+
+def launch(path):
+    """Launch the file at given path with its associated application. If path is a directory, open in file explorer."""
+
+    if sys.platform == 'win32':
+        os.startfile(path)
+    elif sys.platform == 'darwin':
+        subprocess.call(['open', path])
+    else:
+        subprocess.call(['xdg-open', path])

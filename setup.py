@@ -10,11 +10,13 @@ setuptools.setup(
         # Please note: Dependencies must also be added in `docs/conf.py` to `autodoc_mock_imports`.
         'CoolProp==6.2.1',
         'hvplot',
+        'kaleido',  # For static plot output with plotly.
         'matplotlib',
         'multimethod',
         'numpy',
         'pandas',
         'parameterized',  # for tests.
+        'plotly',
         'pvlib',
         'pyomo',
         'scipy',

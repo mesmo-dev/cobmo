@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import multiprocessing
 import os
 import pandas as pd
+import plotly.graph_objects as go
+import plotly.io as pio
 import yaml
 
 
@@ -143,3 +145,19 @@ try:
 except ValueError:
     # For compatibility with older versions of pandas.
     pd.set_option('display.max_colwidth', 0)
+
+# Modify plotly default settings.
+pio.templates.default = go.layout.Template(pio.templates['simple_white'])
+pio.templates.default.layout.update(
+    font=go.layout.Font(
+        family=config['plots']['plotly_font_family'],
+        size=config['plots']['plotly_font_size']
+    ),
+    legend=go.layout.Legend(borderwidth=1),
+    xaxis=go.layout.XAxis(showgrid=True),
+    yaxis=go.layout.YAxis(showgrid=True)
+)
+pio.kaleido.scope.default_width = config['plots']['plotly_figure_width']
+pio.kaleido.scope.default_height = config['plots']['plotly_figure_height']
+pio.orca.config.default_width = config['plots']['plotly_figure_width']
+pio.orca.config.default_height = config['plots']['plotly_figure_height']

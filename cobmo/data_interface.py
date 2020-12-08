@@ -43,24 +43,41 @@ def recreate_database(
         if additional_data_paths is not None
         else [cobmo.config.config['paths']['data']]
     )
+    valid_table_names = (
+        pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", database_connection).iloc[:, 0].tolist()
+    )
     for data_path in data_paths:
         for csv_file in glob.glob(os.path.join(data_path, '**', '*.csv'), recursive=True):
 
             # Exclude CSV files from supplementary data folders.
             if os.path.join('data', 'supplementary_data') not in csv_file:
 
+                # Debug message.
+                logger.debug(f"Loading {csv_file} into database.")
+
                 # Obtain table name.
                 table_name = os.path.splitext(os.path.basename(csv_file))[0]
+                # Raise exception, if table doesn't exist.
+                try:
+                    assert table_name in valid_table_names
+                except AssertionError:
+                    logger.exception(
+                        f"Error loading '{csv_file}' into database, because there is no table named '{table_name}'."
+                    )
+                    raise
 
-                # Write new table content.
-                logger.debug(f"Loading {csv_file} into database.")
-                table = pd.read_csv(csv_file)
-                table.to_sql(
-                    table_name,
-                    con=database_connection,
-                    if_exists='append',
-                    index=False
-                )
+                # Load table and write to database.
+                try:
+                    table = pd.read_csv(csv_file, dtype=np.str)
+                    table.to_sql(
+                        table_name,
+                        con=database_connection,
+                        if_exists='append',
+                        index=False
+                    )
+                except Exception:
+                    logger.error(f"Error loading {csv_file} into database.")
+                    raise
 
     cursor.close()
     database_connection.close()
@@ -146,6 +163,30 @@ class BuildingData(object):
         # Store scenario name.
         self.scenario_name = scenario_name
 
+        # Obtain scenario.
+        scenarios = (
+            self.parse_parameters_dataframe(pd.read_sql(
+                """
+                SELECT * FROM scenarios 
+                JOIN buildings USING (building_name) 
+                JOIN linearization_types USING (linearization_type) 
+                LEFT JOIN initial_state_types USING (initial_state_type) 
+                LEFT JOIN storage_types USING (building_storage_type) 
+                WHERE scenario_name = ?
+                """,
+                con=database_connection,
+                params=[self.scenario_name]
+            ))
+        )
+        # Raise error, if scenario not found.
+        try:
+            assert len(scenarios) > 0
+        except AssertionError:
+            logger.exception(f"No scenario found for scenario name '{scenario_name}'.")
+            raise
+        # Convert to Series for shorter indexing.
+        self.scenarios = scenarios.iloc[0]
+
         # Obtain parameters.
         self.parameters = (
             pd.read_sql(
@@ -160,22 +201,6 @@ class BuildingData(object):
                 params=[scenario_name],
                 index_col='parameter_name'
             ).iloc[:, 0]  # Convert to Series for shorter indexing.
-        )
-
-        # Obtain scenarios.
-        self.scenarios = (
-            self.parse_parameters_dataframe(pd.read_sql(
-                """
-                SELECT * FROM scenarios 
-                JOIN buildings USING (building_name) 
-                JOIN linearization_types USING (linearization_type) 
-                LEFT JOIN initial_state_types USING (initial_state_type) 
-                LEFT JOIN storage_types USING (building_storage_type) 
-                WHERE scenario_name = ?
-                """,
-                con=database_connection,
-                params=[self.scenario_name]
-            )).iloc[0]  # Convert to Series for shorter indexing.
         )
 
         # Obtain surface definitions.
@@ -302,7 +327,7 @@ class BuildingData(object):
             self.weather_timeseries.reindex(
                 self.timesteps
             ).interpolate(
-                'quadratic'
+                'linear'
             ).bfill(
                 limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
             ).ffill(
@@ -331,7 +356,7 @@ class BuildingData(object):
             self.electricity_price_timeseries.reindex(
                 self.timesteps
             ).interpolate(
-                'quadratic'
+                'linear'
             ).bfill(
                 limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
             ).ffill(
@@ -368,7 +393,7 @@ class BuildingData(object):
             # Obtain complete schedule for each minute of the week.
             electricity_price_range_complete = (
                 electricity_price_range_complete.reindex(
-                    pd.period_range(start='01T00:00', end='07T23:59', freq='T')
+                    pd.period_range(start='01T00:00', end='08T00:00', freq='T')
                 ).fillna(method='ffill')
             )
 
@@ -456,10 +481,10 @@ class BuildingData(object):
             internal_gain_schedule_complete = (
                 internal_gain_schedule_complete.reindex(
                     pd.period_range(start='01T00:00', end='07T23:59', freq='T')
-                ).fillna(method='ffill')
+                ).interpolate(method='linear').fillna(method='ffill')
             )
 
-            # Reindex / fill internal gain schedule for given timesteps.
+            # Reindex / fill schedule for given timesteps.
             internal_gain_schedule_complete.index = (
                 pd.MultiIndex.from_arrays([
                     internal_gain_schedule_complete.index.day - 1,
@@ -524,7 +549,7 @@ class BuildingData(object):
                 internal_gain_timeseries.reindex(
                     self.timesteps
                 ).interpolate(
-                    'quadratic'
+                    'linear'
                 ).bfill(
                     limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
                 ).ffill(
@@ -601,11 +626,11 @@ class BuildingData(object):
             # Obtain complete schedule for each minute of the week.
             constraint_schedule_complete = (
                 constraint_schedule_complete.reindex(
-                    pd.period_range(start='01T00:00', end='07T23:59', freq='T')
-                ).fillna(method='ffill')
+                    pd.period_range(start='01T00:00', end='08T00:00', freq='T')
+                ).astype(np.float).interpolate(method='linear').fillna(method='ffill')
             )
 
-            # Reindex / fill internal gain schedule for given timesteps.
+            # Reindex / fill schedule for given timesteps.
             constraint_schedule_complete.index = (
                 pd.MultiIndex.from_arrays([
                     constraint_schedule_complete.index.day - 1,

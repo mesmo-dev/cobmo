@@ -7,6 +7,8 @@
 import numpy as np
 import os
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 
 import cobmo.building_model
 import cobmo.config
@@ -18,37 +20,69 @@ import cobmo.utils
 def main():
 
     # Settings.
-    scenario_names = [
-        'primo_1_SIT_P1_W1',
-        'primo_2_SIT_P1_W3',
-        'primo_3_SIT_P1_W5',
-        'primo_4_SIT_P1_W6',
-        'primo_5_SIT_P1_W7',
-        'primo_7_SIT_P2_E1',
-        'primo_8_SIT_P2_E2',
-        'primo_9_SIT_P2_E3',
-        'primo_10_SIT_P2_E4',
-        'primo_11_SIT_P2_E5',
-        'primo_12_SIT_P2_E6',
-        'primo_13_JTC_CC1_Tower_1',
-        'primo_14_JTC_CC1_Tower_2',
-        'primo_15_JTC_CC1_Tower_3',
-        'primo_16_JTC_CC1_Tower_4',
-        'primo_17_JTC_CC1_Podium',
-        'primo_18_JTC_CC2_Tower_5',
-        'primo_19_JTC_CC2_Tower_6',
-        'primo_20_JTC_CC2_Tower_7',
-        'primo_21_JTC_CC3_Tower_8',
-        'primo_22_JTC_CC3_Tower_9',
-        'primo_23_JTC_CC3_Tower_10'
+    sit_scenario_names = [
+        'singapore_pdd_sit_w1',
+        'singapore_pdd_sit_w3',
+        'singapore_pdd_sit_w5',
+        'singapore_pdd_sit_w6',
+        'singapore_pdd_sit_w7',
+        'singapore_pdd_sit_e1',
+        'singapore_pdd_sit_e2',
+        'singapore_pdd_sit_e3',
+        'singapore_pdd_sit_e4',
+        'singapore_pdd_sit_e5',
+        'singapore_pdd_sit_e6'
     ]
+    jtc_scenario_names = [
+        'singapore_pdd_jtc_t1',
+        'singapore_pdd_jtc_t2',
+        'singapore_pdd_jtc_t3',
+        'singapore_pdd_jtc_t4',
+        'singapore_pdd_jtc_t5',
+        'singapore_pdd_jtc_t6',
+        'singapore_pdd_jtc_t7',
+        'singapore_pdd_jtc_t8',
+        'singapore_pdd_jtc_t9',
+        'singapore_pdd_jtc_t10',
+        'singapore_pdd_jtc_podium'
+    ]
+    scenario_names = [*sit_scenario_names, *jtc_scenario_names]
+    building_gross_floor_area = {
+        'singapore_pdd_sit_w1': 23405,
+        'singapore_pdd_sit_w3': 44285,
+        'singapore_pdd_sit_w5': 30165,
+        'singapore_pdd_sit_w6': 9597,
+        'singapore_pdd_sit_w7': 13844,
+        'singapore_pdd_sit_e1': 22965,
+        'singapore_pdd_sit_e2': 46176,
+        'singapore_pdd_sit_e3': 8854,
+        'singapore_pdd_sit_e4': 1861,
+        'singapore_pdd_sit_e5': 10494,
+        'singapore_pdd_sit_e6': 39439,
+        'singapore_pdd_jtc_t1': 39297,
+        'singapore_pdd_jtc_t2': 44977,
+        'singapore_pdd_jtc_t3': 37188,
+        'singapore_pdd_jtc_t4': 7362,
+        'singapore_pdd_jtc_t5': 30538,
+        'singapore_pdd_jtc_t6': 42462,
+        'singapore_pdd_jtc_t7': 60238,
+        'singapore_pdd_jtc_t8': 36336,
+        'singapore_pdd_jtc_t9': 19234,
+        'singapore_pdd_jtc_t10': 75393,
+        'singapore_pdd_jtc_podium': 25988
+    }
     results_path_main = cobmo.utils.get_results_path(f'run_primo_testing')
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.data_interface.recreate_database()
 
+    # Instantiate results collection variables.
+    state_vector_collection = dict().fromkeys(scenario_names)
+    control_vector_collection = dict().fromkeys(scenario_names)
+    output_vector_collection = dict().fromkeys(scenario_names)
+    energy_use_summary_collection = []
+
     # Run each scenario.
-    results = []
     for scenario_name in scenario_names:
 
         # Print progress.
@@ -87,7 +121,11 @@ def main():
         # Obtain energy use intensity (EUI).
         energy_use_timeseries = (
             output_vector_optimization['grid_electric_power']  # in W
-            / building.building_data.zones.loc[:, 'zone_area'].sum()  # in W/m²
+            / (
+                building_gross_floor_area[scenario_name]
+                if scenario_name in building_gross_floor_area.keys()
+                else building.building_data.zones.loc[:, 'zone_area'].sum()
+            )  # in W/m²
             * (building.timestep_interval.seconds / 3600)  # in Wh/m²
             / 1000  # in kWh/m²
         )
@@ -150,14 +188,205 @@ def main():
         energy_use_timeseries.to_csv(os.path.join(results_path_scenario, 'energy_use_timeseries.csv'))
 
         # Append results.
-        results.append(energy_use_summary.rename(scenario_name))
+        state_vector_collection[scenario_name] = state_vector_optimization
+        control_vector_collection[scenario_name] = control_vector_optimization
+        output_vector_collection[scenario_name] = output_vector_optimization
+        energy_use_summary_collection.append(energy_use_summary.rename(scenario_name))
 
-    # Process / print / store results.
-    results = pd.concat(results, axis='columns')
-    print(f"results {results}")
-    results.to_csv(os.path.join(results_path_main, 'results.csv'))
+    # Merge results collections.
+    state_vector_collection = pd.concat(state_vector_collection, axis='columns')
+    control_vector_collection = pd.concat(control_vector_collection, axis='columns')
+    output_vector_collection = pd.concat(output_vector_collection, axis='columns')
+    energy_use_summary_collection = pd.concat(energy_use_summary_collection, axis='columns')
+    # Set multi-index level names for more convenient processing.
+    state_vector_collection.columns.set_names('scenario_name', level=0, inplace=True)
+    control_vector_collection.columns.set_names('scenario_name', level=0, inplace=True)
+    output_vector_collection.columns.set_names('scenario_name', level=0, inplace=True)
 
-    # Print results path.
+    # Obtain cooling / electric power timeseries.
+    cooling_power_timeseries = output_vector_collection.loc[:, (slice(None), 'plant_thermal_power_cooling')]
+    cooling_power_timeseries = cooling_power_timeseries.groupby('scenario_name', axis='columns').sum()
+    cooling_power_timeseries.loc[:, 'pdd_total'] = cooling_power_timeseries.sum(axis='columns')
+    cooling_power_timeseries.loc[:, 'sit_total'] = (
+        cooling_power_timeseries.loc[:, cooling_power_timeseries.columns.isin(sit_scenario_names)].sum(axis='columns')
+    )
+    cooling_power_timeseries.loc[:, 'jtc_total'] = (
+        cooling_power_timeseries.loc[:, cooling_power_timeseries.columns.isin(jtc_scenario_names)].sum(axis='columns')
+    )
+    cooling_power_timeseries.loc[:, 'pdd_total_rt'] = cooling_power_timeseries.loc[:, 'pdd_total'] * 0.000284345
+    cooling_power_timeseries.loc[:, 'sit_total_rt'] = cooling_power_timeseries.loc[:, 'sit_total'] * 0.000284345
+    cooling_power_timeseries.loc[:, 'jtc_total_rt'] = cooling_power_timeseries.loc[:, 'jtc_total'] * 0.000284345
+    electric_power_timeseries = output_vector_collection.loc[:, (slice(None), 'grid_electric_power')]
+    electric_power_timeseries = electric_power_timeseries.groupby('scenario_name', axis='columns').sum()
+    electric_power_timeseries.loc[:, 'pdd_total'] = electric_power_timeseries.sum(axis='columns')
+    electric_power_timeseries.loc[:, 'sit_total'] = (
+        electric_power_timeseries.loc[:, electric_power_timeseries.columns.isin(sit_scenario_names)].sum(axis='columns')
+    )
+    electric_power_timeseries.loc[:, 'jtc_total'] = (
+        electric_power_timeseries.loc[:, electric_power_timeseries.columns.isin(jtc_scenario_names)].sum(axis='columns')
+    )
+
+    # Print results.
+    print(f"energy_use_summary = \n{energy_use_summary_collection}")
+
+    # Store results.
+    state_vector_collection.to_csv(os.path.join(results_path_main, 'state_vector_collection.csv'))
+    control_vector_collection.to_csv(os.path.join(results_path_main, 'control_vector_collection.csv'))
+    output_vector_collection.to_csv(os.path.join(results_path_main, 'output_vector_collection.csv'))
+    energy_use_summary_collection.to_csv(os.path.join(results_path_main, 'results.csv'))
+    cooling_power_timeseries.to_csv(os.path.join(results_path_main, 'cooling_power_timeseries.csv'))
+    electric_power_timeseries.to_csv(os.path.join(results_path_main, 'electric_power_timeseries.csv'))
+
+    # Load validation data.
+    validation_cooling_power_timeseries = (
+        pd.read_csv(
+            os.path.join(cobmo.config.base_path, 'data', 'supplementary_data', 'validation', 'singapore_pdd.csv'),
+            parse_dates=['time'],
+            index_col='time'
+        ).reindex(state_vector_collection.index).fillna(method='ffill')
+        # Reindex / fill to align simulation / validation timesteps index.
+        # - Note: Expecting validation data for correct time period and in hourly timestep interval.
+    )
+
+    # Plots for debugging.
+
+    # Cooling power.
+    for scenario_name in [*scenario_names, 'sit_total', 'jtc_total', 'pdd_total']:
+        values = (
+            pd.concat(
+                {
+                    'Reference': validation_cooling_power_timeseries.loc[:, scenario_name] / 1e3,
+                    'Simulation': cooling_power_timeseries.loc[:, scenario_name] / 1e6
+                },
+                axis='columns'
+            )
+        )
+        figure = px.line(values, line_shape='hv')
+        figure.update_traces(fill='tozeroy')
+        figure.update_layout(
+            title=(
+                f'Building: {scenario_name[14:].replace("_", " ").upper()}'
+                if scenario_name in scenario_names
+                else None
+            ),
+            yaxis_title='Cooling demand (thermal power) [MW]',
+            xaxis_title=None,
+            xaxis=go.layout.XAxis(tickformat='%H:%M', ticklabelmode='period'),
+            legend=go.layout.Legend(x=0.99, xanchor='auto', y=0.99, yanchor='auto')
+        )
+        # figure.show()
+        figure.write_image(os.path.join(results_path_main, f'cooling_power_{scenario_name}.pdf'))
+
+    # Zone area.
+    for scenario_name in scenario_names:
+        building_model = cobmo.building_model.BuildingModel(scenario_name)
+        figure = px.pie(building_model.building_data.zones, values='zone_area', names='zone_name')
+        figure.update_layout(
+            title=f'Building: {scenario_name[14:].replace("_", " ").upper()}',
+            font=go.layout.Font(size=15),
+        )
+        # figure.show()
+        figure.write_image(os.path.join(results_path_main, f'zone_area_{scenario_name}.pdf'))
+
+    # Internal gains.
+    for scenario_name in scenario_names:
+        building_model = cobmo.building_model.BuildingModel(scenario_name)
+        for internal_gain_type in building_model.building_data.internal_gain_timeseries.columns:
+            values = 100.0 * building_model.building_data.internal_gain_timeseries.loc[:, internal_gain_type]
+            figure = px.line(values, line_shape='hv')
+            figure.update_traces(fill='tozeroy')
+            figure.update_layout(
+                title=f'Type: {internal_gain_type}',
+                yaxis_title='Internal gain [%]',
+                xaxis_title=None,
+                xaxis=go.layout.XAxis(tickformat='%H:%M', ticklabelmode='period'),
+                showlegend=False
+            )
+            # figure.show()
+            figure.write_image(os.path.join(results_path_main, f'internal_gain_{internal_gain_type}.pdf'))
+
+    # Temperature constraints.
+    for scenario_name in scenario_names:
+        building_model = cobmo.building_model.BuildingModel(scenario_name)
+        for zone_name in building_model.building_data.zones.index:
+            output = zone_name + '_temperature'
+            figure = go.Figure()
+            figure.add_trace(
+                go.Scatter(
+                    x=building_model.timesteps,
+                    y=building_model.output_constraint_timeseries_maximum.loc[:, output].values,
+                    name='Maximum',
+                    line=go.scatter.Line(width=3, shape='hv')
+                )
+            )
+            figure.add_trace(
+                go.Scatter(
+                    x=building_model.timesteps,
+                    y=output_vector_collection.loc[:, (scenario_name, output)].values,
+                    name='Actual',
+                    line=go.scatter.Line(shape='hv')
+                )
+            )
+            figure.add_trace(
+                go.Scatter(
+                    x=building_model.timesteps,
+                    y=building_model.output_constraint_timeseries_minimum.loc[:, output].values,
+                    name='Minimum',
+                    line=go.scatter.Line(width=3, shape='hv')
+                )
+            )
+            figure.update_layout(
+                title=f'Building: {scenario_name[14:].replace("_", " ").upper()} / Zone: {zone_name}',
+                yaxis_title='Temperature [°C]',
+                xaxis_title=None,
+                xaxis=go.layout.XAxis(tickformat='%H:%M', ticklabelmode='period'),
+                legend=go.layout.Legend(x=0.99, xanchor='auto', y=0.99, yanchor='auto')
+            )
+            # figure.show()
+            figure.write_image(os.path.join(results_path_main, f'temperature_{scenario_name}_{output}.pdf'))
+
+    # Fresh air flow constraints.
+    for scenario_name in scenario_names:
+        building_model = cobmo.building_model.BuildingModel(scenario_name)
+        for zone_name in building_model.building_data.zones.index:
+            output = zone_name + '_total_fresh_air_flow'
+            figure = go.Figure()
+            figure.add_trace(
+                go.Scatter(
+                    x=building_model.timesteps,
+                    y=(
+                        building_model.output_constraint_timeseries_minimum.loc[:, output].values
+                        / building_model.building_data.zones.loc[zone_name, 'zone_area']
+                        * 1000
+                    ),
+                    name='Minimum',
+                    line=go.scatter.Line(width=3, shape='hv')
+                )
+            )
+            figure.add_trace(
+                go.Scatter(
+                    x=building_model.timesteps,
+                    y=(
+                        output_vector_collection.loc[:, (scenario_name, output)].values
+                        / building_model.building_data.zones.loc[zone_name, 'zone_area']
+                        * 1000
+                    ),
+                    name='Actual',
+                    line=go.scatter.Line(shape='hv')
+                )
+            )
+            figure.update_layout(
+                title=f'Building: {scenario_name[14:].replace("_", " ").upper()} / Zone: {zone_name}',
+                yaxis_title='Fresh air flow [l/s/m²]',
+                xaxis_title=None,
+                xaxis=go.layout.XAxis(tickformat='%H:%M', ticklabelmode='period'),
+                legend=go.layout.Legend(x=0.99, xanchor='auto', y=0.99, yanchor='auto')
+            )
+            # figure.show()
+            figure.write_image(os.path.join(results_path_main, f'fresh_air_{scenario_name}_{output}.pdf'))
+
+    # Launch & print results path.
+    cobmo.utils.launch(results_path_main)
     print(f"Results are stored in: {results_path_main}")
 
 
