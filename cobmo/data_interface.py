@@ -393,7 +393,7 @@ class BuildingData(object):
             # Obtain complete schedule for each minute of the week.
             electricity_price_range_complete = (
                 electricity_price_range_complete.reindex(
-                    pd.period_range(start='01T00:00', end='07T23:59', freq='T')
+                    pd.period_range(start='01T00:00', end='08T00:00', freq='T')
                 ).fillna(method='ffill')
             )
 
@@ -481,10 +481,10 @@ class BuildingData(object):
             internal_gain_schedule_complete = (
                 internal_gain_schedule_complete.reindex(
                     pd.period_range(start='01T00:00', end='07T23:59', freq='T')
-                ).fillna(method='ffill')
+                ).interpolate(method='linear').fillna(method='ffill')
             )
 
-            # Reindex / fill internal gain schedule for given timesteps.
+            # Reindex / fill schedule for given timesteps.
             internal_gain_schedule_complete.index = (
                 pd.MultiIndex.from_arrays([
                     internal_gain_schedule_complete.index.day - 1,
@@ -626,11 +626,11 @@ class BuildingData(object):
             # Obtain complete schedule for each minute of the week.
             constraint_schedule_complete = (
                 constraint_schedule_complete.reindex(
-                    pd.period_range(start='01T00:00', end='07T23:59', freq='T')
-                ).fillna(method='ffill')
+                    pd.period_range(start='01T00:00', end='08T00:00', freq='T')
+                ).astype(np.float).interpolate(method='linear').fillna(method='ffill')
             )
 
-            # Reindex / fill internal gain schedule for given timesteps.
+            # Reindex / fill schedule for given timesteps.
             constraint_schedule_complete.index = (
                 pd.MultiIndex.from_arrays([
                     constraint_schedule_complete.index.day - 1,
