@@ -327,7 +327,7 @@ class BuildingData(object):
             self.weather_timeseries.reindex(
                 self.timesteps
             ).interpolate(
-                'quadratic'
+                'linear'
             ).bfill(
                 limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
             ).ffill(
@@ -356,7 +356,7 @@ class BuildingData(object):
             self.electricity_price_timeseries.reindex(
                 self.timesteps
             ).interpolate(
-                'quadratic'
+                'linear'
             ).bfill(
                 limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
             ).ffill(
@@ -549,7 +549,7 @@ class BuildingData(object):
                 internal_gain_timeseries.reindex(
                     self.timesteps
                 ).interpolate(
-                    'quadratic'
+                    'linear'
                 ).bfill(
                     limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
                 ).ffill(
