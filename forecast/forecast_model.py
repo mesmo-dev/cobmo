@@ -45,7 +45,7 @@ class forecastModel(object):
                                              axis=1)
 
         # Construct forecast model
-        self.model = ARIMA(self.df['residuals'], order=(1, 1, 1))
+        self.model = ARIMA(self.df['residuals'], order=(1, 0, 1))
         self.model_fit = self.model.fit()
 
     def update_model(self, new_price, timestep):
@@ -68,17 +68,17 @@ class forecastModel(object):
                                              axis=1)
 
         # Construct forecast model
-        self.model = ARIMA(self.df['residuals'], order=(1, 1, 1))
+        self.model = ARIMA(self.df['residuals'], order=(1, 0, 1))
         self.model_fit = self.model.fit()
 
     def forecast_prices(self, steps=48):
         forecast_date = (self.df['timestep'].iloc[-1] + dt.timedelta(minutes=30)).date()
         self.expected_prices = obtain_forecast_prices(self.model_fit, forecast_date, self.lm_lt, self.lm_week, self.mean_by_dow,
-                                                      self.min_period, steps=steps)
+                                                      self.min_period, steps=steps) / 1000
         self.lower_prices = obtain_forecast_prices(self.model_fit, forecast_date, self.lm_lt, self.lm_week, self.mean_by_dow,
-                                                   self.min_period, mode='lower', steps=steps)
+                                                   self.min_period, mode='lower', steps=steps) / 1000
         self.upper_prices = obtain_forecast_prices(self.model_fit, forecast_date, self.lm_lt, self.lm_week, self.mean_by_dow,
-                                                   self.min_period, mode='upper', steps=steps)
+                                                   self.min_period, mode='upper', steps=steps) / 1000
         forecast_df = pd.concat([self.expected_prices, self.upper_prices, self.lower_prices], axis=1)
         forecast_df.rename(
             {0: 'expected_price', 'upper residuals': 'upper_limit', 'lower residuals': 'lower_limit'},

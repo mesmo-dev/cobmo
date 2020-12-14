@@ -1,0 +1,11 @@
+building_name,zone_name,zone_type,zone_height,zone_area,zone_comment
+benchmark_single_res,zone_1,single_res,3.6,10000,
+benchmark_multi_res,zone_1,multi_res,3.6,10000,
+benchmark_university,zone_1,university,3.6,10000,
+benchmark_school,zone_1,school,3.6,10000,
+benchmark_retail,zone_1,retail,3.6,10000,
+benchmark_office,zone_1,office,3.6,10000,
+benchmark_hotel,zone_1,hotel,3.6,10000,
+benchmark_hospital,zone_1,hospital,3.6,10000,
+benchmark_industrial,zone_1,industrial,3.6,10000,
+benchmark_other,zone_1,other,3.6,10000,
