@@ -17,7 +17,7 @@ def main():
 
     # Settings.
     scenario_name = 'paper_pesgm_2020'
-    results_path = cobmo.utils.get_results_path(f'run_evaluation_price_sensitivity_{scenario_name}')
+    results_path = cobmo.utils.get_results_path(__file__, scenario_name)
 
     # Instantiate results subfolders.
     os.mkdir(os.path.join(results_path, 'plots'))

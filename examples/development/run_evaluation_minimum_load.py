@@ -16,7 +16,7 @@ def main():
 
     # Settings.
     scenario_name = '43755562'
-    results_path = cobmo.utils.get_results_path(f'run_evaluation_minimum_load_{scenario_name}')
+    results_path = cobmo.utils.get_results_path(__file__, scenario_name)
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.data_interface.recreate_database()

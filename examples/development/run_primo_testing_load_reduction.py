@@ -49,7 +49,7 @@ def main():
             for time_duration in np.arange(0.5, 3.5, 0.5)
         ])
     )
-    results_path = cobmo.utils.get_results_path(f'run_primo_testing_load_reduction')
+    results_path = cobmo.utils.get_results_path(__file__)
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.data_interface.recreate_database()

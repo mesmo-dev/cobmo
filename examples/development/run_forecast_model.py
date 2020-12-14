@@ -9,7 +9,7 @@ import cobmo.utils
 
 def main():
 
-    results_path = cobmo.utils.get_results_path(f'run_forecast_model')
+    results_path = cobmo.utils.get_results_path(__file__)
     price_data_path = os.path.join(cobmo.config.config['paths']['supplementary_data'], 'clearing_price')
 
     forecast_model = forecast.forecast_model.forecastModel()

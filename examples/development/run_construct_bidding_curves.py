@@ -16,7 +16,7 @@ def main():
 
     # Settings.
     scenarios = pd.read_csv(os.path.join(cobmo.config.config['paths']['data'], 'scenarios.csv'))
-    results_path = cobmo.utils.get_results_path('run_construct_bidding_curves')
+    results_path = cobmo.utils.get_results_path(__file__)
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.data_interface.recreate_database()

@@ -21,7 +21,7 @@ def main():
     # Choices: 'default_sensible_thermal_storage', 'default_battery_storage'
     save_plots = True
     save_csv = True
-    results_path = cobmo.utils.get_results_path(f'run_bes_cases_{scenario_name}_{building_storage_type}_{price_type}')
+    results_path = cobmo.utils.get_results_path(__file__, f'{scenario_name}_{building_storage_type}_{price_type}')
 
     # Print settings.
     print("building_storage_type = {}".format(building_storage_type))

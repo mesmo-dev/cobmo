@@ -17,7 +17,7 @@ def main():
 
     # Settings.
     scenario_name = 'validation_1zone_radiator'
-    results_path = cobmo.utils.get_results_path(f'run_example_{scenario_name}')
+    results_path = cobmo.utils.get_results_path(__file__, scenario_name)
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.data_interface.recreate_database()
