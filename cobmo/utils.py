@@ -15,33 +15,10 @@ import re
 import seaborn
 import subprocess
 import sys
-import typing
 
 import cobmo.config
 
 logger = cobmo.config.get_logger(__name__)
-
-
-def starmap(
-        function: typing.Callable,
-        argument_sequence: typing.List[tuple]
-) -> list:
-    """Utility function to execute a function for a sequence of arguments, effectively replacing a for-loop.
-    Allows running repeated function calls in-parallel, based on Python's `multiprocessing` module.
-
-    - If configuration parameter `run_parallel` is set to True, execution is passed to `starmap`
-      of `multiprocessing.Pool`, hence running the function calls in parallel.
-    - Otherwise, execution is passed to `itertools.starmap`, which is the non-parallel equivalent.
-    """
-
-    if cobmo.config.config['multiprocessing']['run_parallel']:
-        if cobmo.config.parallel_pool is None:
-            cobmo.config.parallel_pool = cobmo.config.get_parallel_pool()
-        results = cobmo.config.parallel_pool.starmap(function, argument_sequence)
-    else:
-        results = itertools.starmap(function, argument_sequence)
-
-    return results
 
 
 def calculate_absolute_humidity_humid_air(

@@ -7,8 +7,6 @@ paths:
   supplementary_data: ./data/supplementary_data
   database: ./data/database.sqlite
   results: ./results
-multiprocessing:
-  run_parallel: false  # Currently not used.
 optimization:
   solver_name: gurobi  # Must be valid input string for Pyomo's `SolverFactory`.
   show_solver_output: true  # If True, activate verbose solver output.
