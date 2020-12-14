@@ -48,13 +48,9 @@ If you are running into errors when installing or running CoBMo, this may be due
 
 The `examples` directory contains run scripts which demonstrate the usage of CoBMo.
 
-- `run_example.py`: Example run script for using the building model.
-- `run_storage_planning_example.py`: Run script for single simulation / optimization of sensible thermal or battery storage.
-- `run_storage_planning_battery_cases.py`: Run script for BES cases lifetime.
-- `run_validation.py`: Run script for building model validation.
-- `run_evaluation_load_reduction.py`: Run script for evaluating demand side flexibility in terms of load reduction.
-- `run_evaluation_price_sensitivity.py`: Run script for evaluating demand side flexibility in terms of price sensitivity.
-- (Further example scripts for development / testing of new features may not yet be documented here.)
+- `run_simulation_problem.py`: Example run script to demonstrate setting up and solving a simulation problem for building operation with CoBMo.
+- `run_optimization_problem.py`: Example run script to demonstrate setting up and solving an optimization problem for building operation with CoBMo.
+- The directory `examples/development` contains example scripts which are under development and scripts related to the development of new features for CoBMo.
 
 ## Configuration with `config.yml`
 
