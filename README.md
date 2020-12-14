@@ -15,22 +15,27 @@ The preliminary documentation is located at [tumcreate-estl.github.io/cobmo](htt
 ## Installation
 
 1. Check requirements:
-    - Python 3.7
-    - [Gurobi Optimizer](http://www.gurobi.com/)
+   - Python 3.7
+   - [Gurobi Optimizer](http://www.gurobi.com/)
 2. Clone or download repository.
-3. In your Python environment, run `pip install -e path_to_cobmo_repository`.
+3. In your Python environment, run:
+   1. `pip install -v -e path_to_repository`
 
-Please also read [docs/intro.md](./docs/intro.md).
+Please also read [docs/getting_started.md](./docs/getting_started.md).
 
 ## Contributing
 
 If you are keen to contribute to this project, please see [docs/contributing.md](./docs/contributing.md).
 
+## Publications
+
+Information on citing CoBMo and a list of related publications is available at [docs/publications.md](docs/publications.md).
+
 ## Acknowledgements
 
+- This work was financially supported by the Singapore National Research Foundation under its Campus for Research Excellence And Technological Enterprise (CREATE) programme.
 - Sebastian Troitzsch developed and implemented the initial version of CoBMo and maintains this repository.
 - Sarmad Hanif and Henryk Wolisz initiated and supervised the work on the initial version of CoBMo.
 - Anthony Vautrin under supervision of Srikkanth Ramachandran developed the models for indoor air quality and demand controlled ventilation.
 - Tommaso Miori developed the models for thermal and battery energy storage.
 - Sherif Hashem under supervision of Thomas Licklederer developed the hydronic radiator models.
-- This work was financially supported by the Singapore National Research Foundation under its Campus for Research Excellence And Technological Enterprise (CREATE) programme.
