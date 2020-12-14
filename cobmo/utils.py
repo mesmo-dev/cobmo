@@ -513,15 +513,22 @@ def get_results_path(
 
     return results_path
 
+
 def launch(path):
     """Launch the file at given path with its associated application. If path is a directory, open in file explorer."""
+
+    try:
+        assert os.path.exists(path)
+    except AssertionError:
+        logger.error(f'Cannot launch file or directory that does not exist: {path}')
 
     if sys.platform == 'win32':
         os.startfile(path)
     elif sys.platform == 'darwin':
-        subprocess.call(['open', path])
+        subprocess.Popen(['open', path], cwd="/", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     else:
-        subprocess.call(['xdg-open', path])
+        subprocess.Popen(['xdg-open', path], cwd="/", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
 
 def write_figure_plotly(
         figure: go.Figure,
