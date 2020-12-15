@@ -1,4 +1,4 @@
-"""Installation script."""
+"""Setup script."""
 
 import setuptools
 

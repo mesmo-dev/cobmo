@@ -2,7 +2,6 @@
 
 import logging
 import matplotlib.pyplot as plt
-import multiprocessing
 import os
 import pandas as pd
 import plotly.graph_objects as go
@@ -72,11 +71,7 @@ def get_config() -> dict:
     )
     complete_config['paths']['database'] = get_full_path(complete_config['paths']['database'])
     complete_config['paths']['results'] = get_full_path(complete_config['paths']['results'])
-
-    # If not running as main process, set `run_parallel` to False.
-    # - Workaround to avoid that subprocesses / workers infinitely spawn further subprocesses / workers.
-    if multiprocessing.current_process().name != 'MainProcess':
-        complete_config['multiprocessing']['run_parallel'] = False
+    complete_config['paths']['supplementary_data'] = get_full_path(complete_config['paths']['supplementary_data'])
 
     return complete_config
 
@@ -106,15 +101,6 @@ def get_logger(
     return logger
 
 
-def get_parallel_pool() -> multiprocessing.Pool:
-    """Create multiprocessing / parallel computing pool.
-
-    - Number of parallel processes / workers defaults to number of CPU threads as returned by `os.cpu_count()`.
-    """
-
-    return multiprocessing.Pool()
-
-
 # Obtain repository base directory path.
 base_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
 
@@ -126,10 +112,6 @@ config = get_config()
 water_density = 998.31  # [kg/m^3]
 water_kinematic_viscosity = 1.3504e-6  # [m^2/s]
 gravitational_acceleration = 9.81  # [m^2/s]
-
-# Instantiate multiprocessing / parallel computing pool.
-# - Pool is instantiated as None and only created on first use in `cobmo.utils.starmap`.
-parallel_pool = None
 
 # Modify matplotlib default settings.
 plt.style.use(config['plots']['matplotlib_style'])
@@ -157,7 +139,5 @@ pio.templates.default.layout.update(
     xaxis=go.layout.XAxis(showgrid=True),
     yaxis=go.layout.YAxis(showgrid=True)
 )
-pio.kaleido.scope.default_width = config['plots']['plotly_figure_width']
-pio.kaleido.scope.default_height = config['plots']['plotly_figure_height']
-pio.orca.config.default_width = config['plots']['plotly_figure_width']
-pio.orca.config.default_height = config['plots']['plotly_figure_height']
+pio.kaleido.scope.default_width = pio.orca.config.default_width = config['plots']['plotly_figure_width']
+pio.kaleido.scope.default_height = pio.orca.config.default_height = config['plots']['plotly_figure_height']

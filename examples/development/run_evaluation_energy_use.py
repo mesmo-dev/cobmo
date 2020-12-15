@@ -15,7 +15,7 @@ def main():
 
     # Settings.
     scenario_name = 'create_level8_4zones_a'
-    results_path = cobmo.utils.get_results_path(f'run_evaluation_energy_use_{scenario_name}')
+    results_path = cobmo.utils.get_results_path(__file__, scenario_name)
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.data_interface.recreate_database()

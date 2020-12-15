@@ -16,7 +16,7 @@ def main():
 
     # Settings.
     scenario_name = 'validation_1zone_no_window'
-    results_path = cobmo.utils.get_results_path(f'run_validation_{scenario_name}')
+    results_path = cobmo.utils.get_results_path(__file__, scenario_name)
     validation_data_path = os.path.join(cobmo.config.config['paths']['data'], 'supplementary_data', 'validation')
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.

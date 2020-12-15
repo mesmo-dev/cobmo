@@ -16,7 +16,7 @@ def main():
 
     # Settings.
     scenario_name = '43755562'
-    results_path = cobmo.utils.get_results_path(f'run_evaluation_robust_optimization_{scenario_name}')
+    results_path = cobmo.utils.get_results_path(__file__, scenario_name)
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.data_interface.recreate_database()
@@ -27,7 +27,7 @@ def main():
     # Obtain and solve baseline optimization problem.
     optimization_problem = cobmo.optimization_problem.OptimizationProblem(
         building,
-        problem_type='robust_optimization'
+        problem_type='minimum_load'
     )
     (
         control_vector_optimization,

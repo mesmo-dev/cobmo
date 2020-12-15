@@ -71,7 +71,7 @@ def main():
         'singapore_pdd_jtc_t10': 75393,
         'singapore_pdd_jtc_podium': 25988
     }
-    results_path_main = cobmo.utils.get_results_path(f'run_primo_testing')
+    results_path_main = cobmo.utils.get_results_path(__file__)
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     cobmo.data_interface.recreate_database()
@@ -89,7 +89,7 @@ def main():
         print(f"Running scenario '{scenario_name}'...")
 
         # Obtain scenario results path.
-        results_path_scenario = cobmo.utils.get_results_path(f'run_evaluation_energy_use_{scenario_name}')
+        results_path_scenario = cobmo.utils.get_results_path(__file__, scenario_name)
 
         # Obtain building model.
         building = cobmo.building_model.BuildingModel(scenario_name)

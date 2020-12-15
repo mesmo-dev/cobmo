@@ -13,9 +13,19 @@ Please note that the repository is under active development and the interface ma
 ``` toctree::
     :maxdepth: 2
 
-    intro
+    getting_started
+    data_reference
+    api_reference
     Technical documentation <./_static/technical_documentation.pdf#http://>
-    api
-    data
     contributing
+    publications
 ```
+
+## Acknowledgements
+
+- This work was financially supported by the Singapore National Research Foundation under its Campus for Research Excellence And Technological Enterprise (CREATE) programme.
+- Sebastian Troitzsch developed and implemented the initial version of CoBMo and maintains this repository.
+- Sarmad Hanif and Henryk Wolisz initiated and supervised the work on the initial version of CoBMo.
+- Anthony Vautrin under supervision of Srikkanth Ramachandran developed the models for indoor air quality and demand controlled ventilation.
+- Tommaso Miori developed the models for thermal and battery energy storage.
+- Sherif Hashem under supervision of Thomas Licklederer developed the hydronic radiator models.

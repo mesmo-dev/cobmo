@@ -8,36 +8,17 @@ import matplotlib.ticker
 import numpy as np
 import os
 import pandas as pd
+import plotly.graph_objects as go
+import plotly.io as pio
 import pvlib
 import re
 import seaborn
 import subprocess
 import sys
-import typing
 
 import cobmo.config
 
-
-def starmap(
-        function: typing.Callable,
-        argument_sequence: typing.List[tuple]
-) -> list:
-    """Utility function to execute a function for a sequence of arguments, effectively replacing a for-loop.
-    Allows running repeated function calls in-parallel, based on Python's `multiprocessing` module.
-
-    - If configuration parameter `run_parallel` is set to True, execution is passed to `starmap`
-      of `multiprocessing.Pool`, hence running the function calls in parallel.
-    - Otherwise, execution is passed to `itertools.starmap`, which is the non-parallel equivalent.
-    """
-
-    if cobmo.config.config['multiprocessing']['run_parallel']:
-        if cobmo.config.parallel_pool is None:
-            cobmo.config.parallel_pool = cobmo.config.get_parallel_pool()
-        results = cobmo.config.parallel_pool.starmap(function, argument_sequence)
-    else:
-        results = itertools.starmap(function, argument_sequence)
-
-    return results
+logger = cobmo.config.get_logger(__name__)
 
 
 def calculate_absolute_humidity_humid_air(
@@ -467,14 +448,6 @@ def calculate_discounted_payback_time(
     )
 
 
-def get_alphanumeric_string(
-        string: str
-):
-    """Create lowercase alphanumeric string from given string, replacing non-alphanumeric characters with underscore."""
-
-    return re.sub(r'\W+', '_', string).strip('_').lower()
-
-
 def get_timestamp(
         time: datetime.datetime = None
 ) -> str:
@@ -487,21 +460,25 @@ def get_timestamp(
 
 
 def get_results_path(
-        name: str,
+        base_name: str,
+        scenario_name: str = None
 ) -> str:
     """Generate results path, which is a new subfolder in the results directory. The subfolder name is
-    assembled of the given name string and current timestamp. The new subfolder is
+    assembled of the given base name, scenario name and current timestamp. The new subfolder is
     created on disk along with this.
+
+    - Non-alphanumeric characters are removed from `base_name` and `scenario_name`.
+    - If is a script file path or `__file__` is passed as `base_name`, the base file name without extension
+      will be taken as base name.
     """
 
+    # Preprocess results path name components, including removing non-alphanumeric characters.
+    base_name = re.sub(r'\W+', '', os.path.basename(os.path.splitext(base_name)[0])) + '_'
+    scenario_name = '' if scenario_name is None else re.sub(r'\W+', '', scenario_name) + '_'
+    timestamp = cobmo.utils.get_timestamp()
+
     # Obtain results path.
-    results_path = (
-        os.path.join(
-            cobmo.config.config['paths']['results'],
-            # Remove non-alphanumeric characters, except `_`, then append timestamp string.
-            re.sub(r'\W+', '', f'{name}_') + cobmo.utils.get_timestamp()
-        )
-    )
+    results_path = os.path.join(cobmo.config.config['paths']['results'], f'{base_name}{scenario_name}{timestamp}')
 
     # Instantiate results directory.
     # TODO: Catch error if dir exists.
@@ -509,12 +486,53 @@ def get_results_path(
 
     return results_path
 
+
+def get_alphanumeric_string(
+        string: str
+):
+    """Create lowercase alphanumeric string from given string, replacing non-alphanumeric characters with underscore."""
+
+    return re.sub(r'\W+', '_', string).strip('_').lower()
+
+
 def launch(path):
     """Launch the file at given path with its associated application. If path is a directory, open in file explorer."""
+
+    try:
+        assert os.path.exists(path)
+    except AssertionError:
+        logger.error(f'Cannot launch file or directory that does not exist: {path}')
 
     if sys.platform == 'win32':
         os.startfile(path)
     elif sys.platform == 'darwin':
-        subprocess.call(['open', path])
+        subprocess.Popen(['open', path], cwd="/", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     else:
-        subprocess.call(['xdg-open', path])
+        subprocess.Popen(['xdg-open', path], cwd="/", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+
+def write_figure_plotly(
+        figure: go.Figure,
+        results_path: str,
+        file_format=cobmo.config.config['plots']['file_format']
+):
+    """Utility function for writing / storing plotly figure to output file. File format can be given with
+    `file_format` keyword argument, otherwise the default is obtained from config parameter `plots/file_format`.
+
+    - `results_path` should be given as file name without file extension, because the file extension is appended
+      automatically based on given `file_format`.
+    - Valid file formats: 'png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf', 'html', 'json'
+    """
+
+    if file_format in ['png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf']:
+        pio.write_image(figure, f"{results_path}.{file_format}")
+    elif file_format in ['html']:
+        pio.write_html(figure, f"{results_path}.{file_format}")
+    elif file_format in ['json']:
+        pio.write_json(figure, f"{results_path}.{file_format}")
+    else:
+        logger.error(
+            f"Invalid `file_format` for `write_figure_plotly`: {file_format}"
+            f" - Valid file formats: 'png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf', 'html', 'json'"
+        )
+        raise ValueError

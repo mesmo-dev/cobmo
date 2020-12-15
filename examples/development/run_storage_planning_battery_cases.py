@@ -24,7 +24,7 @@ def main():
     interest_rate = 0.02
     save_plots = True
     run_simulation = True  # Please note: Change `read_path` manually for plotting without simulation.
-    results_path = cobmo.utils.get_results_path(f'run_bes_cases_{scenario_name}_{case}_{price_type}')
+    results_path = cobmo.utils.get_results_path(__file__, f'{scenario_name}_{case}_{price_type}')
 
     if run_simulation:
         # Print status message.
