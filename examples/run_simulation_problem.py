@@ -6,11 +6,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-import cobmo.building_model
-import cobmo.config
-import cobmo.optimization_problem
-import cobmo.data_interface
-import cobmo.utils
+import cobmo
 
 
 def main():
