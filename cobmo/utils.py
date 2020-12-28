@@ -1,5 +1,6 @@
 """Utility functions module."""
 
+import cvxpy as cp
 from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
 import datetime
 import itertools
@@ -19,6 +20,48 @@ import sys
 import cobmo.config
 
 logger = cobmo.config.get_logger(__name__)
+
+
+class OptimizationProblem(object):
+    """Optimization problem object for use with CVXPY."""
+
+    constraints: list
+    objective: cp.Expression
+    cvxpy_problem: cp.Problem
+
+    def __init__(self):
+
+        self.constraints = []
+        self.objective = cp.Constant(value=0.0)
+
+    def solve(
+            self,
+            keep_problem=False
+    ):
+
+        # Instantiate CVXPY problem object.
+        if hasattr(self, 'cvxpy_problem') and keep_problem:
+            pass
+        else:
+            self.cvxpy_problem = cp.Problem(cp.Minimize(self.objective), self.constraints)
+
+        # Solve optimization problem.
+        self.cvxpy_problem.solve(
+            solver=(
+                cobmo.config.config['optimization']['solver_name'].upper()
+                if cobmo.config.config['optimization']['solver_name'] is not None
+                else None
+            ),
+            verbose=cobmo.config.config['optimization']['show_solver_output'],
+            **cobmo.config.solver_parameters
+        )
+
+        # Assert that solver exited with an optimal solution. If not, raise an error.
+        try:
+            assert self.cvxpy_problem.status == cp.OPTIMAL
+        except AssertionError:
+            logger.error(f"Solver termination status: {self.cvxpy_problem.status}")
+            raise
 
 
 def calculate_absolute_humidity_humid_air(
