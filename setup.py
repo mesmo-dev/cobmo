@@ -1,6 +1,11 @@
 """Setup script."""
 
 import setuptools
+import subprocess
+import sys
+
+# Install Gurobi interface. Use `pip -v` to see subprocess outputs.
+subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-i', 'https://pypi.gurobi.com', 'gurobipy'])
 
 setuptools.setup(
     name='cobmo',
