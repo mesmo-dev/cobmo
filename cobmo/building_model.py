@@ -1,5 +1,6 @@
 """Building model module."""
 
+import cvxpy as cp
 import numpy as np
 import pandas as pd
 import scipy.linalg
@@ -4266,3 +4267,172 @@ class BuildingModel(object):
             state_vector,
             output_vector
         )
+
+    def define_optimization_variables(
+            self,
+            optimization_problem: cobmo.utils.OptimizationProblem,
+    ):
+
+        # Define variables.
+        # - Defined as dict with single entry for current DER. This is for compability of
+        # `define_optimization_constraints`, etc. with `DERModelSet`.
+        optimization_problem.state_vector = cp.Variable((len(self.timesteps), len(self.states)))
+        optimization_problem.control_vector = cp.Variable((len(self.timesteps), len(self.controls)))
+        optimization_problem.output_vector = cp.Variable((len(self.timesteps), len(self.outputs)))
+
+    def define_optimization_constraints(
+        self,
+        optimization_problem: cobmo.utils.OptimizationProblem,
+        initial_state_is_final_state=False
+    ):
+
+        # Initial state.
+        # - If desired, initial state is set equal to final state. This enables automatic selection of the
+        #   optimal initial state, assuming that the start and end timestep are the same time of day.
+        if initial_state_is_final_state:
+            optimization_problem.constraints.append(
+                optimization_problem.state_vector[0, :]
+                ==
+                optimization_problem.state_vector[-1, :]
+            )
+        # - Otherwise, set initial state according to the initial state vector.
+        else:
+            optimization_problem.constraints.append(
+                optimization_problem.state_vector[0, :]
+                ==
+                self.state_vector_initial.values
+            )
+
+        # State equation.
+        optimization_problem.constraints.append(
+            optimization_problem.state_vector[1:, :]
+            ==
+            cp.transpose(
+                self.state_matrix.values
+                @ cp.transpose(optimization_problem.state_vector[:-1, :])
+                + self.control_matrix.values
+                @ cp.transpose(optimization_problem.control_vector[:-1, :])
+                + self.disturbance_matrix.values
+                @ np.transpose(self.disturbance_timeseries.iloc[:-1, :].values)
+            )
+        )
+
+        # Output equation.
+        optimization_problem.constraints.append(
+            optimization_problem.output_vector
+            ==
+            cp.transpose(
+                self.state_output_matrix.values
+                @ cp.transpose(optimization_problem.state_vector)
+                + self.control_output_matrix.values
+                @ cp.transpose(optimization_problem.control_vector)
+                + self.disturbance_output_matrix.values
+                @ np.transpose(self.disturbance_timeseries.values)
+            )
+        )
+
+        # Output limits.
+        optimization_problem.constraints.append(
+            optimization_problem.output_vector
+            >=
+            self.output_minimum_timeseries.values
+        )
+        optimization_problem.constraints.append(
+            optimization_problem.output_vector
+            <=
+            self.output_maximum_timeseries.values
+        )
+
+    def define_optimization_objective(
+            self,
+            optimization_problem: cobmo.utils.OptimizationProblem
+    ):
+
+        # Obtain timestep interval in hours, for conversion of power to energy.
+        timestep_interval_hours = (self.timesteps[1] - self.timesteps[0]) / pd.Timedelta('1h')
+
+        # Define operation cost (OPEX).
+        optimization_problem.operation_cost = (
+            optimization_problem.output_vector[:, self.outputs.get_loc('grid_electric_power')]
+            * timestep_interval_hours / 1000.0  # W in kWh.
+            @ self.electricity_price_timeseries.loc[:, 'price'].values
+        )
+
+        # Add to objective.
+        optimization_problem.objective += optimization_problem.operation_cost
+
+    def get_optimization_results(
+            self,
+            optimization_problem: cobmo.utils.OptimizationProblem
+    ) -> dict:
+
+        # Obtain results.
+        state_vector = (
+            pd.DataFrame(
+                optimization_problem.state_vector.value,
+                index=self.timesteps,
+                columns=self.states
+            )
+        )
+        control_vector = (
+            pd.DataFrame(
+                optimization_problem.control_vector.value,
+                index=self.timesteps,
+                columns=self.controls
+            )
+        )
+        output_vector = (
+            pd.DataFrame(
+                optimization_problem.output_vector.value,
+                index=self.timesteps,
+                columns=self.outputs
+            )
+        )
+        operation_cost = optimization_problem.operation_cost.value
+
+        return dict(
+            state_vector=state_vector,
+            control_vector=control_vector,
+            output_vector=output_vector,
+            operation_cost=operation_cost
+        )
+
+    def optimize(self):
+        """Optimize the operation, i.e. the control vector, of the building model to minimize operation cost, subject to
+           output minimum / maximum constraints. Returns results as dictionary containing state, control and output
+           vector timeseries along with the operation cost.
+
+        - The price timeseries is obtained from the building model definition.
+        - The required initial state vector and disturbance timeseries are obtained from
+          the building model definition.
+
+        :syntax:
+            `building_model.optimize(): Optimize the operation of `building_model` and return the results.
+
+        Parameters:
+            control_vector (pd.DataFrame): Control vector timeseries, as dataframe with control variables as columns and
+                timesteps as rows.
+
+        Returns:
+            dict: Results dictionary with keys `state_vector`, `control_vector`, `output_vector` and
+                `operation_cost`. State vector timeseries `state_vector`, as dataframe with state variables as rows
+                and timesteps as columns. Control vector timeseries `control_vector`, as dataframe with control
+                variables as rows and timesteps as columns. Output vector timeseries `output_vector`, as dataframe
+                with output variables as rows and timesteps as columns. Total operation cost as float `operation_cost`.
+        """
+
+        # Instantiate optimization problem.
+        optimization_problem = cobmo.utils.OptimizationProblem()
+
+        # Define optimization problem.
+        self.define_optimization_variables(optimization_problem)
+        self.define_optimization_constraints(optimization_problem)
+        self.define_optimization_objective(optimization_problem)
+
+        # Solve optimization problem.
+        optimization_problem.solve()
+
+        # Obtain results.
+        results = self.get_optimization_results(optimization_problem)
+
+        return results
