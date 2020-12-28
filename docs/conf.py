@@ -29,6 +29,7 @@ autodoc_default_options = {
 autodoc_typehints = 'none'
 autodoc_mock_imports = [
     # Please note: Do not remove deprecated dependencies, because these are still needed for docs of previous versions.
+    'cvxpy',
     'CoolProp',
     'hvplot',
     'kaleido',
