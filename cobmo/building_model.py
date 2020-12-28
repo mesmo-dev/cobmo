@@ -73,8 +73,8 @@ class BuildingModel(object):
         disturbance_timeseries (pd.DataFrame): Disturbance timeseries.
         electricity_price_timeseries (pd.DataFrame): Electricity price timeseries.
         electricity_price_distribution_timeseries (pd.DataFrame): Electricity price value distribution timeseries.
-        output_constraint_timeseries_maximum (pd.DataFrame): Maximum output constraint timeseries.
-        output_constraint_timeseries_minimum (pd.DataFrame): Minimum output constraint timeseries.
+        output_minimum_timeseries (pd.DataFrame): Minimum output constraint timeseries.
+        output_maximum_timeseries (pd.DataFrame): Maximum output constraint timeseries.
     """
 
     scenario_name: str
@@ -94,8 +94,8 @@ class BuildingModel(object):
     disturbance_timeseries: pd.DataFrame
     electricity_price_timeseries: pd.DataFrame
     electricity_price_distribution_timeseries: pd.DataFrame
-    output_constraint_timeseries_maximum: pd.DataFrame
-    output_constraint_timeseries_minimum: pd.DataFrame
+    output_minimum_timeseries: pd.DataFrame
+    output_maximum_timeseries: pd.DataFrame
 
     def __init__(
             self,
@@ -3942,12 +3942,12 @@ class BuildingModel(object):
                 return
 
             # Instantiate constraint timeseries.
-            self.output_constraint_timeseries_maximum = pd.DataFrame(
+            self.output_maximum_timeseries = pd.DataFrame(
                 +1.0 * np.infty,
                 self.timesteps,
                 self.outputs
             )
-            self.output_constraint_timeseries_minimum = pd.DataFrame(
+            self.output_minimum_timeseries = pd.DataFrame(
                 -1.0 * np.infty,
                 self.timesteps,
                 self.outputs
@@ -3963,40 +3963,40 @@ class BuildingModel(object):
             )
 
             # Minimum constraint for power outputs.
-            self.output_constraint_timeseries_minimum.loc[
+            self.output_minimum_timeseries.loc[
                 :, self.outputs.str.contains('_power')
             ] = 0.0
 
             # Minimum constraint for flow outputs.
-            self.output_constraint_timeseries_minimum.loc[
+            self.output_minimum_timeseries.loc[
                 :, self.outputs.str.contains('_flow')
             ] = 0.0
 
             # Minimum constraint for storage charge and discharge outputs.
-            self.output_constraint_timeseries_minimum.loc[
+            self.output_minimum_timeseries.loc[
                 :, self.outputs.str.contains('_storage_charge')
             ] = 0.0
-            self.output_constraint_timeseries_minimum.loc[
+            self.output_minimum_timeseries.loc[
                 :, self.outputs.str.contains('_storage_to_zone')
             ] = 0.0
 
             # Minimum / maximum constraint for balance outputs.
-            self.output_constraint_timeseries_minimum.loc[
+            self.output_minimum_timeseries.loc[
                 :, self.outputs.str.contains('_balance')
             ] = 0.0
-            self.output_constraint_timeseries_maximum.loc[
+            self.output_maximum_timeseries.loc[
                 :, self.outputs.str.contains('_balance')
             ] = 0.0
 
             # Minimum / maximum constraint for zone air temperature.
-            self.output_constraint_timeseries_minimum.loc[
+            self.output_minimum_timeseries.loc[
                 :, building_data.zones['zone_name'] + '_temperature'
             ] = (
                 building_data.constraint_timeseries.loc[
                     :, building_data.zones['constraint_type'] + '_minimum_air_temperature'
                 ]
             ).values
-            self.output_constraint_timeseries_maximum.loc[
+            self.output_maximum_timeseries.loc[
                 :, building_data.zones['zone_name'] + '_temperature'
             ] = (
                 building_data.constraint_timeseries.loc[
@@ -4005,7 +4005,7 @@ class BuildingModel(object):
             ).values
 
             # Minimum constraint for zone fresh air flow.
-            self.output_constraint_timeseries_minimum.loc[
+            self.output_minimum_timeseries.loc[
                 :, building_data.zones.loc[zones_ventilation_index, 'zone_name'] + '_total_fresh_air_flow'
             ] = (
                 building_data.constraint_timeseries.loc[
@@ -4020,7 +4020,7 @@ class BuildingModel(object):
             # Maximum constraint for zone CO2 concentration.
             # TODO: Revise DCV implementation (check previous constraint implementation for missing constraints).
             if pd.notnull(building_data.scenarios['co2_model_type']):
-                self.output_constraint_timeseries_minimum.loc[
+                self.output_minimum_timeseries.loc[
                     :, building_data.zones.loc[zones_ventilation_index, 'zone_name'] + '_co2_concentration'
                 ] = (
                     building_data.constraint_timeseries.loc[
@@ -4034,7 +4034,7 @@ class BuildingModel(object):
             # Minimum / maximum constraint for zone humidity concentration.
             # TODO: Revise DCV implementation (check previous constraint implementation for missing constraints).
             if pd.notnull(building_data.scenarios['humidity_model_type']):
-                self.output_constraint_timeseries_minimum.loc[
+                self.output_minimum_timeseries.loc[
                     :, building_data.zones.loc[zones_ahu_index, 'zone_name'] + '_absolute_humidity'
                 ] = (
                     np.vectorize(cobmo.utils.calculate_absolute_humidity_humid_air)(
@@ -4047,7 +4047,7 @@ class BuildingModel(object):
                         ]
                     )
                 )
-                self.output_constraint_timeseries_maximum.loc[
+                self.output_maximum_timeseries.loc[
                     :, building_data.zones.loc[zones_ahu_index, 'zone_name'] + '_absolute_humidity'
                 ] = (
                     np.vectorize(cobmo.utils.calculate_absolute_humidity_humid_air)(
@@ -4066,10 +4066,10 @@ class BuildingModel(object):
 
             # Sensible thermal storage.
             if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
-                self.output_constraint_timeseries_minimum.loc[
+                self.output_minimum_timeseries.loc[
                     :, 'sensible_thermal_storage_state_of_charge'
                 ] = 0.0
-                self.output_constraint_timeseries_maximum.loc[
+                self.output_maximum_timeseries.loc[
                     :, 'sensible_thermal_storage_state_of_charge'
                 ] = (
                     building_data.scenarios['storage_size']
@@ -4078,7 +4078,7 @@ class BuildingModel(object):
 
             # Battery storage.
             if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
-                self.output_constraint_timeseries_minimum.loc[
+                self.output_minimum_timeseries.loc[
                     :, 'battery_storage_state_of_charge'
                 ] = (
                     0.0
@@ -4086,7 +4086,7 @@ class BuildingModel(object):
                     # + building_data.scenarios['storage_size']
                     # * (1.0 - building_data.scenarios['storage_battery_depth_of_discharge'])
                 )
-                self.output_constraint_timeseries_maximum.loc[
+                self.output_maximum_timeseries.loc[
                     :, 'battery_storage_state_of_charge'
                 ] = (
                     building_data.scenarios['storage_size']

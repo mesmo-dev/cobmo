@@ -314,7 +314,7 @@ def main():
             figure.add_trace(
                 go.Scatter(
                     x=building_model.timesteps,
-                    y=building_model.output_constraint_timeseries_maximum.loc[:, output].values,
+                    y=building_model.output_maximum_timeseries.loc[:, output].values,
                     name='Maximum',
                     line=go.scatter.Line(width=3, shape='hv')
                 )
@@ -330,7 +330,7 @@ def main():
             figure.add_trace(
                 go.Scatter(
                     x=building_model.timesteps,
-                    y=building_model.output_constraint_timeseries_minimum.loc[:, output].values,
+                    y=building_model.output_minimum_timeseries.loc[:, output].values,
                     name='Minimum',
                     line=go.scatter.Line(width=3, shape='hv')
                 )
@@ -355,7 +355,7 @@ def main():
                 go.Scatter(
                     x=building_model.timesteps,
                     y=(
-                        building_model.output_constraint_timeseries_minimum.loc[:, output].values
+                            building_model.output_minimum_timeseries.loc[:, output].values
                         / building_model.building_data.zones.loc[zone_name, 'zone_area']
                         * 1000
                     ),

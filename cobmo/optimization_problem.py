@@ -206,13 +206,13 @@ class OptimizationProblem(object):
                         self.problem.constraints.add(
                             self.problem.variable_output_vector[timestep, output]
                             ==
-                            self.building.output_constraint_timeseries_minimum.loc[timestep, output]
+                            self.building.output_minimum_timeseries.loc[timestep, output]
                         )
                 else:
                     self.problem.constraints.add(
                         self.problem.variable_output_vector[timestep, output]
                         >=
-                        self.building.output_constraint_timeseries_minimum.loc[timestep, output]
+                        self.building.output_minimum_timeseries.loc[timestep, output]
                     )
 
                 # Maximum.
@@ -239,7 +239,7 @@ class OptimizationProblem(object):
                     self.problem.constraints.add(
                         self.problem.variable_output_vector[timestep, output]
                         <=
-                        self.building.output_constraint_timeseries_maximum.loc[timestep, output]
+                        self.building.output_maximum_timeseries.loc[timestep, output]
                     )
 
         # Storage planning auxiliary constraints.

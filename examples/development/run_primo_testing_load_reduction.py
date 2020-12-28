@@ -92,8 +92,8 @@ def main():
         # Obtain timesteps during which the HVAC system is expected to be active (operational hours).
         timesteps = (
             building_model.timesteps[(
-                building_model.output_constraint_timeseries_maximum
-                != building_model.output_constraint_timeseries_maximum.max()
+                building_model.output_maximum_timeseries
+                != building_model.output_maximum_timeseries.max()
             ).any(axis='columns')]
         )
         timesteps = building_model.timesteps if len(timesteps) == 0 else timesteps
