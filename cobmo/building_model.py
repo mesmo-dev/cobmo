@@ -573,35 +573,23 @@ class BuildingModel(object):
         self.timestep_interval = building_data.timestep_interval
 
         # Instantiate state space model matrices.
-        self.state_matrix = pd.DataFrame(
-            0.0,
-            self.states,
-            self.states
+        self.state_matrix = (
+            cobmo.utils.MatrixConstructor(index=self.states, columns=self.states)
         )
-        self.control_matrix = pd.DataFrame(
-            0.0,
-            self.states,
-            self.controls
+        self.control_matrix = (
+            cobmo.utils.MatrixConstructor(index=self.states, columns=self.controls)
         )
-        self.disturbance_matrix = pd.DataFrame(
-            0.0,
-            self.states,
-            self.disturbances
+        self.disturbance_matrix = (
+            cobmo.utils.MatrixConstructor(index=self.states, columns=self.disturbances)
         )
-        self.state_output_matrix = pd.DataFrame(
-            0.0,
-            self.outputs,
-            self.states
+        self.state_output_matrix = (
+            cobmo.utils.MatrixConstructor(index=self.outputs, columns=self.states)
         )
-        self.control_output_matrix = pd.DataFrame(
-            0.0,
-            self.outputs,
-            self.controls
+        self.control_output_matrix = (
+            pd.DataFrame(0.0, index=self.outputs, columns=self.controls)
         )
-        self.disturbance_output_matrix = pd.DataFrame(
-            0.0,
-            self.outputs,
-            self.disturbances
+        self.disturbance_output_matrix = (
+            cobmo.utils.MatrixConstructor(index=self.outputs, columns=self.disturbances)
         )
 
         def define_initial_state():
@@ -1004,7 +992,7 @@ class BuildingModel(object):
             for surface_name, surface_data in building_data.surfaces_exterior.iterrows():
                 if surface_data['heat_capacity'] != 0.0:  # Surfaces with non-zero heat capacity
                     # Conductive heat transfer from the exterior towards the core of surface
-                    self.disturbance_matrix.at[
+                    self.disturbance_matrix[
                         surface_name + '_temperature',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
@@ -1025,7 +1013,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / surface_data['heat_capacity']
                     )
-                    self.disturbance_matrix.at[
+                    self.disturbance_matrix[
                         surface_name + '_temperature',
                         'ambient_air_temperature'
                     ] += (
@@ -1049,7 +1037,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / surface_data['heat_capacity']
                     )
-                    self.disturbance_matrix.at[
+                    self.disturbance_matrix[
                         surface_name + '_temperature',
                         'sky_temperature'
                     ] += (
@@ -1070,7 +1058,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / surface_data['heat_capacity']
                     )
-                    self.state_matrix.at[
+                    self.state_matrix[
                         surface_name + '_temperature',
                         surface_name + '_temperature'
                     ] += (
@@ -1100,7 +1088,7 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_matrix.at[
+                        self.disturbance_matrix[
                             surface_name + '_temperature',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -1124,7 +1112,7 @@ class BuildingModel(object):
                             ) ** (- 1)
                             / surface_data['heat_capacity']
                         )
-                    self.state_matrix.at[
+                    self.state_matrix[
                         surface_name + '_temperature',
                         surface_name + '_temperature'
                     ] += (
@@ -1144,7 +1132,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / surface_data['heat_capacity']
                     )
-                    self.state_matrix.at[
+                    self.state_matrix[
                         surface_name + '_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -1171,7 +1159,7 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_matrix.at[
+                        self.disturbance_matrix[
                             surface_data['zone_name'] + '_temperature',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -1195,7 +1183,7 @@ class BuildingModel(object):
                             ) ** (- 1))
                             / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                         )
-                    self.state_matrix.at[
+                    self.state_matrix[
                         surface_data['zone_name'] + '_temperature',
                         surface_name + '_temperature'
                     ] += (
@@ -1214,7 +1202,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.state_matrix.at[
+                    self.state_matrix[
                         surface_data['zone_name'] + '_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -1236,7 +1224,7 @@ class BuildingModel(object):
                     )
                 else:  # Surfaces with neglected heat capacity
                     # Complete convective heat transfer from surface to zone
-                    self.disturbance_matrix.at[
+                    self.disturbance_matrix[
                         surface_data['zone_name'] + '_temperature',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
@@ -1260,7 +1248,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.disturbance_matrix.at[
+                    self.disturbance_matrix[
                         surface_data['zone_name'] + '_temperature',
                         'ambient_air_temperature'
                     ] += (
@@ -1287,7 +1275,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.disturbance_matrix.at[
+                    self.disturbance_matrix[
                         surface_data['zone_name'] + '_temperature',
                         'sky_temperature'
                     ] += (
@@ -1311,7 +1299,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.state_matrix.at[
+                    self.state_matrix[
                         surface_data['zone_name'] + '_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -1338,7 +1326,7 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_matrix.at[
+                        self.disturbance_matrix[
                             surface_data['zone_name'] + '_temperature',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -1371,7 +1359,7 @@ class BuildingModel(object):
                 # Windows for each exterior surface - Modelled as surfaces with neglected heat capacity
                 if surface_data['window_wall_ratio'] != 0.0:
                     # Complete convective heat transfer from surface to zone
-                    self.disturbance_matrix.at[
+                    self.disturbance_matrix[
                         surface_data['zone_name'] + '_temperature',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
@@ -1395,7 +1383,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.disturbance_matrix.at[
+                    self.disturbance_matrix[
                         surface_data['zone_name'] + '_temperature',
                         'ambient_air_temperature'
                     ] += (
@@ -1422,7 +1410,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.disturbance_matrix.at[
+                    self.disturbance_matrix[
                         surface_data['zone_name'] + '_temperature',
                         'sky_temperature'
                     ] += (
@@ -1446,7 +1434,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.state_matrix.at[
+                    self.state_matrix[
                         surface_data['zone_name'] + '_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -1473,7 +1461,7 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_matrix.at[
+                        self.disturbance_matrix[
                             surface_data['zone_name'] + '_temperature',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -1516,7 +1504,7 @@ class BuildingModel(object):
                                 ].iterrows()
                         ):
                             # Interior irradiation through all exterior surfaces adjacent to the zone
-                            self.disturbance_matrix.at[
+                            self.disturbance_matrix[
                                 surface_name + '_temperature',
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
@@ -1538,7 +1526,7 @@ class BuildingModel(object):
                                 ) ** (- 1)
                                 / surface_data['heat_capacity']
                             )
-                        self.state_matrix.at[
+                        self.state_matrix[
                             surface_name + '_temperature',
                             surface_name + '_temperature'
                         ] += (
@@ -1556,7 +1544,7 @@ class BuildingModel(object):
                             ) ** (- 1)
                             / surface_data['heat_capacity']
                         )
-                        self.state_matrix.at[
+                        self.state_matrix[
                             surface_name + '_temperature',
                             zone_name + '_temperature'
                         ] += (
@@ -1581,7 +1569,7 @@ class BuildingModel(object):
                                 ].iterrows()
                         ):
                             # Interior irradiation through all exterior surfaces adjacent to the zone
-                            self.disturbance_matrix.at[
+                            self.disturbance_matrix[
                                 zone_name + '_temperature',
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
@@ -1603,7 +1591,7 @@ class BuildingModel(object):
                                 ) ** (- 1))
                                 / building_data.zones.at[zone_name, 'heat_capacity']
                             )
-                        self.state_matrix.at[
+                        self.state_matrix[
                             zone_name + '_temperature',
                             surface_name + '_temperature'
                         ] += (
@@ -1620,7 +1608,7 @@ class BuildingModel(object):
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
                         )
-                        self.state_matrix.at[
+                        self.state_matrix[
                             zone_name + '_temperature',
                             zone_name + '_temperature'
                         ] += (
@@ -1675,7 +1663,7 @@ class BuildingModel(object):
                                 ].iterrows()
                         ):
                             # Interior irradiation through all exterior surfaces adjacent to the zone
-                            self.disturbance_matrix.at[
+                            self.disturbance_matrix[
                                 zone_name + '_temperature',
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
@@ -1696,7 +1684,7 @@ class BuildingModel(object):
                                 ) ** (- 1)
                                 / building_data.zones.at[zone_name, 'heat_capacity']
                             )
-                        self.state_matrix.at[
+                        self.state_matrix[
                             zone_name + '_temperature',
                             zone_adjacent_name + '_temperature'
                         ] += (
@@ -1712,7 +1700,7 @@ class BuildingModel(object):
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
                         )
-                        self.state_matrix.at[
+                        self.state_matrix[
                             zone_name + '_temperature',
                             zone_name + '_temperature'
                         ] += (
@@ -1735,7 +1723,7 @@ class BuildingModel(object):
                                 ].iterrows()
                         ):
                             # Interior irradiation through all exterior surfaces adjacent to the zone
-                            self.disturbance_matrix.at[
+                            self.disturbance_matrix[
                                 zone_name + '_temperature',
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
@@ -1795,7 +1783,7 @@ class BuildingModel(object):
                                 ].iterrows()
                         ):
                             # Interior irradiation through all exterior surfaces adjacent to the zone
-                            self.disturbance_matrix.at[
+                            self.disturbance_matrix[
                                 zone_name + '_temperature',
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
@@ -1816,7 +1804,7 @@ class BuildingModel(object):
                                 ) ** (- 1)
                                 / building_data.zones.at[zone_name, 'heat_capacity']
                             )
-                        self.state_matrix.at[
+                        self.state_matrix[
                             zone_name + '_temperature',
                             zone_adjacent_name + '_temperature'
                         ] += (
@@ -1832,7 +1820,7 @@ class BuildingModel(object):
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
                         )
-                        self.state_matrix.at[
+                        self.state_matrix[
                             zone_name + '_temperature',
                             zone_name + '_temperature'
                         ] += (
@@ -1855,7 +1843,7 @@ class BuildingModel(object):
                                 ].iterrows()
                         ):
                             # Interior irradiation through all exterior surfaces adjacent to the zone
-                            self.disturbance_matrix.at[
+                            self.disturbance_matrix[
                                 zone_name + '_temperature',
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
@@ -1889,7 +1877,7 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_matrix.at[
+                        self.disturbance_matrix[
                             surface_name + '_temperature',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -1913,7 +1901,7 @@ class BuildingModel(object):
                             ) ** (- 1)
                             / surface_data['heat_capacity']
                         )
-                    self.state_matrix.at[
+                    self.state_matrix[
                         surface_name + '_temperature',
                         surface_name + '_temperature'
                     ] += (
@@ -1933,7 +1921,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / surface_data['heat_capacity']
                     )
-                    self.state_matrix.at[
+                    self.state_matrix[
                         surface_name + '_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -1960,7 +1948,7 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_matrix.at[
+                        self.disturbance_matrix[
                             surface_data['zone_name'] + '_temperature',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -1984,7 +1972,7 @@ class BuildingModel(object):
                             ) ** (- 1))
                             / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                         )
-                    self.state_matrix.at[
+                    self.state_matrix[
                         surface_data['zone_name'] + '_temperature',
                         surface_name + '_temperature'
                     ] += (
@@ -2003,7 +1991,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.state_matrix.at[
+                    self.state_matrix[
                         surface_data['zone_name'] + '_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -2029,7 +2017,7 @@ class BuildingModel(object):
         def define_heat_transfer_infiltration():
 
             for zone_name, zone_data in building_data.zones.iterrows():
-                self.state_matrix.at[
+                self.state_matrix[
                     zone_name + '_temperature',
                     zone_name + '_temperature'
                 ] += (
@@ -2039,7 +2027,7 @@ class BuildingModel(object):
                     * zone_data['zone_height']
                     / zone_data['heat_capacity']
                 )
-                self.disturbance_matrix.at[
+                self.disturbance_matrix[
                     zone_name + '_temperature',
                     'ambient_air_temperature'
                 ] += (
@@ -2054,7 +2042,7 @@ class BuildingModel(object):
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data['window_type']):
-                    self.control_matrix.at[
+                    self.control_matrix[
                         zone_name + '_temperature',
                         zone_name + '_window_air_flow'
                     ] += (
@@ -2070,7 +2058,7 @@ class BuildingModel(object):
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data.at['internal_gain_type']):
-                    self.disturbance_matrix.at[
+                    self.disturbance_matrix[
                         zone_name + '_temperature',
                         zone_data.at['internal_gain_type'] + '_internal_gain_occupancy'
                     ] += (
@@ -2078,7 +2066,7 @@ class BuildingModel(object):
                         * zone_data.at['zone_area']
                         / zone_data.at['heat_capacity']
                     )
-                    self.disturbance_matrix.at[
+                    self.disturbance_matrix[
                         zone_name + '_temperature',
                         zone_data.at['internal_gain_type'] + '_internal_gain_appliances'
                     ] += (
@@ -2091,14 +2079,14 @@ class BuildingModel(object):
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data['hvac_generic_type']):
-                    self.control_matrix.at[
+                    self.control_matrix[
                         zone_name + '_temperature',
                         zone_name + '_generic_heat_thermal_power'
                     ] += (
                         1.0
                         / zone_data['heat_capacity']
                     )
-                    self.control_matrix.at[
+                    self.control_matrix[
                         zone_name + '_temperature',
                         zone_name + '_generic_cool_thermal_power'
                     ] += (
@@ -2445,7 +2433,7 @@ class BuildingModel(object):
                         ).iterrows()  # For all surfaces adjacent to the zone.
                     ):
                         # Front.
-                        self.state_matrix.at[
+                        self.state_matrix[
                             zone_name + '_radiator_hull_front_temperature',
                             surface_name + '_temperature'
                         ] += (
@@ -2456,7 +2444,7 @@ class BuildingModel(object):
                             / zone_data['zone_surfaces_wall_area']
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix.at[
+                        self.state_matrix[
                             surface_name + '_temperature',
                             zone_name + '_radiator_hull_front_temperature'
                         ] += (
@@ -2467,7 +2455,7 @@ class BuildingModel(object):
                             / zone_data['zone_surfaces_wall_area']
                             / surface_data['heat_capacity']
                         )
-                        self.state_matrix.at[
+                        self.state_matrix[
                             surface_name + '_temperature',
                             surface_name + '_temperature'
                         ] += (
@@ -2480,7 +2468,7 @@ class BuildingModel(object):
                         )
 
                         # Back.
-                        self.state_matrix.at[
+                        self.state_matrix[
                             zone_name + '_radiator_hull_rear_temperature',
                             surface_name + '_temperature'
                         ] += (
@@ -2491,7 +2479,7 @@ class BuildingModel(object):
                             / zone_data['zone_surfaces_wall_area']
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix.at[
+                        self.state_matrix[
                             surface_name + '_temperature',
                             zone_name + '_radiator_hull_rear_temperature'
                         ] += (
@@ -2502,7 +2490,7 @@ class BuildingModel(object):
                             / zone_data['zone_surfaces_wall_area']
                             / surface_data['heat_capacity']
                         )
-                        self.state_matrix.at[
+                        self.state_matrix[
                             surface_name + '_temperature',
                             surface_name + '_temperature'
                         ] += (
@@ -2518,7 +2506,7 @@ class BuildingModel(object):
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data['hvac_ahu_type']):
-                    self.control_matrix.at[
+                    self.control_matrix[
                         zone_name + '_temperature',
                         zone_name + '_ahu_heat_air_flow'
                     ] += (
@@ -2529,7 +2517,7 @@ class BuildingModel(object):
                         )
                         / zone_data['heat_capacity']
                     )
-                    self.control_matrix.at[
+                    self.control_matrix[
                         zone_name + '_temperature',
                         zone_name + '_ahu_cool_air_flow'
                     ] += (
@@ -2545,7 +2533,7 @@ class BuildingModel(object):
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data['hvac_tu_type']):
-                    self.control_matrix.at[
+                    self.control_matrix[
                         zone_name + '_temperature',
                         zone_name + '_tu_heat_air_flow'
                     ] += (
@@ -2556,7 +2544,7 @@ class BuildingModel(object):
                         )
                         / zone_data['heat_capacity']
                     )
-                    self.control_matrix.at[
+                    self.control_matrix[
                         zone_name + '_temperature',
                         zone_name + '_tu_cool_air_flow'
                     ] += (
@@ -2573,7 +2561,7 @@ class BuildingModel(object):
             if pd.notnull(building_data.scenarios['co2_model_type']):
                 for zone_name, zone_data in building_data.zones.iterrows():
                     if pd.notnull(zone_data.at['hvac_ahu_type']) | pd.notnull(zone_data.at['window_type']):
-                        self.state_matrix.at[
+                        self.state_matrix[
                             zone_name + '_co2_concentration',
                             zone_name + '_co2_concentration'
                         ] += (
@@ -2584,7 +2572,7 @@ class BuildingModel(object):
                             )
                         )
                         if pd.notnull(zone_data.at['hvac_ahu_type']):
-                            self.control_matrix.at[
+                            self.control_matrix[
                                 zone_name + '_co2_concentration',
                                 zone_name + '_ahu_heat_air_flow'
                             ] += (
@@ -2595,7 +2583,7 @@ class BuildingModel(object):
                                     / zone_data.at['zone_area']
                                 )
                             )
-                            self.control_matrix.at[
+                            self.control_matrix[
                                 zone_name + '_co2_concentration',
                                 zone_name + '_ahu_cool_air_flow'
                             ] += (
@@ -2607,7 +2595,7 @@ class BuildingModel(object):
                                 )
                             )
                         if pd.notnull(zone_data.at['window_type']):
-                            self.control_matrix.at[
+                            self.control_matrix[
                                 zone_name + '_co2_concentration',
                                 zone_name + '_window_air_flow'
                             ] += (
@@ -2618,7 +2606,7 @@ class BuildingModel(object):
                                     / zone_data.at['zone_area']
                                 )
                             )
-                        # self.disturbance_matrix.at[
+                        # self.disturbance_matrix[
                         #     zone_name + '_co2_concentration',
                         #     'constant'
                         # ] += (
@@ -2627,7 +2615,7 @@ class BuildingModel(object):
                         #     * zone_data.at['infiltration_rate'])
                         # )  # TODO: Revise infiltration
                         if pd.notnull(zone_data.at['internal_gain_type']):
-                            self.disturbance_matrix.at[
+                            self.disturbance_matrix[
                                 zone_name + '_co2_concentration',
                                 zone_data.at['internal_gain_type'] + '_internal_gain_occupancy'
                             ] += (
@@ -2637,7 +2625,7 @@ class BuildingModel(object):
                             )
                             # division by zone_area since the occupancy here is in p
                             # if iterative and robust BM, no division by zone_area since the occupancy there is in p/m2
-                        self.disturbance_matrix.at[
+                        self.disturbance_matrix[
                             zone_name + '_co2_concentration',
                             'constant'
                         ] += (
@@ -2651,7 +2639,7 @@ class BuildingModel(object):
             if pd.notnull(building_data.scenarios['humidity_model_type']):
                 for zone_name, zone_data in building_data.zones.iterrows():
                     if pd.notnull(zone_data.at['hvac_ahu_type']):
-                        self.state_matrix.at[
+                        self.state_matrix[
                             zone_name + '_absolute_humidity',
                             zone_name + '_absolute_humidity'
                         ] += (
@@ -2661,7 +2649,7 @@ class BuildingModel(object):
                                 / zone_data.at['zone_height']
                             )
                         )
-                        self.control_matrix.at[
+                        self.control_matrix[
                             zone_name + '_absolute_humidity',
                             zone_name + '_ahu_heat_air_flow'
                         ] += (
@@ -2678,7 +2666,7 @@ class BuildingModel(object):
                                 / zone_data.at['zone_area']
                             )
                         )
-                        self.control_matrix.at[
+                        self.control_matrix[
                             zone_name + '_absolute_humidity',
                             zone_name + '_ahu_cool_air_flow'
                         ] += (
@@ -2696,7 +2684,7 @@ class BuildingModel(object):
                             )
                         )
                         if pd.notnull(zone_data.at['window_type']):
-                            self.control_matrix.at[
+                            self.control_matrix[
                                 zone_name + '_absolute_humidity',
                                 zone_name + '_window_air_flow'
                             ] += (
@@ -2710,7 +2698,7 @@ class BuildingModel(object):
                                     / zone_data.at['zone_area']
                                 )
                             )
-                        self.disturbance_matrix.at[
+                        self.disturbance_matrix[
                             zone_name + '_absolute_humidity',
                             'constant'
                         ] += (
@@ -2724,7 +2712,7 @@ class BuildingModel(object):
                             )
                         )  # TODO: Revise infiltration
                         if pd.notnull(zone_data.at['internal_gain_type']):
-                            self.disturbance_matrix.at[
+                            self.disturbance_matrix[
                                 zone_name + '_absolute_humidity',
                                 zone_data.at['internal_gain_type'] + '_internal_gain_occupancy'
                             ] += (
@@ -2733,7 +2721,7 @@ class BuildingModel(object):
                                 / zone_data.at['zone_area']
                                 / building_data.parameters['density_air']
                             )
-                        self.disturbance_matrix.at[
+                        self.disturbance_matrix[
                             zone_name + '_absolute_humidity',
                             'constant'
                         ] += (
@@ -2747,7 +2735,7 @@ class BuildingModel(object):
             # Sensible thermal storage.
             if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
                 # Storage charge.
-                self.control_matrix.at[
+                self.control_matrix[
                     'sensible_thermal_storage_state_of_charge',
                     'sensible_storage_charge_cool_thermal_power',
                 ] += (
@@ -2763,7 +2751,7 @@ class BuildingModel(object):
                 # - Thermal losses are considered negligible, but a very small loss is added to keep the state matrix
                 #   non-singular and hence invertible.
                 # - TODO: For detailed losses depending on the storage size see `cobmo/README_storage.md`
-                self.state_matrix.at[
+                self.state_matrix[
                     'sensible_thermal_storage_state_of_charge',
                     'sensible_thermal_storage_state_of_charge'
                 ] += (
@@ -2775,7 +2763,7 @@ class BuildingModel(object):
 
                     if pd.notnull(zone_data['hvac_ahu_type']):
                         # Storage discharge to AHU for cooling.
-                        self.control_matrix.at[
+                        self.control_matrix[
                             'sensible_thermal_storage_state_of_charge',
                             zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power',
                         ] += (
@@ -2788,7 +2776,7 @@ class BuildingModel(object):
 
                     if pd.notnull(zone_data['hvac_tu_type']):
                         # Storage discharge to TU for cooling.
-                        self.control_matrix.at[
+                        self.control_matrix[
                             'sensible_thermal_storage_state_of_charge',
                             zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power',
                         ] += (
@@ -2802,7 +2790,7 @@ class BuildingModel(object):
             # Battery storage.
             if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
                 # Storage charge.
-                self.control_matrix.at[
+                self.control_matrix[
                     'battery_storage_state_of_charge',
                     'battery_storage_charge_electric_power'
                 ] += (
@@ -2812,7 +2800,7 @@ class BuildingModel(object):
                 # Storage losses.
                 # - There are no battery storage losses, but a very small loss is added to keep the state matrix
                 #   non-singular and hence invertible.
-                self.state_matrix.at[
+                self.state_matrix[
                     'battery_storage_state_of_charge',
                     'battery_storage_state_of_charge'
                 ] += (
@@ -2824,7 +2812,7 @@ class BuildingModel(object):
 
                     if pd.notnull(zone_data['hvac_ahu_type']):
                         # Storage discharge to AHU for cooling.
-                        self.control_matrix.at[
+                        self.control_matrix[
                             'battery_storage_state_of_charge',
                             zone_name + '_battery_storage_to_zone_ahu_cool_electric_power',
                         ] += (
@@ -2832,7 +2820,7 @@ class BuildingModel(object):
                         )
 
                         # Storage discharge to AHU for heating.
-                        self.control_matrix.at[
+                        self.control_matrix[
                             'battery_storage_state_of_charge',
                             zone_name + '_battery_storage_to_zone_ahu_heat_electric_power',
                         ] += (
@@ -2841,7 +2829,7 @@ class BuildingModel(object):
 
                     if pd.notnull(zone_data['hvac_tu_type']):
                         # Storage discharge to TU for cooling.
-                        self.control_matrix.at[
+                        self.control_matrix[
                             'battery_storage_state_of_charge',
                             zone_name + '_battery_storage_to_zone_tu_cool_electric_power',
                         ] += (
@@ -2849,7 +2837,7 @@ class BuildingModel(object):
                         )
 
                         # Storage discharge to TU for heating.
-                        self.control_matrix.at[
+                        self.control_matrix[
                             'battery_storage_state_of_charge',
                             zone_name + '_battery_storage_to_zone_tu_heat_electric_power',
                         ] += (
@@ -2859,7 +2847,7 @@ class BuildingModel(object):
         def define_output_zone_temperature():
 
             for zone_name, zone_data in building_data.zones.iterrows():
-                self.state_output_matrix.at[
+                self.state_output_matrix[
                     zone_name + '_temperature',
                     zone_name + '_temperature'
                 ] = 1.0
@@ -2869,7 +2857,7 @@ class BuildingModel(object):
             if pd.notnull(building_data.scenarios['co2_model_type']):
                 for zone_name, zone_data in building_data.zones.iterrows():
                     if pd.notnull(zone_data['hvac_ahu_type']) | pd.notnull(zone_data['window_type']):
-                        self.state_output_matrix.at[
+                        self.state_output_matrix[
                             zone_name + '_co2_concentration',
                             zone_name + '_co2_concentration'
                         ] = 1.0
@@ -2879,7 +2867,7 @@ class BuildingModel(object):
             if pd.notnull(building_data.scenarios['humidity_model_type']):
                 for zone_name, zone_data in building_data.zones.iterrows():
                     if pd.notnull(zone_data['hvac_ahu_type']):
-                        self.state_output_matrix.at[
+                        self.state_output_matrix[
                             zone_name + '_absolute_humidity',
                             zone_name + '_absolute_humidity'
                         ] = 1.0
@@ -3396,7 +3384,7 @@ class BuildingModel(object):
                         zone_name + '_window_air_flow'
                     ] = 1.0
                 if pd.notnull(zone_data['window_type']) | pd.notnull(zone_data['hvac_ahu_type']):
-                    self.disturbance_output_matrix.at[
+                    self.disturbance_output_matrix[
                         zone_name + '_total_fresh_air_flow',
                         'constant'
                     ] += (
@@ -3430,14 +3418,14 @@ class BuildingModel(object):
 
             # Sensible thermal storage.
             if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
-                self.state_output_matrix.at[
+                self.state_output_matrix[
                     'sensible_thermal_storage_state_of_charge',
                     'sensible_thermal_storage_state_of_charge'
                 ] = 1.0
 
             # Battery storage.
             if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
-                self.state_output_matrix.at[
+                self.state_output_matrix[
                     'battery_storage_state_of_charge',
                     'battery_storage_state_of_charge'
                 ] = 1.0
@@ -3538,7 +3526,7 @@ class BuildingModel(object):
                     ], sort=False)
             ).iterrows():
                 if surface_data['heat_capacity'] != 0.0:  # Surfaces with non-zero heat capacity
-                    self.state_output_matrix.at[
+                    self.state_output_matrix[
                         surface_name + '_temperature',
                         surface_name + '_temperature'
                     ] = 1.0
@@ -3547,7 +3535,7 @@ class BuildingModel(object):
 
             for surface_name, surface_data in building_data.surfaces_exterior.iterrows():
                 if surface_data['heat_capacity'] != 0.0:  # Surfaces with non-zero heat capacity
-                    self.disturbance_output_matrix.at[
+                    self.disturbance_output_matrix[
                         surface_name + '_irradiation_gain_exterior',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
@@ -3555,7 +3543,7 @@ class BuildingModel(object):
                         * (1 - surface_data['window_wall_ratio'])
                     )
                 else:  # Surfaces with neglected heat capacity
-                    self.disturbance_output_matrix.at[
+                    self.disturbance_output_matrix[
                         surface_data['surface_name'] + '_irradiation_gain_exterior',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
@@ -3597,7 +3585,7 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_output_matrix.at[
+                        self.disturbance_output_matrix[
                             surface_data['surface_name'] + '_convection_interior',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -3622,7 +3610,7 @@ class BuildingModel(object):
                                 ) ** (- 1)
                             )
                         )
-                    self.state_output_matrix.at[
+                    self.state_output_matrix[
                         surface_data['surface_name'] + '_convection_interior',
                         surface_name + '_temperature'
                     ] += (
@@ -3639,7 +3627,7 @@ class BuildingModel(object):
                             )
                         ) ** (- 1)
                     )
-                    self.state_output_matrix.at[
+                    self.state_output_matrix[
                         surface_data['surface_name'] + '_convection_interior',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -3659,7 +3647,7 @@ class BuildingModel(object):
                     )
                 else:  # Surfaces with neglected heat capacity
                     # Complete convective heat transfer from surface to zone
-                    self.disturbance_output_matrix.at[
+                    self.disturbance_output_matrix[
                         surface_data['surface_name'] + '_convection_interior',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
@@ -3681,7 +3669,7 @@ class BuildingModel(object):
                             / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                     )
-                    self.disturbance_output_matrix.at[
+                    self.disturbance_output_matrix[
                         surface_data['surface_name'] + '_convection_interior',
                         'ambient_air_temperature'
                     ] += (
@@ -3706,7 +3694,7 @@ class BuildingModel(object):
                             / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                     )
-                    self.disturbance_output_matrix.at[
+                    self.disturbance_output_matrix[
                         surface_data['surface_name'] + '_convection_interior',
                         'sky_temperature'
                     ] += (
@@ -3728,7 +3716,7 @@ class BuildingModel(object):
                             / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                     )
-                    self.state_output_matrix.at[
+                    self.state_output_matrix[
                         surface_data['surface_name'] + '_convection_interior',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -3751,7 +3739,7 @@ class BuildingModel(object):
                         building_data.surfaces_exterior['zone_name'] == surface_data['zone_name']
                     ].iterrows():
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_output_matrix.at[
+                        self.disturbance_output_matrix[
                             surface_data['surface_name'] + '_convection_interior',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -3859,7 +3847,7 @@ class BuildingModel(object):
                 )
                 for zone_name, zone_data in building_data.zones.iterrows():
                     if pd.notnull(zone_data.at['internal_gain_type']):
-                        self.disturbance_output_matrix.loc[
+                        self.disturbance_output_matrix[
                             'grid_electric_power',
                             zone_data.at['internal_gain_type'] + '_internal_gain_appliances'
                         ] += (
@@ -4192,6 +4180,13 @@ class BuildingModel(object):
         define_electricity_price_timeseries()
         define_electricity_price_distribution_timeseries()
         define_output_constraint_timeseries()
+
+        # Convert matrix constructors to dataframes.
+        self.state_matrix = self.state_matrix.to_dataframe_dense()
+        self.control_matrix = self.control_matrix.to_dataframe_dense()
+        self.disturbance_matrix = self.disturbance_matrix.to_dataframe_dense()
+        self.state_output_matrix = self.state_output_matrix.to_dataframe_dense()
+        self.disturbance_output_matrix = self.disturbance_output_matrix.to_dataframe_dense()
 
         # Convert to time discrete model.
         discretize_model()
