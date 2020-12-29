@@ -13,9 +13,11 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import pvlib
 import re
+import scipy.sparse
 import seaborn
 import subprocess
 import sys
+import typing
 
 import cobmo.config
 
@@ -62,6 +64,113 @@ class OptimizationProblem(object):
         except AssertionError:
             logger.error(f"Solver termination status: {self.cvxpy_problem.status}")
             raise
+
+
+class MatrixConstructor(object):
+    """Matrix constructor object for more performant matrix construction operations.
+
+    - Creates a matrix representation for given index, column sets.
+    - Values can be added to the matrix using inplace addition ``+=`` and value setting ``=``. Note that
+      value setting ``=`` behaves like inplace addition ``+=``, i.e. existing values are not overwritten but added up.
+      True value setting is not available for performance reasons.
+    - Value getting always returns 0. True value getting is not available for performance reasons.
+    - Once the matrix construction is complete, the matrix representation can be converted to Scipy sparse CSR matrix
+      with ``to_scipy_csr()`` or Pandas dataframe in sparse / dense format with ``to_dataframe_sparse()`` /
+      ``to_dataframe_dense()``.
+
+    :syntax:
+        ``MatrixConstructor(index, columns)``: Instantiate matrix constructor object for given index (rows) and columns.
+        ``matrix[index_key, column_key] += 1.0``: Add value 1.0 at given row / column key location.
+        ``matrix[index_key, column_key] = 1.0``: Add value 1.0 at given row / column key location.
+
+    Parameters:
+        index (pd.Index): Index (row) key set.
+        columns (pd.Index): Columns key set.
+
+    Attributes:
+        index (pd.Index): Index (row) key set.
+        columns (pd.Index): Columns key set.
+        data_index (list): List of data entry row locations as integer index.
+        data_columns (list): List of data entry column locations as integer index.
+        data_values (list): List of data entry values.
+"""
+
+    index: pd.Index
+    columns: pd.Index
+    data_index: list
+    data_columns: list
+    data_values: list
+
+    def __init__(
+            self,
+            index: typing.Union[pd.Index],
+            columns: typing.Union[pd.Index]
+    ):
+
+        self.index = index
+        self.columns = columns
+        self.data_index = list()
+        self.data_columns = list()
+        self.data_values = list()
+
+    def __getitem__(
+            self,
+            key: typing.Tuple[any, any]
+    ) -> float:
+
+        # Always return 0, to enable inplace addition ``+=``.
+        # - True value getting is not available for performance reasons.
+        return 0.0
+
+    def __setitem__(
+            self,
+            key: typing.Tuple[any, any],
+            value: any
+    ):
+
+        # Assert that key has exactly 2 entries, otherwise raise error.
+        if len(key) != 2:
+            raise ValueError(f"Cannot use key with {len(key)} items. Only key with 2 items is valid.")
+
+        # Append new values.
+        # - Integer key locations are obtained from index sets.
+        # - Note that existing values are not overwritten but added up.
+        # - True value setting is not available for performance reasons.
+        self.data_index.append(self.index.get_loc(key[0]))
+        self.data_columns.append(self.columns.get_loc(key[1]))
+        self.data_values.append(value)
+
+    def to_scipy_csr(self) -> scipy.sparse.csr_matrix:
+        """Obtain Scipy sparse CSR matrix."""
+
+        return (
+            scipy.sparse.csr_matrix(
+                (self.data_values, (self.data_index, self.data_columns)),
+                shape=(len(self.index), len(self.columns))
+            )
+        )
+
+    def to_dataframe_sparse(self) -> pd.DataFrame:
+        """Obtain Pandas dataframe in sparse format.
+
+        - Reference for Pandas sparse dataframes: <https://pandas.pydata.org/pandas-docs/stable/user_guide/sparse.html>
+        """
+
+        return (
+            pd.DataFrame.sparse.from_spmatrix(
+                scipy.sparse.coo_matrix(
+                    (self.data_values, (self.data_index, self.data_columns)),
+                    shape=(len(self.index), len(self.columns))
+                ),
+                index=self.index,
+                columns=self.columns
+            )
+        )
+
+    def to_dataframe_dense(self) -> pd.DataFrame:
+        """Obtain Pandas dataframe in dense format."""
+
+        return self.to_dataframe_sparse().sparse.to_dense()
 
 
 def calculate_absolute_humidity_humid_air(
