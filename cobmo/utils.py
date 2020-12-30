@@ -3,7 +3,7 @@
 import cvxpy as cp
 from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
 import datetime
-import itertools
+import logging
 import matplotlib.pyplot as plt
 import matplotlib.ticker
 import numpy as np
@@ -17,11 +17,15 @@ import scipy.sparse
 import seaborn
 import subprocess
 import sys
+import time
 import typing
 
 import cobmo.config
 
 logger = cobmo.config.get_logger(__name__)
+
+# Instantiate dictionary for execution time logging.
+log_times = dict()
 
 
 class OptimizationProblem(object):
@@ -171,6 +175,37 @@ class MatrixConstructor(object):
         """Obtain Pandas dataframe in dense format."""
 
         return self.to_dataframe_sparse().sparse.to_dense()
+
+
+def log_time(
+        label: str,
+        logger_object: logging.Logger = logger
+):
+    """Log start / end message and time duration for given label.
+
+    - When called with given label for the first time, will log start message.
+    - When called subsequently with the same / previously used label, will log end message and time duration since
+      logging the start message.
+    - Start / end messages are logged as debug messages. The logger object can be given as keyword argument.
+      By default, uses ``utils.logger`` as logger.
+    - Start message: "Starting `label`."
+    - End message: "Completed `label` in `duration` seconds."
+
+    Arguments:
+        label (str): Label for the start / end message.
+
+    Keyword Arguments:
+        logger_object (logging.logger.Logger): Logger object to which the start / end messages are output. Default:
+            ``utils.logger``.
+    """
+
+    time_now = time.time()
+
+    if label in log_times.keys():
+        logger_object.debug(f"Completed {label} in {(time_now - log_times[label]):.6f} seconds.")
+    else:
+        log_times[label] = time_now
+        logger_object.debug(f"Starting {label}.")
 
 
 def calculate_absolute_humidity_humid_air(
