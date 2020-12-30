@@ -114,7 +114,6 @@ class BuildingModel(object):
         self.scenario_name = scenario_name
 
         # Obtain building data.
-        # TODO: Match timestep defintions with FLEDGE.
         building_data = (
             cobmo.data_interface.BuildingData(
                 self.scenario_name,
@@ -125,8 +124,12 @@ class BuildingModel(object):
         )
 
         # Store building data.
-        # TODO: Remove building data object dependencies.
+        # TODO: Use loc / at indexer.
         self.building_data = building_data
+
+        # Obtain total building zone area.
+        # - This is used for scaling air flow / power values to per-square-meter values.
+        self.zone_area_total = building_data.zones.loc[:, 'zone_area'].sum()
 
         # Add constant timeseries in disturbance vector, if any CO2 model or HVAC or window.
         self.define_constant = (
@@ -206,6 +209,15 @@ class BuildingModel(object):
         # Control variables.
         self.controls = pd.Index(
             pd.concat([
+                # Electric / thermal grid connections and heating / cooling plants.
+                pd.Series([
+                    'grid_electric_power',
+                    'grid_thermal_power_cooling',
+                    'grid_thermal_power_heating',
+                    'plant_thermal_power_cooling',
+                    'plant_thermal_power_heating'
+                ]),
+
                 # Generic HVAC system.
                 building_data.zones['zone_name'][
                     pd.notnull(building_data.zones['hvac_generic_type'])
@@ -240,78 +252,24 @@ class BuildingModel(object):
                     pd.notnull(building_data.zones['window_type'])
                 ] + '_window_air_flow',
 
-                # Sensible storage charge.
+                # Sensible storage.
                 # TODO: Add consideration for sensible storage heating / cooling.
-                pd.Series(['sensible_storage_charge_cool_thermal_power']) if (
+                pd.Series([
+                    'sensible_storage_charge_cool_thermal_power',
+                    'sensible_storage_discharge_cool_thermal_power',
+                ]) if (
                     building_data.scenarios['building_storage_type']
                     == 'default_sensible_thermal_storage'
                 ) else None,
 
-                # Battery storage charge.
-                pd.Series(['battery_storage_charge_electric_power']) if (
+                # Battery storage.
+                pd.Series([
+                    'battery_storage_charge_electric_power',
+                    'battery_storage_discharge_electric_power'
+                ]) if (
                     building_data.scenarios['building_storage_type']
                     == 'default_battery_storage'
-                ) else None,
-
-                # Sensible storage discharge to AHU.
-                # TODO: Add consideration for sensible storage heating / cooling.
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                    & (
-                        building_data.scenarios['building_storage_type']
-                        == 'default_sensible_thermal_storage'
-                    )
-                ] + '_sensible_storage_to_zone_ahu_cool_thermal_power',
-
-                # Sensible storage discharge to TU.
-                # TODO: Add consideration for sensible storage heating / cooling.
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_tu_type'])
-                    & (
-                        building_data.scenarios['building_storage_type']
-                        == 'default_sensible_thermal_storage'
-                    )
-                ] + '_sensible_storage_to_zone_tu_cool_thermal_power',
-
-                # Battery storage discharge to AHU.
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                    & (
-                        building_data.scenarios['building_storage_type']
-                        == 'default_battery_storage'
-                    )
-                ] + '_battery_storage_to_zone_ahu_heat_electric_power',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                    & (
-                        building_data.scenarios['building_storage_type']
-                        == 'default_battery_storage'
-                    )
-                ] + '_battery_storage_to_zone_ahu_cool_electric_power',
-
-                # Battery storage discharge to TU.
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_tu_type'])
-                    & (
-                        building_data.scenarios['building_storage_type']
-                        == 'default_battery_storage'
-                    )
-                ] + '_battery_storage_to_zone_tu_heat_electric_power',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_tu_type'])
-                    & (
-                        building_data.scenarios['building_storage_type']
-                        == 'default_battery_storage'
-                    )
-                ] + '_battery_storage_to_zone_tu_cool_electric_power',
-
-                # Electric / thermal grid connection.
-                pd.Series([
-                    'plant_thermal_power_cooling',
-                    'plant_thermal_power_heating'
-                ]) if connect_electric_grid else None,
-                pd.Series(['grid_thermal_power_cooling']) if connect_thermal_grid_cooling else None,
-                pd.Series(['grid_thermal_power_heating']) if connect_thermal_grid_heating else None
+                ) else None
             ]),
             name='control_name'
         )
@@ -347,6 +305,81 @@ class BuildingModel(object):
         # Output variables.
         self.outputs = pd.Index(
             pd.concat([
+                # Electric / thermal grid connections and heating / cooling plants.
+                pd.Series([
+                    'grid_electric_power',
+                    'grid_thermal_power_cooling',
+                    'grid_thermal_power_heating',
+                    'plant_thermal_power_cooling',
+                    'plant_thermal_power_heating'
+                ]),
+
+                # Generic HVAC system controls.
+                building_data.zones['zone_name'][
+                    pd.notnull(building_data.zones['hvac_generic_type'])
+                ] + '_generic_heat_thermal_power',
+                building_data.zones['zone_name'][
+                    pd.notnull(building_data.zones['hvac_generic_type'])
+                ] + '_generic_cool_thermal_power',
+
+                # Radiator controls.
+                building_data.zones['zone_name'][
+                    pd.notnull(building_data.zones['hvac_radiator_type'])
+                ] + '_radiator_thermal_power',
+
+                # AHU controls.
+                building_data.zones['zone_name'][
+                    pd.notnull(building_data.zones['hvac_ahu_type'])
+                ] + '_ahu_heat_air_flow',
+                building_data.zones['zone_name'][
+                    pd.notnull(building_data.zones['hvac_ahu_type'])
+                ] + '_ahu_cool_air_flow',
+
+                # TU controls.
+                building_data.zones['zone_name'][
+                    pd.notnull(building_data.zones['hvac_tu_type'])
+                ] + '_tu_heat_air_flow',
+                building_data.zones['zone_name'][
+                    pd.notnull(building_data.zones['hvac_tu_type'])
+                ] + '_tu_cool_air_flow',
+
+                # Windows controls.
+                # TODO: Revise window controller definition.
+                building_data.zones['zone_name'][
+                    pd.notnull(building_data.zones['window_type'])
+                ] + '_window_air_flow',
+
+                # Sensible storage controls.
+                # TODO: Add consideration for sensible storage heating / cooling.
+                pd.Series([
+                    'sensible_storage_charge_cool_thermal_power',
+                    'sensible_storage_discharge_cool_thermal_power',
+                ]) if (
+                    building_data.scenarios['building_storage_type']
+                    == 'default_sensible_thermal_storage'
+                ) else None,
+
+                # Battery storage controls.
+                pd.Series([
+                    'battery_storage_charge_electric_power',
+                    'battery_storage_discharge_electric_power'
+                ]) if (
+                    building_data.scenarios['building_storage_type']
+                    == 'default_battery_storage'
+                ) else None,
+
+                # Sensible storage state of charge.
+                pd.Series(['sensible_thermal_storage_state_of_charge']) if (
+                    building_data.scenarios['building_storage_type']
+                    == 'default_sensible_thermal_storage'
+                ) else None,
+
+                # Battery storage state of charge.
+                pd.Series(['battery_storage_state_of_charge']) if (
+                    building_data.scenarios['building_storage_type']
+                    == 'default_battery_storage'
+                ) else None,
+
                 # Zone temperature.
                 building_data.zones['zone_name'] + '_temperature',
 
@@ -370,168 +403,6 @@ class BuildingModel(object):
                     pd.notnull(building_data.zones['hvac_ahu_type'])
                     | pd.notnull(building_data.zones['window_type'])
                 ] + '_total_fresh_air_flow',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                ] + '_ahu_fresh_air_flow',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['window_type'])
-                ] + '_window_fresh_air_flow',
-
-                # Generic HVAC system.
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_generic_type'])
-                ] + '_generic_cool_thermal_power_cooling',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_generic_type'])
-                ] + '_generic_cool_electric_power_cooling',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_generic_type'])
-                ] + '_generic_heat_thermal_power_heating',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_generic_type'])
-                ] + '_generic_heat_electric_power_heating',
-
-                # Radiator thermal power.
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_radiator_type'])
-                ] + '_radiator_thermal_power_heating',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_radiator_type'])
-                ] + '_radiator_electric_power_heating',
-
-                # AHU electric power.
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                ] + '_ahu_heat_thermal_power_cooling',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                ] + '_ahu_cool_thermal_power_cooling',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                ] + '_ahu_heat_electric_power_cooling',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                ] + '_ahu_cool_electric_power_cooling',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                ] + '_ahu_heat_thermal_power_heating',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                ] + '_ahu_cool_thermal_power_heating',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                ] + '_ahu_heat_electric_power_heating',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                ] + '_ahu_cool_electric_power_heating',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                ] + '_ahu_heat_electric_power_fan',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                ] + '_ahu_cool_electric_power_fan',
-
-                # TU electric power.
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_tu_type'])
-                ] + '_tu_cool_thermal_power_cooling',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_tu_type'])
-                ] + '_tu_cool_electric_power_cooling',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_tu_type'])
-                ] + '_tu_heat_thermal_power_heating',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_tu_type'])
-                ] + '_tu_heat_electric_power_heating',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_tu_type'])
-                ] + '_tu_heat_electric_power_fan',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_tu_type'])
-                ] + '_tu_cool_electric_power_fan',
-
-                # Sensible storage state of charge.
-                pd.Series(['sensible_thermal_storage_state_of_charge']) if (
-                    building_data.scenarios['building_storage_type']
-                    == 'default_sensible_thermal_storage'
-                ) else None,
-
-                # Battery storage state of charge.
-                pd.Series(['battery_storage_state_of_charge']) if (
-                    building_data.scenarios['building_storage_type']
-                    == 'default_battery_storage'
-                ) else None,
-
-                # Sensible storage discharge.
-                # TODO: Add consideration for sensible storage heating / cooling.
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_tu_type'])
-                    & (
-                        building_data.scenarios['building_storage_type']
-                        == 'default_sensible_thermal_storage'
-                    )
-                ] + '_sensible_storage_to_zone_tu_heat_thermal_power',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                    & (
-                        building_data.scenarios['building_storage_type']
-                        == 'default_sensible_thermal_storage'
-                    )
-                ] + '_sensible_storage_to_zone_ahu_cool_thermal_power',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_tu_type'])
-                    & (
-                        building_data.scenarios['building_storage_type']
-                        == 'default_sensible_thermal_storage'
-                    )
-                ] + '_sensible_storage_to_zone_tu_cool_thermal_power',
-
-                # Battery storage discharge.
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                    & (
-                        building_data.scenarios['building_storage_type']
-                        == 'default_battery_storage'
-                    )
-                ] + '_battery_storage_to_zone_ahu_heat_electric_power',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_tu_type'])
-                    & (
-                        building_data.scenarios['building_storage_type']
-                        == 'default_battery_storage'
-                    )
-                ] + '_battery_storage_to_zone_tu_heat_electric_power',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                    & (
-                        building_data.scenarios['building_storage_type']
-                        == 'default_battery_storage'
-                    )
-                ] + '_battery_storage_to_zone_ahu_cool_electric_power',
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_tu_type'])
-                    & (
-                        building_data.scenarios['building_storage_type']
-                        == 'default_battery_storage'
-                    )
-                ] + '_battery_storage_to_zone_tu_cool_electric_power',
-
-                # Sensible storage charge.
-                # TODO: Add consideration for sensible storage heating / cooling.
-                pd.Series([
-                    'sensible_storage_charge_cool_thermal_power',
-                    'sensible_storage_charge_cool_electric_power'
-                ]) if (
-                    building_data.scenarios['building_storage_type']
-                    == 'default_sensible_thermal_storage'
-                ) else None,
-
-                # Battery storage charge.
-                pd.Series(['battery_storage_charge_electric_power']) if (
-                    building_data.scenarios['building_storage_type']
-                    == 'default_battery_storage'
-                ) else None,
 
                 # Validation outputs.
                 pd.concat([
@@ -548,22 +419,12 @@ class BuildingModel(object):
                     building_data.surfaces_exterior['surface_name'] + '_convection_interior'
                 ]) if with_validation_outputs else None,
 
-                # Electric / thermal grid connection.
-                pd.Series(['grid_thermal_power_cooling_balance']) if any([
-                    connect_electric_grid,
-                    connect_thermal_grid_cooling
-                ]) else None,
-                pd.Series(['grid_thermal_power_heating_balance']) if any([
-                    connect_electric_grid,
-                    connect_thermal_grid_heating
-                ]) else None,
+                # Power balances.
                 pd.Series([
-                    'plant_thermal_power_cooling',
-                    'plant_thermal_power_heating',
-                    'grid_electric_power'
-                ]) if connect_electric_grid else None,
-                pd.Series(['grid_thermal_power_cooling']) if connect_thermal_grid_cooling else None,
-                pd.Series(['grid_thermal_power_heating']) if connect_thermal_grid_heating else None
+                    'electric_power_balance',
+                    'thermal_power_cooling_balance',
+                    'thermal_power_heating_balance'
+                ])
             ]),
             name='output_name'
         )
@@ -572,25 +433,13 @@ class BuildingModel(object):
         self.timesteps = building_data.timesteps
         self.timestep_interval = building_data.timestep_interval
 
-        # Instantiate state space model matrices.
-        self.state_matrix = (
-            cobmo.utils.MatrixConstructor(index=self.states, columns=self.states)
-        )
-        self.control_matrix = (
-            cobmo.utils.MatrixConstructor(index=self.states, columns=self.controls)
-        )
-        self.disturbance_matrix = (
-            cobmo.utils.MatrixConstructor(index=self.states, columns=self.disturbances)
-        )
-        self.state_output_matrix = (
-            cobmo.utils.MatrixConstructor(index=self.outputs, columns=self.states)
-        )
-        self.control_output_matrix = (
-            pd.DataFrame(0.0, index=self.outputs, columns=self.controls)
-        )
-        self.disturbance_output_matrix = (
-            cobmo.utils.MatrixConstructor(index=self.outputs, columns=self.disturbances)
-        )
+        # Instantiate state space model matrix constructors.
+        state_matrix = cobmo.utils.MatrixConstructor(index=self.states, columns=self.states)
+        control_matrix = cobmo.utils.MatrixConstructor(index=self.states, columns=self.controls)
+        disturbance_matrix = cobmo.utils.MatrixConstructor(index=self.states, columns=self.disturbances)
+        state_output_matrix = cobmo.utils.MatrixConstructor(index=self.outputs, columns=self.states)
+        control_output_matrix = cobmo.utils.MatrixConstructor(index=self.outputs, columns=self.controls)
+        disturbance_output_matrix = cobmo.utils.MatrixConstructor(index=self.outputs, columns=self.disturbances)
 
         def define_initial_state():
             """Define initial value of the state vector for given definition in `initial_state_types`."""
@@ -992,8 +841,8 @@ class BuildingModel(object):
             for surface_name, surface_data in building_data.surfaces_exterior.iterrows():
                 if surface_data['heat_capacity'] != 0.0:  # Surfaces with non-zero heat capacity
                     # Conductive heat transfer from the exterior towards the core of surface
-                    self.disturbance_matrix[
-                        surface_name + '_temperature',
+                    disturbance_matrix[
+                        f'{surface_name}_temperature',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
                         surface_data['absorptivity']
@@ -1013,8 +862,8 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / surface_data['heat_capacity']
                     )
-                    self.disturbance_matrix[
-                        surface_name + '_temperature',
+                    disturbance_matrix[
+                        f'{surface_name}_temperature',
                         'ambient_air_temperature'
                     ] += (
                         (
@@ -1037,8 +886,8 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / surface_data['heat_capacity']
                     )
-                    self.disturbance_matrix[
-                        surface_name + '_temperature',
+                    disturbance_matrix[
+                        f'{surface_name}_temperature',
                         'sky_temperature'
                     ] += (
                         surface_data['heat_transfer_coefficient_surface_sky']
@@ -1058,9 +907,9 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / surface_data['heat_capacity']
                     )
-                    self.state_matrix[
-                        surface_name + '_temperature',
-                        surface_name + '_temperature'
+                    state_matrix[
+                        f'{surface_name}_temperature',
+                        f'{surface_name}_temperature'
                     ] += (
                         - 1.0
                         * surface_data['surface_area']
@@ -1088,8 +937,8 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_matrix[
-                            surface_name + '_temperature',
+                        disturbance_matrix[
+                            f'{surface_name}_temperature',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
                             (
@@ -1112,9 +961,9 @@ class BuildingModel(object):
                             ) ** (- 1)
                             / surface_data['heat_capacity']
                         )
-                    self.state_matrix[
-                        surface_name + '_temperature',
-                        surface_name + '_temperature'
+                    state_matrix[
+                        f'{surface_name}_temperature',
+                        f'{surface_name}_temperature'
                     ] += (
                         - 1.0
                         * surface_data['surface_area']
@@ -1132,8 +981,8 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / surface_data['heat_capacity']
                     )
-                    self.state_matrix[
-                        surface_name + '_temperature',
+                    state_matrix[
+                        f'{surface_name}_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
                         surface_data['surface_area']
@@ -1159,7 +1008,7 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_matrix[
+                        disturbance_matrix[
                             surface_data['zone_name'] + '_temperature',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -1183,9 +1032,9 @@ class BuildingModel(object):
                             ) ** (- 1))
                             / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                         )
-                    self.state_matrix[
+                    state_matrix[
                         surface_data['zone_name'] + '_temperature',
-                        surface_name + '_temperature'
+                        f'{surface_name}_temperature'
                     ] += (
                         surface_data['surface_area']
                         * (1 - surface_data['window_wall_ratio'])
@@ -1202,7 +1051,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.state_matrix[
+                    state_matrix[
                         surface_data['zone_name'] + '_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -1224,7 +1073,7 @@ class BuildingModel(object):
                     )
                 else:  # Surfaces with neglected heat capacity
                     # Complete convective heat transfer from surface to zone
-                    self.disturbance_matrix[
+                    disturbance_matrix[
                         surface_data['zone_name'] + '_temperature',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
@@ -1248,7 +1097,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.disturbance_matrix[
+                    disturbance_matrix[
                         surface_data['zone_name'] + '_temperature',
                         'ambient_air_temperature'
                     ] += (
@@ -1275,7 +1124,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.disturbance_matrix[
+                    disturbance_matrix[
                         surface_data['zone_name'] + '_temperature',
                         'sky_temperature'
                     ] += (
@@ -1299,7 +1148,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.state_matrix[
+                    state_matrix[
                         surface_data['zone_name'] + '_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -1326,7 +1175,7 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_matrix[
+                        disturbance_matrix[
                             surface_data['zone_name'] + '_temperature',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -1359,7 +1208,7 @@ class BuildingModel(object):
                 # Windows for each exterior surface - Modelled as surfaces with neglected heat capacity
                 if surface_data['window_wall_ratio'] != 0.0:
                     # Complete convective heat transfer from surface to zone
-                    self.disturbance_matrix[
+                    disturbance_matrix[
                         surface_data['zone_name'] + '_temperature',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
@@ -1383,7 +1232,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.disturbance_matrix[
+                    disturbance_matrix[
                         surface_data['zone_name'] + '_temperature',
                         'ambient_air_temperature'
                     ] += (
@@ -1410,7 +1259,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.disturbance_matrix[
+                    disturbance_matrix[
                         surface_data['zone_name'] + '_temperature',
                         'sky_temperature'
                     ] += (
@@ -1434,7 +1283,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.state_matrix[
+                    state_matrix[
                         surface_data['zone_name'] + '_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -1461,7 +1310,7 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_matrix[
+                        disturbance_matrix[
                             surface_data['zone_name'] + '_temperature',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -1504,8 +1353,8 @@ class BuildingModel(object):
                                 ].iterrows()
                         ):
                             # Interior irradiation through all exterior surfaces adjacent to the zone
-                            self.disturbance_matrix[
-                                surface_name + '_temperature',
+                            disturbance_matrix[
+                                f'{surface_name}_temperature',
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
                                 (
@@ -1526,9 +1375,9 @@ class BuildingModel(object):
                                 ) ** (- 1)
                                 / surface_data['heat_capacity']
                             )
-                        self.state_matrix[
-                            surface_name + '_temperature',
-                            surface_name + '_temperature'
+                        state_matrix[
+                            f'{surface_name}_temperature',
+                            f'{surface_name}_temperature'
                         ] += (
                             - 1.0
                             * surface_data['surface_area']
@@ -1544,9 +1393,9 @@ class BuildingModel(object):
                             ) ** (- 1)
                             / surface_data['heat_capacity']
                         )
-                        self.state_matrix[
-                            surface_name + '_temperature',
-                            zone_name + '_temperature'
+                        state_matrix[
+                            f'{surface_name}_temperature',
+                            f'{zone_name}_temperature'
                         ] += (
                             surface_data['surface_area']
                             * (1 - surface_data['window_wall_ratio'])
@@ -1569,8 +1418,8 @@ class BuildingModel(object):
                                 ].iterrows()
                         ):
                             # Interior irradiation through all exterior surfaces adjacent to the zone
-                            self.disturbance_matrix[
-                                zone_name + '_temperature',
+                            disturbance_matrix[
+                                f'{zone_name}_temperature',
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
                                 (
@@ -1591,9 +1440,9 @@ class BuildingModel(object):
                                 ) ** (- 1))
                                 / building_data.zones.at[zone_name, 'heat_capacity']
                             )
-                        self.state_matrix[
-                            zone_name + '_temperature',
-                            surface_name + '_temperature'
+                        state_matrix[
+                            f'{zone_name}_temperature',
+                            f'{surface_name}_temperature'
                         ] += (
                             surface_data['surface_area']
                             * (1 - surface_data['window_wall_ratio'])
@@ -1608,9 +1457,9 @@ class BuildingModel(object):
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
                         )
-                        self.state_matrix[
-                            zone_name + '_temperature',
-                            zone_name + '_temperature'
+                        state_matrix[
+                            f'{zone_name}_temperature',
+                            f'{zone_name}_temperature'
                         ] += (
                             - 1.0
                             * surface_data['surface_area']
@@ -1663,8 +1512,8 @@ class BuildingModel(object):
                                 ].iterrows()
                         ):
                             # Interior irradiation through all exterior surfaces adjacent to the zone
-                            self.disturbance_matrix[
-                                zone_name + '_temperature',
+                            disturbance_matrix[
+                                f'{zone_name}_temperature',
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
                                 (
@@ -1684,8 +1533,8 @@ class BuildingModel(object):
                                 ) ** (- 1)
                                 / building_data.zones.at[zone_name, 'heat_capacity']
                             )
-                        self.state_matrix[
-                            zone_name + '_temperature',
+                        state_matrix[
+                            f'{zone_name}_temperature',
                             zone_adjacent_name + '_temperature'
                         ] += (
                             surface_data['surface_area']
@@ -1700,9 +1549,9 @@ class BuildingModel(object):
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
                         )
-                        self.state_matrix[
-                            zone_name + '_temperature',
-                            zone_name + '_temperature'
+                        state_matrix[
+                            f'{zone_name}_temperature',
+                            f'{zone_name}_temperature'
                         ] += (
                             - 1.0
                             * surface_data['surface_area']
@@ -1723,8 +1572,8 @@ class BuildingModel(object):
                                 ].iterrows()
                         ):
                             # Interior irradiation through all exterior surfaces adjacent to the zone
-                            self.disturbance_matrix[
-                                zone_name + '_temperature',
+                            disturbance_matrix[
+                                f'{zone_name}_temperature',
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
                                 (
@@ -1783,8 +1632,8 @@ class BuildingModel(object):
                                 ].iterrows()
                         ):
                             # Interior irradiation through all exterior surfaces adjacent to the zone
-                            self.disturbance_matrix[
-                                zone_name + '_temperature',
+                            disturbance_matrix[
+                                f'{zone_name}_temperature',
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
                                 (
@@ -1804,8 +1653,8 @@ class BuildingModel(object):
                                 ) ** (- 1)
                                 / building_data.zones.at[zone_name, 'heat_capacity']
                             )
-                        self.state_matrix[
-                            zone_name + '_temperature',
+                        state_matrix[
+                            f'{zone_name}_temperature',
                             zone_adjacent_name + '_temperature'
                         ] += (
                             surface_data['surface_area']
@@ -1820,9 +1669,9 @@ class BuildingModel(object):
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
                         )
-                        self.state_matrix[
-                            zone_name + '_temperature',
-                            zone_name + '_temperature'
+                        state_matrix[
+                            f'{zone_name}_temperature',
+                            f'{zone_name}_temperature'
                         ] += (
                             - 1.0
                             * surface_data['surface_area']
@@ -1843,8 +1692,8 @@ class BuildingModel(object):
                                 ].iterrows()
                         ):
                             # Interior irradiation through all exterior surfaces adjacent to the zone
-                            self.disturbance_matrix[
-                                zone_name + '_temperature',
+                            disturbance_matrix[
+                                f'{zone_name}_temperature',
                                 'irradiation_' + zone_exterior_surface_data['direction_name']
                             ] += (
                                 (
@@ -1877,8 +1726,8 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_matrix[
-                            surface_name + '_temperature',
+                        disturbance_matrix[
+                            f'{surface_name}_temperature',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
                             (
@@ -1901,9 +1750,9 @@ class BuildingModel(object):
                             ) ** (- 1)
                             / surface_data['heat_capacity']
                         )
-                    self.state_matrix[
-                        surface_name + '_temperature',
-                        surface_name + '_temperature'
+                    state_matrix[
+                        f'{surface_name}_temperature',
+                        f'{surface_name}_temperature'
                     ] += (
                         - 1.0
                         * surface_data['surface_area']
@@ -1921,8 +1770,8 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / surface_data['heat_capacity']
                     )
-                    self.state_matrix[
-                        surface_name + '_temperature',
+                    state_matrix[
+                        f'{surface_name}_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
                         surface_data['surface_area']
@@ -1948,7 +1797,7 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_matrix[
+                        disturbance_matrix[
                             surface_data['zone_name'] + '_temperature',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -1972,9 +1821,9 @@ class BuildingModel(object):
                             ) ** (- 1))
                             / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                         )
-                    self.state_matrix[
+                    state_matrix[
                         surface_data['zone_name'] + '_temperature',
-                        surface_name + '_temperature'
+                        f'{surface_name}_temperature'
                     ] += (
                         surface_data['surface_area']
                         * (1 - surface_data['window_wall_ratio'])
@@ -1991,7 +1840,7 @@ class BuildingModel(object):
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
-                    self.state_matrix[
+                    state_matrix[
                         surface_data['zone_name'] + '_temperature',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -2012,14 +1861,14 @@ class BuildingModel(object):
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
                 else:  # Surfaces with neglected heat capacity
-                    logger.warn(f"Adiabatic surfaces with zero heat capacity have no effect: {surface_name}")
+                    logger.warning(f"Adiabatic surfaces with zero heat capacity have no effect: {surface_name}")
 
         def define_heat_transfer_infiltration():
 
             for zone_name, zone_data in building_data.zones.iterrows():
-                self.state_matrix[
-                    zone_name + '_temperature',
-                    zone_name + '_temperature'
+                state_matrix[
+                    f'{zone_name}_temperature',
+                    f'{zone_name}_temperature'
                 ] += (
                     - zone_data['infiltration_rate']
                     * building_data.parameters['heat_capacity_air']
@@ -2027,8 +1876,8 @@ class BuildingModel(object):
                     * zone_data['zone_height']
                     / zone_data['heat_capacity']
                 )
-                self.disturbance_matrix[
-                    zone_name + '_temperature',
+                disturbance_matrix[
+                    f'{zone_name}_temperature',
                     'ambient_air_temperature'
                 ] += (
                     zone_data['infiltration_rate']
@@ -2042,15 +1891,18 @@ class BuildingModel(object):
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data['window_type']):
-                    self.control_matrix[
-                        zone_name + '_temperature',
-                        zone_name + '_window_air_flow'
+                    control_matrix[
+                        f'{zone_name}_temperature',
+                        f'{zone_name}_window_air_flow'
                     ] += (
-                        building_data.parameters['heat_capacity_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * building_data.parameters['heat_capacity_air']
                         * (
                             building_data.scenarios['linearization_ambient_air_temperature']
                             - building_data.scenarios['linearization_zone_air_temperature_cool']
                         )
+                        * zone_data.at['zone_area']
                         / zone_data['heat_capacity']
                     )
 
@@ -2058,16 +1910,16 @@ class BuildingModel(object):
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data.at['internal_gain_type']):
-                    self.disturbance_matrix[
-                        zone_name + '_temperature',
+                    disturbance_matrix[
+                        f'{zone_name}_temperature',
                         zone_data.at['internal_gain_type'] + '_internal_gain_occupancy'
                     ] += (
                         zone_data.at['internal_gain_occupancy_factor']
                         * zone_data.at['zone_area']
                         / zone_data.at['heat_capacity']
                     )
-                    self.disturbance_matrix[
-                        zone_name + '_temperature',
+                    disturbance_matrix[
+                        f'{zone_name}_temperature',
                         zone_data.at['internal_gain_type'] + '_internal_gain_appliances'
                     ] += (
                         zone_data.at['internal_gain_appliances_factor']
@@ -2079,18 +1931,20 @@ class BuildingModel(object):
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data['hvac_generic_type']):
-                    self.control_matrix[
-                        zone_name + '_temperature',
-                        zone_name + '_generic_heat_thermal_power'
+                    control_matrix[
+                        f'{zone_name}_temperature',
+                        f'{zone_name}_generic_heat_thermal_power'
                     ] += (
                         1.0
+                        * zone_data['zone_area']
                         / zone_data['heat_capacity']
                     )
-                    self.control_matrix[
-                        zone_name + '_temperature',
-                        zone_name + '_generic_cool_thermal_power'
+                    control_matrix[
+                        f'{zone_name}_temperature',
+                        f'{zone_name}_generic_cool_thermal_power'
                     ] += (
                         - 1.0
+                        * zone_data['zone_area']
                         / zone_data['heat_capacity']
                     )
 
@@ -2098,53 +1952,46 @@ class BuildingModel(object):
             """Define state equations describing the heat transfer occurring due to radiators."""
 
             if pd.notnull(building_data.zones['hvac_radiator_type']).any():
-                zones_index = (
-                    pd.notnull(building_data.zones['hvac_radiator_type'])
-                )
-                zones_2_panels_index = (
-                    zones_index
-                    & (building_data.zones['radiator_panel_number'] == '2')
-                )
-
                 for zone_name, zone_data in building_data.zones.iterrows():
                     if pd.notnull(zone_data['hvac_radiator_type']):
                         # Thermal power input to water.
-                        self.control_matrix.loc[
-                            zone_name + '_radiator_water_mean_temperature',
-                            zone_name + '_radiator_thermal_power'
+                        control_matrix[
+                            f'{zone_name}_radiator_water_mean_temperature',
+                            f'{zone_name}_radiator_thermal_power'
                         ] += (
                             1.0
+                            * zone_data['zone_area']
                             / zone_data['heat_capacitance_water']
                         )
 
                         # Heat transfer between radiator hull front and water.
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_hull_front_temperature',
-                            zone_name + '_radiator_hull_front_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_hull_front_temperature',
+                            f'{zone_name}_radiator_hull_front_temperature'
                         ] += (
                             - 1.0
                             / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_hull_front_temperature',
-                            zone_name + '_radiator_water_mean_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_hull_front_temperature',
+                            f'{zone_name}_radiator_water_mean_temperature'
                         ] += (
                             1.0
                             / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_water_mean_temperature',
-                            zone_name + '_radiator_hull_front_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_water_mean_temperature',
+                            f'{zone_name}_radiator_hull_front_temperature'
                         ] += (
                             1.0
                             / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
                             / zone_data['heat_capacitance_water']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_water_mean_temperature',
-                            zone_name + '_radiator_water_mean_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_water_mean_temperature',
+                            f'{zone_name}_radiator_water_mean_temperature'
                         ] += (
                             - 1.0
                             / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
@@ -2153,33 +2000,33 @@ class BuildingModel(object):
 
                     if zone_data['radiator_panel_number'] == '2':
                         # Heat transfer between radiator panel 1 hull rear and water.
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_panel_1_hull_rear_temperature',
-                            zone_name + '_radiator_panel_1_hull_rear_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_panel_1_hull_rear_temperature',
+                            f'{zone_name}_radiator_panel_1_hull_rear_temperature'
                         ] += (
                             - 1.0
                             / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_panel_1_hull_rear_temperature',
-                            zone_name + '_radiator_water_mean_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_panel_1_hull_rear_temperature',
+                            f'{zone_name}_radiator_water_mean_temperature'
                         ] += (
                             1.0
                             / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_water_mean_temperature',
-                            zone_name + '_radiator_panel_1_hull_rear_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_water_mean_temperature',
+                            f'{zone_name}_radiator_panel_1_hull_rear_temperature'
                         ] += (
                             1.0
                             / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
                             / zone_data['heat_capacitance_water']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_water_mean_temperature',
-                            zone_name + '_radiator_water_mean_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_water_mean_temperature',
+                            f'{zone_name}_radiator_water_mean_temperature'
                         ] += (
                             - 1.0
                             / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
@@ -2187,33 +2034,33 @@ class BuildingModel(object):
                         )
 
                         # Heat transfer between radiator panel 2 hull front and water.
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_panel_2_hull_front_temperature',
-                            zone_name + '_radiator_panel_2_hull_front_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_panel_2_hull_front_temperature',
+                            f'{zone_name}_radiator_panel_2_hull_front_temperature'
                         ] += (
                             - 1.0
                             / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_panel_2_hull_front_temperature',
-                            zone_name + '_radiator_water_mean_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_panel_2_hull_front_temperature',
+                            f'{zone_name}_radiator_water_mean_temperature'
                         ] += (
                             1.0
                             / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_water_mean_temperature',
-                            zone_name + '_radiator_panel_2_hull_front_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_water_mean_temperature',
+                            f'{zone_name}_radiator_panel_2_hull_front_temperature'
                         ] += (
                             1.0
                             / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
                             / zone_data['heat_capacitance_water']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_water_mean_temperature',
-                            zone_name + '_radiator_water_mean_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_water_mean_temperature',
+                            f'{zone_name}_radiator_water_mean_temperature'
                         ] += (
                             - 1.0
                             / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
@@ -2221,33 +2068,33 @@ class BuildingModel(object):
                         )
 
                     # Heat transfer between radiator hull rear and water.
-                    self.state_matrix.loc[
-                        zone_name + '_radiator_hull_rear_temperature',
-                        zone_name + '_radiator_hull_rear_temperature'
+                    state_matrix[
+                        f'{zone_name}_radiator_hull_rear_temperature',
+                        f'{zone_name}_radiator_hull_rear_temperature'
                     ] += (
                         - 1.0
                         / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
                         / zone_data['heat_capacitance_hull']
                     )
-                    self.state_matrix.loc[
-                        zone_name + '_radiator_hull_rear_temperature',
-                        zone_name + '_radiator_water_mean_temperature'
+                    state_matrix[
+                        f'{zone_name}_radiator_hull_rear_temperature',
+                        f'{zone_name}_radiator_water_mean_temperature'
                     ] += (
                         1.0
                         / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
                         / zone_data['heat_capacitance_hull']
                     )
-                    self.state_matrix.loc[
-                        zone_name + '_radiator_water_mean_temperature',
-                        zone_name + '_radiator_hull_rear_temperature'
+                    state_matrix[
+                        f'{zone_name}_radiator_water_mean_temperature',
+                        f'{zone_name}_radiator_hull_rear_temperature'
                     ] += (
                         1.0
                         / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
                         / zone_data['heat_capacitance_water']
                     )
-                    self.state_matrix.loc[
-                        zone_name + '_radiator_water_mean_temperature',
-                        zone_name + '_radiator_water_mean_temperature'
+                    state_matrix[
+                        f'{zone_name}_radiator_water_mean_temperature',
+                        f'{zone_name}_radiator_water_mean_temperature'
                     ] += (
                         - 1.0
                         / (0.5 * zone_data['thermal_resistance_radiator_hull_conduction'])
@@ -2255,33 +2102,33 @@ class BuildingModel(object):
                     )
 
                     # Heat transfer between radiator hull front and zone air.
-                    self.state_matrix.loc[
-                        zone_name + '_radiator_hull_front_temperature',
-                        zone_name + '_radiator_hull_front_temperature'
+                    state_matrix[
+                        f'{zone_name}_radiator_hull_front_temperature',
+                        f'{zone_name}_radiator_hull_front_temperature'
                     ] += (
                         - 1.0
                         / zone_data['thermal_resistance_radiator_front_zone']
                         / zone_data['heat_capacitance_hull']
                     )
-                    self.state_matrix.loc[
-                        zone_name + '_radiator_hull_front_temperature',
-                        zone_name + '_temperature'
+                    state_matrix[
+                        f'{zone_name}_radiator_hull_front_temperature',
+                        f'{zone_name}_temperature'
                     ] += (
                         1.0
                         / zone_data['thermal_resistance_radiator_front_zone']
                         / zone_data['heat_capacitance_hull']
                     )
-                    self.state_matrix.loc[
-                        zone_name + '_temperature',
-                        zone_name + '_radiator_hull_front_temperature'
+                    state_matrix[
+                        f'{zone_name}_temperature',
+                        f'{zone_name}_radiator_hull_front_temperature'
                     ] += (
                         1.0
                         / zone_data['thermal_resistance_radiator_front_zone']
                         / zone_data['heat_capacity']
                     )
-                    self.state_matrix.loc[
-                        zone_name + '_temperature',
-                        zone_name + '_temperature'
+                    state_matrix[
+                        f'{zone_name}_temperature',
+                        f'{zone_name}_temperature'
                     ] += (
                         - 1.0
                         / zone_data['thermal_resistance_radiator_front_zone']
@@ -2290,33 +2137,33 @@ class BuildingModel(object):
 
                     if zone_data['radiator_panel_number'] == '2':
                         # Heat transfer between radiator panel 1 hull rear and zone air.
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_panel_1_hull_rear_temperature',
-                            zone_name + '_radiator_panel_1_hull_rear_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_panel_1_hull_rear_temperature',
+                            f'{zone_name}_radiator_panel_1_hull_rear_temperature'
                         ] += (
                             - 1.0
                             / zone_data['thermal_resistance_radiator_panel_1_rear_zone']
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_panel_1_hull_rear_temperature',
-                            zone_name + '_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_panel_1_hull_rear_temperature',
+                            f'{zone_name}_temperature'
                         ] += (
                             1.0
                             / zone_data['thermal_resistance_radiator_panel_1_rear_zone']
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_temperature',
-                            zone_name + '_radiator_panel_1_hull_rear_temperature'
+                        state_matrix[
+                            f'{zone_name}_temperature',
+                            f'{zone_name}_radiator_panel_1_hull_rear_temperature'
                         ] += (
                             1.0
                             / zone_data['thermal_resistance_radiator_panel_1_rear_zone']
                             / zone_data['heat_capacity']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_temperature',
-                            zone_name + '_temperature'
+                        state_matrix[
+                            f'{zone_name}_temperature',
+                            f'{zone_name}_temperature'
                         ] += (
                             - 1.0
                             / zone_data['thermal_resistance_radiator_panel_1_rear_zone']
@@ -2324,33 +2171,33 @@ class BuildingModel(object):
                         )
 
                         # Heat transfer between radiator panel 2 hull front and zone air.
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_panel_2_hull_front_temperature',
-                            zone_name + '_radiator_panel_2_hull_front_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_panel_2_hull_front_temperature',
+                            f'{zone_name}_radiator_panel_2_hull_front_temperature'
                         ] += (
                             - 1.0
                             / zone_data['thermal_resistance_radiator_panel_2_front_zone']
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_radiator_panel_2_hull_front_temperature',
-                            zone_name + '_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_panel_2_hull_front_temperature',
+                            f'{zone_name}_temperature'
                         ] += (
                             1.0
                             / zone_data['thermal_resistance_radiator_panel_2_front_zone']
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_temperature',
-                            zone_name + '_radiator_panel_2_hull_front_temperature'
+                        state_matrix[
+                            f'{zone_name}_temperature',
+                            f'{zone_name}_radiator_panel_2_hull_front_temperature'
                         ] += (
                             1.0
                             / zone_data['thermal_resistance_radiator_panel_2_front_zone']
                             / zone_data['heat_capacity']
                         )
-                        self.state_matrix.loc[
-                            zone_name + '_temperature',
-                            zone_name + '_temperature'
+                        state_matrix[
+                            f'{zone_name}_temperature',
+                            f'{zone_name}_temperature'
                         ] += (
                             - 1.0
                             / zone_data['thermal_resistance_radiator_panel_2_front_zone']
@@ -2358,33 +2205,33 @@ class BuildingModel(object):
                         )
 
                     # Heat transfer between radiator hull rear and zone air.
-                    self.state_matrix.loc[
-                        zone_name + '_radiator_hull_rear_temperature',
-                        zone_name + '_radiator_hull_rear_temperature'
+                    state_matrix[
+                        f'{zone_name}_radiator_hull_rear_temperature',
+                        f'{zone_name}_radiator_hull_rear_temperature'
                     ] += (
                         - 1.0
                         / zone_data['thermal_resistance_radiator_rear_zone']
                         / zone_data['heat_capacitance_hull']
                     )
-                    self.state_matrix.loc[
-                        zone_name + '_radiator_hull_rear_temperature',
-                        zone_name + '_temperature'
+                    state_matrix[
+                        f'{zone_name}_radiator_hull_rear_temperature',
+                        f'{zone_name}_temperature'
                     ] += (
                         1.0
                         / zone_data['thermal_resistance_radiator_rear_zone']
                         / zone_data['heat_capacitance_hull']
                     )
-                    self.state_matrix.loc[
-                        zone_name + '_temperature',
-                        zone_name + '_radiator_hull_rear_temperature'
+                    state_matrix[
+                        f'{zone_name}_temperature',
+                        f'{zone_name}_radiator_hull_rear_temperature'
                     ] += (
                         1.0
                         / zone_data['thermal_resistance_radiator_rear_zone']
                         / zone_data['heat_capacity']
                     )
-                    self.state_matrix.loc[
-                        zone_name + '_temperature',
-                        zone_name + '_temperature'
+                    state_matrix[
+                        f'{zone_name}_temperature',
+                        f'{zone_name}_temperature'
                     ] += (
                         - 1.0
                         / zone_data['thermal_resistance_radiator_rear_zone']
@@ -2392,17 +2239,17 @@ class BuildingModel(object):
                     )
 
                     # Heat transfer between radiator hull front / rear and zone surfaces.
-                    self.state_matrix.loc[
-                        zone_name + '_radiator_hull_front_temperature',
-                        zone_name + '_radiator_hull_front_temperature'
+                    state_matrix[
+                        f'{zone_name}_radiator_hull_front_temperature',
+                        f'{zone_name}_radiator_hull_front_temperature'
                     ] += (
                         - 1.0
                         / zone_data['thermal_resistance_radiator_front_surfaces']
                         / zone_data['heat_capacitance_hull']
                     )
-                    self.state_matrix.loc[
-                        zone_name + '_radiator_hull_rear_temperature',
-                        zone_name + '_radiator_hull_rear_temperature'
+                    state_matrix[
+                        f'{zone_name}_radiator_hull_rear_temperature',
+                        f'{zone_name}_radiator_hull_rear_temperature'
                     ] += (
                         - 1.0
                         / zone_data['thermal_resistance_radiator_rear_surfaces']
@@ -2433,9 +2280,9 @@ class BuildingModel(object):
                         ).iterrows()  # For all surfaces adjacent to the zone.
                     ):
                         # Front.
-                        self.state_matrix[
-                            zone_name + '_radiator_hull_front_temperature',
-                            surface_name + '_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_hull_front_temperature',
+                            f'{surface_name}_temperature'
                         ] += (
                             1.0
                             / zone_data['thermal_resistance_radiator_front_surfaces']
@@ -2444,9 +2291,9 @@ class BuildingModel(object):
                             / zone_data['zone_surfaces_wall_area']
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix[
-                            surface_name + '_temperature',
-                            zone_name + '_radiator_hull_front_temperature'
+                        state_matrix[
+                            f'{surface_name}_temperature',
+                            f'{zone_name}_radiator_hull_front_temperature'
                         ] += (
                             1.0
                             / zone_data['thermal_resistance_radiator_front_surfaces']
@@ -2455,9 +2302,9 @@ class BuildingModel(object):
                             / zone_data['zone_surfaces_wall_area']
                             / surface_data['heat_capacity']
                         )
-                        self.state_matrix[
-                            surface_name + '_temperature',
-                            surface_name + '_temperature'
+                        state_matrix[
+                            f'{surface_name}_temperature',
+                            f'{surface_name}_temperature'
                         ] += (
                             - 1.0
                             / zone_data['thermal_resistance_radiator_front_surfaces']
@@ -2468,9 +2315,9 @@ class BuildingModel(object):
                         )
 
                         # Back.
-                        self.state_matrix[
-                            zone_name + '_radiator_hull_rear_temperature',
-                            surface_name + '_temperature'
+                        state_matrix[
+                            f'{zone_name}_radiator_hull_rear_temperature',
+                            f'{surface_name}_temperature'
                         ] += (
                             1.0
                             / zone_data['thermal_resistance_radiator_rear_surfaces']
@@ -2479,9 +2326,9 @@ class BuildingModel(object):
                             / zone_data['zone_surfaces_wall_area']
                             / zone_data['heat_capacitance_hull']
                         )
-                        self.state_matrix[
-                            surface_name + '_temperature',
-                            zone_name + '_radiator_hull_rear_temperature'
+                        state_matrix[
+                            f'{surface_name}_temperature',
+                            f'{zone_name}_radiator_hull_rear_temperature'
                         ] += (
                             1.0
                             / zone_data['thermal_resistance_radiator_rear_surfaces']
@@ -2490,9 +2337,9 @@ class BuildingModel(object):
                             / zone_data['zone_surfaces_wall_area']
                             / surface_data['heat_capacity']
                         )
-                        self.state_matrix[
-                            surface_name + '_temperature',
-                            surface_name + '_temperature'
+                        state_matrix[
+                            f'{surface_name}_temperature',
+                            f'{surface_name}_temperature'
                         ] += (
                             - 1.0
                             / zone_data['thermal_resistance_radiator_rear_surfaces']
@@ -2506,26 +2353,32 @@ class BuildingModel(object):
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data['hvac_ahu_type']):
-                    self.control_matrix[
-                        zone_name + '_temperature',
-                        zone_name + '_ahu_heat_air_flow'
+                    control_matrix[
+                        f'{zone_name}_temperature',
+                        f'{zone_name}_ahu_heat_air_flow'
                     ] += (
-                        building_data.parameters['heat_capacity_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * building_data.parameters['heat_capacity_air']
                         * (
                             zone_data['ahu_supply_air_temperature_setpoint']
                             - building_data.scenarios['linearization_zone_air_temperature_heat']
                         )
+                        * zone_data['zone_area']
                         / zone_data['heat_capacity']
                     )
-                    self.control_matrix[
-                        zone_name + '_temperature',
-                        zone_name + '_ahu_cool_air_flow'
+                    control_matrix[
+                        f'{zone_name}_temperature',
+                        f'{zone_name}_ahu_cool_air_flow'
                     ] += (
-                        building_data.parameters['heat_capacity_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * building_data.parameters['heat_capacity_air']
                         * (
                             zone_data['ahu_supply_air_temperature_setpoint']
                             - building_data.scenarios['linearization_zone_air_temperature_cool']
                         )
+                        * zone_data['zone_area']
                         / zone_data['heat_capacity']
                     )
 
@@ -2533,81 +2386,80 @@ class BuildingModel(object):
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data['hvac_tu_type']):
-                    self.control_matrix[
-                        zone_name + '_temperature',
-                        zone_name + '_tu_heat_air_flow'
+                    control_matrix[
+                        f'{zone_name}_temperature',
+                        f'{zone_name}_tu_heat_air_flow'
                     ] += (
-                        building_data.parameters['heat_capacity_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * building_data.parameters['heat_capacity_air']
                         * (
                             zone_data['tu_supply_air_temperature_setpoint']
                             - building_data.scenarios['linearization_zone_air_temperature_heat']
                         )
+                        * zone_data['zone_area']
                         / zone_data['heat_capacity']
                     )
-                    self.control_matrix[
-                        zone_name + '_temperature',
-                        zone_name + '_tu_cool_air_flow'
+                    control_matrix[
+                        f'{zone_name}_temperature',
+                        f'{zone_name}_tu_cool_air_flow'
                     ] += (
-                        building_data.parameters['heat_capacity_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * building_data.parameters['heat_capacity_air']
                         * (
                             zone_data['tu_supply_air_temperature_setpoint']
                             - building_data.scenarios['linearization_zone_air_temperature_cool']
                         )
+                        * zone_data['zone_area']
                         / zone_data['heat_capacity']
                     )
 
-        def define_co2_transfer_hvac_ahu():
+        def define_co2_transfer():
 
             if pd.notnull(building_data.scenarios['co2_model_type']):
                 for zone_name, zone_data in building_data.zones.iterrows():
                     if pd.notnull(zone_data.at['hvac_ahu_type']) | pd.notnull(zone_data.at['window_type']):
-                        self.state_matrix[
-                            zone_name + '_co2_concentration',
-                            zone_name + '_co2_concentration'
+                        state_matrix[
+                            f'{zone_name}_co2_concentration',
+                            f'{zone_name}_co2_concentration'
                         ] += (
                             - 1.0
-                            * (
-                                building_data.scenarios['linearization_ventilation_rate_per_square_meter']
-                                / zone_data.at['zone_height']
-                            )
+                            * building_data.scenarios['linearization_ventilation_rate_per_square_meter']
+                            / 1000  # m³ in l.
+                            / zone_data.at['zone_height']
                         )
                         if pd.notnull(zone_data.at['hvac_ahu_type']):
-                            self.control_matrix[
-                                zone_name + '_co2_concentration',
-                                zone_name + '_ahu_heat_air_flow'
+                            control_matrix[
+                                f'{zone_name}_co2_concentration',
+                                f'{zone_name}_ahu_heat_air_flow'
                             ] += (
                                 - 1.0
-                                * (
-                                    building_data.scenarios['linearization_co2_concentration']
-                                    / zone_data.at['zone_height']
-                                    / zone_data.at['zone_area']
-                                )
+                                / 1000  # m³ in l.
+                                * building_data.scenarios['linearization_co2_concentration']
+                                / zone_data.at['zone_height']
                             )
-                            self.control_matrix[
-                                zone_name + '_co2_concentration',
-                                zone_name + '_ahu_cool_air_flow'
+                            control_matrix[
+                                f'{zone_name}_co2_concentration',
+                                f'{zone_name}_ahu_cool_air_flow'
                             ] += (
                                 - 1.0
-                                * (
-                                    building_data.scenarios['linearization_co2_concentration']
-                                    / zone_data.at['zone_height']
-                                    / zone_data.at['zone_area']
-                                )
+                                / 1000  # m³ in l.
+                                * building_data.scenarios['linearization_co2_concentration']
+                                / zone_data.at['zone_height']
                             )
                         if pd.notnull(zone_data.at['window_type']):
-                            self.control_matrix[
-                                zone_name + '_co2_concentration',
-                                zone_name + '_window_air_flow'
+                            control_matrix[
+                                f'{zone_name}_co2_concentration',
+                                f'{zone_name}_window_air_flow'
                             ] += (
                                 - 1.0
-                                * (
-                                    building_data.scenarios['linearization_co2_concentration']
-                                    / zone_data.at['zone_height']
-                                    / zone_data.at['zone_area']
-                                )
+                                / 1000  # m³ in l.
+                                * building_data.scenarios['linearization_co2_concentration']
+                                / zone_data.at['zone_height']
                             )
-                        # self.disturbance_matrix[
-                        #     zone_name + '_co2_concentration',
+                        # disturbance_matrix[
+                        #     f'{zone_name}_co2_concentration',
                         #     'constant'
                         # ] += (
                         #     - 1.0
@@ -2615,105 +2467,100 @@ class BuildingModel(object):
                         #     * zone_data.at['infiltration_rate'])
                         # )  # TODO: Revise infiltration
                         if pd.notnull(zone_data.at['internal_gain_type']):
-                            self.disturbance_matrix[
-                                zone_name + '_co2_concentration',
+                            disturbance_matrix[
+                                f'{zone_name}_co2_concentration',
                                 zone_data.at['internal_gain_type'] + '_internal_gain_occupancy'
                             ] += (
-                                building_data.parameters['co2_generation_rate_per_person']
+                                1.0
+                                * building_data.parameters['co2_generation_rate_per_person']
                                 / zone_data.at['zone_height']
                                 / zone_data.at['zone_area']
                             )
                             # division by zone_area since the occupancy here is in p
                             # if iterative and robust BM, no division by zone_area since the occupancy there is in p/m2
-                        self.disturbance_matrix[
-                            zone_name + '_co2_concentration',
+                        disturbance_matrix[
+                            f'{zone_name}_co2_concentration',
                             'constant'
                         ] += (
-                            building_data.scenarios['linearization_ventilation_rate_per_square_meter']
+                            1.0
+                            * building_data.scenarios['linearization_ventilation_rate_per_square_meter']
+                            / 1000  # m³ in l.
                             * building_data.scenarios['linearization_co2_concentration']
                             / zone_data.at['zone_height']
                         )
 
-        def define_humidity_transfer_hvac_ahu():
+        def define_humidity_transfer():
 
             if pd.notnull(building_data.scenarios['humidity_model_type']):
                 for zone_name, zone_data in building_data.zones.iterrows():
                     if pd.notnull(zone_data.at['hvac_ahu_type']):
-                        self.state_matrix[
-                            zone_name + '_absolute_humidity',
-                            zone_name + '_absolute_humidity'
+                        state_matrix[
+                            f'{zone_name}_absolute_humidity',
+                            f'{zone_name}_absolute_humidity'
                         ] += (
                             - 1.0
-                            * (
-                                building_data.scenarios['linearization_ventilation_rate_per_square_meter']
-                                / zone_data.at['zone_height']
-                            )
+                            * building_data.scenarios['linearization_ventilation_rate_per_square_meter']
+                            / 1000  # m³ in l.
+                            / zone_data.at['zone_height']
                         )
-                        self.control_matrix[
-                            zone_name + '_absolute_humidity',
-                            zone_name + '_ahu_heat_air_flow'
+                        control_matrix[
+                            f'{zone_name}_absolute_humidity',
+                            f'{zone_name}_ahu_heat_air_flow'
                         ] += (
                             - 1.0
+                            / 1000  # m³ in l.
                             * (
-                                (
-                                    building_data.scenarios['linearization_zone_air_humidity_ratio']
-                                    - cobmo.utils.calculate_absolute_humidity_humid_air(
-                                        zone_data.at['ahu_supply_air_temperature_setpoint'],
-                                        zone_data.at['ahu_supply_air_relative_humidity_setpoint']
-                                    )
+                                building_data.scenarios['linearization_zone_air_humidity_ratio']
+                                - cobmo.utils.calculate_absolute_humidity_humid_air(
+                                    zone_data.at['ahu_supply_air_temperature_setpoint'],
+                                    zone_data.at['ahu_supply_air_relative_humidity_setpoint']
                                 )
-                                / zone_data.at['zone_height']
-                                / zone_data.at['zone_area']
                             )
+                            / zone_data.at['zone_height']
                         )
-                        self.control_matrix[
-                            zone_name + '_absolute_humidity',
-                            zone_name + '_ahu_cool_air_flow'
+                        control_matrix[
+                            f'{zone_name}_absolute_humidity',
+                            f'{zone_name}_ahu_cool_air_flow'
                         ] += (
                             - 1.0
+                            / 1000  # m³ in l.
                             * (
-                                (
-                                    building_data.scenarios['linearization_zone_air_humidity_ratio']
-                                    - cobmo.utils.calculate_absolute_humidity_humid_air(
-                                        zone_data.at['ahu_supply_air_temperature_setpoint'],
-                                        zone_data.at['ahu_supply_air_relative_humidity_setpoint']
-                                    )
+                                building_data.scenarios['linearization_zone_air_humidity_ratio']
+                                - cobmo.utils.calculate_absolute_humidity_humid_air(
+                                    zone_data.at['ahu_supply_air_temperature_setpoint'],
+                                    zone_data.at['ahu_supply_air_relative_humidity_setpoint']
                                 )
-                                / zone_data.at['zone_height']
-                                / zone_data.at['zone_area']
                             )
+                            / zone_data.at['zone_height']
                         )
                         if pd.notnull(zone_data.at['window_type']):
-                            self.control_matrix[
-                                zone_name + '_absolute_humidity',
-                                zone_name + '_window_air_flow'
+                            control_matrix[
+                                f'{zone_name}_absolute_humidity',
+                                f'{zone_name}_window_air_flow'
                             ] += (
                                 - 1.0
+                                / 1000  # m³ in l.
                                 * (
-                                    (
-                                        building_data.scenarios['linearization_zone_air_humidity_ratio']
-                                        - building_data.scenarios['linearization_ambient_air_humidity_ratio']
-                                    )
-                                    / zone_data.at['zone_height']
-                                    / zone_data.at['zone_area']
-                                )
-                            )
-                        self.disturbance_matrix[
-                            zone_name + '_absolute_humidity',
-                            'constant'
-                        ] += (
-                            - 1.0
-                            * (
-                                (
                                     building_data.scenarios['linearization_zone_air_humidity_ratio']
                                     - building_data.scenarios['linearization_ambient_air_humidity_ratio']
                                 )
-                                * zone_data.at['infiltration_rate']
+                                / zone_data.at['zone_height']
                             )
+                        disturbance_matrix[
+                            f'{zone_name}_absolute_humidity',
+                            'constant'
+                        ] += (
+                            - 1.0
+                            / 1000  # m³ in l.
+                            * (
+                                building_data.scenarios['linearization_zone_air_humidity_ratio']
+                                - building_data.scenarios['linearization_ambient_air_humidity_ratio']
+                            )
+                            * zone_data.at['infiltration_rate']
                         )  # TODO: Revise infiltration
                         if pd.notnull(zone_data.at['internal_gain_type']):
-                            self.disturbance_matrix[
-                                zone_name + '_absolute_humidity',
+                            disturbance_matrix[
+                                f'{zone_name}_absolute_humidity',
                                 zone_data.at['internal_gain_type'] + '_internal_gain_occupancy'
                             ] += (
                                 building_data.parameters['moisture_generation_rate_per_person']
@@ -2721,11 +2568,13 @@ class BuildingModel(object):
                                 / zone_data.at['zone_area']
                                 / building_data.parameters['density_air']
                             )
-                        self.disturbance_matrix[
-                            zone_name + '_absolute_humidity',
+                        disturbance_matrix[
+                            f'{zone_name}_absolute_humidity',
                             'constant'
                         ] += (
-                            building_data.scenarios['linearization_ventilation_rate_per_square_meter']
+                            1.0
+                            * building_data.scenarios['linearization_ventilation_rate_per_square_meter']
+                            / 1000  # m³ in l.
                             * building_data.scenarios['linearization_zone_air_humidity_ratio']
                             / zone_data.at['zone_height']
                         )
@@ -2735,7 +2584,7 @@ class BuildingModel(object):
             # Sensible thermal storage.
             if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
                 # Storage charge.
-                self.control_matrix[
+                control_matrix[
                     'sensible_thermal_storage_state_of_charge',
                     'sensible_storage_charge_cool_thermal_power',
                 ] += (
@@ -2751,7 +2600,7 @@ class BuildingModel(object):
                 # - Thermal losses are considered negligible, but a very small loss is added to keep the state matrix
                 #   non-singular and hence invertible.
                 # - TODO: For detailed losses depending on the storage size see `cobmo/README_storage.md`
-                self.state_matrix[
+                state_matrix[
                     'sensible_thermal_storage_state_of_charge',
                     'sensible_thermal_storage_state_of_charge'
                 ] += (
@@ -2763,9 +2612,9 @@ class BuildingModel(object):
 
                     if pd.notnull(zone_data['hvac_ahu_type']):
                         # Storage discharge to AHU for cooling.
-                        self.control_matrix[
+                        control_matrix[
                             'sensible_thermal_storage_state_of_charge',
-                            zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power',
+                            f'{zone_name}_sensible_storage_to_zone_ahu_cool_thermal_power',
                         ] += (
                             - 1.0
                             / (
@@ -2776,9 +2625,9 @@ class BuildingModel(object):
 
                     if pd.notnull(zone_data['hvac_tu_type']):
                         # Storage discharge to TU for cooling.
-                        self.control_matrix[
+                        control_matrix[
                             'sensible_thermal_storage_state_of_charge',
-                            zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power',
+                            f'{zone_name}_sensible_storage_to_zone_tu_cool_thermal_power',
                         ] += (
                             - 1.0
                             / (
@@ -2790,7 +2639,7 @@ class BuildingModel(object):
             # Battery storage.
             if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
                 # Storage charge.
-                self.control_matrix[
+                control_matrix[
                     'battery_storage_state_of_charge',
                     'battery_storage_charge_electric_power'
                 ] += (
@@ -2800,7 +2649,7 @@ class BuildingModel(object):
                 # Storage losses.
                 # - There are no battery storage losses, but a very small loss is added to keep the state matrix
                 #   non-singular and hence invertible.
-                self.state_matrix[
+                state_matrix[
                     'battery_storage_state_of_charge',
                     'battery_storage_state_of_charge'
                 ] += (
@@ -2812,34 +2661,34 @@ class BuildingModel(object):
 
                     if pd.notnull(zone_data['hvac_ahu_type']):
                         # Storage discharge to AHU for cooling.
-                        self.control_matrix[
+                        control_matrix[
                             'battery_storage_state_of_charge',
-                            zone_name + '_battery_storage_to_zone_ahu_cool_electric_power',
+                            f'{zone_name}_battery_storage_to_zone_ahu_cool_electric_power',
                         ] += (
                             - 1.0
                         )
 
                         # Storage discharge to AHU for heating.
-                        self.control_matrix[
+                        control_matrix[
                             'battery_storage_state_of_charge',
-                            zone_name + '_battery_storage_to_zone_ahu_heat_electric_power',
+                            f'{zone_name}_battery_storage_to_zone_ahu_heat_electric_power',
                         ] += (
                             - 1.0
                         )
 
                     if pd.notnull(zone_data['hvac_tu_type']):
                         # Storage discharge to TU for cooling.
-                        self.control_matrix[
+                        control_matrix[
                             'battery_storage_state_of_charge',
-                            zone_name + '_battery_storage_to_zone_tu_cool_electric_power',
+                            f'{zone_name}_battery_storage_to_zone_tu_cool_electric_power',
                         ] += (
                             - 1.0
                         )
 
                         # Storage discharge to TU for heating.
-                        self.control_matrix[
+                        control_matrix[
                             'battery_storage_state_of_charge',
-                            zone_name + '_battery_storage_to_zone_tu_heat_electric_power',
+                            f'{zone_name}_battery_storage_to_zone_tu_heat_electric_power',
                         ] += (
                             - 1.0
                         )
@@ -2847,9 +2696,9 @@ class BuildingModel(object):
         def define_output_zone_temperature():
 
             for zone_name, zone_data in building_data.zones.iterrows():
-                self.state_output_matrix[
-                    zone_name + '_temperature',
-                    zone_name + '_temperature'
+                state_output_matrix[
+                    f'{zone_name}_temperature',
+                    f'{zone_name}_temperature'
                 ] = 1.0
 
         def define_output_zone_co2_concentration():
@@ -2857,9 +2706,9 @@ class BuildingModel(object):
             if pd.notnull(building_data.scenarios['co2_model_type']):
                 for zone_name, zone_data in building_data.zones.iterrows():
                     if pd.notnull(zone_data['hvac_ahu_type']) | pd.notnull(zone_data['window_type']):
-                        self.state_output_matrix[
-                            zone_name + '_co2_concentration',
-                            zone_name + '_co2_concentration'
+                        state_output_matrix[
+                            f'{zone_name}_co2_concentration',
+                            f'{zone_name}_co2_concentration'
                         ] = 1.0
 
         def define_output_zone_humidity():
@@ -2867,67 +2716,92 @@ class BuildingModel(object):
             if pd.notnull(building_data.scenarios['humidity_model_type']):
                 for zone_name, zone_data in building_data.zones.iterrows():
                     if pd.notnull(zone_data['hvac_ahu_type']):
-                        self.state_output_matrix[
-                            zone_name + '_absolute_humidity',
-                            zone_name + '_absolute_humidity'
+                        state_output_matrix[
+                            f'{zone_name}_absolute_humidity',
+                            f'{zone_name}_absolute_humidity'
                         ] = 1.0
 
-        def define_output_hvac_generic_power():
+        def define_output_internal_gain_power():
+
+            for zone_name, zone_data in building_data.zones.iterrows():
+                if pd.notnull(zone_data.at['internal_gain_type']):
+                    disturbance_output_matrix[
+                        'electric_power_balance',
+                        zone_data.at['internal_gain_type'] + '_internal_gain_appliances'
+                    ] += (
+                        1.0
+                        * zone_data.at['internal_gain_appliances_factor']
+                        * zone_data.at['zone_area']
+                        / self.zone_area_total
+                    )
+
+        def define_output_window_air_flow():
+
+            for zone_name, zone_data in building_data.zones.iterrows():
+                if pd.notnull(zone_data['window_type']):
+                    control_output_matrix[
+                        f'{zone_name}_window_air_flow',
+                        f'{zone_name}_window_air_flow'
+                    ] = 1.0
+
+        def define_output_hvac_generic():
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data['hvac_generic_type']):
 
                     # Cooling power.
-                    self.control_output_matrix.at[
-                        zone_name + '_generic_cool_thermal_power_cooling',
-                        zone_name + '_generic_cool_thermal_power'
+                    control_output_matrix[
+                        f'{zone_name}_generic_cool_thermal_power',
+                        f'{zone_name}_generic_cool_thermal_power'
                     ] = 1.0
-                    self.control_output_matrix.at[
-                        zone_name + '_generic_cool_electric_power_cooling',
-                        zone_name + '_generic_cool_thermal_power'
+                    control_output_matrix[
+                        'thermal_power_cooling_balance',
+                        f'{zone_name}_generic_cool_thermal_power'
                     ] = (
                         1.0
-                        / zone_data['generic_cooling_efficiency']
+                        * zone_data['zone_area']
+                        / self.zone_area_total
                     )
 
                     # Heating power.
-                    self.control_output_matrix.at[
-                        zone_name + '_generic_heat_thermal_power_heating',
-                        zone_name + '_generic_heat_thermal_power'
+                    control_output_matrix[
+                        f'{zone_name}_generic_heat_thermal_power',
+                        f'{zone_name}_generic_heat_thermal_power'
                     ] = 1.0
-                    self.control_output_matrix.at[
-                        zone_name + '_generic_heat_electric_power_heating',
-                        zone_name + '_generic_heat_thermal_power'
+                    control_output_matrix[
+                        'thermal_power_heating_balance',
+                        f'{zone_name}_generic_heat_thermal_power'
                     ] = (
                         1.0
-                        / zone_data['generic_heating_efficiency']
+                        * zone_data['zone_area']
+                        / self.zone_area_total
                     )
 
         def define_output_hvac_radiator_power():
-            """Define output equations for the thermal and electric power demand due to radiators."""
 
             if pd.notnull(building_data.zones['hvac_radiator_type']).any():
                 for zone_name, zone_data in building_data.zones.iterrows():
                     if pd.notnull(zone_data['hvac_radiator_type']):
 
-                        # Heating power (radiators only require heating power).
-                        self.control_output_matrix.loc[
-                            zone_name + '_radiator_thermal_power_heating',
-                            zone_name + '_radiator_thermal_power'
+                        # Heating power (radiators do not require cooling power).
+                        control_output_matrix[
+                            f'{zone_name}_radiator_thermal_power',
+                            f'{zone_name}_radiator_thermal_power'
                         ] = 1.0
-                        # TODO: Define heating plant COP for radiators.
-                        self.control_output_matrix.loc[
-                            zone_name + '_radiator_electric_power_heating',
-                            zone_name + '_radiator_thermal_power'
+                        control_output_matrix[
+                            'thermal_power_heating_balance',
+                            f'{zone_name}_radiator_thermal_power'
                         ] = (
                             1.0
-                            / 1.0
+                            * zone_data['zone_area']
+                            / self.zone_area_total
                         )
 
         def define_output_hvac_ahu_power():
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data['hvac_ahu_type']):
+
                     # Obtain parameters.
                     ahu_supply_air_absolute_humidity_setpoint = (
                         cobmo.utils.calculate_absolute_humidity_humid_air(
@@ -3035,221 +2909,99 @@ class BuildingModel(object):
                         )
                         delta_enthalpy_ahu_recovery_heating = 0.0
 
-                    # TODO: Revise code to remove `abs(delta_enthalpy...)` and invert `ahu_cooling_efficiency`.
+                    # Air flow.
+                    control_output_matrix[
+                        f'{zone_name}_ahu_cool_air_flow',
+                        f'{zone_name}_ahu_cool_air_flow'
+                    ] = 1.0
+                    control_output_matrix[
+                        f'{zone_name}_ahu_heat_air_flow',
+                        f'{zone_name}_ahu_heat_air_flow'
+                    ] = 1.0
 
                     # Cooling power.
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_heat_thermal_power_cooling',
-                        zone_name + '_ahu_heat_air_flow'
+                    control_output_matrix[
+                        'thermal_power_cooling_balance',
+                        f'{zone_name}_ahu_cool_air_flow'
                     ] = (
-                        building_data.parameters['density_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * zone_data['zone_area']
+                        / self.zone_area_total
+                        * building_data.parameters['density_air']
                         * (
                             abs(delta_enthalpy_ahu_cooling)
                             - abs(delta_enthalpy_ahu_recovery_cooling)
                         )
                     )
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_heat_electric_power_cooling',
-                        zone_name + '_ahu_heat_air_flow'
+                    control_output_matrix[
+                        'thermal_power_cooling_balance',
+                        f'{zone_name}_ahu_heat_air_flow'
                     ] = (
-                        building_data.parameters['density_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * zone_data['zone_area']
+                        / self.zone_area_total
+                        * building_data.parameters['density_air']
                         * (
                             abs(delta_enthalpy_ahu_cooling)
                             - abs(delta_enthalpy_ahu_recovery_cooling)
                         )
-                        / zone_data['ahu_cooling_efficiency']
-                    )
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_cool_thermal_power_cooling',
-                        zone_name + '_ahu_cool_air_flow'
-                    ] = (
-                        building_data.parameters['density_air']
-                        * (
-                            abs(delta_enthalpy_ahu_cooling)
-                            - abs(delta_enthalpy_ahu_recovery_cooling)
-                        )
-                    )
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_cool_electric_power_cooling',
-                        zone_name + '_ahu_cool_air_flow'
-                    ] = (
-                        building_data.parameters['density_air']
-                        * (
-                            abs(delta_enthalpy_ahu_cooling)
-                            - abs(delta_enthalpy_ahu_recovery_cooling)
-                        )
-                        / zone_data['ahu_cooling_efficiency']
                     )
 
                     # Heating power.
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_heat_thermal_power_heating',
-                        zone_name + '_ahu_heat_air_flow'
+                    control_output_matrix[
+                        'thermal_power_heating_balance',
+                        f'{zone_name}_ahu_cool_air_flow'
                     ] = (
-                        building_data.parameters['density_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * zone_data['zone_area']
+                        / self.zone_area_total
+                        * building_data.parameters['density_air']
                         * (
                             abs(delta_enthalpy_ahu_heating)
                             - abs(delta_enthalpy_ahu_recovery_heating)
                         )
                     )
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_heat_electric_power_heating',
-                        zone_name + '_ahu_heat_air_flow'
+                    control_output_matrix[
+                        'thermal_power_heating_balance',
+                        f'{zone_name}_ahu_heat_air_flow'
                     ] = (
-                        building_data.parameters['density_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * zone_data['zone_area']
+                        / self.zone_area_total
+                        * building_data.parameters['density_air']
                         * (
                             abs(delta_enthalpy_ahu_heating)
                             - abs(delta_enthalpy_ahu_recovery_heating)
                         )
-                        / zone_data['ahu_heating_efficiency']
-                    )
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_cool_thermal_power_heating',
-                        zone_name + '_ahu_cool_air_flow'
-                    ] = (
-                        building_data.parameters['density_air']
-                        * (
-                            abs(delta_enthalpy_ahu_heating)
-                            - abs(delta_enthalpy_ahu_recovery_heating)
-                        )
-                    )
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_cool_electric_power_heating',
-                        zone_name + '_ahu_cool_air_flow'
-                    ] = (
-                        building_data.parameters['density_air']
-                        * (
-                            abs(delta_enthalpy_ahu_heating)
-                            - abs(delta_enthalpy_ahu_recovery_heating)
-                        )
-                        / zone_data['ahu_heating_efficiency']
                     )
 
                     # Fan power.
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_heat_electric_power_fan',
-                        zone_name + '_ahu_heat_air_flow'
+                    control_output_matrix[
+                        'electric_power_balance',
+                        f'{zone_name}_ahu_cool_air_flow'
                     ] = (
-                        building_data.parameters['density_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * zone_data['zone_area']
+                        / self.zone_area_total
+                        * building_data.parameters['density_air']
                         * zone_data['ahu_fan_efficiency']
                     )
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_cool_electric_power_fan',
-                        zone_name + '_ahu_cool_air_flow'
+                    control_output_matrix[
+                        'electric_power_balance',
+                        f'{zone_name}_ahu_heat_air_flow'
                     ] = (
-                        building_data.parameters['density_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * zone_data['zone_area']
+                        / self.zone_area_total
+                        * building_data.parameters['density_air']
                         * zone_data['ahu_fan_efficiency']
                     )
-
-                    # Sensible thermal storage discharge.
-                    if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
-
-                        # Cooling power.
-                        self.control_output_matrix.at[
-                            zone_name + '_ahu_cool_thermal_power_cooling',
-                            zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
-                        ] = - 1.0
-                        self.control_output_matrix.at[
-                            zone_name + '_ahu_cool_electric_power_cooling',
-                            zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
-                        ] = (
-                            - 1.0
-                            / zone_data['ahu_cooling_efficiency']
-                        )
-
-                        # Heating power.
-                        # TODO: Add consideration for sensible storage heating.
-
-                    # Battery storage discharge.
-                    if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
-
-                        # Cooling power.
-                        self.control_output_matrix.at[
-                            zone_name + '_ahu_heat_electric_power_cooling',
-                            zone_name + '_battery_storage_to_zone_ahu_heat_electric_power'
-                        ] = (
-                            - 1.0
-                            * (
-                                self.control_output_matrix.at[
-                                    zone_name + '_ahu_heat_electric_power_cooling',
-                                    zone_name + '_ahu_heat_air_flow'
-                                ]
-                            ) / (
-                                self.control_output_matrix.at[
-                                    zone_name + '_ahu_heat_electric_power_cooling',
-                                    zone_name + '_ahu_heat_air_flow'
-                                ]
-                                + self.control_output_matrix.at[
-                                    zone_name + '_ahu_heat_electric_power_heating',
-                                    zone_name + '_ahu_heat_air_flow'
-                                ]
-                            )
-                        )
-                        self.control_output_matrix.at[
-                            zone_name + '_ahu_cool_electric_power_cooling',
-                            zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
-                        ] = (
-                            - 1.0
-                            * (
-                                self.control_output_matrix.at[
-                                    zone_name + '_ahu_cool_electric_power_cooling',
-                                    zone_name + '_ahu_cool_air_flow'
-                                ]
-                            ) / (
-                                self.control_output_matrix.at[
-                                    zone_name + '_ahu_cool_electric_power_cooling',
-                                    zone_name + '_ahu_cool_air_flow'
-                                ]
-                                + self.control_output_matrix.at[
-                                    zone_name + '_ahu_cool_electric_power_heating',
-                                    zone_name + '_ahu_cool_air_flow'
-                                ]
-                            )
-                        )
-
-                        # Heating power.
-                        self.control_output_matrix.at[
-                            zone_name + '_ahu_heat_electric_power_heating',
-                            zone_name + '_battery_storage_to_zone_ahu_heat_electric_power'
-                        ] = (
-                            - 1.0
-                            * (
-                                self.control_output_matrix.at[
-                                    zone_name + '_ahu_heat_electric_power_heating',
-                                    zone_name + '_ahu_heat_air_flow'
-                                ]
-                            ) / (
-                                self.control_output_matrix.at[
-                                    zone_name + '_ahu_heat_electric_power_cooling',
-                                    zone_name + '_ahu_heat_air_flow'
-                                ]
-                                + self.control_output_matrix.at[
-                                    zone_name + '_ahu_heat_electric_power_heating',
-                                    zone_name + '_ahu_heat_air_flow'
-                                ]
-                            )
-                        )
-                        self.control_output_matrix.at[
-                            zone_name + '_ahu_cool_electric_power_heating',
-                            zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
-                        ] = (
-                            - 1.0
-                            * (
-                                self.control_output_matrix.at[
-                                    zone_name + '_ahu_cool_electric_power_heating',
-                                    zone_name + '_ahu_cool_air_flow'
-                                ]
-                            ) / (
-                                self.control_output_matrix.at[
-                                    zone_name + '_ahu_cool_electric_power_cooling',
-                                    zone_name + '_ahu_cool_air_flow'
-                                ]
-                                + self.control_output_matrix.at[
-                                    zone_name + '_ahu_cool_electric_power_heating',
-                                    zone_name + '_ahu_cool_air_flow'
-                                ]
-                            )
-                        )
 
         def define_output_hvac_tu_power():
 
@@ -3278,160 +3030,110 @@ class BuildingModel(object):
                         logger.error(f"Unknown `tu_air_intake_type` type: {zone_data['tu_air_intake_type']}")
                         raise ValueError
 
+                    # Air flow.
+                    control_output_matrix[
+                        f'{zone_name}_tu_cool_air_flow',
+                        f'{zone_name}_tu_cool_air_flow'
+                    ] = 1.0
+                    control_output_matrix[
+                        f'{zone_name}_tu_heat_air_flow',
+                        f'{zone_name}_tu_heat_air_flow'
+                    ] = 1.0
+
                     # Cooling power.
-                    self.control_output_matrix.at[
-                        zone_name + '_tu_cool_thermal_power_cooling',
-                        zone_name + '_tu_cool_air_flow'
+                    control_output_matrix[
+                        'thermal_power_cooling_balance',
+                        f'{zone_name}_tu_cool_air_flow'
                     ] = (
-                        building_data.parameters['density_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * zone_data['zone_area']
+                        / self.zone_area_total
+                        * building_data.parameters['density_air']
                         * abs(delta_enthalpy_tu_cooling)
-                    )
-                    self.control_output_matrix.at[
-                        zone_name + '_tu_cool_electric_power_cooling',
-                        zone_name + '_tu_cool_air_flow'
-                    ] = (
-                        building_data.parameters['density_air']
-                        * abs(delta_enthalpy_tu_cooling)
-                        / zone_data['tu_cooling_efficiency']
                     )
 
                     # Heating power.
-                    self.control_output_matrix.at[
-                        zone_name + '_tu_heat_electric_power_heating',
-                        zone_name + '_tu_heat_air_flow'
+                    control_output_matrix[
+                        'thermal_power_heating_balance',
+                        f'{zone_name}_tu_heat_air_flow'
                     ] = (
-                        building_data.parameters['density_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * zone_data['zone_area']
+                        / self.zone_area_total
+                        * building_data.parameters['density_air']
                         * abs(delta_enthalpy_tu_heating)
                         / zone_data['tu_heating_efficiency']
                     )
-                    self.control_output_matrix.at[
-                        zone_name + '_tu_heat_thermal_power_heating',
-                        zone_name + '_tu_heat_air_flow'
-                    ] = (
-                        building_data.parameters['density_air']
-                        * abs(delta_enthalpy_tu_heating)
-                    )
 
                     # Fan power.
-                    self.control_output_matrix.at[
-                        zone_name + '_tu_heat_electric_power_fan',
-                        zone_name + '_tu_heat_air_flow'
+                    control_output_matrix[
+                        'electric_power_balance',
+                        f'{zone_name}_tu_cool_air_flow'
                     ] = (
-                        building_data.parameters['density_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * zone_data['zone_area']
+                        / self.zone_area_total
+                        * building_data.parameters['density_air']
                         * zone_data['tu_fan_efficiency']
                     )
-                    self.control_output_matrix.at[
-                        zone_name + '_tu_cool_electric_power_fan',
-                        zone_name + '_tu_cool_air_flow'
+                    control_output_matrix[
+                        'electric_power_balance',
+                        f'{zone_name}_tu_heat_air_flow'
                     ] = (
-                        building_data.parameters['density_air']
+                        1.0
+                        / 1000  # m³ in l.
+                        * zone_data['zone_area']
+                        / self.zone_area_total
+                        * building_data.parameters['density_air']
                         * zone_data['tu_fan_efficiency']
                     )
-
-                    # Sensible thermal storage discharge.
-                    if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
-
-                        # Cooling power.
-                        self.control_output_matrix.at[
-                            zone_name + '_tu_cool_thermal_power_cooling',
-                            zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power'
-                        ] = - 1.0
-                        self.control_output_matrix.at[
-                            zone_name + '_tu_cool_electric_power_cooling',
-                            zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power'
-                        ] = (
-                            - 1.0
-                            / zone_data['tu_cooling_efficiency']
-                        )
-
-                        # Heating power.
-                        # TODO: Add consideration for sensible storage heating.
-
-                    # Battery storage discharge.
-                    if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
-
-                        # Cooling power.
-                        self.control_output_matrix.at[
-                            zone_name + '_tu_cool_electric_power_cooling',
-                            zone_name + '_battery_storage_to_zone_tu_cool_electric_power'
-                        ] += (
-                            - 1.0
-                        )
-
-                        # Heating power.
-                        self.control_output_matrix.at[
-                            zone_name + '_tu_heat_electric_power_heating',
-                            zone_name + '_battery_storage_to_zone_tu_heat_electric_power'
-                        ] += (
-                            - 1.0
-                        )
 
         def define_output_fresh_air_flow():
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data['hvac_ahu_type']):
-                    self.control_output_matrix.at[
-                        zone_name + '_total_fresh_air_flow',
-                        zone_name + '_ahu_heat_air_flow'
+                    control_output_matrix[
+                        f'{zone_name}_total_fresh_air_flow',
+                        f'{zone_name}_ahu_cool_air_flow'
                     ] = 1.0
-                    self.control_output_matrix.at[
-                        zone_name + '_total_fresh_air_flow',
-                        zone_name + '_ahu_cool_air_flow'
+                    control_output_matrix[
+                        f'{zone_name}_total_fresh_air_flow',
+                        f'{zone_name}_ahu_heat_air_flow'
                     ] = 1.0
                 if pd.notnull(zone_data['window_type']):
-                    self.control_output_matrix.at[
-                        zone_name + '_total_fresh_air_flow',
-                        zone_name + '_window_air_flow'
+                    control_output_matrix[
+                        f'{zone_name}_total_fresh_air_flow',
+                        f'{zone_name}_window_air_flow'
                     ] = 1.0
                 if pd.notnull(zone_data['window_type']) | pd.notnull(zone_data['hvac_ahu_type']):
-                    self.disturbance_output_matrix[
-                        zone_name + '_total_fresh_air_flow',
+                    disturbance_output_matrix[
+                        f'{zone_name}_total_fresh_air_flow',
                         'constant'
                     ] += (
                         zone_data['infiltration_rate']
-                        * zone_data['zone_area']
                         * zone_data['zone_height']
-                    )  # TODO: Revise infiltration
-
-        def define_output_ahu_fresh_air_flow():
-
-            for zone_name, zone_data in building_data.zones.iterrows():
-                if pd.notnull(zone_data['hvac_ahu_type']):
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_fresh_air_flow',
-                        zone_name + '_ahu_heat_air_flow'
-                    ] = 1.0
-                    self.control_output_matrix.at[
-                        zone_name + '_ahu_fresh_air_flow',
-                        zone_name + '_ahu_cool_air_flow'
-                    ] = 1.0
-
-        def define_output_window_fresh_air_flow():
-            for zone_name, zone_data in building_data.zones.iterrows():
-                if pd.notnull(zone_data['window_type']):
-                    self.control_output_matrix.at[
-                        zone_name + '_window_fresh_air_flow',
-                        zone_name + '_window_air_flow'
-                    ] = 1.0
+                    )  # TODO: Revise infiltration.
 
         def define_output_storage_state_of_charge():
 
             # Sensible thermal storage.
             if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
-                self.state_output_matrix[
+                state_output_matrix[
                     'sensible_thermal_storage_state_of_charge',
                     'sensible_thermal_storage_state_of_charge'
                 ] = 1.0
 
             # Battery storage.
             if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
-                self.state_output_matrix[
+                state_output_matrix[
                     'battery_storage_state_of_charge',
                     'battery_storage_state_of_charge'
                 ] = 1.0
 
-        def define_output_storage_charge():
-            # TODO: Remove redundant charge ouputs.
+        def define_output_storage_power():
 
             # Sensible thermal storage charge thermal power.
             if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
@@ -3439,111 +3141,122 @@ class BuildingModel(object):
                 # TODO: Add consideration for sensible storage heating / cooling.
 
                 # Cooling.
-                self.control_output_matrix.at[
-                    'sensible_storage_charge_cool_thermal_power',
+                control_output_matrix[
+                    'thermal_power_cooling_balance',
                     'sensible_storage_charge_cool_thermal_power'
-                ] = 1.0
-
-            # Sensible thermal storage charge electric power.
-            if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
-                # Heating.
-
-                # Cooling.
-                self.control_output_matrix.at[
-                    'sensible_storage_charge_cool_electric_power',
-                    'sensible_storage_charge_cool_thermal_power'
-                ] += (
-                    1.0
-                    / building_data.zones['ahu_cooling_efficiency'][0]
-                    if pd.notnull(building_data.zones['ahu_cooling_efficiency'][0]) else 1.0
-                    * 1.0000001  # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
-                )
+                ] = 1.0001  # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
+                control_output_matrix[
+                    'thermal_power_cooling_balance',
+                    'sensible_storage_discharge_cool_thermal_power'
+                ] = - 1.0
 
             # Battery storage charge.
             if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
-                self.control_output_matrix.at[
-                    'battery_storage_charge_electric_power',
+                control_output_matrix[
+                    'electric_power_balance',
                     'battery_storage_charge_electric_power'
                 ] = 1.0
+                control_output_matrix[
+                    'electric_power_balance',
+                    'battery_storage_discharge_electric_power'
+                ] = - 1.0
 
-        def define_output_storage_discharge():
+        def define_output_plant_power():
 
-            for zone_name, zone_data in building_data.zones.iterrows():
-                # Sensible thermal storage.
-                if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
-                    # TODO: Add consideration for sensible storage heating / cooling.
+            # Cooling.
+            control_output_matrix[
+                'thermal_power_cooling_balance',
+                'plant_thermal_power_cooling'
+            ] = - 1.0
+            control_output_matrix[
+                'plant_thermal_power_cooling',
+                'plant_thermal_power_cooling'
+            ] = 1.0
+            control_output_matrix[
+                'grid_electric_power',
+                'plant_thermal_power_cooling'
+            ] = (
+                1.0
+                / building_data.scenarios['plant_cooling_efficiency']
+            )
 
-                    if pd.notnull(zone_data['hvac_ahu_type']):
-                        # Storage discharge to AHU for cooling.
-                        self.control_output_matrix.at[
-                            zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power',
-                            zone_name + '_sensible_storage_to_zone_ahu_cool_thermal_power'
-                        ] = 1.0
+            # Heating.
+            control_output_matrix[
+                'thermal_power_heating_balance',
+                'plant_thermal_power_heating'
+            ] = - 1.0
+            control_output_matrix[
+                'plant_thermal_power_heating',
+                'plant_thermal_power_heating'
+            ] = 1.0
+            control_output_matrix[
+                'grid_electric_power',
+                'plant_thermal_power_heating'
+            ] = (
+                1.0
+                / building_data.scenarios['plant_heating_efficiency']
+            )
 
-                    if pd.notnull(zone_data['hvac_tu_type']):
-                        # Storage discharge to TU for cooling.
-                        self.control_output_matrix.at[
-                            zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power',
-                            zone_name + '_sensible_storage_to_zone_tu_cool_thermal_power'
-                        ] = 1.0
+        def define_output_grid_power():
 
-                # Battery storage.
-                if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
-                    if pd.notnull(zone_data['hvac_ahu_type']):
-                        # Storage discharge to AHU for cooling.
-                        self.control_output_matrix.at[
-                            zone_name + '_battery_storage_to_zone_ahu_cool_electric_power',
-                            zone_name + '_battery_storage_to_zone_ahu_cool_electric_power'
-                        ] = 1.0
+            # Electric.
+            control_output_matrix[
+                'electric_power_balance',
+                'grid_electric_power'
+            ] = - 1.0
+            control_output_matrix[
+                'grid_electric_power',
+                'grid_electric_power'
+            ] = 1.0
 
-                        # Storage discharge to AHU for heating.
-                        self.control_output_matrix.at[
-                            zone_name + '_battery_storage_to_zone_ahu_heat_electric_power',
-                            zone_name + '_battery_storage_to_zone_ahu_heat_electric_power'
-                        ] = 1.0
+            # Cooling.
+            control_output_matrix[
+                'thermal_power_cooling_balance',
+                'grid_thermal_power_cooling'
+            ] = - 1.0
+            control_output_matrix[
+                'grid_thermal_power_cooling',
+                'grid_thermal_power_cooling'
+            ] = 1.0
 
-                    if pd.notnull(zone_data['hvac_tu_type']):
-                        # Storage discharge to TU for cooling.
-                        self.control_output_matrix.at[
-                            zone_name + '_battery_storage_to_zone_tu_cool_electric_power',
-                            zone_name + '_battery_storage_to_zone_tu_cool_electric_power'
-                        ] = 1.0
+            # Heating.
+            control_output_matrix[
+                'thermal_power_heating_balance',
+                'grid_thermal_power_heating'
+            ] = - 1.0
+            control_output_matrix[
+                'grid_thermal_power_heating',
+                'grid_thermal_power_heating'
+            ] = 1.0
 
-                    if pd.notnull(zone_data['hvac_tu_type']):
-                        # Storage discharge to TU for heating.
-                        self.control_output_matrix.at[
-                            zone_name + '_battery_storage_to_zone_tu_heat_electric_power',
-                            zone_name + '_battery_storage_to_zone_tu_heat_electric_power'
-                        ] = 1.0
-
-        def define_output_surface_temperature():
+        def define_output_validation_surface_temperature():
 
             for surface_name, surface_data in (
                     pd.concat([
                         building_data.surfaces_adiabatic,
                         building_data.surfaces_exterior,
                         building_data.surfaces_interior
-                    ], sort=False)
-            ).iterrows():
+                    ], sort=False).iterrows()
+            ):
                 if surface_data['heat_capacity'] != 0.0:  # Surfaces with non-zero heat capacity
-                    self.state_output_matrix[
-                        surface_name + '_temperature',
-                        surface_name + '_temperature'
+                    state_output_matrix[
+                        f'{surface_name}_temperature',
+                        f'{surface_name}_temperature'
                     ] = 1.0
 
-        def define_output_surfaces_exterior_irradiation_gain_exterior():
+        def define_output_validation_surfaces_exterior_irradiation_gain_exterior():
 
             for surface_name, surface_data in building_data.surfaces_exterior.iterrows():
                 if surface_data['heat_capacity'] != 0.0:  # Surfaces with non-zero heat capacity
-                    self.disturbance_output_matrix[
-                        surface_name + '_irradiation_gain_exterior',
+                    disturbance_output_matrix[
+                        f'{surface_name}_irradiation_gain_exterior',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
                         surface_data['absorptivity']
                         * (1 - surface_data['window_wall_ratio'])
                     )
                 else:  # Surfaces with neglected heat capacity
-                    self.disturbance_output_matrix[
+                    disturbance_output_matrix[
                         surface_data['surface_name'] + '_irradiation_gain_exterior',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
@@ -3551,7 +3264,7 @@ class BuildingModel(object):
                         * (1 - surface_data['window_wall_ratio'])
                     )
 
-        def define_output_surfaces_exterior_convection_interior():
+        def define_output_validation_surfaces_exterior_convection_interior():
 
             for surface_name, surface_data in building_data.surfaces_exterior.iterrows():
                 # Total zone surface area for later calculating share of interior (indirect) irradiation
@@ -3585,7 +3298,7 @@ class BuildingModel(object):
                             ].iterrows()
                     ):
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_output_matrix[
+                        disturbance_output_matrix[
                             surface_data['surface_name'] + '_convection_interior',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -3610,9 +3323,9 @@ class BuildingModel(object):
                                 ) ** (- 1)
                             )
                         )
-                    self.state_output_matrix[
+                    state_output_matrix[
                         surface_data['surface_name'] + '_convection_interior',
-                        surface_name + '_temperature'
+                        f'{surface_name}_temperature'
                     ] += (
                         (1.0 - surface_data['window_wall_ratio'])
                         * (
@@ -3627,7 +3340,7 @@ class BuildingModel(object):
                             )
                         ) ** (- 1)
                     )
-                    self.state_output_matrix[
+                    state_output_matrix[
                         surface_data['surface_name'] + '_convection_interior',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -3647,7 +3360,7 @@ class BuildingModel(object):
                     )
                 else:  # Surfaces with neglected heat capacity
                     # Complete convective heat transfer from surface to zone
-                    self.disturbance_output_matrix[
+                    disturbance_output_matrix[
                         surface_data['surface_name'] + '_convection_interior',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
@@ -3669,7 +3382,7 @@ class BuildingModel(object):
                             / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                     )
-                    self.disturbance_output_matrix[
+                    disturbance_output_matrix[
                         surface_data['surface_name'] + '_convection_interior',
                         'ambient_air_temperature'
                     ] += (
@@ -3694,7 +3407,7 @@ class BuildingModel(object):
                             / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                     )
-                    self.disturbance_output_matrix[
+                    disturbance_output_matrix[
                         surface_data['surface_name'] + '_convection_interior',
                         'sky_temperature'
                     ] += (
@@ -3716,7 +3429,7 @@ class BuildingModel(object):
                             / (surface_data['thermal_resistance_surface'] ** (- 1))
                         ) ** (- 1)
                     )
-                    self.state_output_matrix[
+                    state_output_matrix[
                         surface_data['surface_name'] + '_convection_interior',
                         surface_data['zone_name'] + '_temperature'
                     ] += (
@@ -3739,7 +3452,7 @@ class BuildingModel(object):
                         building_data.surfaces_exterior['zone_name'] == surface_data['zone_name']
                     ].iterrows():
                         # Interior irradiation through all exterior surfaces adjacent to the zone
-                        self.disturbance_output_matrix[
+                        disturbance_output_matrix[
                             surface_data['surface_name'] + '_convection_interior',
                             'irradiation_' + zone_exterior_surface_data['direction_name']
                         ] += (
@@ -3766,116 +3479,6 @@ class BuildingModel(object):
                                 / (surface_data['thermal_resistance_surface'] ** (- 1))
                             ) ** (- 1))
                         )
-
-        def define_output_grid():
-
-            # TODO: Move storage charge / discharge to grid balance equations.
-
-            # Cooling power balance.
-            if any([connect_electric_grid, connect_thermal_grid_cooling]):
-                self.control_output_matrix.loc[
-                    'grid_thermal_power_cooling_balance',
-                    :
-                ] = (
-                    self.control_output_matrix.loc[
-                        self.outputs.str.contains('thermal_power_cooling'),
-                        :
-                    ].sum(axis=0)
-                )
-                # TODO: This operation contains itself and does not capture storage charge power. Below may be similar.
-                if connect_electric_grid:
-                    self.control_output_matrix.at[
-                        'grid_thermal_power_cooling_balance',
-                        'plant_thermal_power_cooling'
-                    ] = -1.0
-                if connect_thermal_grid_cooling:
-                    self.control_output_matrix.at[
-                        'grid_thermal_power_cooling_balance',
-                        'grid_thermal_power_cooling'
-                    ] = -1.0
-
-            # Heating power balance.
-            if any([connect_electric_grid, connect_thermal_grid_heating]):
-                self.control_output_matrix.loc[
-                    'grid_thermal_power_heating_balance',
-                    :
-                ] = (
-                    self.control_output_matrix.loc[
-                        self.outputs.str.contains('thermal_power_heating'),
-                        :
-                    ].sum(axis=0)
-                )
-                if connect_electric_grid:
-                    self.control_output_matrix.at[
-                        'grid_thermal_power_heating_balance',
-                        'plant_thermal_power_heating'
-                    ] = -1.0
-                if connect_thermal_grid_heating:
-                    self.control_output_matrix.at[
-                        'grid_thermal_power_heating_balance',
-                        'grid_thermal_power_heating'
-                    ] = -1.0
-
-            # Electric grid power.
-            if connect_electric_grid:
-                self.control_output_matrix.loc[
-                    'grid_electric_power',
-                    :
-                ] = (
-                    self.control_output_matrix.loc[
-                        self.outputs.str.contains('electric_power_fan'),
-                        :
-                    ].sum(axis=0)
-                )
-                self.control_output_matrix.at[
-                    'grid_electric_power',
-                    'plant_thermal_power_cooling'
-                ] = (
-                    1.0
-                    / building_data.zones['ahu_cooling_efficiency'][0]
-                    if pd.notnull(building_data.zones['ahu_cooling_efficiency'][0]) else 1.0
-                    # TODO: Define heating / cooling plant.
-                )
-                self.control_output_matrix.at[
-                    'grid_electric_power',
-                    'plant_thermal_power_heating'
-                ] = (
-                    1.0
-                    / building_data.zones['ahu_heating_efficiency'][0]
-                    if pd.notnull(building_data.zones['ahu_heating_efficiency'][0]) else 1.0
-                    # TODO: Define heating / cooling plant.
-                )
-                for zone_name, zone_data in building_data.zones.iterrows():
-                    if pd.notnull(zone_data.at['internal_gain_type']):
-                        self.disturbance_output_matrix[
-                            'grid_electric_power',
-                            zone_data.at['internal_gain_type'] + '_internal_gain_appliances'
-                        ] += (
-                            zone_data.at['internal_gain_appliances_factor']
-                            * zone_data.at['zone_area']
-                        )
-                self.control_output_matrix.at[
-                    'plant_thermal_power_cooling',
-                    'plant_thermal_power_cooling'
-                ] = 1.0
-                self.control_output_matrix.at[
-                    'plant_thermal_power_heating',
-                    'plant_thermal_power_heating'
-                ] = 1.0
-
-            # Thermal cooling grid power.
-            if connect_thermal_grid_cooling:
-                self.control_output_matrix.at[
-                    'grid_thermal_power_cooling',
-                    'grid_thermal_power_cooling'
-                ] = 1.0
-
-            # Thermal heating grid power.
-            if connect_thermal_grid_heating:
-                self.control_output_matrix.at[
-                    'grid_thermal_power_heating',
-                    'grid_thermal_power_heating'
-                ] = 1.0
 
         def define_disturbance_timeseries():
 
@@ -3919,6 +3522,7 @@ class BuildingModel(object):
                 self.electricity_price_timeseries = building_data.electricity_price_timeseries
 
         def define_electricity_price_distribution_timeseries():
+
             self.electricity_price_distribution_timeseries = (
                 building_data.electricity_price_distribution_timeseries
             )
@@ -4003,7 +3607,6 @@ class BuildingModel(object):
                         + '_minimum_fresh_air_flow_per_area_no_dcv'
                     )
                 ].values
-                * building_data.zones.loc[zones_ventilation_index, 'zone_area'].values
             )
 
             # Maximum constraint for zone CO2 concentration.
@@ -4063,6 +3666,7 @@ class BuildingModel(object):
                 ] = (
                     building_data.scenarios['storage_size']
                     * building_data.parameters['water_density']  # Convert volume to mass.
+                    / self.zone_area_total
                 )
 
             # Battery storage.
@@ -4079,14 +3683,30 @@ class BuildingModel(object):
                     :, 'battery_storage_state_of_charge'
                 ] = (
                     building_data.scenarios['storage_size']
+                    / self.zone_area_total
                 )
 
-        def discretize_model():
-            """
-            - Discretization assuming zero order hold
-            - Source: https://en.wikipedia.org/wiki/Discretization#Discretization_of_linear_state_space_models
-            """
+            # Electric / thermal grid connections.
+            if not connect_electric_grid:
+                self.output_maximum_timeseries.loc[
+                    :, 'plant_thermal_power_cooling'
+                ] = 0.0
+                self.output_maximum_timeseries.loc[
+                    :, 'plant_thermal_power_heating'
+                ] = 0.0
+            if not connect_thermal_grid_cooling:
+                self.output_maximum_timeseries.loc[
+                    :, 'grid_thermal_power_cooling'
+                ] = 0.0
+            if not connect_thermal_grid_heating:
+                self.output_maximum_timeseries.loc[
+                    :, 'grid_thermal_power_heating'
+                ] = 0.0
 
+        def discretize_model():
+
+            # Discretize state space model with zero order hold.
+            # - Reference: <https://en.wikipedia.org/wiki/Discretization#Discretization_of_linear_state_space_models>
             state_matrix_discrete = scipy.linalg.expm(
                 self.state_matrix.values
                 * self.timestep_interval.seconds
@@ -4114,21 +3734,9 @@ class BuildingModel(object):
                 )
             )
 
-            self.state_matrix = pd.DataFrame(
-                data=state_matrix_discrete,
-                index=self.state_matrix.index,
-                columns=self.state_matrix.columns
-            )
-            self.control_matrix = pd.DataFrame(
-                data=control_matrix_discrete,
-                index=self.control_matrix.index,
-                columns=self.control_matrix.columns
-            )
-            self.disturbance_matrix = pd.DataFrame(
-                data=disturbance_matrix_discrete,
-                index=self.disturbance_matrix.index,
-                columns=self.disturbance_matrix.columns
-            )
+            self.state_matrix.loc[:, :] = state_matrix_discrete
+            self.control_matrix.loc[:, :] = control_matrix_discrete
+            self.disturbance_matrix.loc[:, :] = disturbance_matrix_discrete
 
         # Define initial state.
         define_initial_state()
@@ -4148,32 +3756,32 @@ class BuildingModel(object):
         define_heat_transfer_hvac_radiator()
         define_heat_transfer_hvac_ahu()
         define_heat_transfer_hvac_tu()
-        define_co2_transfer_hvac_ahu()
+        define_co2_transfer()
         define_heat_transfer_window_air_flow()
-        define_humidity_transfer_hvac_ahu()
+        define_humidity_transfer()
         define_storage_state_of_charge()
 
         # Define outputs.
         define_output_zone_temperature()
         define_output_zone_co2_concentration()
         define_output_zone_humidity()
-        define_output_hvac_generic_power()
+        define_output_internal_gain_power()
+        define_output_window_air_flow()
+        define_output_hvac_generic()
         define_output_hvac_radiator_power()
         define_output_hvac_ahu_power()
         define_output_hvac_tu_power()
         define_output_fresh_air_flow()
-        define_output_window_fresh_air_flow()
-        define_output_ahu_fresh_air_flow()
         define_output_storage_state_of_charge()
-        define_output_storage_charge()
-        define_output_storage_discharge()
-        define_output_grid()
+        define_output_storage_power()
+        define_output_plant_power()
+        define_output_grid_power()
 
         # Define validation outputs.
         if with_validation_outputs:
-            define_output_surface_temperature()
-            define_output_surfaces_exterior_irradiation_gain_exterior()
-            define_output_surfaces_exterior_convection_interior()
+            define_output_validation_surface_temperature()
+            define_output_validation_surfaces_exterior_irradiation_gain_exterior()
+            define_output_validation_surfaces_exterior_convection_interior()
 
         # Define timeseries.
         define_disturbance_timeseries()
@@ -4182,11 +3790,12 @@ class BuildingModel(object):
         define_output_constraint_timeseries()
 
         # Convert matrix constructors to dataframes.
-        self.state_matrix = self.state_matrix.to_dataframe_dense()
-        self.control_matrix = self.control_matrix.to_dataframe_dense()
-        self.disturbance_matrix = self.disturbance_matrix.to_dataframe_dense()
-        self.state_output_matrix = self.state_output_matrix.to_dataframe_dense()
-        self.disturbance_output_matrix = self.disturbance_output_matrix.to_dataframe_dense()
+        self.state_matrix = state_matrix.to_dataframe_dense()
+        self.control_matrix = control_matrix.to_dataframe_dense()
+        self.disturbance_matrix = disturbance_matrix.to_dataframe_dense()
+        self.state_output_matrix = state_output_matrix.to_dataframe_dense()
+        self.control_output_matrix = control_output_matrix.to_dataframe_dense()
+        self.disturbance_output_matrix = disturbance_output_matrix.to_dataframe_dense()
 
         # Convert to time discrete model.
         discretize_model()
@@ -4204,10 +3813,10 @@ class BuildingModel(object):
         - The required initial state vector and disturbance timeseries are obtained from
         the building model definition or can be provided through keyword arguments.
 
-        Syntax
+        :syntax:
             `building_model.simulate(control_vector)`: Simulate `building_model` for given `control_vector`.
 
-        Parameters:
+        Arguments:
             control_vector (pd.DataFrame): Control vector timeseries, as dataframe with control variables as columns and
                 timesteps as rows.
 
@@ -4394,8 +4003,8 @@ class BuildingModel(object):
 
     def optimize(self):
         """Optimize the operation, i.e. the control vector, of the building model to minimize operation cost, subject to
-           output minimum / maximum constraints. Returns results as dictionary containing state, control and output
-           vector timeseries along with the operation cost.
+        output minimum / maximum constraints. Returns results as dictionary containing state, control and output
+        vector timeseries along with the operation cost.
 
         - The price timeseries is obtained from the building model definition.
         - The required initial state vector and disturbance timeseries are obtained from
@@ -4403,10 +4012,6 @@ class BuildingModel(object):
 
         :syntax:
             `building_model.optimize(): Optimize the operation of `building_model` and return the results.
-
-        Parameters:
-            control_vector (pd.DataFrame): Control vector timeseries, as dataframe with control variables as columns and
-                timesteps as rows.
 
         Returns:
             dict: Results dictionary with keys `state_vector`, `control_vector`, `output_vector` and
