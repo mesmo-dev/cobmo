@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS blind_types (
 CREATE TABLE IF NOT EXISTS buildings (
     building_name TEXT,
     weather_type TEXT,
+    plant_cooling_type TEXT,
+    plant_heating_type TEXT,
     building_storage_type TEXT
 );
 CREATE TABLE IF NOT EXISTS constraint_schedules (
@@ -115,6 +117,14 @@ CREATE TABLE IF NOT EXISTS parameters (
     parameter_value REAL,
     parameter_unit TEXT,
     parameter_comment TEXT
+);
+CREATE TABLE IF NOT EXISTS plant_cooling_types (
+    plant_cooling_type TEXT,
+    plant_cooling_efficiency TEXT
+);
+CREATE TABLE IF NOT EXISTS plant_heating_types (
+    plant_heating_type TEXT,
+    plant_heating_efficiency TEXT
 );
 CREATE TABLE IF NOT EXISTS scenarios (
     scenario_name TEXT,
