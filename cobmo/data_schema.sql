@@ -14,10 +14,10 @@ CREATE TABLE IF NOT EXISTS constraint_schedules (
     time_period TEXT,
     minimum_air_temperature TEXT,
     maximum_air_temperature TEXT,
-    minimum_fresh_air_flow_per_area TEXT,
-    minimum_fresh_air_flow_per_person TEXT,
+    minimum_fresh_air_flow TEXT,
+    minimum_fresh_air_flow_building TEXT,
+    minimum_fresh_air_flow_occupants TEXT,
     maximum_co2_concentration TEXT,
-    minimum_fresh_air_flow_per_area_no_dcv TEXT,
     minimum_relative_humidity TEXT,
     maximum_relative_humidity TEXT
 );
@@ -92,8 +92,11 @@ CREATE TABLE IF NOT EXISTS internal_gain_timeseries (
 CREATE TABLE IF NOT EXISTS internal_gain_types (
     internal_gain_type TEXT,
     internal_gain_definition_type TEXT,
-    internal_gain_occupancy_factor TEXT,
-    internal_gain_appliances_factor TEXT
+    occupancy_density TEXT,
+    occupancy_heat_gain TEXT,
+    occupancy_co2_gain TEXT,
+    occupancy_humidity_gain TEXT,
+    appliances_heat_gain TEXT
 );
 CREATE TABLE IF NOT EXISTS linearization_types (
     linearization_type TEXT,
@@ -101,15 +104,12 @@ CREATE TABLE IF NOT EXISTS linearization_types (
     linearization_zone_air_temperature_cool TEXT,
     linearization_surface_temperature TEXT,
     linearization_exterior_surface_temperature TEXT,
-    linearization_internal_gain_occupancy TEXT,
-    linearization_internal_gain_appliances TEXT,
     linearization_ambient_air_temperature TEXT,
     linearization_sky_temperature TEXT,
-    linearization_ambient_air_humidity_ratio TEXT,
-    linearization_zone_air_humidity_ratio TEXT,
-    linearization_irradiation TEXT,
-    linearization_co2_concentration TEXT,
-    linearization_ventilation_rate_per_square_meter TEXT
+    linearization_zone_air_absolute_humidity TEXT,
+    linearization_ambient_air_absolute_humidity TEXT,
+    linearization_zone_air_co2_concentration TEXT,
+    linearization_zone_fresh_air_flow TEXT
 );
 CREATE TABLE IF NOT EXISTS parameters (
     parameter_set TEXT,
@@ -198,7 +198,7 @@ CREATE TABLE IF NOT EXISTS weather_timeseries (
     time TEXT,
     ambient_air_temperature REAL,
     sky_temperature REAL,
-    ambient_air_humidity_ratio REAL,
+    ambient_air_absolute_humidity REAL,
     irradiation_horizontal REAL,
     irradiation_east REAL,
     irradiation_south REAL,
@@ -223,7 +223,9 @@ CREATE TABLE IF NOT EXISTS zone_types (
     hvac_radiator_type TEXT,
     hvac_ahu_type TEXT,
     hvac_tu_type TEXT,
-    constraint_type TEXT
+    constraint_type TEXT,
+    fresh_air_flow_control_type TEXT,
+    humidity_control_type TEXT
 );
 CREATE TABLE IF NOT EXISTS zones (
     building_name TEXT,

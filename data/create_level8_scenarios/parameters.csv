@@ -27,8 +27,6 @@ create_parameters,emissivity_interior_base_ceiling_concrete,0.87,-,
 create_parameters,emissivity_exterior_window,0.8,-,
 create_parameters,emissivity_interior_window,0.8,-,
 create_parameters,infiltration_rate,5.50E-05,1/s,
-create_parameters,internal_gain_occupancy_factor,0.0,W/m2/unit,Per unit of the internal gain profile - TODO: Revise value.
-create_parameters,internal_gain_appliances_factor,32.0,W/m2/unit,Per unit of the internal gain profile
 create_parameters,ahu_supply_air_temperature_setpoint,20.0,degree Celsius,
 create_parameters,ahu_supply_air_relative_humidity_setpoint,60.0,percent,
 create_parameters,ahu_fan_efficiency,331.95,J/kg,Assuming 400 Pa pressure rise
