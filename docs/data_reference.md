@@ -65,15 +65,12 @@ Linearization point definitions.
 | `linearization_zone_air_temperature_cool` | °C | |
 | `linearization_surface_temperature` | °C | |
 | `linearization_exterior_surface_temperature` | °C | |
-| `linearization_internal_gain_occupancy` | W/m² | |
-| `linearization_internal_gain_appliances` | W/m² | |
 | `linearization_ambient_air_temperature` | °C | |
 | `linearization_sky_temperature` | °C | |
-| `linearization_ambient_air_humidity_ratio` | kg/kg | Absolute humidity (mass of water / mass of air). |
-| `linearization_zone_air_humidity_ratio` | kg/kg | Absolute humidity (mass of water / mass of air). |
-| `linearization_irradiation` | W/m² | |
-| `linearization_co2_concentration` | ppm | |
-| `linearization_ventilation_rate_per_square_meter` | m/s | |
+| `linearization_zone_air_absolute_humidity` | kg/kg | Absolute humidity (mass of water / mass of air). |
+| `linearization_ambient_air_absolute_humidity` | kg/kg | Absolute humidity (mass of water / mass of air). |
+| `linearization_zone_air_co2_concentration` | ppm | |
+| `linearization_zone_fresh_air_flow` | l/s/m² | |
 
 ### `electricity_price_timeseries`
 
@@ -119,7 +116,7 @@ Weather time series definition.
 | `time` | | Timestamp according to ISO 8601. |
 | `ambient_air_temperature` | °C | Ambient air dry-bulb temperature. |
 | `sky_temperature` | °C | Equivalent sky temperature. |
-| `ambient_air_humidity_ratio` | kg/kg | Ambient air absolute humidity (mass of water / mass of air). |
+| `ambient_air_absolute_humidity` | kg/kg | Ambient air absolute humidity (mass of water / mass of air). |
 | `irradiation_horizontal` | W/m² | Irradiation onto a horizontal surface. |
 | `irradiation_east` | W/m² | Irradiation onto a vertical surface oriented towards East. |
 | `irradiation_south` | W/m² | Irradiation onto a vertical surface oriented towards South. |
@@ -174,6 +171,8 @@ Zone type characteristics.
 | `hvac_ahu_type` | | Type identifier as defined in `hvac_ahu_types`. |
 | `hvac_tu_type` | | Type identifier as defined in `hvac_tu_types`. |
 | `constraint_type` | | Constraint type identifier as defined in `constraint_schedules`. |
+| `fresh_air_flow_control_type` | | Control mode for the fresh air flow / indoor air quality (IAQ). Choices: empty (IAQ is ensured by providing a fixed amount of fresh air per zone area, as defined by `minimum_fresh_air_flow` in `constraint_schedules`.), `occupancy_based` (IAQ is ensured by providing a fixed amount of fresh air per person and per zone area, as defined by `minimum_fresh_air_flow_occupants`, `minimum_fresh_air_flow_building` in `constraint_schedules`.), `co2_based` (IAQ is ensured by constraining the CO₂ concentration, as defined by `maximum_co2_concentration` in `constraint_schedules`.) |
+| `humidity_control_type` | | Control mode for the humidity level. Choices: empty (Humidity is not controlled.), `humidity_based` (Humidity is constrained, as defined by `minimum_relative_humidity` and `maximum_relative_humidity` in `constraint_schedules`.) |
 
 ### `internal_gain_types`
 
@@ -182,31 +181,34 @@ Internal gain type definitions.
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `internal_gain_type` | | Unique type identifier. |
-| `internal_gain_definition_type` | | Definition type, corresponding to definitions in `internal_gain_schedules` or `internal_gain_timeseries`. Choices: `schedule`, `timeseries`. |
-| `internal_gain_occupancy_factor` | - | Occupancy gains scaling factor. |
-| `internal_gain_appliances_factor` | - | Appliance gains scaling factor. |
+| `internal_gain_definition_type` | | Definition type, corresponding to definitions in `internal_gain_schedules` or `internal_gain_timeseries`. Choices: `schedule` (Defines occupancy / appliance schedule in `internal_gain_schedules`.), `timeseries` (Defines occupancy / appliance timeseries in `internal_gain_timeseries`.) |
+| `occupancy_density` | person/m² | Peak occupancy density. |
+| `occupancy_heat_gain` | W/person | Sensible heat gain due to occupants. |
+| `occupancy_co2_gain` | ml/s/person | CO₂ gain due to occupants. *Only required when using `iaq_based` fresh air flow control in `zone_types`.*  |
+| `occupancy_humidity_gain` | g/h/person | Moisture gain due to occupants. *Only required when using `humidity_based` humidity control in `zone_types`.* |
+| `appliances_heat_gain` | W/m² | Peak sensible heat gain due to appliances. |
 
 ### `internal_gain_schedules`
 
-The internal gain timeseries is constructed by obtaining the appropriate value for `internal_gain_occupancy` / `internal_gain_appliances` based on the `time_period` in `ddTHH:MM` format. Intermediate time steps are interpolated linearly. The daily schedule is repeated for any weekday greater than or equal to `dd` until the next defined `dd`. The initial value for each `internal_gain_type` must start at `time_period = 01T00:00`.
+The internal gain timeseries is constructed by obtaining the appropriate value for `internal_gain_occupancy` / `internal_gain_appliances` based on the `time_period` in `ddTHH:MM` format. Higher resolution time steps are interpolated linearly and lower resolution time steps are aggregated using mean values. The daily schedule is repeated for any weekday greater than or equal to `dd` until the next defined `dd`. The initial value for each `internal_gain_type` must start at `time_period = 01T00:00`.
 
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `internal_gain_type` | | Type identifier as defined in `internal_gain_types`. |
 | `time_period` | | Time period in `ddTHH:MM` format. `dd` is the weekday (`01` - Monday ... `07` - Sunday). `T` is the divider for date and time information according to ISO 8601. `HH:MM` is the daytime. |
-| `internal_gain_occupancy` | W/m² | Internal gains related to occupants.|
-| `internal_gain_appliances` | W/m² | Internal gains related to appliances. |
+| `internal_gain_occupancy` | - | Occupancy rate between 0 and 1, where 1 represents peak occupancy. |
+| `internal_gain_appliances` | - | Appliance activity rate between 0 and 1, where 1 represents peak appliance activity. |
 
 ### `internal_gain_timeseries`
 
-Time series of internal gains.
+Time series of internal gains. Higher resolution time steps are interpolated linearly and lower resolution time steps are aggregated using mean values.
 
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `internal_gain_type` | | Type identifier as defined in `internal_gain_types`. |
 | `time` | | Timestamp according to ISO 8601. |
-| `internal_gain_occupancy` | W/m² | Internal gains related to occupants.|
-| `internal_gain_appliances` | W/m² | Internal gains related to appliances. |
+| `internal_gain_occupancy` | - | Occupancy rate between 0 and 1, where 1 represents peak occupancy. |
+| `internal_gain_appliances` | - | Appliance activity rate between 0 and 1, where 1 represents peak appliance activity. |
 
 ### `hvac_generic_types`
 
@@ -281,12 +283,12 @@ The constraint timeseries is constructed by obtaining the appropriate value for 
 | `time_period` | | Time period in `ddTHH:MM` format. `dd` is the weekday (`01` - Monday ... `07` - Sunday). `T` is the divider for date and time information according to ISO 8601. `HH:MM` is the daytime. |
 | `minimum_air_temperature` | °C | Maximum indoor air temperature. |
 | `maximum_air_temperature` | °C | Maximum indoor air temperature. |
-| `minimum_fresh_air_flow_per_area` | l/s/m² | Minimum fresh air supply for removing building emissions. *Currently not used.*|
-| `minimum_fresh_air_flow_per_person` | l/s/person | Minimum fresh air supply for removing occupant emissions. *Currently not used.* |
-| `maximum_co2_concentration` | ppm | Maximum indoor air CO₂ concentration. *Currently not used.* |
-| `minimum_fresh_air_flow_per_area_no_dcv` | l/s/m² | Minimum fresh air supply based on floor area (includes ventilation requirements due to occupancy). |
-| `minimum_relative_humidity` | % | Minimum indoor air relative humidity. *Currently not used.* |
-| `maximum_relative_humidity` | % | Maximum indoor air relative humidity. *Currently not used.* |
+| `minimum_fresh_air_flow` | l/s/m² | Minimum fresh air supply based on floor area (includes ventilation requirements due to occupancy). *Not required when using `occupancy_based` or `iaq_based` fresh air flow control in `zone_types`.* |
+| `minimum_fresh_air_flow_building` | l/s/m² | Minimum fresh air supply for removing building emissions. *Only required when using `occupancy_based` fresh air flow control in `zone_types`.*|
+| `minimum_fresh_air_flow_occupants` | l/s/person | Minimum fresh air supply for removing occupant emissions. *Only required when using `occupancy_based` fresh air flow control in `zone_types`.* |
+| `maximum_co2_concentration` | ppm | Maximum indoor air CO₂ concentration. *Only required when using `iaq_based` fresh air flow control in `zone_types`.* |
+| `minimum_relative_humidity` | % | Minimum indoor air relative humidity. *Only required when using `humidity_based` humidity control in `zone_types`.* |
+| `maximum_relative_humidity` | % | Maximum indoor air relative humidity. *Only required when using `humidity_based` humidity control in `zone_types`.* |
 
 ## Surface data
 
