@@ -18,9 +18,6 @@ Building scenario definitions.
 | `building_name` | | Building identifier as defined in `buildings`. |
 | `parameter_set` | | Parameter set identifier as defined in `parameters`. |
 | `linearization_type` | | Type identifier as defined in `linearization_types`. |
-| `demand_controlled_ventilation_type` | | *Currently not used.* |
-| `co2_model_type` | | *Currently not used.* |
-| `humidity_model_type` | | *Currently not used.* |
 | `price_type` | | Type identifier as defined in `electricity_price_timeseries`. |
 | `timestep_start` | | Start timestep in format `yyyy-mm-ddTHH:MM:SS` (according to ISO 8601). |
 | `timestep_end` | | End timestep in format `yyyy-mm-ddTHH:MM:SS` (according to ISO 8601). |
