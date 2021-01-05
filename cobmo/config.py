@@ -107,12 +107,6 @@ base_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
 # Obtain configuration dictionary.
 config = get_config()
 
-# Physical constants.
-# TODO: Move physical constants to model definition.
-water_density = 998.31  # [kg/m^3]
-water_kinematic_viscosity = 1.3504e-6  # [m^2/s]
-gravitational_acceleration = 9.81  # [m^2/s]
-
 # Modify matplotlib default settings.
 plt.style.use(config['plots']['matplotlib_style'])
 pd.plotting.register_matplotlib_converters()  # Remove warning when plotting with pandas.

@@ -452,7 +452,7 @@ class BuildingData(object):
             internal_gain_schedule.index = np.vectorize(pd.Period)(internal_gain_schedule.index)
 
             # Obtain complete schedule for all weekdays.
-            # TODO: Check if '01T00:00:00' is defined for each schedule.
+            # TODO: Check if '01T00:00' is defined for each schedule.
             internal_gain_schedule_complete = []
             for internal_gain_type in internal_gain_schedule['internal_gain_type'].unique():
                 for day in range(1, 8):
@@ -470,7 +470,6 @@ class BuildingData(object):
             internal_gain_schedule_complete = pd.concat(internal_gain_schedule_complete)
 
             # Pivot complete schedule.
-            # TODO: Multiply internal gain factors.
             internal_gain_schedule_complete = internal_gain_schedule_complete.pivot(
                 columns='internal_gain_type',
                 values=['internal_gain_occupancy', 'internal_gain_appliances']
@@ -537,7 +536,6 @@ class BuildingData(object):
         if len(internal_gain_timeseries) > 0:
 
             # Pivot timeseries.
-            # TODO: Multiply internal gain factors.
             internal_gain_timeseries = internal_gain_timeseries.pivot(
                 columns='internal_gain_type',
                 values=['internal_gain_occupancy', 'internal_gain_appliances']
@@ -599,7 +597,7 @@ class BuildingData(object):
             constraint_schedule.index = np.vectorize(pd.Period)(constraint_schedule.index)
 
             # Obtain complete schedule for all weekdays.
-            # TODO: Check if '01T00:00:00' is defined for each schedule.
+            # TODO: Check if '01T00:00' is defined for each schedule.
             constraint_schedule_complete = []
             for constraint_type in constraint_schedule['constraint_type'].unique():
                 for day in range(1, 8):

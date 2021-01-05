@@ -124,7 +124,6 @@ class BuildingModel(object):
         )
 
         # Store building data.
-        # TODO: Use loc / at indexer.
         self.building_data = building_data
 
         # Obtain total building zone area.
@@ -2605,12 +2604,11 @@ class BuildingModel(object):
                 # Storage losses.
                 # - Thermal losses are considered negligible, but a very small loss is added to keep the state matrix
                 #   non-singular and hence invertible.
-                # - TODO: For detailed losses depending on the storage size see `cobmo/README_storage.md`
                 state_matrix[
                     'sensible_thermal_storage_state_of_charge',
                     'sensible_thermal_storage_state_of_charge'
                 ] += (
-                    - 1e-17
+                    - 1e-16
                 )
 
                 for zone_name, zone_data in building_data.zones.iterrows():
@@ -2645,12 +2643,13 @@ class BuildingModel(object):
             # Battery storage.
             if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
                 # Storage charge.
+                # TODO: Make the battery loss dependent on the outdoor temperature.
                 control_matrix[
                     'battery_storage_state_of_charge',
                     'battery_storage_charge_electric_power'
                 ] += (
                     building_data.scenarios['storage_round_trip_efficiency']
-                )  # TODO: Make the battery loss dependent on the outdoor temperature.
+                )
 
                 # Storage losses.
                 # - There are no battery storage losses, but a very small loss is added to keep the state matrix
@@ -2659,7 +2658,7 @@ class BuildingModel(object):
                     'battery_storage_state_of_charge',
                     'battery_storage_state_of_charge'
                 ] += (
-                    - 1E-17
+                    - 1E-16
                 )
 
                 for zone_name, zone_data in building_data.zones.iterrows():
