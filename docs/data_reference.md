@@ -77,7 +77,7 @@ Electricity price time series definition.
 | --- |:---:| --- |
 | `price_type` | | Price type identifier. |
 | `time` | | Timestamp according to ISO 8601. |
-| `price` | SGD | *Currently only in SGD* |
+| `price` | $/kWh | Price value. *Currently, prices / costs are assumed to be in SGD.* |
 
 ## Building data
 
