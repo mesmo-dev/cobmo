@@ -88,6 +88,8 @@ Building definition.
 | --- |:---:| --- |
 | `building_name` | | Unique building identifier.|
 | `weather_type` | | Type identifier as defined in `weather_types`. |
+| `plant_cooling_type` | | Type identifier as defined in `plant_cooling_types`. |
+| `plant_heating_type` | | Type identifier as defined in `plant_heating_types`. |
 | `storage_type` | | Type identifier as defined in `storage_types`. |
 
 ### `weather_types`
@@ -118,6 +120,24 @@ Weather time series definition.
 | `irradiation_south` | W/m² | Irradiation onto a vertical surface oriented towards South. |
 | `irradiation_west` | W/m² | Irradiation onto a vertical surface oriented towards West. |
 | `irradiation_north` | W/m² | Irradiation onto a vertical surface oriented towards North. |
+
+### `plant_cooling_types`
+
+Chiller plant definition.
+
+| Column | Unit | Description |
+| --- |:---:| --- |
+| `cooling_plant_type` | | Unique type identifier. |
+| `plant_cooling_efficiency` | | Efficiency / COP of the chiller plant (thermal power / electric power). |
+
+### `plant_heating_types`
+
+Heating plant / heat pump definition.
+
+| Column | Unit | Description |
+| --- |:---:| --- |
+| `cooling_plant_type` | | Unique type identifier. |
+| `plant_heating_efficiency` | | Efficiency / COP of the heating plant (thermal power / electric power). |
 
 ### `storage_types`
 
@@ -211,8 +231,8 @@ Generic HVAC system characteristics.
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `hvac_generic_type` | | Unique type identifier. |
-| `generic_heating_efficiency` | - | Heating efficiency (thermal power / electric power). |
-| `generic_cooling_efficiency` | - | Cooling efficiency (thermal power / electric power). |
+| `generic_heating_efficiency` | - | Heating efficiency, to consider losses in the generic HVAC system. This is not the efficiency of the heating plant, which is instead defined in `plant_heating_types`. |
+| `generic_cooling_efficiency` | - | Cooling efficiency, to consider losses in the generic HVAC system. This is not the efficiency of the chiller plant, which is instead defined in `plant_cooling_types`. |
 
 ### `hvac_ahu_types`
 
@@ -224,8 +244,8 @@ Air handling unit (AHU) set points and characteristics.
 | `ahu_supply_air_temperature_setpoint` | °C | Supply air temperature at outlet of AHU towards zone. |
 | `ahu_supply_air_relative_humidity_setpoint` | % | Supply air relative humidity at outlet of AHU towards zone. |
 | `ahu_fan_efficiency` | J/kg | Fan efficiency (electric power / air mass flow rate). |
-| `ahu_cooling_efficiency` | - | Chiller plant efficiency (thermal power / electrical power). |
-| `ahu_heating_efficiency` | - | Heating plant efficiency (thermal power / electrical power). |
+| `ahu_cooling_efficiency` | - | Heating efficiency, to consider losses in the AHU. This is not the efficiency of the heating plant, which is instead defined in `plant_heating_types`. |
+| `ahu_heating_efficiency` | - | Cooling efficiency, to consider losses in the AHU. This is not the efficiency of the chiller plant, which is instead defined in `plant_cooling_types`. |
 | `ahu_return_air_heat_recovery_efficiency` | - | Recovery efficiency (recovered power / available power). |
 
 ### `hvac_tu_types`
@@ -238,8 +258,8 @@ Terminal unit (TU) set points and characteristics.
 | `tu_air_intake_type` | | *Currently not used.* |
 | `tu_supply_air_temperature_setpoint` | °C | Supply air temperature at outlet of TU towards zone. |
 | `tu_fan_efficiency` | J/kg | Fan efficiency (electric power / air mass flow rate). |
-| `tu_cooling_efficiency` | - | Chiller plant efficiency (thermal power / electrical power). |
-| `tu_heating_efficiency` | - | Heating plant efficiency (thermal power / electrical power). |
+| `tu_cooling_efficiency` | - | Heating efficiency, to consider losses in the TU. This is not the efficiency of the heating plant, which is instead defined in `plant_heating_types`. |
+| `tu_heating_efficiency` | - | Cooling efficiency, to consider losses in the TU. This is not the efficiency of the chiller plant, which is instead defined in `plant_cooling_types`. |
 
 ### `hvac_radiator_types`
 
@@ -257,6 +277,7 @@ Terminal unit (TU) set points and characteristics.
 | `radiator_hull_conductivity` | W/(mK) | Radiator hull material conductivity. |
 | `radiator_hull_heat_capacity` | J/m³ | Radiator hull material heat capacity. |
 | `radiator_fin_effectiveness` | - | Radiator fin effectiveness. |
+| `radiator_heating_efficiency` | - | Heating efficiency, to consider losses in the radiator heat supply. This is not the efficiency of the heating plant, which is instead defined in `plant_heating_types`. |
 
 ### `blind_types`
 
