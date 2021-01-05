@@ -332,7 +332,7 @@ def calculate_irradiation_surfaces(
             temp_dew=humid_air_properties(
                 'D',
                 'T', weather_timeseries['ambient_air_temperature'].values + 273.15,
-                'W', weather_timeseries['ambient_air_humidity_ratio'].values,
+                'W', weather_timeseries['ambient_air_absolute_humidity'].values,
                 'P', 101325
             ) - 273.15  # Use CoolProps toolbox to calculate dew point temperature.
         )
