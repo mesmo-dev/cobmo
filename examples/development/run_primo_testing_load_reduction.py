@@ -75,7 +75,7 @@ def main():
             output_vector_baseline,
             operation_cost_baseline,
             investment_cost_baseline,  # Zero when running (default) operation problem.
-            storage_size_baseline  # Zero when running (default) operation problem.
+            storage_capacity_baseline  # Zero when running (default) operation problem.
         ) = optimization_problem_baseline.solve()
 
         # Instantiate results collection variables.

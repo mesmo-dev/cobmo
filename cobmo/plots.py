@@ -12,7 +12,7 @@ def plot_battery_cases_comparisons_bubbles(
         read_path,
         results_path,
         plot_type
-        # Choices: 'simple_payback_time', 'discounted_payback_time', 'storage_size', 'efficiency', 'energy_cost',
+        # Choices: 'simple_payback_time', 'discounted_payback_time', 'storage_capacity', 'efficiency', 'energy_cost',
         # 'operation_cost_savings_annual', 'operation_cost_savings_annual_percentage'.
 ):
     """Plot various battery case comparisons."""
@@ -80,7 +80,7 @@ def plot_battery_cases_comparisons_bubbles(
         title = 'Simple payback time in years'
     elif plot_type == 'discounted_payback_time':
         title = 'Discounted payback time in years'
-    elif plot_type == 'storage_size':
+    elif plot_type == 'storage_capacity':
         title = 'Storage size in kWh'
     elif plot_type == 'efficiency':
         title = 'Efficiency in %%'

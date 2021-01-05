@@ -36,7 +36,7 @@ def main():
             output_vector_optimization,
             operation_cost,
             investment_cost,  # Zero when running (default) operation problem.
-            storage_size  # Zero when running (default) operation problem.
+            storage_capacity  # Zero when running (default) operation problem.
         ) = optimization_problem.solve()
 
         timesteps = building.timesteps
@@ -56,7 +56,7 @@ def main():
                 output_vector_recourse,
                 recourse_operation_cost,
                 recourse_investment_cost,  # Zero when running (default) operation problem.
-                recourse_storage_size  # Zero when running (default) operation problem.
+                recourse_storage_capacity  # Zero when running (default) operation problem.
             ) = recourse_problem.solve()
 
             max_load_at_timestep = output_vector_recourse.at[timestep, 'grid_electric_power']

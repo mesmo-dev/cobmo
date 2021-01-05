@@ -48,7 +48,7 @@ def main():
         output_vector_baseline,
         operation_cost_baseline,
         investment_cost_baseline,  # Zero when running (default) operation problem.
-        storage_size_baseline  # Zero when running (default) operation problem.
+        storage_capacity_baseline  # Zero when running (default) operation problem.
     ) = controller_baseline.solve()
 
     # Print operation cost for debugging.
@@ -94,7 +94,7 @@ def main():
                     output_vector_price_sensitivity,
                     operation_cost_price_sensitivity,
                     investment_cost_price_sensitivity,  # Represents load reduction.
-                    storage_size_price_sensitivity
+                    storage_capacity_price_sensitivity
                 ) = controller_price_sensitivity.solve()
 
                 # Save controller timeseries to CSV for debugging.

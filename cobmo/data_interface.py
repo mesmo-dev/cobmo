@@ -187,7 +187,7 @@ class BuildingData(object):
                 JOIN buildings USING (building_name) 
                 JOIN linearization_types USING (linearization_type) 
                 LEFT JOIN initial_state_types USING (initial_state_type) 
-                LEFT JOIN storage_types USING (building_storage_type) 
+                LEFT JOIN storage_types USING (storage_type) 
                 LEFT JOIN plant_heating_types USING (plant_heating_type) 
                 LEFT JOIN plant_cooling_types USING (plant_cooling_type) 
                 WHERE scenario_name = ?

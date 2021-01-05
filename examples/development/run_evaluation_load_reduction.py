@@ -48,7 +48,7 @@ def main():
         output_vector_baseline,
         operation_cost_baseline,
         investment_cost_baseline,  # Zero when running (default) operation problem.
-        storage_size_baseline  # Zero when running (default) operation problem.
+        storage_capacity_baseline  # Zero when running (default) operation problem.
     ) = optimization_problem_baseline.solve()
 
     # Save controller timeseries to CSV for debugging.
@@ -109,7 +109,7 @@ def main():
                     output_vector_load_reduction,
                     operation_cost_load_reduction,
                     investment_cost_load_reduction,
-                    storage_size_load_reduction
+                    storage_capacity_load_reduction
                 ) = optimization_problem_load_reduction.solve()
 
                 # Calculate load reduction.

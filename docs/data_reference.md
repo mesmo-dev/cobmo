@@ -48,8 +48,7 @@ Initial state settings to be taken for simulation and optimization.
 | `initial_surface_temperature` | °C | Initial surface temperature. |
 | `initial_co2_concentration` | ppm | Initial zone air CO₂ concentration. |
 | `initial_absolute_humidity` | kg/kg | Initial zone air absolute humidity (mass of water / mass of air). |
-| `initial_sensible_thermal_storage_state_of_charge` | m³ | Initial stored volume of useable water layer in the sensible thermal storage. |
-| `initial_battery_storage_state_of_charge` | kWh | Initial stored electric energy in the battery storage.|
+| `initial_storage_state_of_charge` | % | Initial state of charge of thermal / battery storage. Maximum value: 100% |
 
 ### `linearization_types`
 
@@ -89,7 +88,7 @@ Building definition.
 | --- |:---:| --- |
 | `building_name` | | Unique building identifier.|
 | `weather_type` | | Type identifier as defined in `weather_types`. |
-| `building_storage_type` | | Type identifier as defined in `storage_types`. |
+| `storage_type` | | Type identifier as defined in `storage_types`. |
 
 ### `weather_types`
 
@@ -126,15 +125,13 @@ Storage characteristics.
 
 | Column | Unit | Description |
 | --- |:---:| --- |
-| `building_storage_type` | | Unique type identifier. |
-| `storage_size` | m³ or kWh | Volume of sensible thermal storage or electric energy capacity of battery storage. |
+| `storage_type` | | Unique type identifier. |
+| `storage_commodity_type` | | Storage commodity type. Choices: `battery`, `sensible_cooling`, `sensible_heating` |
+| `storage_capacity` | m³/m² or kWh/m² | Volume of sensible thermal storage or electric energy capacity of battery storage. Define in per-square-meter of the total building zone area. |
 | `storage_round_trip_efficiency` | - | Round trip efficiency (discharged energy / charged energy). |
-| `storage_battery_depth_of_discharge` | - | Maximum utilizable battery storage capacity (utilized capacity / total capacity). |
+| `storage_battery_depth_of_discharge` | - | Maximum utilizable battery storage capacity (utilized capacity / total capacity). *Only needed for commodity type `battery`.* |
 | `storage_sensible_temperature_delta` | K | Temperature difference between the supply and return water temperature of sensible thermal storage. |
-| `storage_lifetime` | years | Storage lifetime. *Only used for storage planning problems.* |
-| `storage_planning_energy_installation_cost` | SGD/m³ or SGD/kWh | Investment cost per installed energy capacity. *Only used for storage planning problems.* |
-| `storage_planning_power_installation_cost` | SGD/kW | Investment cost per installed power capacity. *Only used for storage planning problems.* |
-| `storage_planning_fixed_installation_cost` | SGD | Investment cost per installed storage unit. *Only used for storage planning problems.* |
+| `storage_self_discharge_rate` | %/h | Storage self-discharge rate. |
 
 ## Zone data
 

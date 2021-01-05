@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS buildings (
     weather_type TEXT,
     plant_cooling_type TEXT,
     plant_heating_type TEXT,
-    building_storage_type TEXT
+    storage_type TEXT
 );
 CREATE TABLE IF NOT EXISTS constraint_schedules (
     constraint_type TEXT,
@@ -75,8 +75,7 @@ CREATE TABLE IF NOT EXISTS initial_state_types (
     initial_surface_temperature TEXT,
     initial_co2_concentration TEXT,
     initial_absolute_humidity TEXT,
-    initial_sensible_thermal_storage_state_of_charge TEXT,
-    initial_battery_storage_state_of_charge TEXT
+    initial_storage_state_of_charge TEXT
 );
 CREATE TABLE IF NOT EXISTS internal_gain_schedules (
     internal_gain_type TEXT,
@@ -139,15 +138,13 @@ CREATE TABLE IF NOT EXISTS scenarios (
     timestep_interval TEXT
 );
 CREATE TABLE IF NOT EXISTS storage_types (
-    building_storage_type TEXT,
-    storage_size TEXT,
+    storage_type TEXT,
+    storage_commodity_type TEXT,
+    storage_capacity TEXT,
     storage_round_trip_efficiency TEXT,
     storage_battery_depth_of_discharge TEXT,
     storage_sensible_temperature_delta TEXT,
-    storage_lifetime TEXT,
-    storage_planning_energy_installation_cost TEXT,
-    storage_planning_power_installation_cost TEXT,
-    storage_planning_fixed_installation_cost TEXT
+    storage_self_discharge_rate TEXT
 );
 CREATE TABLE IF NOT EXISTS surface_types (
     surface_type TEXT,

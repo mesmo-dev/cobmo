@@ -17,14 +17,14 @@ def main():
     price_type = 'wholesale'
     # Choices: 'wholesale', 'retailer_peak_offpeak', 'wholesale_squeezed_20', 'wholesale_squeezed_40'
     # 'wholesale_squeezed_60', 'wholesale_squeezed_80'
-    building_storage_type = 'default_battery_storage'
+    storage_type = 'default_battery_storage'
     # Choices: 'default_sensible_thermal_storage', 'default_battery_storage'
     save_plots = True
     save_csv = True
-    results_path = cobmo.utils.get_results_path(__file__, f'{scenario_name}_{building_storage_type}_{price_type}')
+    results_path = cobmo.utils.get_results_path(__file__, f'{scenario_name}_{storage_type}_{price_type}')
 
     # Print settings.
-    print("building_storage_type = {}".format(building_storage_type))
+    print("storage_type = {}".format(storage_type))
     print("pricing_method = {}".format(price_type))
 
     # Obtain a connection to the database.
@@ -50,11 +50,11 @@ def main():
         SELECT * FROM storage_types
         """,
         database_connection,
-        index_col='building_storage_type'
+        index_col='storage_type'
     )
 
-    # Modify `buildings` to change the `building_storage_type`.
-    buildings.at[scenarios.at[scenario_name, 'building_name'], 'building_storage_type'] = building_storage_type
+    # Modify `buildings` to change the `storage_type`.
+    buildings.at[scenarios.at[scenario_name, 'building_name'], 'storage_type'] = storage_type
     buildings.to_sql(
         'buildings',
         con=database_connection,
@@ -87,7 +87,7 @@ def main():
         output_vector_controller_baseline,
         operation_cost_baseline,
         investment_cost_baseline,
-        storage_size_baseline
+        storage_capacity_baseline
     ) = controller_baseline.solve()
 
     # Print results.
@@ -111,22 +111,22 @@ def main():
         output_vector_controller_storage,
         operation_cost_storage,
         investment_cost_storage,
-        storage_size_storage
+        storage_capacity_storage
     ) = controller_storage.solve()
 
     # Calculate savings and payback time.
-    storage_lifetime = storage_types.at[building_storage_type, 'storage_lifetime']
+    storage_lifetime = storage_types.at[storage_type, 'storage_lifetime']
     operation_cost_savings_annual = (operation_cost_baseline - operation_cost_storage) / storage_lifetime
-    if 'sensible' in building_storage_type:
-        storage_size_kwh = (
-                storage_size_storage
+    if 'sensible' in storage_type:
+        storage_capacity_kwh = (
+                storage_capacity_storage
                 * 1000.0  # Density in kg/m3 (water).
                 * 4186.0  # Specific heat capacity in J/(kg*K) (water)
-                * storage_types.at[building_storage_type, 'storage_sensible_temperature_delta']  # Temp. dif. in K.
+                * storage_types.at[storage_type, 'storage_sensible_temperature_delta']  # Temp. dif. in K.
                 / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
         )
-    elif 'battery' in building_storage_type:
-        storage_size_kwh = storage_size_storage / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
+    elif 'battery' in storage_type:
+        storage_capacity_kwh = storage_capacity_storage / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
     (
         simple_payback_time,
         discounted_payback_time
@@ -136,14 +136,14 @@ def main():
         operation_cost_storage,
         operation_cost_baseline,
         interest_rate=0.06,
-        investment_type=building_storage_type,
+        investment_type=storage_type,
         save_plots=save_plots,
         results_path=results_path,
         file_id=''
     )
 
     # Print results.
-    print("storage_size_kwh = {}".format(storage_size_kwh))
+    print("storage_capacity_kwh = {}".format(storage_capacity_kwh))
     print("investment_cost_storage = {}".format(investment_cost_storage))
     print("operation_cost_storage = {}".format(operation_cost_storage))
     print("operation_cost_savings_annual = {}".format(operation_cost_savings_annual))

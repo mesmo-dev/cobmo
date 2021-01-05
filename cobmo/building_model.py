@@ -190,16 +190,9 @@ class BuildingModel(object):
                     & (building_data.zones['radiator_panel_number'] == '2')
                 ] + '_radiator_panel_2_hull_front_temperature',
 
-                # Sensible storage state of charge.
-                pd.Series(['sensible_thermal_storage_state_of_charge']) if (
-                    building_data.scenarios['building_storage_type']
-                    == 'default_sensible_thermal_storage'
-                ) else None,
-
-                # Battery storage state of charge.
-                pd.Series(['battery_storage_state_of_charge']) if (
-                    building_data.scenarios['building_storage_type']
-                    == 'default_battery_storage'
+                # Storage state of charge.
+                pd.Series(['storage_state_of_charge']) if (
+                    pd.notnull(building_data.scenarios['storage_type'])
                 ) else None
             ]),
             name='state_name'
@@ -251,23 +244,28 @@ class BuildingModel(object):
                     pd.notnull(building_data.zones['window_type'])
                 ] + '_window_air_flow',
 
-                # Sensible storage.
-                # TODO: Add consideration for sensible storage heating / cooling.
+                # Sensible storage cooling.
                 pd.Series([
-                    'sensible_storage_charge_cool_thermal_power',
-                    'sensible_storage_discharge_cool_thermal_power',
+                    'storage_charge_thermal_power_cooling',
+                    'storage_discharge_thermal_power_cooling',
                 ]) if (
-                    building_data.scenarios['building_storage_type']
-                    == 'default_sensible_thermal_storage'
+                    building_data.scenarios['storage_commodity_type'] == 'sensible_cooling'
+                ) else None,
+
+                # Sensible storage heating.
+                pd.Series([
+                    'storage_charge_thermal_power_heating',
+                    'storage_discharge_thermal_power_heating',
+                ]) if (
+                    building_data.scenarios['storage_commodity_type'] == 'sensible_heating'
                 ) else None,
 
                 # Battery storage.
                 pd.Series([
-                    'battery_storage_charge_electric_power',
-                    'battery_storage_discharge_electric_power'
+                    'storage_charge_electric_power',
+                    'storage_discharge_electric_power'
                 ]) if (
-                    building_data.scenarios['building_storage_type']
-                    == 'default_battery_storage'
+                    building_data.scenarios['storage_commodity_type'] == 'battery'
                 ) else None
             ]),
             name='control_name'
@@ -348,35 +346,33 @@ class BuildingModel(object):
                     pd.notnull(building_data.zones['window_type'])
                 ] + '_window_air_flow',
 
-                # Sensible storage controls.
-                # TODO: Add consideration for sensible storage heating / cooling.
+                # Sensible storage cooling controls.
                 pd.Series([
-                    'sensible_storage_charge_cool_thermal_power',
-                    'sensible_storage_discharge_cool_thermal_power',
+                    'storage_charge_thermal_power_cooling',
+                    'storage_discharge_thermal_power_cooling',
                 ]) if (
-                    building_data.scenarios['building_storage_type']
-                    == 'default_sensible_thermal_storage'
+                    building_data.scenarios['storage_commodity_type'] == 'sensible_cooling'
+                ) else None,
+
+                # Sensible storage heating controls.
+                pd.Series([
+                    'storage_charge_thermal_power_heating',
+                    'storage_discharge_thermal_power_heating',
+                ]) if (
+                    building_data.scenarios['storage_commodity_type'] == 'sensible_heating'
                 ) else None,
 
                 # Battery storage controls.
                 pd.Series([
-                    'battery_storage_charge_electric_power',
-                    'battery_storage_discharge_electric_power'
+                    'storage_charge_electric_power',
+                    'storage_discharge_electric_power'
                 ]) if (
-                    building_data.scenarios['building_storage_type']
-                    == 'default_battery_storage'
+                    building_data.scenarios['storage_commodity_type'] == 'battery'
                 ) else None,
 
-                # Sensible storage state of charge.
-                pd.Series(['sensible_thermal_storage_state_of_charge']) if (
-                    building_data.scenarios['building_storage_type']
-                    == 'default_sensible_thermal_storage'
-                ) else None,
-
-                # Battery storage state of charge.
-                pd.Series(['battery_storage_state_of_charge']) if (
-                    building_data.scenarios['building_storage_type']
-                    == 'default_battery_storage'
+                # Storage state of charge.
+                pd.Series(['storage_state_of_charge']) if (
+                    pd.notnull(building_data.scenarios['storage_type'])
                 ) else None,
 
                 # Zone temperature.
@@ -487,16 +483,16 @@ class BuildingModel(object):
 
             # Sensible storage state of charge.
             self.state_vector_initial.loc[
-                self.state_vector_initial.index.str.contains('_sensible_thermal_storage_state_of_charge')
+                self.state_vector_initial.index.str.contains('_storage_state_of_charge')
             ] = (
-                building_data.scenarios['initial_sensible_thermal_storage_state_of_charge']
+                building_data.scenarios['initial_storage_state_of_charge']
             )
 
             # Battery storage state of charge.
             self.state_vector_initial.loc[
-                self.state_vector_initial.index.str.contains('_battery_storage_state_of_charge')
+                self.state_vector_initial.index.str.contains('_storage_state_of_charge')
             ] = (
-                building_data.scenarios['initial_battery_storage_state_of_charge']
+                building_data.scenarios['initial_storage_state_of_charge']
             )
 
         def calculate_coefficients_zone():
@@ -2585,117 +2581,98 @@ class BuildingModel(object):
 
         def define_storage_state_of_charge():
 
-            # Sensible thermal storage.
-            if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
+            # Sensible storage cooling.
+            if building_data.scenarios['storage_commodity_type'] == 'sensible_cooling':
+
                 # Storage charge.
                 control_matrix[
-                    'sensible_thermal_storage_state_of_charge',
-                    'sensible_storage_charge_cool_thermal_power',
+                    'storage_state_of_charge',
+                    'storage_charge_thermal_power_cooling'
                 ] += (
-                    1.0
-                    / (
-                        building_data.parameters['water_specific_heat']
-                        * building_data.scenarios['storage_sensible_temperature_delta']
-                    )
+                    100.0  # in %.
                     * building_data.scenarios['storage_round_trip_efficiency']
+                    / building_data.scenarios['storage_capacity']
+                    / building_data.parameters['water_density']
+                    / building_data.parameters['water_specific_heat']
+                    / building_data.scenarios['storage_sensible_temperature_delta']
                 )
 
-                # Storage losses.
-                # - Thermal losses are considered negligible, but a very small loss is added to keep the state matrix
-                #   non-singular and hence invertible.
-                state_matrix[
-                    'sensible_thermal_storage_state_of_charge',
-                    'sensible_thermal_storage_state_of_charge'
+                # Storage discharge.
+                control_matrix[
+                    'storage_state_of_charge',
+                    'storage_discharge_thermal_power_cooling'
                 ] += (
-                    - 1e-16
+                    - 100.0  # in %.
+                    / building_data.scenarios['storage_capacity']
+                    / building_data.parameters['water_density']
+                    / building_data.parameters['water_specific_heat']
+                    / building_data.scenarios['storage_sensible_temperature_delta']
                 )
 
-                for zone_name, zone_data in building_data.zones.iterrows():
-                    # TODO: Differentiate heating / cooling and define heating discharge.
+            # Sensible storage heating.
+            if building_data.scenarios['storage_commodity_type'] == 'sensible_heating':
 
-                    if pd.notnull(zone_data['hvac_ahu_type']):
-                        # Storage discharge to AHU for cooling.
-                        control_matrix[
-                            'sensible_thermal_storage_state_of_charge',
-                            f'{zone_name}_sensible_storage_to_zone_ahu_cool_thermal_power',
-                        ] += (
-                            - 1.0
-                            / (
-                                building_data.parameters['water_specific_heat']
-                                * building_data.scenarios['storage_sensible_temperature_delta']
-                            )
-                        )
+                # Storage charge.
+                control_matrix[
+                    'storage_state_of_charge',
+                    'storage_charge_thermal_power_heating'
+                ] += (
+                    100.0  # in %.
+                    * building_data.scenarios['storage_round_trip_efficiency']
+                    / building_data.scenarios['storage_capacity']
+                    / building_data.parameters['water_density']
+                    / building_data.parameters['water_specific_heat']
+                    / building_data.scenarios['storage_sensible_temperature_delta']
+                )
 
-                    if pd.notnull(zone_data['hvac_tu_type']):
-                        # Storage discharge to TU for cooling.
-                        control_matrix[
-                            'sensible_thermal_storage_state_of_charge',
-                            f'{zone_name}_sensible_storage_to_zone_tu_cool_thermal_power',
-                        ] += (
-                            - 1.0
-                            / (
-                                building_data.parameters['water_specific_heat']
-                                * building_data.scenarios['storage_sensible_temperature_delta']
-                            )
-                        )
+                # Storage discharge.
+                control_matrix[
+                    'storage_state_of_charge',
+                    'storage_discharge_thermal_power_heating'
+                ] += (
+                    - 100.0  # in %.
+                    / building_data.scenarios['storage_capacity']
+                    / building_data.parameters['water_density']
+                    / building_data.parameters['water_specific_heat']
+                    / building_data.scenarios['storage_sensible_temperature_delta']
+                )
 
             # Battery storage.
-            if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
+            if building_data.scenarios['storage_commodity_type'] == 'battery':
+
                 # Storage charge.
-                # TODO: Make the battery loss dependent on the outdoor temperature.
                 control_matrix[
-                    'battery_storage_state_of_charge',
-                    'battery_storage_charge_electric_power'
+                    'storage_state_of_charge',
+                    'storage_charge_electric_power'
                 ] += (
-                    building_data.scenarios['storage_round_trip_efficiency']
+                    100.0  # in %.
+                    * building_data.scenarios['storage_round_trip_efficiency']
+                    / building_data.scenarios['storage_capacity']
+                    / 3600 / 1000  # kWh in Ws.
+                    / building_data.scenarios['storage_battery_depth_of_discharge']
                 )
 
-                # Storage losses.
-                # - There are no battery storage losses, but a very small loss is added to keep the state matrix
-                #   non-singular and hence invertible.
+                # Storage discharge.
+                control_matrix[
+                    'storage_state_of_charge',
+                    'storage_discharge_electric_power'
+                ] += (
+                    - 100.0  # in %.
+                    / building_data.scenarios['storage_capacity']
+                    / 3600 / 1000  # kWh in Ws.
+                    / building_data.scenarios['storage_battery_depth_of_discharge']
+                )
+
+            # Storage losses.
+            if pd.notnull(building_data.scenarios['storage_type']):
                 state_matrix[
-                    'battery_storage_state_of_charge',
-                    'battery_storage_state_of_charge'
+                    'storage_state_of_charge',
+                    'storage_state_of_charge'
                 ] += (
-                    - 1E-16
+                    - 1.0
+                    * building_data.scenarios['storage_self_discharge_rate']
+                    / 3600  # %/h in %/s.
                 )
-
-                for zone_name, zone_data in building_data.zones.iterrows():
-                    # TODO: Differentiate heating / cooling and define heating discharge.
-
-                    if pd.notnull(zone_data['hvac_ahu_type']):
-                        # Storage discharge to AHU for cooling.
-                        control_matrix[
-                            'battery_storage_state_of_charge',
-                            f'{zone_name}_battery_storage_to_zone_ahu_cool_electric_power',
-                        ] += (
-                            - 1.0
-                        )
-
-                        # Storage discharge to AHU for heating.
-                        control_matrix[
-                            'battery_storage_state_of_charge',
-                            f'{zone_name}_battery_storage_to_zone_ahu_heat_electric_power',
-                        ] += (
-                            - 1.0
-                        )
-
-                    if pd.notnull(zone_data['hvac_tu_type']):
-                        # Storage discharge to TU for cooling.
-                        control_matrix[
-                            'battery_storage_state_of_charge',
-                            f'{zone_name}_battery_storage_to_zone_tu_cool_electric_power',
-                        ] += (
-                            - 1.0
-                        )
-
-                        # Storage discharge to TU for heating.
-                        control_matrix[
-                            'battery_storage_state_of_charge',
-                            f'{zone_name}_battery_storage_to_zone_tu_heat_electric_power',
-                        ] += (
-                            - 1.0
-                        )
 
         def define_output_zone_temperature():
 
@@ -3135,47 +3112,70 @@ class BuildingModel(object):
 
         def define_output_storage_state_of_charge():
 
-            # Sensible thermal storage.
-            if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
+            if pd.notnull(building_data.scenarios['storage_type']):
                 state_output_matrix[
-                    'sensible_thermal_storage_state_of_charge',
-                    'sensible_thermal_storage_state_of_charge'
-                ] = 1.0
-
-            # Battery storage.
-            if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
-                state_output_matrix[
-                    'battery_storage_state_of_charge',
-                    'battery_storage_state_of_charge'
+                    'storage_state_of_charge',
+                    'storage_state_of_charge'
                 ] = 1.0
 
         def define_output_storage_power():
 
-            # Sensible thermal storage charge thermal power.
-            if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
-                # Heating.
-                # TODO: Add consideration for sensible storage heating / cooling.
-
-                # Cooling.
+            # Sensible storage cooling.
+            if building_data.scenarios['storage_commodity_type'] == 'sensible_cooling':
                 control_output_matrix[
                     'thermal_power_cooling_balance',
-                    'sensible_storage_charge_cool_thermal_power'
-                ] = 1.0001  # TODO: Very small loss to avoid simultaneous charge and discharge still needed?
+                    'storage_charge_thermal_power_cooling'
+                ] = 1.0
+                control_output_matrix[
+                    'storage_charge_thermal_power_cooling',
+                    'storage_charge_thermal_power_cooling'
+                ] = 1.0
                 control_output_matrix[
                     'thermal_power_cooling_balance',
-                    'sensible_storage_discharge_cool_thermal_power'
+                    'storage_discharge_thermal_power_cooling'
                 ] = - 1.0
+                control_output_matrix[
+                    'storage_discharge_thermal_power_cooling',
+                    'storage_discharge_thermal_power_cooling'
+                ] = 1.0
 
-            # Battery storage charge.
-            if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
+            # Sensible storage heating.
+            if building_data.scenarios['storage_commodity_type'] == 'sensible_heating':
+                control_output_matrix[
+                    'thermal_power_cooling_balance',
+                    'storage_charge_thermal_power_heating'
+                ] = 1.0
+                control_output_matrix[
+                    'storage_charge_thermal_power_heating',
+                    'storage_charge_thermal_power_heating'
+                ] = 1.0
+                control_output_matrix[
+                    'thermal_power_cooling_balance',
+                    'storage_discharge_thermal_power_heating'
+                ] = - 1.0
+                control_output_matrix[
+                    'storage_discharge_thermal_power_heating',
+                    'storage_discharge_thermal_power_heating'
+                ] = 1.0
+
+            # Battery storage.
+            if building_data.scenarios['storage_commodity_type'] == 'battery':
                 control_output_matrix[
                     'electric_power_balance',
-                    'battery_storage_charge_electric_power'
+                    'storage_charge_electric_power'
+                ] = 1.0
+                control_output_matrix[
+                    'storage_charge_electric_power',
+                    'storage_charge_electric_power'
                 ] = 1.0
                 control_output_matrix[
                     'electric_power_balance',
-                    'battery_storage_discharge_electric_power'
+                    'storage_discharge_electric_power'
                 ] = - 1.0
+                control_output_matrix[
+                    'storage_discharge_electric_power',
+                    'storage_discharge_electric_power'
+                ] = 1.0
 
         def define_output_plant_power():
 
@@ -3599,14 +3599,6 @@ class BuildingModel(object):
                 :, self.outputs.str.contains('_flow')
             ] = 0.0
 
-            # Minimum constraint for storage charge and discharge outputs.
-            self.output_minimum_timeseries.loc[
-                :, self.outputs.str.contains('_storage_charge')
-            ] = 0.0
-            self.output_minimum_timeseries.loc[
-                :, self.outputs.str.contains('_storage_to_zone')
-            ] = 0.0
-
             # Minimum / maximum constraint for balance outputs.
             self.output_minimum_timeseries.loc[
                 :, self.outputs.str.contains('_balance')
@@ -3713,37 +3705,13 @@ class BuildingModel(object):
                 )
 
             # Minimum / maximum constraints for storage state of charge.
-            # TODO: Validate storage size units.
-
-            # Sensible thermal storage.
-            if building_data.scenarios['building_storage_type'] == 'default_sensible_thermal_storage':
+            if pd.notnull(building_data.scenarios['storage_type']):
                 self.output_minimum_timeseries.loc[
-                    :, 'sensible_thermal_storage_state_of_charge'
+                    :, 'storage_state_of_charge'
                 ] = 0.0
                 self.output_maximum_timeseries.loc[
-                    :, 'sensible_thermal_storage_state_of_charge'
-                ] = (
-                    building_data.scenarios['storage_size']
-                    * building_data.parameters['water_density']  # Convert volume to mass.
-                    / self.zone_area_total
-                )
-
-            # Battery storage.
-            if building_data.scenarios['building_storage_type'] == 'default_battery_storage':
-                self.output_minimum_timeseries.loc[
-                    :, 'battery_storage_state_of_charge'
-                ] = (
-                    0.0
-                    # TODO: Revise implementation of depth of discharge.
-                    # + building_data.scenarios['storage_size']
-                    # * (1.0 - building_data.scenarios['storage_battery_depth_of_discharge'])
-                )
-                self.output_maximum_timeseries.loc[
-                    :, 'battery_storage_state_of_charge'
-                ] = (
-                    building_data.scenarios['storage_size']
-                    / self.zone_area_total
-                )
+                    :, 'storage_state_of_charge'
+                ] = 100.0  # in %.
 
             # Electric / thermal grid connections.
             if not connect_electric_grid:

@@ -33,7 +33,7 @@ def main():
         output_vector_optimization,
         operation_cost,
         investment_cost,  # Zero when running (default) operation problem.
-        storage_size  # Zero when running (default) operation problem.
+        storage_capacity  # Zero when running (default) operation problem.
     ) = optimization_problem.solve()
 
     # Print optimization results.
