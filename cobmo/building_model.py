@@ -4019,6 +4019,7 @@ class BuildingModel(object):
         # Define operation cost (OPEX).
         optimization_problem.operation_cost = (
             optimization_problem.output_vector[:, self.outputs.get_loc('grid_electric_power')]
+            * self.zone_area_total  # W/m² in W.
             * timestep_interval_hours / 1000.0  # W in kWh.
             @ self.electricity_price_timeseries.loc[:, 'price'].values
         )
