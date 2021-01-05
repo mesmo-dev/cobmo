@@ -107,12 +107,6 @@ base_path = os.path.dirname(os.path.dirname(os.path.normpath(__file__)))
 # Obtain configuration dictionary.
 config = get_config()
 
-# Physical constants.
-# TODO: Move physical constants to model definition.
-water_density = 998.31  # [kg/m^3]
-water_kinematic_viscosity = 1.3504e-6  # [m^2/s]
-gravitational_acceleration = 9.81  # [m^2/s]
-
 # Modify matplotlib default settings.
 plt.style.use(config['plots']['matplotlib_style'])
 pd.plotting.register_matplotlib_converters()  # Remove warning when plotting with pandas.
@@ -141,3 +135,9 @@ pio.templates.default.layout.update(
 )
 pio.kaleido.scope.default_width = pio.orca.config.default_width = config['plots']['plotly_figure_width']
 pio.kaleido.scope.default_height = pio.orca.config.default_height = config['plots']['plotly_figure_height']
+
+# Modify optimization solver settings.
+if config['optimization']['solver_name'] == 'osqp':
+    solver_parameters = dict(max_iter=1000000)
+else:
+    solver_parameters = dict()

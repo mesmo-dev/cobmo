@@ -58,12 +58,12 @@ def main():
             SELECT * FROM storage_types
             """,
             database_connection,
-            index_col='building_storage_type'
+            index_col='storage_type'
         )
 
-        # Modify `buildings` to change the `building_storage_type`.
+        # Modify `buildings` to change the `storage_type`.
         building_name = scenarios.at[scenario_name, 'building_name']
-        buildings.at[building_name, 'building_storage_type'] = 'default_battery_storage'
+        buildings.at[building_name, 'storage_type'] = 'default_battery_storage'
         buildings.to_sql(
             'buildings',
             con=database_connection,
@@ -94,7 +94,7 @@ def main():
             index=set_battery_technologies,
             columns=set_years
         )
-        storage_size_results = pd.DataFrame(
+        storage_capacity_results = pd.DataFrame(
             0.0,
             index=set_battery_technologies,
             columns=set_years
@@ -160,7 +160,7 @@ def main():
                     output_vector_baseline,
                     operation_cost_baseline,
                     investment_cost_baseline,
-                    storage_size_baseline
+                    storage_capacity_baseline
                 ) = controller_baseline.solve()
 
                 # Print results.
@@ -184,11 +184,11 @@ def main():
                     output_vector_storage,
                     operation_cost_storage,
                     investment_cost_storage,
-                    storage_size_storage
+                    storage_capacity_storage
                 ) = controller_storage.solve()
 
                 # Calculate savings and payback time.
-                storage_size_kwh = storage_size_storage / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
+                storage_capacity_kwh = storage_capacity_storage / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
                 storage_lifetime = battery_parameters.loc[(battery_technology, year, case), 'lifetime']
                 operation_cost_savings = operation_cost_baseline - operation_cost_storage
                 operation_cost_savings_annual = operation_cost_savings / storage_lifetime
@@ -209,7 +209,7 @@ def main():
                 )
 
                 # Print results.
-                print("storage_size_kwh = {}".format(storage_size_kwh))
+                print("storage_capacity_kwh = {}".format(storage_capacity_kwh))
                 print("investment_cost_storage = {}".format(investment_cost_storage))
                 print("operation_cost_storage = {}".format(operation_cost_storage))
                 print("operation_cost_savings_annual = {}".format(operation_cost_savings_annual))
@@ -223,8 +223,8 @@ def main():
                 discounted_payback_time_results.loc[battery_technology, year] = (
                     discounted_payback_time
                 )
-                storage_size_results.loc[battery_technology, year] = (
-                    format(storage_size_kwh, '.2f')
+                storage_capacity_results.loc[battery_technology, year] = (
+                    format(storage_capacity_kwh, '.2f')
                 )
                 operation_cost_savings_annual_results.loc[battery_technology, year] = (
                     format(operation_cost_savings_annual, '.1f')
@@ -253,8 +253,8 @@ def main():
         discounted_payback_time_results.to_csv(
             os.path.join(results_path, 'discounted_payback_time.csv')
         )
-        storage_size_results.to_csv(
-            os.path.join(results_path, 'storage_size.csv')
+        storage_capacity_results.to_csv(
+            os.path.join(results_path, 'storage_capacity.csv')
         )
         efficiency.to_csv(
             os.path.join(results_path, 'efficiency.csv')
@@ -276,7 +276,7 @@ def main():
         for plot_type in [
             'simple_payback_time',
             'discounted_payback_time',
-            'storage_size',
+            'storage_capacity',
             'efficiency',
             'operation_cost_savings_annual',
             'operation_cost_savings_annual_percentage'

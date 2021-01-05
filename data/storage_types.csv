@@ -1,3 +1,4 @@
-building_storage_type,storage_size,storage_round_trip_efficiency,storage_battery_depth_of_discharge,storage_sensible_temperature_delta,storage_lifetime,storage_planning_energy_installation_cost,storage_planning_power_installation_cost,storage_planning_fixed_installation_cost
-default_sensible_thermal_storage,1.0,0.8,,8.0,15.0,420.0,0.0,0.0
-default_battery_storage,1.0,0.8,0.8,,20.0,100.0,57.4,2700.0
+storage_type,storage_commodity_type,storage_capacity,storage_round_trip_efficiency,storage_battery_depth_of_discharge,storage_sensible_temperature_delta,storage_self_discharge_rate
+default_sensible_thermal_storage,sensible_cooling,0.5,0.8,,8.0,1e-6
+default_sensible_thermal_storage_heating,sensible_heating,0.5,0.8,,8.0,1e-6
+default_battery_storage,battery,1.0,0.8,0.8,,1e-6

@@ -68,7 +68,7 @@ def main():
         output_vector_baseline,
         baseline_operation_cost,
         baseline_investment_cost,  # Zero when running (default) operation problem.
-        baseline_storage_size  # Zero when running (default) operation problem.
+        baseline_storage_capacity  # Zero when running (default) operation problem.
     ) = baseline_problem.solve()
 
     actual_dispatch['actual_dispatch_flat'] = output_vector_baseline['grid_electric_power'].copy()
@@ -105,7 +105,7 @@ def main():
                 output_vector_optimization,
                 operation_cost,
                 investment_cost,  # Zero when running (default) operation problem.
-                storage_size  # Zero when running (default) operation problem.
+                storage_capacity  # Zero when running (default) operation problem.
             ) = optimization_problem.solve()
 
             output_vector_optimization.to_csv(os.path.join(output_vectors_path, f'output_vector_optimization_{price}.csv'))

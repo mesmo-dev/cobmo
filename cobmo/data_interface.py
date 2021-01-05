@@ -163,6 +163,22 @@ class BuildingData(object):
         # Store scenario name.
         self.scenario_name = scenario_name
 
+        # Obtain parameters.
+        self.parameters = (
+            pd.read_sql(
+                """
+                SELECT parameter_name, parameter_value FROM parameters 
+                WHERE parameter_set IN (
+                    'constants',
+                    (SELECT parameter_set FROM scenarios WHERE scenario_name = ?)
+                )
+                """,
+                con=database_connection,
+                params=[scenario_name],
+                index_col='parameter_name'
+            ).loc[:, 'parameter_value']
+        )
+
         # Obtain scenario.
         scenarios = (
             self.parse_parameters_dataframe(pd.read_sql(
@@ -171,7 +187,9 @@ class BuildingData(object):
                 JOIN buildings USING (building_name) 
                 JOIN linearization_types USING (linearization_type) 
                 LEFT JOIN initial_state_types USING (initial_state_type) 
-                LEFT JOIN storage_types USING (building_storage_type) 
+                LEFT JOIN storage_types USING (storage_type) 
+                LEFT JOIN plant_heating_types USING (plant_heating_type) 
+                LEFT JOIN plant_cooling_types USING (plant_cooling_type) 
                 WHERE scenario_name = ?
                 """,
                 con=database_connection,
@@ -186,22 +204,6 @@ class BuildingData(object):
             raise
         # Convert to Series for shorter indexing.
         self.scenarios = scenarios.iloc[0]
-
-        # Obtain parameters.
-        self.parameters = (
-            pd.read_sql(
-                """
-                SELECT parameter_name, parameter_value FROM parameters 
-                WHERE parameter_set IN (
-                    'constants',
-                    (SELECT parameter_set FROM scenarios WHERE scenario_name = ?)
-                )
-                """,
-                con=database_connection,
-                params=[scenario_name],
-                index_col='parameter_name'
-            ).iloc[:, 0]  # Convert to Series for shorter indexing.
-        )
 
         # Obtain surface definitions.
         self.surfaces_adiabatic = (
@@ -450,7 +452,7 @@ class BuildingData(object):
             internal_gain_schedule.index = np.vectorize(pd.Period)(internal_gain_schedule.index)
 
             # Obtain complete schedule for all weekdays.
-            # TODO: Check if '01T00:00:00' is defined for each schedule.
+            # TODO: Check if '01T00:00' is defined for each schedule.
             internal_gain_schedule_complete = []
             for internal_gain_type in internal_gain_schedule['internal_gain_type'].unique():
                 for day in range(1, 8):
@@ -468,7 +470,6 @@ class BuildingData(object):
             internal_gain_schedule_complete = pd.concat(internal_gain_schedule_complete)
 
             # Pivot complete schedule.
-            # TODO: Multiply internal gain factors.
             internal_gain_schedule_complete = internal_gain_schedule_complete.pivot(
                 columns='internal_gain_type',
                 values=['internal_gain_occupancy', 'internal_gain_appliances']
@@ -535,7 +536,6 @@ class BuildingData(object):
         if len(internal_gain_timeseries) > 0:
 
             # Pivot timeseries.
-            # TODO: Multiply internal gain factors.
             internal_gain_timeseries = internal_gain_timeseries.pivot(
                 columns='internal_gain_type',
                 values=['internal_gain_occupancy', 'internal_gain_appliances']
@@ -597,7 +597,7 @@ class BuildingData(object):
             constraint_schedule.index = np.vectorize(pd.Period)(constraint_schedule.index)
 
             # Obtain complete schedule for all weekdays.
-            # TODO: Check if '01T00:00:00' is defined for each schedule.
+            # TODO: Check if '01T00:00' is defined for each schedule.
             constraint_schedule_complete = []
             for constraint_type in constraint_schedule['constraint_type'].unique():
                 for day in range(1, 8):
@@ -659,22 +659,34 @@ class BuildingData(object):
 
         self.constraint_timeseries = constraint_schedule
 
-    def parse_parameter(
+    def parse_parameters_column(
             self,
-            parameter_string: str
+            column: np.ndarray
     ):
-        """Parse parameter string to numerical value.
+        """Parse parameters into one column of a dataframe.
+
         - Replace strings that match `parameter_name` with `parameter_value`.
         - Other strings are are directly parsed into numbers.
         - If a string doesn't match any match `parameter_name` and cannot be parsed, it is replaced with NaN.
+        - Expects `column` to be passed as `np.ndarray` rather than directly as `pd.Series` (for performance reasons).
         """
 
-        try:
-            return np.float(parameter_string)
-        except ValueError:
-            return self.parameters[parameter_string]
-        except TypeError:
-            return np.nan
+        if column.dtype == object:  # `object` represents string type.
+            if any(np.isin(column, self.parameters.index)):
+                column_values = (
+                    self.parameters.reindex(column).values
+                )
+                column_values[pd.isnull(column_values)] = (
+                    pd.to_numeric(column[pd.isnull(column_values)])
+                )
+                column = column_values
+            else:
+                column = pd.to_numeric(column)
+
+        # Explicitly parse to float, for consistent behavior independent of specific values.
+        column = column.astype(np.float)
+
+        return column
 
     def parse_parameters_dataframe(
             self,
@@ -682,30 +694,31 @@ class BuildingData(object):
             excluded_columns: list = None
     ):
         """Parse parameters into a dataframe.
-        - Applies `parse_parameter` for all string columns.
-        - Columns in `excluded_columns` are not parsed. By default this includes `_name`, `_type`, `_comment`
-          `parameter_set`, `time` columns.
+
+        - Applies `parse_parameters_column` for all string columns.
+        - Columns in `excluded_columns` are not parsed. By default this includes `_name`, `_type`, `_comment` columns.
         """
 
-        # Define excluded columns.
+        # Define excluded columns. By default, all columns containing the following strings are excluded:
+        # `_name`, `_type`, `connection`
         if excluded_columns is None:
-            excluded_columns = []
+            excluded_columns = ['parameter_set']
         excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('_name')])
         excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('_type')])
         excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('_comment')])
+        excluded_columns.extend(dataframe.columns[dataframe.columns.str.contains('timestep')])
         excluded_columns.extend(dataframe.columns[dataframe.columns.isin(
             ['parameter_set', 'time', 'time_period', 'timestep_start', 'timestep_end', 'timestep_interval', 'time_zone']
         )])
 
-        # Select non-excluded, string columns and apply `parse_parameter`.
+        # Select non-excluded, string columns and apply `parse_parameters_column`.
         selected_columns = (
             dataframe.columns[
                 ~dataframe.columns.isin(excluded_columns)
                 & (dataframe.dtypes == object)  # `object` represents string type.
             ]
         )
-        dataframe.loc[:, selected_columns] = (
-            dataframe.loc[:, selected_columns].applymap(self.parse_parameter)
-        )
+        for column in selected_columns:
+            dataframe[column] = self.parse_parameters_column(dataframe[column].values)
 
         return dataframe

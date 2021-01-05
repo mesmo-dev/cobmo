@@ -6,11 +6,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-import cobmo.building_model
-import cobmo.config
-import cobmo.optimization_problem
-import cobmo.data_interface
-import cobmo.utils
+import cobmo
 
 
 def main():
@@ -75,14 +71,14 @@ def main():
 
         figure = go.Figure()
         figure.add_trace(go.Scatter(
-            x=building_model.output_constraint_timeseries_maximum.index,
-            y=building_model.output_constraint_timeseries_maximum.loc[:, output].values,
+            x=building_model.output_maximum_timeseries.index,
+            y=building_model.output_maximum_timeseries.loc[:, output].values,
             name='Maximum',
             line=go.scatter.Line(shape='hv')
         ))
         figure.add_trace(go.Scatter(
-            x=building_model.output_constraint_timeseries_minimum.index,
-            y=building_model.output_constraint_timeseries_minimum.loc[:, output].values,
+            x=building_model.output_minimum_timeseries.index,
+            y=building_model.output_minimum_timeseries.loc[:, output].values,
             name='Minimum',
             line=go.scatter.Line(shape='hv')
         ))

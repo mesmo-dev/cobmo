@@ -1,4 +1,4 @@
-weather_type,time,ambient_air_temperature,sky_temperature,ambient_air_humidity_ratio,irradiation_horizontal,irradiation_east,irradiation_south,irradiation_west,irradiation_north
+weather_type,time,ambient_air_temperature,sky_temperature,ambient_air_absolute_humidity,irradiation_horizontal,irradiation_east,irradiation_south,irradiation_west,irradiation_north
 singapore_nus,2016-10-01T00:00:00,28.07,15.07,0.01823542,0.016,0.00944,0.00944,0.00944,0.00944
 singapore_nus,2016-10-01T01:00:00,27.18,14.18,0.016375147,0.019,0.01121,0.01121,0.01121,0.01121
 singapore_nus,2016-10-01T02:00:00,26.96,13.96,0.016044677,0.017,0.01003,0.01003,0.01003,0.01003

@@ -6,11 +6,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-import cobmo.building_model
-import cobmo.config
-import cobmo.optimization_problem
-import cobmo.data_interface
-import cobmo.utils
+import cobmo
 
 
 def main():
@@ -43,51 +39,39 @@ def main():
     building_model.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_disturbance_output_matrix.csv'))
     building_model.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
 
-    # Obtain optimization problem.
-    optimization_problem = cobmo.optimization_problem.OptimizationProblem(
-        building_model
-    )
-
     # Solve optimization problem and obtain results.
-    (
-        control_vector,
-        state_vector,
-        output_vector,
-        operation_cost,
-        investment_cost,  # Zero when running (default) operation problem.
-        storage_size  # Zero when running (default) operation problem.
-    ) = optimization_problem.solve()
+    results = building_model.optimize()
 
     # Print results.
-    print(f"operation_cost = {operation_cost}")
-    print(f"control_vector = \n{control_vector}")
-    print(f"state_vector = \n{state_vector}")
-    print(f"output_vector = \n{output_vector}")
+    print(f"control_vector = \n{results['control_vector']}")
+    print(f"state_vector = \n{results['state_vector']}")
+    print(f"output_vector = \n{results['output_vector']}")
+    print(f"operation_cost = {results['operation_cost']}")
 
-    # Store results TO CSV.
-    control_vector.to_csv(os.path.join(results_path, 'control_vector.csv'))
-    state_vector.to_csv(os.path.join(results_path, 'state_vector.csv'))
-    output_vector.to_csv(os.path.join(results_path, 'output_vector.csv'))
+    # Store results to CSV.
+    results['control_vector'].to_csv(os.path.join(results_path, 'control_vector.csv'))
+    results['state_vector'].to_csv(os.path.join(results_path, 'state_vector.csv'))
+    results['output_vector'].to_csv(os.path.join(results_path, 'output_vector.csv'))
 
     # Plot results.
     for output in building_model.outputs:
 
         figure = go.Figure()
         figure.add_trace(go.Scatter(
-            x=building_model.output_constraint_timeseries_maximum.index,
-            y=building_model.output_constraint_timeseries_maximum.loc[:, output].values,
+            x=building_model.output_maximum_timeseries.index,
+            y=building_model.output_maximum_timeseries.loc[:, output].values,
             name='Maximum',
             line=go.scatter.Line(shape='hv')
         ))
         figure.add_trace(go.Scatter(
-            x=building_model.output_constraint_timeseries_minimum.index,
-            y=building_model.output_constraint_timeseries_minimum.loc[:, output].values,
+            x=building_model.output_minimum_timeseries.index,
+            y=building_model.output_minimum_timeseries.loc[:, output].values,
             name='Minimum',
             line=go.scatter.Line(shape='hv')
         ))
         figure.add_trace(go.Scatter(
-            x=output_vector.index,
-            y=output_vector.loc[:, output].values,
+            x=results['output_vector'].index,
+            y=results['output_vector'].loc[:, output].values,
             name='Optimal',
             line=go.scatter.Line(shape='hv')
         ))

@@ -75,7 +75,7 @@ def main():
             output_vector_baseline,
             operation_cost_baseline,
             investment_cost_baseline,  # Zero when running (default) operation problem.
-            storage_size_baseline  # Zero when running (default) operation problem.
+            storage_capacity_baseline  # Zero when running (default) operation problem.
         ) = optimization_problem_baseline.solve()
 
         # Instantiate results collection variables.
@@ -92,8 +92,8 @@ def main():
         # Obtain timesteps during which the HVAC system is expected to be active (operational hours).
         timesteps = (
             building_model.timesteps[(
-                building_model.output_constraint_timeseries_maximum
-                != building_model.output_constraint_timeseries_maximum.max()
+                building_model.output_maximum_timeseries
+                != building_model.output_maximum_timeseries.max()
             ).any(axis='columns')]
         )
         timesteps = building_model.timesteps if len(timesteps) == 0 else timesteps

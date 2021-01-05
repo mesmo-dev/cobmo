@@ -102,7 +102,7 @@ class OptimizationProblem(object):
             domain=pyo.Reals
         )
         if self.problem_type == 'storage_planning':
-            self.problem.variable_storage_size = pyo.Var(
+            self.problem.variable_storage_capacity = pyo.Var(
                 [0],
                 domain=pyo.NonNegativeReals
             )
@@ -117,7 +117,7 @@ class OptimizationProblem(object):
             )
         if self.problem_type == 'storage_planning_baseline':
             # Force storage size to zero for baseline case.
-            self.problem.variable_storage_size = [0.0]
+            self.problem.variable_storage_capacity = [0.0]
         if self.problem_type == 'load_reduction':
             self.problem.variable_load_reduction = pyo.Var(
                 [0],
@@ -206,13 +206,13 @@ class OptimizationProblem(object):
                         self.problem.constraints.add(
                             self.problem.variable_output_vector[timestep, output]
                             ==
-                            self.building.output_constraint_timeseries_minimum.loc[timestep, output]
+                            self.building.output_minimum_timeseries.loc[timestep, output]
                         )
                 else:
                     self.problem.constraints.add(
                         self.problem.variable_output_vector[timestep, output]
                         >=
-                        self.building.output_constraint_timeseries_minimum.loc[timestep, output]
+                        self.building.output_minimum_timeseries.loc[timestep, output]
                     )
 
                 # Maximum.
@@ -221,25 +221,25 @@ class OptimizationProblem(object):
                     and ('state_of_charge' in output)
                 ):
                     # Storage planning constraints.
-                    if 'sensible' in self.building.building_data.scenarios['building_storage_type']:
+                    if 'sensible' in self.building.building_data.scenarios['storage_type']:
                         self.problem.constraints.add(
                             self.problem.variable_output_vector[timestep, output]
                             <=
-                            self.problem.variable_storage_size[0]
+                            self.problem.variable_storage_capacity[0]
                             * self.building.parse_parameter('water_density')  # TODO: Replace parse_parameter.
                         )
-                    elif 'battery' in self.building.building_data.scenarios['building_storage_type']:
+                    elif 'battery' in self.building.building_data.scenarios['storage_type']:
                         self.problem.constraints.add(
                             self.problem.variable_output_vector[timestep, output]
                             <=
-                            self.problem.variable_storage_size[0]
+                            self.problem.variable_storage_capacity[0]
                             * self.building.building_data.scenarios['storage_battery_depth_of_discharge']
                         )
                 else:
                     self.problem.constraints.add(
                         self.problem.variable_output_vector[timestep, output]
                         <=
-                        self.building.output_constraint_timeseries_maximum.loc[timestep, output]
+                        self.building.output_maximum_timeseries.loc[timestep, output]
                     )
 
         # Storage planning auxiliary constraints.
@@ -258,7 +258,7 @@ class OptimizationProblem(object):
 
                 # Storage existence constraint.
                 self.problem.constraints.add(
-                    self.problem.variable_storage_size[0]
+                    self.problem.variable_storage_capacity[0]
                     <=
                     self.problem.variable_storage_exists[0]
                     * 1.0e100  # Large constant as replacement for infinity.
@@ -411,9 +411,9 @@ class OptimizationProblem(object):
 
         # Investment cost (CAPEX).
         if self.problem_type == 'storage_planning':
-            if 'sensible' in self.building.building_data.scenarios['building_storage_type']:
+            if 'sensible' in self.building.building_data.scenarios['storage_type']:
                 self.investment_cost += (
-                    self.problem.variable_storage_size[0]  # In m3.
+                    self.problem.variable_storage_capacity[0]  # In m3.
                     * self.building.building_data.scenarios['storage_planning_energy_installation_cost']  # In SGD/m3.
                     # TODO: Currently, power / fixed cost are set to zero for sensible thermal storage in the database.
                     + self.problem.variable_storage_peak_power[0] / 1000.0  # W in kW.
@@ -421,9 +421,9 @@ class OptimizationProblem(object):
                     + self.problem.variable_storage_exists[0]  # No unit.
                     * self.building.building_data.scenarios['storage_planning_fixed_installation_cost']  # In SGD.
                 )
-            elif 'battery' in self.building.building_data.scenarios['building_storage_type']:
+            elif 'battery' in self.building.building_data.scenarios['storage_type']:
                 self.investment_cost += (
-                    self.problem.variable_storage_size[0] / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
+                    self.problem.variable_storage_capacity[0] / 3600.0 / 1000.0  # Ws in kWh (J in kWh).
                     * self.building.building_data.scenarios['storage_planning_energy_installation_cost']
                     # TODO: Validate unit of power cost.
                     + self.problem.variable_storage_peak_power[0] / 1000.0  # W in kW.
@@ -543,11 +543,11 @@ class OptimizationProblem(object):
 
         # Retrieve storage size.
         if self.problem_type == 'storage_planning':
-            storage_size = self.problem.variable_storage_size[0].value
+            storage_capacity = self.problem.variable_storage_capacity[0].value
         elif self.problem_type == 'storage_planning_baseline':
-            storage_size = self.problem.variable_storage_size[0]
+            storage_capacity = self.problem.variable_storage_capacity[0]
         else:
-            storage_size = None
+            storage_capacity = None
 
         # Print results compilation time for debugging.
         logger.debug("OptimizationProblem results compilation time: {:.2f} seconds".format(time.time() - time_start))
@@ -558,5 +558,5 @@ class OptimizationProblem(object):
             output_vector,
             operation_cost,
             investment_cost,
-            storage_size
+            storage_capacity
         )

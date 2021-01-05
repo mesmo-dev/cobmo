@@ -12,7 +12,7 @@ author = 'TUMCREATE'
 #   ones.
 extensions = [
     'sphinx.ext.napoleon',
-    'sphinx_markdown_tables',  # TODO: `sphinx_markdown_tables` doesn't support Readthedocs PDF properly.
+    'sphinx_markdown_tables',
     'sphinx.ext.mathjax',
     'recommonmark',
     'sphinx_multiversion'
@@ -29,6 +29,7 @@ autodoc_default_options = {
 autodoc_typehints = 'none'
 autodoc_mock_imports = [
     # Please note: Do not remove deprecated dependencies, because these are still needed for docs of previous versions.
+    'cvxpy',
     'CoolProp',
     'hvplot',
     'kaleido',

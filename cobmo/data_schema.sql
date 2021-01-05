@@ -5,17 +5,19 @@ CREATE TABLE IF NOT EXISTS blind_types (
 CREATE TABLE IF NOT EXISTS buildings (
     building_name TEXT,
     weather_type TEXT,
-    building_storage_type TEXT
+    plant_cooling_type TEXT,
+    plant_heating_type TEXT,
+    storage_type TEXT
 );
 CREATE TABLE IF NOT EXISTS constraint_schedules (
     constraint_type TEXT,
     time_period TEXT,
     minimum_air_temperature TEXT,
     maximum_air_temperature TEXT,
-    minimum_fresh_air_flow_per_area TEXT,
-    minimum_fresh_air_flow_per_person TEXT,
+    minimum_fresh_air_flow TEXT,
+    minimum_fresh_air_flow_building TEXT,
+    minimum_fresh_air_flow_occupants TEXT,
     maximum_co2_concentration TEXT,
-    minimum_fresh_air_flow_per_area_no_dcv TEXT,
     minimum_relative_humidity TEXT,
     maximum_relative_humidity TEXT
 );
@@ -56,7 +58,8 @@ CREATE TABLE IF NOT EXISTS hvac_radiator_types (
     radiator_emissivity TEXT,
     radiator_hull_conductivity TEXT,
     radiator_hull_heat_capacity TEXT,
-    radiator_fin_effectiveness TEXT
+    radiator_fin_effectiveness TEXT,
+    radiator_heating_efficiency TEXT
 );
 CREATE TABLE IF NOT EXISTS hvac_tu_types (
     hvac_tu_type TEXT,
@@ -72,8 +75,7 @@ CREATE TABLE IF NOT EXISTS initial_state_types (
     initial_surface_temperature TEXT,
     initial_co2_concentration TEXT,
     initial_absolute_humidity TEXT,
-    initial_sensible_thermal_storage_state_of_charge TEXT,
-    initial_battery_storage_state_of_charge TEXT
+    initial_storage_state_of_charge TEXT
 );
 CREATE TABLE IF NOT EXISTS internal_gain_schedules (
     internal_gain_type TEXT,
@@ -90,8 +92,11 @@ CREATE TABLE IF NOT EXISTS internal_gain_timeseries (
 CREATE TABLE IF NOT EXISTS internal_gain_types (
     internal_gain_type TEXT,
     internal_gain_definition_type TEXT,
-    internal_gain_occupancy_factor TEXT,
-    internal_gain_appliances_factor TEXT
+    occupancy_density TEXT,
+    occupancy_heat_gain TEXT,
+    occupancy_co2_gain TEXT,
+    occupancy_humidity_gain TEXT,
+    appliances_heat_gain TEXT
 );
 CREATE TABLE IF NOT EXISTS linearization_types (
     linearization_type TEXT,
@@ -99,15 +104,12 @@ CREATE TABLE IF NOT EXISTS linearization_types (
     linearization_zone_air_temperature_cool TEXT,
     linearization_surface_temperature TEXT,
     linearization_exterior_surface_temperature TEXT,
-    linearization_internal_gain_occupancy TEXT,
-    linearization_internal_gain_appliances TEXT,
     linearization_ambient_air_temperature TEXT,
     linearization_sky_temperature TEXT,
-    linearization_ambient_air_humidity_ratio TEXT,
-    linearization_zone_air_humidity_ratio TEXT,
-    linearization_irradiation TEXT,
-    linearization_co2_concentration TEXT,
-    linearization_ventilation_rate_per_square_meter TEXT
+    linearization_zone_air_absolute_humidity TEXT,
+    linearization_ambient_air_absolute_humidity TEXT,
+    linearization_zone_air_co2_concentration TEXT,
+    linearization_zone_fresh_air_flow TEXT
 );
 CREATE TABLE IF NOT EXISTS parameters (
     parameter_set TEXT,
@@ -116,35 +118,38 @@ CREATE TABLE IF NOT EXISTS parameters (
     parameter_unit TEXT,
     parameter_comment TEXT
 );
+CREATE TABLE IF NOT EXISTS plant_cooling_types (
+    plant_cooling_type TEXT,
+    plant_cooling_efficiency TEXT
+);
+CREATE TABLE IF NOT EXISTS plant_heating_types (
+    plant_heating_type TEXT,
+    plant_heating_efficiency TEXT
+);
 CREATE TABLE IF NOT EXISTS scenarios (
     scenario_name TEXT,
     building_name TEXT,
     parameter_set TEXT,
     linearization_type TEXT,
     initial_state_type TEXT,
-    demand_controlled_ventilation_type TEXT,
-    co2_model_type TEXT,
-    humidity_model_type TEXT,
     price_type TEXT,
     timestep_start TEXT,
     timestep_end TEXT,
     timestep_interval TEXT
 );
 CREATE TABLE IF NOT EXISTS storage_types (
-    building_storage_type TEXT,
-    storage_size TEXT,
+    storage_type TEXT,
+    storage_commodity_type TEXT,
+    storage_capacity TEXT,
     storage_round_trip_efficiency TEXT,
     storage_battery_depth_of_discharge TEXT,
     storage_sensible_temperature_delta TEXT,
-    storage_lifetime TEXT,
-    storage_planning_energy_installation_cost TEXT,
-    storage_planning_power_installation_cost TEXT,
-    storage_planning_fixed_installation_cost TEXT
+    storage_self_discharge_rate TEXT
 );
 CREATE TABLE IF NOT EXISTS surface_types (
     surface_type TEXT,
     heat_capacity TEXT,
-    thermal_resistance_surface TEXT,
+    heat_transfer_coefficient_surface_conduction TEXT,
     absorptivity TEXT,
     emissivity TEXT,
     window_type TEXT,
@@ -188,7 +193,7 @@ CREATE TABLE IF NOT EXISTS weather_timeseries (
     time TEXT,
     ambient_air_temperature REAL,
     sky_temperature REAL,
-    ambient_air_humidity_ratio REAL,
+    ambient_air_absolute_humidity REAL,
     irradiation_horizontal REAL,
     irradiation_east REAL,
     irradiation_south REAL,
@@ -213,7 +218,9 @@ CREATE TABLE IF NOT EXISTS zone_types (
     hvac_radiator_type TEXT,
     hvac_ahu_type TEXT,
     hvac_tu_type TEXT,
-    constraint_type TEXT
+    constraint_type TEXT,
+    fresh_air_flow_control_type TEXT,
+    humidity_control_type TEXT
 );
 CREATE TABLE IF NOT EXISTS zones (
     building_name TEXT,
