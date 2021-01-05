@@ -338,7 +338,7 @@ Surface type characteristics.
 | --- |:---:| --- |
 | `surface_type` | | Unique type identifier. |
 | `heat_capacity` | J/(m³K) | Specific heat capacity. |
-| `thermal_resistance_surface` | m²K/W | Specific thermal resistance. |
+| `heat_transfer_coefficient_surface_conduction` | W/m²K | Conductive internal heat transfer coefficient. |
 | `absorptivity` | - | Absorptivity factor / irradiation gain coefficient (absorbed irradiation / incident irradiation). |
 | `emissivity` | - | Emissivity factor. |
 | `window_type` | | Type identifier as defined in `window_types`. |

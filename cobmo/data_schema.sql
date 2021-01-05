@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS storage_types (
 CREATE TABLE IF NOT EXISTS surface_types (
     surface_type TEXT,
     heat_capacity TEXT,
-    thermal_resistance_surface TEXT,
+    heat_transfer_coefficient_surface_conduction TEXT,
     absorptivity TEXT,
     emissivity TEXT,
     window_type TEXT,

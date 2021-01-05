@@ -834,7 +834,6 @@ class BuildingModel(object):
 
         def define_heat_transfer_surfaces_exterior():
             """Thermal model: Exterior surfaces"""
-            # TODO: Rename thermal_resistance_surface
             # TODO: Exterior window transmission factor
 
             for surface_name, surface_data in building_data.surfaces_exterior.iterrows():
@@ -856,7 +855,7 @@ class BuildingModel(object):
                             )
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -880,7 +879,7 @@ class BuildingModel(object):
                             )
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -901,7 +900,7 @@ class BuildingModel(object):
                             )
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -923,7 +922,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -955,7 +954,7 @@ class BuildingModel(object):
                                 )
                                 / (
                                     2.0
-                                    * surface_data['thermal_resistance_surface'] ** (- 1)
+                                    * surface_data['heat_transfer_coefficient_surface_conduction']
                                 )
                             ) ** (- 1)
                             / surface_data['heat_capacity']
@@ -975,7 +974,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -994,7 +993,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -1026,7 +1025,7 @@ class BuildingModel(object):
                                 )
                                 / (
                                     2.0
-                                    * surface_data['thermal_resistance_surface'] ** (- 1)
+                                    * surface_data['heat_transfer_coefficient_surface_conduction']
                                 )
                             ) ** (- 1))
                             / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
@@ -1045,7 +1044,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
@@ -1065,7 +1064,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
@@ -1092,7 +1091,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_surface_ground']
                                 + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (surface_data['thermal_resistance_surface'] ** (- 1))
+                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
@@ -1119,7 +1118,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_surface_ground']
                                 + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (surface_data['thermal_resistance_surface'] ** (- 1))
+                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
@@ -1143,7 +1142,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_surface_ground']
                                 + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (surface_data['thermal_resistance_surface'] ** (- 1))
+                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
@@ -1164,7 +1163,7 @@ class BuildingModel(object):
                             + 1.0
                             / building_data.parameters['heat_transfer_coefficient_interior_convection']
                             + 1.0
-                            / (surface_data['thermal_resistance_surface'] ** (- 1))
+                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
@@ -1199,7 +1198,7 @@ class BuildingModel(object):
                                     + surface_data['heat_transfer_coefficient_surface_ground']
                                     + surface_data['heat_transfer_coefficient_surface_sky']
                                 )
-                                / (surface_data['thermal_resistance_surface'] ** (- 1))
+                                / (surface_data['heat_transfer_coefficient_surface_conduction'])
                             ) ** (- 1))
                             / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                         )
@@ -1369,7 +1368,7 @@ class BuildingModel(object):
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / (
                                         2.0
-                                        * surface_data['thermal_resistance_surface'] ** (- 1)
+                                        * surface_data['heat_transfer_coefficient_surface_conduction']
                                     )
                                 ) ** (- 1)
                                 / surface_data['heat_capacity']
@@ -1387,7 +1386,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / (
                                     2.0
-                                    * surface_data['thermal_resistance_surface'] ** (- 1)
+                                    * surface_data['heat_transfer_coefficient_surface_conduction']
                                 )
                             ) ** (- 1)
                             / surface_data['heat_capacity']
@@ -1404,7 +1403,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / (
                                     2.0
-                                    * surface_data['thermal_resistance_surface'] ** (- 1)
+                                    * surface_data['heat_transfer_coefficient_surface_conduction']
                                 )
                             ) ** (- 1)
                             / surface_data['heat_capacity']
@@ -1434,7 +1433,7 @@ class BuildingModel(object):
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / (
                                         2.0
-                                        * surface_data['thermal_resistance_surface'] ** (- 1)
+                                        * surface_data['heat_transfer_coefficient_surface_conduction']
                                     )
                                 ) ** (- 1))
                                 / building_data.zones.at[zone_name, 'heat_capacity']
@@ -1451,7 +1450,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / (
                                     2.0
-                                    * surface_data['thermal_resistance_surface'] ** (- 1)
+                                    * surface_data['heat_transfer_coefficient_surface_conduction']
                                 )
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
@@ -1469,7 +1468,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / (
                                     2.0
-                                    * surface_data['thermal_resistance_surface'] ** (- 1)
+                                    * surface_data['heat_transfer_coefficient_surface_conduction']
                                 )
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
@@ -1528,7 +1527,7 @@ class BuildingModel(object):
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
-                                    / surface_data['thermal_resistance_surface'] ** (- 1)
+                                    / surface_data['heat_transfer_coefficient_surface_conduction']
                                 ) ** (- 1)
                                 / building_data.zones.at[zone_name, 'heat_capacity']
                             )
@@ -1544,7 +1543,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / building_data.parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / surface_data['thermal_resistance_surface'] ** (- 1)
+                                / surface_data['heat_transfer_coefficient_surface_conduction']
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
                         )
@@ -1561,7 +1560,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / building_data.parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / surface_data['thermal_resistance_surface'] ** (- 1)
+                                / surface_data['heat_transfer_coefficient_surface_conduction']
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
                         )
@@ -1588,7 +1587,7 @@ class BuildingModel(object):
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
-                                    / surface_data['thermal_resistance_surface'] ** (- 1)
+                                    / surface_data['heat_transfer_coefficient_surface_conduction']
                                 ) ** (- 1))
                                 / building_data.zones.at[zone_name, 'heat_capacity']
                             )
@@ -1744,7 +1743,7 @@ class BuildingModel(object):
                                 )
                                 / (
                                     2.0
-                                    * surface_data['thermal_resistance_surface'] ** (- 1)
+                                    * surface_data['heat_transfer_coefficient_surface_conduction']
                                 )
                             ) ** (- 1)
                             / surface_data['heat_capacity']
@@ -1764,7 +1763,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -1783,7 +1782,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -1815,7 +1814,7 @@ class BuildingModel(object):
                                 )
                                 / (
                                     2.0
-                                    * surface_data['thermal_resistance_surface'] ** (- 1)
+                                    * surface_data['heat_transfer_coefficient_surface_conduction']
                                 )
                             ) ** (- 1))
                             / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
@@ -1834,7 +1833,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
@@ -1854,7 +1853,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
@@ -3335,7 +3334,7 @@ class BuildingModel(object):
                                     )
                                     / (
                                         2.0
-                                        * surface_data['thermal_resistance_surface'] ** (- 1)
+                                        * surface_data['heat_transfer_coefficient_surface_conduction']
                                     )
                                 ) ** (- 1)
                             )
@@ -3353,7 +3352,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                     )
@@ -3371,7 +3370,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['thermal_resistance_surface'] ** (- 1)
+                                * surface_data['heat_transfer_coefficient_surface_conduction']
                             )
                         ) ** (- 1)
                     )
@@ -3396,7 +3395,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_surface_ground']
                                 + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (surface_data['thermal_resistance_surface'] ** (- 1))
+                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
                         ) ** (- 1)
                     )
                     disturbance_output_matrix[
@@ -3421,7 +3420,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_surface_ground']
                                 + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (surface_data['thermal_resistance_surface'] ** (- 1))
+                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
                         ) ** (- 1)
                     )
                     disturbance_output_matrix[
@@ -3443,7 +3442,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_surface_ground']
                                 + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (surface_data['thermal_resistance_surface'] ** (- 1))
+                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
                         ) ** (- 1)
                     )
                     state_output_matrix[
@@ -3462,7 +3461,7 @@ class BuildingModel(object):
                             + 1.0
                             / building_data.parameters['heat_transfer_coefficient_interior_convection']
                             + 1.0
-                            / (surface_data['thermal_resistance_surface'] ** (- 1))
+                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
                         ) ** (- 1)
                     )
                     for zone_exterior_surface_name, zone_exterior_surface_data in building_data.surfaces_exterior[
@@ -3493,7 +3492,7 @@ class BuildingModel(object):
                                     + surface_data['heat_transfer_coefficient_surface_ground']
                                     + surface_data['heat_transfer_coefficient_surface_sky']
                                 )
-                                / (surface_data['thermal_resistance_surface'] ** (- 1))
+                                / (surface_data['heat_transfer_coefficient_surface_conduction'])
                             ) ** (- 1))
                         )
 
