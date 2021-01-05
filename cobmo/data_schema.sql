@@ -58,7 +58,8 @@ CREATE TABLE IF NOT EXISTS hvac_radiator_types (
     radiator_emissivity TEXT,
     radiator_hull_conductivity TEXT,
     radiator_hull_heat_capacity TEXT,
-    radiator_fin_effectiveness TEXT
+    radiator_fin_effectiveness TEXT,
+    radiator_heating_efficiency TEXT
 );
 CREATE TABLE IF NOT EXISTS hvac_tu_types (
     hvac_tu_type TEXT,
