@@ -265,7 +265,6 @@ class BuildingData(object):
                 SELECT * FROM zones 
                 JOIN zone_types USING (zone_type) 
                 LEFT JOIN internal_gain_types USING (internal_gain_type) 
-                LEFT JOIN blind_types USING (blind_type) 
                 LEFT JOIN hvac_generic_types USING (hvac_generic_type) 
                 LEFT JOIN hvac_radiator_types USING (hvac_radiator_type) 
                 LEFT JOIN hvac_ahu_types USING (hvac_ahu_type) 

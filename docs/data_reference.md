@@ -178,7 +178,6 @@ Zone type characteristics.
 | `heat_capacity` | J/(m³K) | Specific heat capacity. |
 | `infiltration_rate` | 1/h | Infiltration rate. |
 | `internal_gain_type` | | Type identifier as defined in `internal_gain_types`. |
-| `blind_type` | | Type identifier as defined in `blind_types`. *Currently not used.* |
 | `hvac_generic_type` | | Type identifier as defined in `hvac_generic_types`. |
 | `hvac_radiator_type` | | Type identifier as defined in `hvac_radiator_types`. |
 | `hvac_ahu_type` | | Type identifier as defined in `hvac_ahu_types`. |
@@ -277,15 +276,6 @@ Terminal unit (TU) set points and characteristics.
 | `radiator_hull_heat_capacity` | J/m³ | Radiator hull material heat capacity. |
 | `radiator_fin_effectiveness` | - | Radiator fin effectiveness. |
 | `radiator_heating_efficiency` | - | Heating efficiency, to consider losses in the radiator heat supply. This is not the efficiency of the heating plant, which is instead defined in `plant_heating_types`. |
-
-### `blind_types`
-
-Window blind characteristics. *Currently not used.*
-
-| Column | Unit | Description |
-| --- |:---:| --- |
-| `blind_type` | | Unique type identifier. |
-| `blind_efficiency` | - | Blind efficiency (absorbed irradiation / incident irradiation). |
 
 ### `constraint_schedules`
 

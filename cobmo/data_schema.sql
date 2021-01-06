@@ -1,7 +1,3 @@
-CREATE TABLE IF NOT EXISTS blind_types (
-    blind_type TEXT,
-    blind_efficiency TEXT
-);
 CREATE TABLE IF NOT EXISTS buildings (
     building_name TEXT,
     weather_type TEXT,
@@ -212,7 +208,6 @@ CREATE TABLE IF NOT EXISTS zone_types (
     heat_capacity TEXT,
     infiltration_rate TEXT,
     internal_gain_type TEXT,
-    blind_type TEXT,
     hvac_generic_type TEXT,
     hvac_radiator_type TEXT,
     hvac_ahu_type TEXT,
