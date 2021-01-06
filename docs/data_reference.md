@@ -356,7 +356,7 @@ Surface type characteristics.
 | --- |:---:| --- |
 | `surface_type` | | Unique type identifier. |
 | `heat_capacity` | J/(m³K) | Specific heat capacity. |
-| `heat_transfer_coefficient_surface_conduction` | W/m²K | Conductive internal heat transfer coefficient. |
+| `heat_transfer_coefficient_surface_conduction` | W/(m²K) | Conductive internal heat transfer coefficient. |
 | `absorptivity` | - | Absorptivity factor / irradiation gain coefficient (absorbed irradiation / incident irradiation). |
 | `emissivity` | - | Emissivity factor. |
 | `window_type` | | Type identifier as defined in `window_types`. |
@@ -370,6 +370,6 @@ Window characteristics.
 | Column | Unit | Description |
 | --- |:---:| --- |
 | `window_type` | | Unique type identifier. |
-| `thermal_resistance_window` | m²K/W | Specific thermal resistance. |
+| `heat_transfer_coefficient_window_conduction` | W/(m²K) | Conductive internal heat transfer coefficient. |
 | `absorptivity_window` | - | Irradiation gain coefficient (absorbed irradiation / incident irradiation). |
 | `emissivity_window` | - | Emissivity factor. |

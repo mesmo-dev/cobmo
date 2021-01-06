@@ -184,7 +184,7 @@ CREATE TABLE IF NOT EXISTS surfaces_interior (
 );
 CREATE TABLE IF NOT EXISTS window_types (
     window_type TEXT,
-    thermal_resistance_window TEXT,
+    heat_transfer_coefficient_window_conduction TEXT,
     absorptivity_window TEXT,
     emissivity_window TEXT
 );
