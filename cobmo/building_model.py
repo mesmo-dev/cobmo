@@ -3700,7 +3700,6 @@ class BuildingModel(object):
         define_heat_transfer_hvac_ahu()
         define_heat_transfer_hvac_tu()
         define_co2_transfer()
-        define_heat_transfer_window_air_flow()
         define_humidity_transfer()
         define_storage_state_of_charge()
 
@@ -3709,7 +3708,6 @@ class BuildingModel(object):
         define_output_zone_co2_concentration()
         define_output_zone_humidity()
         define_output_internal_gain_power()
-        define_output_window_air_flow()
         define_output_hvac_generic()
         define_output_hvac_radiator_power()
         define_output_hvac_ahu_power()

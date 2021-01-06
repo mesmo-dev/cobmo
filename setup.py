@@ -24,7 +24,5 @@ setuptools.setup(
         'parameterized',  # for tests.
         'plotly',
         'pvlib',
-        'pyomo',
-        'scipy',
-        'seaborn'
+        'scipy'
     ])

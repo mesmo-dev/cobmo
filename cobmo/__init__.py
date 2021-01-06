@@ -3,6 +3,5 @@
 import cobmo.building_model
 import cobmo.config
 import cobmo.data_interface
-import cobmo.optimization_problem
 import cobmo.plots
 import cobmo.utils

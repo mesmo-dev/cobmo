@@ -4,8 +4,6 @@ import cvxpy as cp
 from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
 import datetime
 import logging
-import matplotlib.pyplot as plt
-import matplotlib.ticker
 import numpy as np
 import os
 import pandas as pd
@@ -14,7 +12,6 @@ import plotly.io as pio
 import pvlib
 import re
 import scipy.sparse
-import seaborn
 import subprocess
 import sys
 import time
@@ -485,35 +482,12 @@ def calculate_tank_diameter_height(
     )
 
 
-def get_battery_parameters(
-        battery_parameters_path=(
-            os.path.join(cobmo.config.config['paths']['data'], 'supplementary_data', 'storage', 'battery_storage_parameters.csv')
-        ),
-        cost_conversion_factor=1.37  # USD to SGD (as of October 2019).
-):
-    """Load battery parameters from CSV, apply `cost_conversion_factor` to cost columns and return as dataframe."""
-
-    # Load battery parameters from CSV.
-    battery_parameters = pd.read_csv(battery_parameters_path, index_col=[0, 1, 2])
-
-    # Apply cost conversion factor.
-    for column in battery_parameters.columns:
-        if 'cost' in column:
-            battery_parameters[column] *= cost_conversion_factor
-
-    return battery_parameters
-
-
 def calculate_discounted_payback_time(
         lifetime,
         investment_cost,
         operation_cost,
         operation_cost_baseline,
-        interest_rate=0.06,
-        investment_type='',
-        save_plots=False,
-        results_path=cobmo.config.config['paths']['results'],
-        file_id=''
+        interest_rate=0.06
 ):
     """Calculate simple / discounted payback time in years."""
 
@@ -544,90 +518,8 @@ def calculate_discounted_payback_time(
 
             # Discontinue calculations if payback is not reached within lifetime, return None.
             if year >= lifetime:
-                print("Discounted payback time surpassed the technology lifetime.")
                 year = None
-                break
         discounted_payback_time = year
-
-        # TODO: Move plotting functionality to plots.
-        if save_plots:
-            # Prepare arrays for plotting.
-            if discounted_payback_time is not None:
-                plot_array_size = discounted_payback_time
-            else:
-                plot_array_size = int(np.ceil(lifetime))
-            years_array = np.arange(1, plot_array_size + 1)
-            investment_cost_array = investment_cost * np.ones(plot_array_size)
-            cumulative_discounted_savings = cumulative_discounted_savings[1:plot_array_size + 1]
-            annual_discounted_savings = annual_discounted_savings[1:plot_array_size + 1]
-
-            # Define plot settings.
-            seaborn.set()
-            plt.rcParams['font.serif'] = 'Arial'
-            plt.rcParams['font.family'] = 'serif'
-
-            # Create plot.
-            (fig, ax) = plt.subplots(1, 1)
-            if simple_payback_time is not None:
-                ax.scatter(
-                    simple_payback_time,
-                    investment_cost / 1000.0,
-                    marker='o',
-                    facecolors='none',
-                    edgecolors='r',
-                    s=100,
-                    label="Simple payback",
-                    zorder=10
-                )
-            ax.plot(
-                years_array,
-                investment_cost_array / 1000.0,
-                linestyle='--',
-                color='black',
-                alpha=0.7,
-                label="Investment"
-            )
-            ax.plot(
-                years_array,
-                annual_discounted_savings / 1000.0,
-                linestyle='-',
-                color='#64BB8E',
-                marker='^',
-                alpha=1.0,
-                label="Annual discounted savings"
-            )
-            ax.plot(
-                years_array,
-                cumulative_discounted_savings / 1000.0,
-                linestyle='-',
-                color='#0074BD',
-                marker='s',
-                alpha=1.0,
-                label="Cumulative discounted savings"
-            )
-
-            # Modify plot appearance.
-            ax.set_ylabel("Cost in thousand SGD")
-            ax.set_xlabel("Time in years")
-            ax.set_ylim(bottom=0.0)
-            ax.xaxis.set_major_locator(matplotlib.ticker.MaxNLocator(integer=True))
-            ax.grid(True, which='both')
-            ax.grid(which='minor', alpha=0.2)
-            fig.legend(loc='center right', fontsize=9)
-
-            # Modify plot title.
-            if discounted_payback_time is None:
-                title = "Not paying back"
-            else:
-                title = "Payback year: {:d}".format(discounted_payback_time)
-            if 'sensible_thermal_storage' in investment_type:
-                title = "Sensible thermal storage | " + title
-            elif 'battery_storage' in investment_type:
-                title = "Battery storage | " + title
-            fig.suptitle(title)
-
-            # Save plot.
-            plt.savefig(os.path.join(results_path, 'payback' + file_id + '.svg'))
 
     return (
         simple_payback_time,

@@ -9,11 +9,6 @@
 ``` automodule:: cobmo.building_model
 ```
 
-## `cobmo.optimization_problem`
-
-``` automodule:: cobmo.optimization_problem
-```
-
 ## `cobmo.data_interface`
 
 ``` automodule:: cobmo.data_interface
