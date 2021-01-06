@@ -149,9 +149,9 @@ CREATE TABLE IF NOT EXISTS storage_types (
 CREATE TABLE IF NOT EXISTS surface_types (
     surface_type TEXT,
     heat_capacity TEXT,
-    heat_transfer_coefficient_surface_conduction TEXT,
-    absorptivity TEXT,
-    emissivity TEXT,
+    heat_transfer_coefficient_conduction_surface TEXT,
+    absorptivity_surface TEXT,
+    emissivity_surface TEXT,
     window_type TEXT,
     window_wall_ratio TEXT,
     sky_view_factor TEXT
@@ -184,7 +184,7 @@ CREATE TABLE IF NOT EXISTS surfaces_interior (
 );
 CREATE TABLE IF NOT EXISTS window_types (
     window_type TEXT,
-    heat_transfer_coefficient_window_conduction TEXT,
+    heat_transfer_coefficient_conduction_window TEXT,
     absorptivity_window TEXT,
     emissivity_window TEXT
 );

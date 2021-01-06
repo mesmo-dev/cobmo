@@ -552,7 +552,7 @@ class BuildingModel(object):
                     ).sum()
                 )
                 building_data.zones.at[zone_name, 'zone_surfaces_wall_emissivity'] = (
-                    zone_surfaces['emissivity'].mean()
+                    zone_surfaces['emissivity_surface'].mean()
                 )
                 # TODO: Ignore surfaces with no windows.
                 building_data.zones.at[zone_name, 'zone_surfaces_window_emissivity'] = (
@@ -590,7 +590,7 @@ class BuildingModel(object):
                 ] = (
                     4.0
                     * building_data.parameters['stefan_boltzmann_constant']
-                    * surface_data['emissivity']
+                    * surface_data['emissivity_surface']
                     * surface_data['sky_view_factor']
                     * (
                         building_data.scenarios['linearization_exterior_surface_temperature']
@@ -606,7 +606,7 @@ class BuildingModel(object):
                 ] = (
                     4.0
                     * building_data.parameters['stefan_boltzmann_constant']
-                    * surface_data['emissivity']
+                    * surface_data['emissivity_surface']
                     * (1.0 - surface_data['sky_view_factor'])
                     * (
                         building_data.scenarios['linearization_exterior_surface_temperature']
@@ -839,7 +839,7 @@ class BuildingModel(object):
                         f'{surface_name}_temperature',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
-                        surface_data['absorptivity']
+                        surface_data['absorptivity_surface']
                         * surface_data['surface_area']
                         * (1 - surface_data['window_wall_ratio'])
                         * (
@@ -851,7 +851,7 @@ class BuildingModel(object):
                             )
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -875,7 +875,7 @@ class BuildingModel(object):
                             )
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -896,7 +896,7 @@ class BuildingModel(object):
                             )
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -918,7 +918,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -940,7 +940,7 @@ class BuildingModel(object):
                                 * zone_exterior_surface_data['window_wall_ratio']
                                 / building_data.zones.at[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * surface_data['absorptivity']
+                            * surface_data['absorptivity_surface']
                             * surface_data['surface_area']
                             * (1 - surface_data['window_wall_ratio'])
                             * (
@@ -950,7 +950,7 @@ class BuildingModel(object):
                                 )
                                 / (
                                     2.0
-                                    * surface_data['heat_transfer_coefficient_surface_conduction']
+                                    * surface_data['heat_transfer_coefficient_conduction_surface']
                                 )
                             ) ** (- 1)
                             / surface_data['heat_capacity']
@@ -970,7 +970,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -989,7 +989,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -1011,7 +1011,7 @@ class BuildingModel(object):
                                 * zone_exterior_surface_data['window_wall_ratio']
                                 / building_data.zones.at[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * surface_data['absorptivity']
+                            * surface_data['absorptivity_surface']
                             * surface_data['surface_area']
                             * (1 - surface_data['window_wall_ratio'])
                             * (1.0 - (
@@ -1021,7 +1021,7 @@ class BuildingModel(object):
                                 )
                                 / (
                                     2.0
-                                    * surface_data['heat_transfer_coefficient_surface_conduction']
+                                    * surface_data['heat_transfer_coefficient_conduction_surface']
                                 )
                             ) ** (- 1))
                             / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
@@ -1040,7 +1040,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
@@ -1060,7 +1060,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
@@ -1071,7 +1071,7 @@ class BuildingModel(object):
                         surface_data['zone_name'] + '_temperature',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
-                        surface_data['absorptivity']
+                        surface_data['absorptivity_surface']
                         * surface_data['surface_area']
                         * (1 - surface_data['window_wall_ratio'])
                         * (
@@ -1087,7 +1087,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_surface_ground']
                                 + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
+                            / (surface_data['heat_transfer_coefficient_conduction_surface'])
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
@@ -1114,7 +1114,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_surface_ground']
                                 + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
+                            / (surface_data['heat_transfer_coefficient_conduction_surface'])
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
@@ -1138,7 +1138,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_surface_ground']
                                 + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
+                            / (surface_data['heat_transfer_coefficient_conduction_surface'])
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
@@ -1159,7 +1159,7 @@ class BuildingModel(object):
                             + 1.0
                             / building_data.parameters['heat_transfer_coefficient_interior_convection']
                             + 1.0
-                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
+                            / (surface_data['heat_transfer_coefficient_conduction_surface'])
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
@@ -1178,7 +1178,7 @@ class BuildingModel(object):
                                 * zone_exterior_surface_data['window_wall_ratio']
                                 / building_data.zones.at[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * surface_data['absorptivity']
+                            * surface_data['absorptivity_surface']
                             * surface_data['surface_area']
                             * (1 - surface_data['window_wall_ratio'])
                             * (1.0 - (
@@ -1194,7 +1194,7 @@ class BuildingModel(object):
                                     + surface_data['heat_transfer_coefficient_surface_ground']
                                     + surface_data['heat_transfer_coefficient_surface_sky']
                                 )
-                                / (surface_data['heat_transfer_coefficient_surface_conduction'])
+                                / (surface_data['heat_transfer_coefficient_conduction_surface'])
                             ) ** (- 1))
                             / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                         )
@@ -1222,7 +1222,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_window_ground']
                                 + surface_data['heat_transfer_coefficient_window_sky']
                             )
-                            / surface_data['heat_transfer_coefficient_window_conduction']
+                            / surface_data['heat_transfer_coefficient_conduction_window']
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
@@ -1249,7 +1249,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_window_ground']
                                 + surface_data['heat_transfer_coefficient_window_sky']
                             )
-                            / surface_data['heat_transfer_coefficient_window_conduction']
+                            / surface_data['heat_transfer_coefficient_conduction_window']
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
@@ -1273,7 +1273,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_window_ground']
                                 + surface_data['heat_transfer_coefficient_window_sky']
                             )
-                            / surface_data['heat_transfer_coefficient_window_conduction']
+                            / surface_data['heat_transfer_coefficient_conduction_window']
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
@@ -1294,7 +1294,7 @@ class BuildingModel(object):
                             + 1.0
                             / building_data.parameters['heat_transfer_coefficient_interior_convection']
                             + 1.0
-                            / surface_data['heat_transfer_coefficient_window_conduction']
+                            / surface_data['heat_transfer_coefficient_conduction_window']
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                     )
@@ -1329,7 +1329,7 @@ class BuildingModel(object):
                                     + surface_data['heat_transfer_coefficient_window_ground']
                                     + surface_data['heat_transfer_coefficient_window_sky']
                                 )
-                                / surface_data['heat_transfer_coefficient_window_conduction']
+                                / surface_data['heat_transfer_coefficient_conduction_window']
                             ) ** (- 1))
                             / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
                         )
@@ -1356,7 +1356,7 @@ class BuildingModel(object):
                                     * zone_exterior_surface_data['window_wall_ratio']
                                     / building_data.zones.at[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * surface_data['absorptivity']
+                                * surface_data['absorptivity_surface']
                                 * surface_data['surface_area']
                                 * (1 - surface_data['window_wall_ratio'])
                                 * (
@@ -1364,7 +1364,7 @@ class BuildingModel(object):
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / (
                                         2.0
-                                        * surface_data['heat_transfer_coefficient_surface_conduction']
+                                        * surface_data['heat_transfer_coefficient_conduction_surface']
                                     )
                                 ) ** (- 1)
                                 / surface_data['heat_capacity']
@@ -1382,7 +1382,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / (
                                     2.0
-                                    * surface_data['heat_transfer_coefficient_surface_conduction']
+                                    * surface_data['heat_transfer_coefficient_conduction_surface']
                                 )
                             ) ** (- 1)
                             / surface_data['heat_capacity']
@@ -1399,7 +1399,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / (
                                     2.0
-                                    * surface_data['heat_transfer_coefficient_surface_conduction']
+                                    * surface_data['heat_transfer_coefficient_conduction_surface']
                                 )
                             ) ** (- 1)
                             / surface_data['heat_capacity']
@@ -1421,7 +1421,7 @@ class BuildingModel(object):
                                     * zone_exterior_surface_data['window_wall_ratio']
                                     / building_data.zones.at[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * surface_data['absorptivity']
+                                * surface_data['absorptivity_surface']
                                 * surface_data['surface_area']
                                 * (1 - surface_data['window_wall_ratio'])
                                 * (1.0 - (
@@ -1429,7 +1429,7 @@ class BuildingModel(object):
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / (
                                         2.0
-                                        * surface_data['heat_transfer_coefficient_surface_conduction']
+                                        * surface_data['heat_transfer_coefficient_conduction_surface']
                                     )
                                 ) ** (- 1))
                                 / building_data.zones.at[zone_name, 'heat_capacity']
@@ -1446,7 +1446,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / (
                                     2.0
-                                    * surface_data['heat_transfer_coefficient_surface_conduction']
+                                    * surface_data['heat_transfer_coefficient_conduction_surface']
                                 )
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
@@ -1464,7 +1464,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / (
                                     2.0
-                                    * surface_data['heat_transfer_coefficient_surface_conduction']
+                                    * surface_data['heat_transfer_coefficient_conduction_surface']
                                 )
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
@@ -1515,7 +1515,7 @@ class BuildingModel(object):
                                     * zone_exterior_surface_data['window_wall_ratio']
                                     / zone_adjacent_surface_area
                                 )  # Considers the share at the respective surface
-                                * surface_data['absorptivity']
+                                * surface_data['absorptivity_surface']
                                 * surface_data['surface_area']
                                 * (1 - surface_data['window_wall_ratio'])
                                 * (
@@ -1523,7 +1523,7 @@ class BuildingModel(object):
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
-                                    / surface_data['heat_transfer_coefficient_surface_conduction']
+                                    / surface_data['heat_transfer_coefficient_conduction_surface']
                                 ) ** (- 1)
                                 / building_data.zones.at[zone_name, 'heat_capacity']
                             )
@@ -1539,7 +1539,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / building_data.parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / surface_data['heat_transfer_coefficient_surface_conduction']
+                                / surface_data['heat_transfer_coefficient_conduction_surface']
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
                         )
@@ -1556,7 +1556,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / building_data.parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / surface_data['heat_transfer_coefficient_surface_conduction']
+                                / surface_data['heat_transfer_coefficient_conduction_surface']
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
                         )
@@ -1575,7 +1575,7 @@ class BuildingModel(object):
                                     * zone_exterior_surface_data['window_wall_ratio']
                                     / building_data.zones.at[zone_name, 'zone_surfaces_wall_area']
                                 )  # Considers the share at the respective surface
-                                * surface_data['absorptivity']
+                                * surface_data['absorptivity_surface']
                                 * surface_data['surface_area']
                                 * (1 - surface_data['window_wall_ratio'])
                                 * (1.0 - (
@@ -1583,7 +1583,7 @@ class BuildingModel(object):
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
-                                    / surface_data['heat_transfer_coefficient_surface_conduction']
+                                    / surface_data['heat_transfer_coefficient_conduction_surface']
                                 ) ** (- 1))
                                 / building_data.zones.at[zone_name, 'heat_capacity']
                             )
@@ -1643,7 +1643,7 @@ class BuildingModel(object):
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
-                                    / surface_data['heat_transfer_coefficient_window_conduction']
+                                    / surface_data['heat_transfer_coefficient_conduction_window']
                                 ) ** (- 1)
                                 / building_data.zones.at[zone_name, 'heat_capacity']
                             )
@@ -1659,7 +1659,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / building_data.parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / surface_data['heat_transfer_coefficient_window_conduction']
+                                / surface_data['heat_transfer_coefficient_conduction_window']
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
                         )
@@ -1676,7 +1676,7 @@ class BuildingModel(object):
                                 + 1.0
                                 / building_data.parameters['heat_transfer_coefficient_interior_convection']
                                 + 1.0
-                                / surface_data['heat_transfer_coefficient_window_conduction']
+                                / surface_data['heat_transfer_coefficient_conduction_window']
                             ) ** (- 1)
                             / building_data.zones.at[zone_name, 'heat_capacity']
                         )
@@ -1703,7 +1703,7 @@ class BuildingModel(object):
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     / building_data.parameters['heat_transfer_coefficient_interior_convection']
                                     + building_data.parameters['heat_transfer_coefficient_interior_convection']
-                                    / surface_data['heat_transfer_coefficient_window_conduction']
+                                    / surface_data['heat_transfer_coefficient_conduction_window']
                                 ) ** (- 1))
                                 / building_data.zones.at[zone_name, 'heat_capacity']
                             )
@@ -1729,7 +1729,7 @@ class BuildingModel(object):
                                 * zone_exterior_surface_data['window_wall_ratio']
                                 / building_data.zones.at[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * surface_data['absorptivity']
+                            * surface_data['absorptivity_surface']
                             * surface_data['surface_area']
                             * (1 - surface_data['window_wall_ratio'])
                             * (
@@ -1739,7 +1739,7 @@ class BuildingModel(object):
                                 )
                                 / (
                                     2.0
-                                    * surface_data['heat_transfer_coefficient_surface_conduction']
+                                    * surface_data['heat_transfer_coefficient_conduction_surface']
                                 )
                             ) ** (- 1)
                             / surface_data['heat_capacity']
@@ -1759,7 +1759,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -1778,7 +1778,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                         / surface_data['heat_capacity']
@@ -1800,7 +1800,7 @@ class BuildingModel(object):
                                 * zone_exterior_surface_data['window_wall_ratio']
                                 / building_data.zones.at[surface_data['zone_name'], 'zone_surfaces_wall_area']
                             )  # Considers the share at the respective surface
-                            * surface_data['absorptivity']
+                            * surface_data['absorptivity_surface']
                             * surface_data['surface_area']
                             * (1 - surface_data['window_wall_ratio'])
                             * (1.0 - (
@@ -1810,7 +1810,7 @@ class BuildingModel(object):
                                 )
                                 / (
                                     2.0
-                                    * surface_data['heat_transfer_coefficient_surface_conduction']
+                                    * surface_data['heat_transfer_coefficient_conduction_surface']
                                 )
                             ) ** (- 1))
                             / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
@@ -1829,7 +1829,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
@@ -1849,7 +1849,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                         / building_data.zones.at[surface_data['zone_name'], 'heat_capacity']
@@ -3268,7 +3268,7 @@ class BuildingModel(object):
                         f'{surface_name}_irradiation_gain_exterior',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
-                        surface_data['absorptivity']
+                        surface_data['absorptivity_surface']
                         * (1 - surface_data['window_wall_ratio'])
                     )
                 else:  # Surfaces with neglected heat capacity
@@ -3276,7 +3276,7 @@ class BuildingModel(object):
                         surface_data['surface_name'] + '_irradiation_gain_exterior',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
-                        surface_data['absorptivity']
+                        surface_data['absorptivity_surface']
                         * (1 - surface_data['window_wall_ratio'])
                     )
 
@@ -3323,7 +3323,7 @@ class BuildingModel(object):
                                 * zone_exterior_surface_data['window_wall_ratio']
                                 / zone_surface_area
                             )  # Considers the share at the respective surface
-                            * surface_data['absorptivity']
+                            * surface_data['absorptivity_surface']
                             * (1.0 - surface_data['window_wall_ratio'])
                             * (
                                 1.0
@@ -3334,7 +3334,7 @@ class BuildingModel(object):
                                     )
                                     / (
                                         2.0
-                                        * surface_data['heat_transfer_coefficient_surface_conduction']
+                                        * surface_data['heat_transfer_coefficient_conduction_surface']
                                     )
                                 ) ** (- 1)
                             )
@@ -3352,7 +3352,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                     )
@@ -3370,7 +3370,7 @@ class BuildingModel(object):
                             + 1.0
                             / (
                                 2.0
-                                * surface_data['heat_transfer_coefficient_surface_conduction']
+                                * surface_data['heat_transfer_coefficient_conduction_surface']
                             )
                         ) ** (- 1)
                     )
@@ -3380,7 +3380,7 @@ class BuildingModel(object):
                         surface_data['surface_name'] + '_convection_interior',
                         'irradiation_' + surface_data['direction_name']
                     ] += (
-                        surface_data['absorptivity']
+                        surface_data['absorptivity_surface']
                         * (1 - surface_data['window_wall_ratio'])
                         * (
                             1.0
@@ -3395,7 +3395,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_surface_ground']
                                 + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
+                            / (surface_data['heat_transfer_coefficient_conduction_surface'])
                         ) ** (- 1)
                     )
                     disturbance_output_matrix[
@@ -3420,7 +3420,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_surface_ground']
                                 + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
+                            / (surface_data['heat_transfer_coefficient_conduction_surface'])
                         ) ** (- 1)
                     )
                     disturbance_output_matrix[
@@ -3442,7 +3442,7 @@ class BuildingModel(object):
                                 + surface_data['heat_transfer_coefficient_surface_ground']
                                 + surface_data['heat_transfer_coefficient_surface_sky']
                             )
-                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
+                            / (surface_data['heat_transfer_coefficient_conduction_surface'])
                         ) ** (- 1)
                     )
                     state_output_matrix[
@@ -3461,7 +3461,7 @@ class BuildingModel(object):
                             + 1.0
                             / building_data.parameters['heat_transfer_coefficient_interior_convection']
                             + 1.0
-                            / (surface_data['heat_transfer_coefficient_surface_conduction'])
+                            / (surface_data['heat_transfer_coefficient_conduction_surface'])
                         ) ** (- 1)
                     )
                     for zone_exterior_surface_name, zone_exterior_surface_data in building_data.surfaces_exterior[
@@ -3477,7 +3477,7 @@ class BuildingModel(object):
                                 * zone_exterior_surface_data['window_wall_ratio']
                                 / zone_surface_area
                             )  # Considers the share at the respective surface
-                            * surface_data['absorptivity']
+                            * surface_data['absorptivity_surface']
                             * (1 - surface_data['window_wall_ratio'])
                             * (1.0 - (
                                 1.0
@@ -3492,7 +3492,7 @@ class BuildingModel(object):
                                     + surface_data['heat_transfer_coefficient_surface_ground']
                                     + surface_data['heat_transfer_coefficient_surface_sky']
                                 )
-                                / (surface_data['heat_transfer_coefficient_surface_conduction'])
+                                / (surface_data['heat_transfer_coefficient_conduction_surface'])
                             ) ** (- 1))
                         )
 
