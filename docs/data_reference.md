@@ -178,7 +178,6 @@ Zone type characteristics.
 | `heat_capacity` | J/(m³K) | Specific heat capacity. |
 | `infiltration_rate` | 1/h | Infiltration rate. |
 | `internal_gain_type` | | Type identifier as defined in `internal_gain_types`. |
-| `window_type` | | Type identifier as defined in `window_types`. |
 | `blind_type` | | Type identifier as defined in `blind_types`. *Currently not used.* |
 | `hvac_generic_type` | | Type identifier as defined in `hvac_generic_types`. |
 | `hvac_radiator_type` | | Type identifier as defined in `hvac_radiator_types`. |

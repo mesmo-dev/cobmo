@@ -212,7 +212,6 @@ CREATE TABLE IF NOT EXISTS zone_types (
     heat_capacity TEXT,
     infiltration_rate TEXT,
     internal_gain_type TEXT,
-    window_type TEXT,
     blind_type TEXT,
     hvac_generic_type TEXT,
     hvac_radiator_type TEXT,

@@ -134,7 +134,6 @@ class BuildingModel(object):
         self.define_constant = (
             (building_data.zones['fresh_air_flow_control_type'] == 'co2_based').any()
             | pd.notnull(building_data.zones['hvac_ahu_type']).any()
-            | pd.notnull(building_data.zones['window_type']).any()
         )
 
         # Define sets.
@@ -158,10 +157,7 @@ class BuildingModel(object):
 
                 # Zone CO2 concentration.
                 building_data.zones['zone_name'][
-                    (
-                        pd.notnull(building_data.zones['hvac_ahu_type'])
-                        | pd.notnull(building_data.zones['window_type'])
-                    )
+                    pd.notnull(building_data.zones['hvac_ahu_type'])
                     & (building_data.zones['fresh_air_flow_control_type'] == 'co2_based')
                 ] + '_co2_concentration',
 
@@ -238,11 +234,6 @@ class BuildingModel(object):
                 building_data.zones['zone_name'][
                     pd.notnull(building_data.zones['hvac_tu_type'])
                 ] + '_tu_cool_air_flow',
-
-                # Windows.
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['window_type'])
-                ] + '_window_air_flow',
 
                 # Sensible storage cooling.
                 pd.Series([
@@ -340,12 +331,6 @@ class BuildingModel(object):
                     pd.notnull(building_data.zones['hvac_tu_type'])
                 ] + '_tu_cool_air_flow',
 
-                # Windows controls.
-                # TODO: Revise window controller definition.
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['window_type'])
-                ] + '_window_air_flow',
-
                 # Sensible storage cooling controls.
                 pd.Series([
                     'storage_charge_thermal_power_cooling',
@@ -380,10 +365,7 @@ class BuildingModel(object):
 
                 # Zone CO2 concentration.
                 building_data.zones['zone_name'][
-                    (
-                        pd.notnull(building_data.zones['hvac_ahu_type'])
-                        | pd.notnull(building_data.zones['window_type'])
-                    )
+                    pd.notnull(building_data.zones['hvac_ahu_type'])
                     & (building_data.zones['fresh_air_flow_control_type'] == 'co2_based')
                 ] + '_co2_concentration',
 
@@ -396,7 +378,6 @@ class BuildingModel(object):
                 # Zone fresh air flow.
                 building_data.zones['zone_name'][
                     pd.notnull(building_data.zones['hvac_ahu_type'])
-                    | pd.notnull(building_data.zones['window_type'])
                 ] + '_total_fresh_air_flow',
 
                 # Validation outputs.
@@ -1881,25 +1862,6 @@ class BuildingModel(object):
                     / zone_data['heat_capacity']
                 )
 
-        def define_heat_transfer_window_air_flow():
-
-            for zone_name, zone_data in building_data.zones.iterrows():
-                if pd.notnull(zone_data['window_type']):
-                    control_matrix[
-                        f'{zone_name}_temperature',
-                        f'{zone_name}_window_air_flow'
-                    ] += (
-                        1.0
-                        / 1000  # l in m³.
-                        * building_data.parameters['heat_capacity_air']
-                        * (
-                            building_data.scenarios['linearization_ambient_air_temperature']
-                            - building_data.scenarios['linearization_zone_air_temperature_cool']
-                        )
-                        * zone_data.at['zone_area']
-                        / zone_data['heat_capacity']
-                    )
-
         def define_heat_transfer_internal_gains():
 
             for zone_name, zone_data in building_data.zones.iterrows():
@@ -2414,7 +2376,7 @@ class BuildingModel(object):
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if (
-                        (pd.notnull(zone_data['hvac_ahu_type']) | pd.notnull(zone_data['window_type']))
+                        pd.notnull(zone_data['hvac_ahu_type'])
                         & (zone_data['fresh_air_flow_control_type'] == 'co2_based')
                 ):
                     state_matrix[
@@ -2439,16 +2401,6 @@ class BuildingModel(object):
                         control_matrix[
                             f'{zone_name}_co2_concentration',
                             f'{zone_name}_ahu_cool_air_flow'
-                        ] += (
-                            - 1.0
-                            / 1000  # l in m³.
-                            * building_data.scenarios['linearization_zone_air_co2_concentration']
-                            / zone_data.at['zone_height']
-                        )
-                    if pd.notnull(zone_data.at['window_type']):
-                        control_matrix[
-                            f'{zone_name}_co2_concentration',
-                            f'{zone_name}_window_air_flow'
                         ] += (
                             - 1.0
                             / 1000  # l in m³.
@@ -2533,19 +2485,6 @@ class BuildingModel(object):
                         )
                         / zone_data.at['zone_height']
                     )
-                    if pd.notnull(zone_data.at['window_type']):
-                        control_matrix[
-                            f'{zone_name}_absolute_humidity',
-                            f'{zone_name}_window_air_flow'
-                        ] += (
-                            - 1.0
-                            / 1000  # l in m³.
-                            * (
-                                building_data.scenarios['linearization_zone_air_absolute_humidity']
-                                - building_data.scenarios['linearization_ambient_air_absolute_humidity']
-                            )
-                            / zone_data.at['zone_height']
-                        )
                     disturbance_matrix[
                         f'{zone_name}_absolute_humidity',
                         'constant'
@@ -2686,7 +2625,7 @@ class BuildingModel(object):
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if (
-                        (pd.notnull(zone_data['hvac_ahu_type']) | pd.notnull(zone_data['window_type']))
+                        pd.notnull(zone_data['hvac_ahu_type'])
                         & (zone_data['fresh_air_flow_control_type'] == 'co2_based')
                 ):
                     state_output_matrix[
@@ -2719,15 +2658,6 @@ class BuildingModel(object):
                         * zone_data.at['zone_area']
                         / self.zone_area_total
                     )
-
-        def define_output_window_air_flow():
-
-            for zone_name, zone_data in building_data.zones.iterrows():
-                if pd.notnull(zone_data['window_type']):
-                    control_output_matrix[
-                        f'{zone_name}_window_air_flow',
-                        f'{zone_name}_window_air_flow'
-                    ] = 1.0
 
         def define_output_hvac_generic():
 
@@ -3096,12 +3026,7 @@ class BuildingModel(object):
                         f'{zone_name}_total_fresh_air_flow',
                         f'{zone_name}_ahu_heat_air_flow'
                     ] = 1.0
-                if pd.notnull(zone_data['window_type']):
-                    control_output_matrix[
-                        f'{zone_name}_total_fresh_air_flow',
-                        f'{zone_name}_window_air_flow'
-                    ] = 1.0
-                if pd.notnull(zone_data['window_type']) | pd.notnull(zone_data['hvac_ahu_type']):
+                if pd.notnull(zone_data['hvac_ahu_type']):
                     disturbance_output_matrix[
                         f'{zone_name}_total_fresh_air_flow',
                         'constant'
@@ -3564,24 +3489,15 @@ class BuildingModel(object):
 
             # Obtain indexing shorthands.
             zones_fixed_fresh_air_flow_index = (
-                (
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                    | pd.notnull(building_data.zones['window_type'])
-                )
+                pd.notnull(building_data.zones['hvac_ahu_type'])
                 & pd.isnull(building_data.zones['fresh_air_flow_control_type'])
             )
             zones_occupancy_based_index = (
-                (
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                    | pd.notnull(building_data.zones['window_type'])
-                )
+                pd.notnull(building_data.zones['hvac_ahu_type'])
                 & (building_data.zones['fresh_air_flow_control_type'] == 'occupancy_based')
             )
             zones_co2_based_index = (
-                (
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                    | pd.notnull(building_data.zones['window_type'])
-                )
+                pd.notnull(building_data.zones['hvac_ahu_type'])
                 & (building_data.zones['fresh_air_flow_control_type'] == 'co2_based')
             )
             zones_humidity_based_index = (
