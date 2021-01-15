@@ -3630,10 +3630,11 @@ class BuildingModel(object):
                 ] = 100.0  # in %.
 
             # Electric / thermal grid connections.
-            if not connect_electric_grid:
+            if (not connect_electric_grid) and connect_thermal_grid_cooling:
                 self.output_maximum_timeseries.loc[
                     :, 'plant_thermal_power_cooling'
                 ] = 0.0
+            if (not connect_electric_grid) and connect_thermal_grid_heating:
                 self.output_maximum_timeseries.loc[
                     :, 'plant_thermal_power_heating'
                 ] = 0.0
