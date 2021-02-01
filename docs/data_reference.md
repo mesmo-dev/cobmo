@@ -182,6 +182,7 @@ Zone type characteristics.
 | `hvac_radiator_type` | | Type identifier as defined in `hvac_radiator_types`. |
 | `hvac_ahu_type` | | Type identifier as defined in `hvac_ahu_types`. |
 | `hvac_tu_type` | | Type identifier as defined in `hvac_tu_types`. |
+| `hvac_vent_type` | | Type identifier as defined in `hvac_vent_types`. |
 | `constraint_type` | | Constraint type identifier as defined in `constraint_schedules`. |
 | `fresh_air_flow_control_type` | | Control mode for the fresh air flow / indoor air quality (IAQ). Choices: empty (IAQ is ensured by providing a fixed amount of fresh air per zone area, as defined by `minimum_fresh_air_flow` in `constraint_schedules`.), `occupancy_based` (IAQ is ensured by providing a fixed amount of fresh air per person and per zone area, as defined by `minimum_fresh_air_flow_occupants`, `minimum_fresh_air_flow_building` in `constraint_schedules`.), `co2_based` (IAQ is ensured by constraining the CO₂ concentration, as defined by `maximum_co2_concentration` in `constraint_schedules`.) |
 | `humidity_control_type` | | Control mode for the humidity level. Choices: empty (Humidity is not controlled.), `humidity_based` (Humidity is constrained, as defined by `minimum_relative_humidity` and `maximum_relative_humidity` in `constraint_schedules`.) |
@@ -258,6 +259,15 @@ Terminal unit (TU) set points and characteristics.
 | `tu_fan_efficiency` | J/kg | Fan efficiency (electric power / air mass flow rate). |
 | `tu_cooling_efficiency` | - | Heating efficiency, to consider losses in the TU. This is not the efficiency of the heating plant, which is instead defined in `plant_heating_types`. |
 | `tu_heating_efficiency` | - | Cooling efficiency, to consider losses in the TU. This is not the efficiency of the chiller plant, which is instead defined in `plant_cooling_types`. |
+
+### `hvac_vent_types`
+
+Controllable air vent unit types. Air vents supply unconditioned ambient air to the zone, where the vent fan and in air volume flow rate is controllable.
+
+| Column | Unit | Description |
+| --- |:---:| --- |
+| `hvac_vent_type` | | Unique type identifier. |
+| `vent_fan_efficiency` | J/kg | Fan efficiency (electric power / air mass flow rate). |
 
 ### `hvac_radiator_types`
 

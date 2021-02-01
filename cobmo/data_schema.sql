@@ -65,6 +65,10 @@ CREATE TABLE IF NOT EXISTS hvac_tu_types (
     tu_cooling_efficiency TEXT,
     tu_heating_efficiency TEXT
 );
+CREATE TABLE IF NOT EXISTS hvac_vent_types (
+    hvac_vent_type TEXT,
+    vent_fan_efficiency TEXT
+);
 CREATE TABLE IF NOT EXISTS initial_state_types (
     initial_state_type TEXT,
     initial_zone_temperature TEXT,
@@ -212,6 +216,7 @@ CREATE TABLE IF NOT EXISTS zone_types (
     hvac_radiator_type TEXT,
     hvac_ahu_type TEXT,
     hvac_tu_type TEXT,
+    hvac_vent_type TEXT,
     constraint_type TEXT,
     fresh_air_flow_control_type TEXT,
     humidity_control_type TEXT

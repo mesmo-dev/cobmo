@@ -235,6 +235,11 @@ class BuildingModel(object):
                     pd.notnull(building_data.zones['hvac_tu_type'])
                 ] + '_tu_cool_air_flow',
 
+                # Vent.
+                building_data.zones['zone_name'][
+                    pd.notnull(building_data.zones['hvac_vent_type'])
+                ] + '_vent_air_flow',
+
                 # Sensible storage cooling.
                 pd.Series([
                     'storage_charge_thermal_power_cooling',
@@ -330,6 +335,11 @@ class BuildingModel(object):
                 building_data.zones['zone_name'][
                     pd.notnull(building_data.zones['hvac_tu_type'])
                 ] + '_tu_cool_air_flow',
+
+                # Vent controls.
+                building_data.zones['zone_name'][
+                    pd.notnull(building_data.zones['hvac_vent_type'])
+                ] + '_vent_air_flow',
 
                 # Sensible storage cooling controls.
                 pd.Series([
@@ -2372,6 +2382,25 @@ class BuildingModel(object):
                         / zone_data['heat_capacity']
                     )
 
+        def define_heat_transfer_hvac_vent():
+
+            for zone_name, zone_data in building_data.zones.iterrows():
+                if pd.notnull(zone_data['hvac_vent_type']):
+                    control_matrix[
+                        f'{zone_name}_temperature',
+                        f'{zone_name}_vent_air_flow'
+                    ] += (
+                        1.0
+                        / 1000  # l in m³.
+                        * building_data.parameters['heat_capacity_air']
+                        * (
+                            building_data.scenarios['linearization_ambient_air_temperature']
+                            - building_data.scenarios['linearization_zone_air_temperature_heat']
+                        )
+                        * zone_data['zone_area']
+                        / zone_data['heat_capacity']
+                    )
+
         def define_co2_transfer():
 
             for zone_name, zone_data in building_data.zones.iterrows():
@@ -3014,6 +3043,30 @@ class BuildingModel(object):
                         * zone_data['tu_fan_efficiency']
                     )
 
+        def define_output_hvac_vent_power():
+
+            for zone_name, zone_data in building_data.zones.iterrows():
+                if pd.notnull(zone_data['hvac_vent_type']):
+
+                    # Air flow.
+                    control_output_matrix[
+                        f'{zone_name}_vent_air_flow',
+                        f'{zone_name}_vent_air_flow'
+                    ] = 1.0
+
+                    # Fan power.
+                    control_output_matrix[
+                        'electric_power_balance',
+                        f'{zone_name}_vent_air_flow'
+                    ] = (
+                        1.0
+                        / 1000  # l in m³.
+                        * zone_data['zone_area']
+                        / self.zone_area_total
+                        * building_data.parameters['density_air']
+                        * zone_data['vent_fan_efficiency']
+                    )
+
         def define_output_fresh_air_flow():
 
             for zone_name, zone_data in building_data.zones.iterrows():
@@ -3025,6 +3078,11 @@ class BuildingModel(object):
                     control_output_matrix[
                         f'{zone_name}_total_fresh_air_flow',
                         f'{zone_name}_ahu_heat_air_flow'
+                    ] = 1.0
+                if pd.notnull(zone_data['hvac_vent_type']):
+                    control_output_matrix[
+                        f'{zone_name}_total_fresh_air_flow',
+                        f'{zone_name}_vent_air_flow'
                     ] = 1.0
                 if pd.notnull(zone_data['hvac_ahu_type']):
                     disturbance_output_matrix[
@@ -3699,6 +3757,7 @@ class BuildingModel(object):
         define_heat_transfer_hvac_radiator()
         define_heat_transfer_hvac_ahu()
         define_heat_transfer_hvac_tu()
+        define_heat_transfer_hvac_vent()
         define_co2_transfer()
         define_humidity_transfer()
         define_storage_state_of_charge()
@@ -3712,6 +3771,7 @@ class BuildingModel(object):
         define_output_hvac_radiator_power()
         define_output_hvac_ahu_power()
         define_output_hvac_tu_power()
+        define_output_hvac_vent_power()
         define_output_fresh_air_flow()
         define_output_storage_state_of_charge()
         define_output_storage_power()

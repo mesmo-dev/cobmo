@@ -269,6 +269,7 @@ class BuildingData(object):
                 LEFT JOIN hvac_radiator_types USING (hvac_radiator_type) 
                 LEFT JOIN hvac_ahu_types USING (hvac_ahu_type) 
                 LEFT JOIN hvac_tu_types USING (hvac_tu_type) 
+                LEFT JOIN hvac_vent_types USING (hvac_vent_type) 
                 WHERE building_name = (
                     SELECT building_name from scenarios 
                     WHERE scenario_name = ?
