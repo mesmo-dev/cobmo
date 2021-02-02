@@ -1,2 +1,2 @@
-internal_gain_type,internal_gain_definition_type,occupancy_density,occupancy_heat_gain,occupancy_co2_gain,occupancy_humidity_gain,appliances_heat_gain
-create_office,timeseries,0.08,80.0,49.0,87.0,32.0
+internal_gain_type,internal_gain_definition_type,occupancy_density,occupancy_heat_gain,occupancy_co2_gain,occupancy_humidity_gain,appliances_heat_gain,warm_water_demand_thermal_power
+create_office,timeseries,0.08,80.0,5.2,0.022,32.0,0.0

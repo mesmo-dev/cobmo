@@ -31,5 +31,3 @@ create_parameters,ahu_supply_air_temperature_setpoint,20,degree Celsius,
 create_parameters,ahu_supply_air_relative_humidity_setpoint,60,percent,
 create_parameters,ahu_fan_efficiency,331.95,J/kg,Assuming 400 Pa pressure rise
 create_parameters,ahu_return_air_heat_recovery_efficiency,0.575,-,
-create_parameters,co2_generation_rate_per_person,5.2,m3/s/person*1000000,
-create_parameters,moisture_generation_rate_per_person,0.000022,kg/s/person,
