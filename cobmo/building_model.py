@@ -130,12 +130,6 @@ class BuildingModel(object):
         # - This is used for scaling air flow / power values to per-square-meter values.
         self.zone_area_total = building_data.zones.loc[:, 'zone_area'].sum()
 
-        # Add constant timeseries in disturbance vector, if any CO2 model or HVAC or window.
-        self.define_constant = (
-            (building_data.zones['fresh_air_flow_control_type'] == 'co2_based').any()
-            | pd.notnull(building_data.zones['hvac_ahu_type']).any()
-        )
-
         # Define sets.
 
         # State variables.
@@ -157,14 +151,12 @@ class BuildingModel(object):
 
                 # Zone CO2 concentration.
                 building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                    & (building_data.zones['fresh_air_flow_control_type'] == 'co2_based')
+                    building_data.zones['fresh_air_flow_control_type'] == 'co2_based'
                 ] + '_co2_concentration',
 
                 # Zone absolute humidity.
                 building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                    & (building_data.zones['humidity_control_type'] == 'humidity_based')
+                    building_data.zones['humidity_control_type'] == 'humidity_based'
                 ] + '_absolute_humidity',
 
                 # Radiator temperatures.
@@ -289,8 +281,8 @@ class BuildingModel(object):
                     building_data.zones['internal_gain_type'].dropna().unique() + '_internal_gain_appliances'
                 ),
 
-                # Constant (workaround for constant model terms).
-                (pd.Series(['constant']) if self.define_constant else None)
+                # Constant, series of ones (workaround for constant model terms).
+                pd.Series(['constant'])
             ]),
             name='disturbance_name'
         )
@@ -375,20 +367,16 @@ class BuildingModel(object):
 
                 # Zone CO2 concentration.
                 building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                    & (building_data.zones['fresh_air_flow_control_type'] == 'co2_based')
+                    building_data.zones['fresh_air_flow_control_type'] == 'co2_based'
                 ] + '_co2_concentration',
 
                 # Zone absolute humidity.
                 building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                    & (building_data.zones['humidity_control_type'] == 'humidity_based')
+                    building_data.zones['humidity_control_type'] == 'humidity_based'
                 ] + '_absolute_humidity',
 
                 # Zone fresh air flow.
-                building_data.zones['zone_name'][
-                    pd.notnull(building_data.zones['hvac_ahu_type'])
-                ] + '_total_fresh_air_flow',
+                building_data.zones['zone_name'] + '_total_fresh_air_flow',
 
                 # Validation outputs.
                 pd.concat([
@@ -489,11 +477,22 @@ class BuildingModel(object):
         def calculate_coefficients_zone():
             """Calculate zone parameters / heat transfer coefficients for use in, e.g., surface and radiator models."""
 
-            # Calculate absolute heat capacity from specific heat capacity.
-            building_data.zones['heat_capacity'] = (
+            # Calculate zone air volume (equivalent to CO2 capacity).
+            building_data.zones['zone_volume'] = (
                 building_data.zones['zone_area']
                 * building_data.zones['zone_height']
+            )
+
+            # Calculate zone heat capacity (absolute heat capacity) from specific heat capacity.
+            building_data.zones['heat_capacity'] = (
+                building_data.zones['zone_volume']
                 * building_data.zones['heat_capacity']
+            )
+
+            # Calculate zone air mass (equivalent to moisture capacity).
+            building_data.zones['zone_air_mass'] = (
+                building_data.zones['zone_volume']
+                * building_data.parameters['density_air']
             )
 
             # Instantiate columns for parameters / heat transfer coefficients.
@@ -1855,10 +1854,11 @@ class BuildingModel(object):
                     f'{zone_name}_temperature',
                     f'{zone_name}_temperature'
                 ] += (
-                    - zone_data['infiltration_rate']
+                    - 1.0
+                    * zone_data['infiltration_rate']
+                    / 3600  # 1/h in 1/s.
+                    * zone_data['zone_volume']
                     * building_data.parameters['heat_capacity_air']
-                    * zone_data['zone_area']
-                    * zone_data['zone_height']
                     / zone_data['heat_capacity']
                 )
                 disturbance_matrix[
@@ -1866,9 +1866,9 @@ class BuildingModel(object):
                     'ambient_air_temperature'
                 ] += (
                     zone_data['infiltration_rate']
+                    / 3600  # 1/h in 1/s.
+                    * zone_data['zone_volume']
                     * building_data.parameters['heat_capacity_air']
-                    * zone_data['zone_area']
-                    * zone_data['zone_height']
                     / zone_data['heat_capacity']
                 )
 
@@ -2326,12 +2326,12 @@ class BuildingModel(object):
                     ] += (
                         1.0
                         / 1000  # l in m³.
+                        * zone_data['zone_area']
                         * building_data.parameters['heat_capacity_air']
                         * (
                             zone_data['ahu_supply_air_temperature_setpoint']
                             - building_data.scenarios['linearization_zone_air_temperature_heat']
                         )
-                        * zone_data['zone_area']
                         / zone_data['heat_capacity']
                     )
                     control_matrix[
@@ -2340,12 +2340,12 @@ class BuildingModel(object):
                     ] += (
                         1.0
                         / 1000  # l in m³.
+                        * zone_data['zone_area']
                         * building_data.parameters['heat_capacity_air']
                         * (
                             zone_data['ahu_supply_air_temperature_setpoint']
                             - building_data.scenarios['linearization_zone_air_temperature_cool']
                         )
-                        * zone_data['zone_area']
                         / zone_data['heat_capacity']
                     )
 
@@ -2359,12 +2359,12 @@ class BuildingModel(object):
                     ] += (
                         1.0
                         / 1000  # l in m³.
+                        * zone_data['zone_area']
                         * building_data.parameters['heat_capacity_air']
                         * (
                             zone_data['tu_supply_air_temperature_setpoint']
                             - building_data.scenarios['linearization_zone_air_temperature_heat']
                         )
-                        * zone_data['zone_area']
                         / zone_data['heat_capacity']
                     )
                     control_matrix[
@@ -2373,12 +2373,12 @@ class BuildingModel(object):
                     ] += (
                         1.0
                         / 1000  # l in m³.
+                        * zone_data['zone_area']
                         * building_data.parameters['heat_capacity_air']
                         * (
                             zone_data['tu_supply_air_temperature_setpoint']
                             - building_data.scenarios['linearization_zone_air_temperature_cool']
                         )
-                        * zone_data['zone_area']
                         / zone_data['heat_capacity']
                     )
 
@@ -2392,22 +2392,19 @@ class BuildingModel(object):
                     ] += (
                         1.0
                         / 1000  # l in m³.
+                        * zone_data['zone_area']
                         * building_data.parameters['heat_capacity_air']
                         * (
                             building_data.scenarios['linearization_ambient_air_temperature']
-                            - building_data.scenarios['linearization_zone_air_temperature_heat']
+                            - building_data.scenarios['linearization_zone_air_temperature']
                         )
-                        * zone_data['zone_area']
                         / zone_data['heat_capacity']
                     )
 
         def define_co2_transfer():
 
             for zone_name, zone_data in building_data.zones.iterrows():
-                if (
-                        pd.notnull(zone_data['hvac_ahu_type'])
-                        & (zone_data['fresh_air_flow_control_type'] == 'co2_based')
-                ):
+                if zone_data['fresh_air_flow_control_type'] == 'co2_based':
                     state_matrix[
                         f'{zone_name}_co2_concentration',
                         f'{zone_name}_co2_concentration'
@@ -2415,7 +2412,8 @@ class BuildingModel(object):
                         - 1.0
                         * building_data.scenarios['linearization_zone_fresh_air_flow']
                         / 1000  # l in m³.
-                        / zone_data.at['zone_height']
+                        * zone_data['zone_area']
+                        / zone_data.at['zone_volume']
                     )
                     if pd.notnull(zone_data.at['hvac_ahu_type']):
                         control_matrix[
@@ -2424,8 +2422,9 @@ class BuildingModel(object):
                         ] += (
                             - 1.0
                             / 1000  # l in m³.
+                            * zone_data['zone_area']
                             * building_data.scenarios['linearization_zone_air_co2_concentration']
-                            / zone_data.at['zone_height']
+                            / zone_data.at['zone_volume']
                         )
                         control_matrix[
                             f'{zone_name}_co2_concentration',
@@ -2433,17 +2432,31 @@ class BuildingModel(object):
                         ] += (
                             - 1.0
                             / 1000  # l in m³.
+                            * zone_data['zone_area']
                             * building_data.scenarios['linearization_zone_air_co2_concentration']
-                            / zone_data.at['zone_height']
+                            / zone_data.at['zone_volume']
                         )
-                    # disturbance_matrix[
-                    #     f'{zone_name}_co2_concentration',
-                    #     'constant'
-                    # ] += (
-                    #     - 1.0
-                    #     * building_data.scenarios['linearization_zone_air_co2_concentration']
-                    #     * zone_data.at['infiltration_rate'])
-                    # )  # TODO: Revise infiltration
+                    if pd.notnull(zone_data.at['hvac_vent_type']):
+                        control_matrix[
+                            f'{zone_name}_co2_concentration',
+                            f'{zone_name}_vent_air_flow'
+                        ] += (
+                            - 1.0
+                            / 1000  # l in m³.
+                            * zone_data['zone_area']
+                            * building_data.scenarios['linearization_zone_air_co2_concentration']
+                            / zone_data.at['zone_volume']
+                        )
+                    disturbance_matrix[
+                        f'{zone_name}_co2_concentration',
+                        'constant'
+                    ] += (
+                        - 1.0
+                        * zone_data.at['infiltration_rate']
+                        / 3600  # 1/h in 1/s.
+                        * zone_data.at['zone_volume']
+                        * building_data.scenarios['linearization_zone_air_co2_concentration']
+                    )
                     if pd.notnull(zone_data.at['internal_gain_type']):
                         disturbance_matrix[
                             f'{zone_name}_co2_concentration',
@@ -2452,11 +2465,8 @@ class BuildingModel(object):
                             1.0
                             * zone_data.at['occupancy_density']
                             * zone_data.at['occupancy_co2_gain']
-                            / zone_data.at['zone_height']
-                            / zone_data.at['zone_area']
+                            / zone_data.at['zone_volume']
                         )
-                        # division by zone_area since the occupancy here is in p
-                        # if iterative and robust BM, no division by zone_area since the occupancy there is in p/m2
                     disturbance_matrix[
                         f'{zone_name}_co2_concentration',
                         'constant'
@@ -2464,17 +2474,16 @@ class BuildingModel(object):
                         1.0
                         * building_data.scenarios['linearization_zone_fresh_air_flow']
                         / 1000  # l in m³.
+                        * zone_data['zone_area']
                         * building_data.scenarios['linearization_zone_air_co2_concentration']
-                        / zone_data.at['zone_height']
+                        / zone_data.at['zone_volume']
                     )
 
         def define_humidity_transfer():
 
+            # TODO: Change absolute humidity unit from kg/kg to g/kg for numerical performance.
             for zone_name, zone_data in building_data.zones.iterrows():
-                if (
-                        pd.notnull(zone_data.at['hvac_ahu_type'])
-                        & (zone_data.at['humidity_control_type'] == 'humidity_based')
-                ):
+                if zone_data.at['humidity_control_type'] == 'humidity_based':
                     state_matrix[
                         f'{zone_name}_absolute_humidity',
                         f'{zone_name}_absolute_humidity'
@@ -2482,59 +2491,85 @@ class BuildingModel(object):
                         - 1.0
                         * building_data.scenarios['linearization_zone_fresh_air_flow']
                         / 1000  # l in m³.
-                        / zone_data.at['zone_height']
+                        * zone_data.at['zone_area']
+                        * building_data.parameters['density_air']
+                        / zone_data.at['zone_air_mass']
                     )
-                    control_matrix[
-                        f'{zone_name}_absolute_humidity',
-                        f'{zone_name}_ahu_heat_air_flow'
-                    ] += (
-                        - 1.0
-                        / 1000  # l in m³.
-                        * (
-                            building_data.scenarios['linearization_zone_air_absolute_humidity']
-                            - cobmo.utils.calculate_absolute_humidity_humid_air(
-                                zone_data.at['ahu_supply_air_temperature_setpoint'],
-                                zone_data.at['ahu_supply_air_relative_humidity_setpoint']
+                    if pd.notnull(zone_data.at['hvac_ahu_type']):
+                        control_matrix[
+                            f'{zone_name}_absolute_humidity',
+                            f'{zone_name}_ahu_heat_air_flow'
+                        ] += (
+                            - 1.0
+                            / 1000  # l in m³.
+                            * zone_data.at['zone_area']
+                            * building_data.parameters['density_air']
+                            * (
+                                building_data.scenarios['linearization_zone_air_absolute_humidity']
+                                - cobmo.utils.calculate_absolute_humidity_humid_air(
+                                    zone_data.at['ahu_supply_air_temperature_setpoint'],
+                                    zone_data.at['ahu_supply_air_relative_humidity_setpoint']
+                                )
                             )
+                            / zone_data.at['zone_air_mass']
                         )
-                        / zone_data.at['zone_height']
-                    )
-                    control_matrix[
-                        f'{zone_name}_absolute_humidity',
-                        f'{zone_name}_ahu_cool_air_flow'
-                    ] += (
-                        - 1.0
-                        / 1000  # l in m³.
-                        * (
-                            building_data.scenarios['linearization_zone_air_absolute_humidity']
-                            - cobmo.utils.calculate_absolute_humidity_humid_air(
-                                zone_data.at['ahu_supply_air_temperature_setpoint'],
-                                zone_data.at['ahu_supply_air_relative_humidity_setpoint']
+                        control_matrix[
+                            f'{zone_name}_absolute_humidity',
+                            f'{zone_name}_ahu_cool_air_flow'
+                        ] += (
+                            - 1.0
+                            / 1000  # l in m³.
+                            * zone_data.at['zone_area']
+                            * building_data.parameters['density_air']
+                            * (
+                                building_data.scenarios['linearization_zone_air_absolute_humidity']
+                                - cobmo.utils.calculate_absolute_humidity_humid_air(
+                                    zone_data.at['ahu_supply_air_temperature_setpoint'],
+                                    zone_data.at['ahu_supply_air_relative_humidity_setpoint']
+                                )
                             )
+                            / zone_data.at['zone_air_mass']
                         )
-                        / zone_data.at['zone_height']
-                    )
+                    if pd.notnull(zone_data.at['hvac_vent_type']):
+                        control_matrix[
+                            f'{zone_name}_absolute_humidity',
+                            f'{zone_name}_vent_air_flow'
+                        ] += (
+                            - 1.0
+                            / 1000  # l in m³.
+                            * zone_data.at['zone_area']
+                            * building_data.parameters['density_air']
+                            * (
+                                building_data.scenarios['linearization_zone_air_absolute_humidity']
+                                - building_data.scenarios['linearization_ambient_air_absolute_humidity']
+                            )
+                            / zone_data.at['zone_air_mass']
+                        )
                     disturbance_matrix[
                         f'{zone_name}_absolute_humidity',
                         'constant'
                     ] += (
                         - 1.0
-                        / 1000  # l in m³.
+                        * zone_data.at['infiltration_rate']
+                        / 3600  # 1/h in 1/s.
+                        * zone_data.at['zone_volume']
+                        * building_data.parameters['density_air']
                         * (
                             building_data.scenarios['linearization_zone_air_absolute_humidity']
                             - building_data.scenarios['linearization_ambient_air_absolute_humidity']
                         )
-                        * zone_data.at['infiltration_rate']
-                    )  # TODO: Revise infiltration
+                        / zone_data.at['zone_air_mass']
+                    )
                     if pd.notnull(zone_data.at['internal_gain_type']):
                         disturbance_matrix[
                             f'{zone_name}_absolute_humidity',
                             zone_data.at['internal_gain_type'] + '_internal_gain_occupancy'
                         ] += (
-                            building_data.parameters['moisture_generation_rate_per_person']
-                            / zone_data.at['zone_height']
-                            / zone_data.at['zone_area']
-                            / building_data.parameters['density_air']
+                            1.0
+                            * zone_data.at['occupancy_density']
+                            * zone_data.at['occupancy_humidity_gain']
+                            / 1000  # kg in g.
+                            / zone_data.at['zone_air_mass']
                         )
                     disturbance_matrix[
                         f'{zone_name}_absolute_humidity',
@@ -2653,10 +2688,7 @@ class BuildingModel(object):
         def define_output_zone_co2_concentration():
 
             for zone_name, zone_data in building_data.zones.iterrows():
-                if (
-                        pd.notnull(zone_data['hvac_ahu_type'])
-                        & (zone_data['fresh_air_flow_control_type'] == 'co2_based')
-                ):
+                if zone_data['fresh_air_flow_control_type'] == 'co2_based':
                     state_output_matrix[
                         f'{zone_name}_co2_concentration',
                         f'{zone_name}_co2_concentration'
@@ -2665,10 +2697,7 @@ class BuildingModel(object):
         def define_output_zone_humidity():
 
             for zone_name, zone_data in building_data.zones.iterrows():
-                if (
-                        pd.notnull(zone_data.at['hvac_ahu_type'])
-                        & (zone_data.at['humidity_control_type'] == 'humidity_based')
-                ):
+                if zone_data.at['humidity_control_type'] == 'humidity_based':
                     state_output_matrix[
                         f'{zone_name}_absolute_humidity',
                         f'{zone_name}_absolute_humidity'
@@ -2756,29 +2785,14 @@ class BuildingModel(object):
                             zone_data['ahu_supply_air_relative_humidity_setpoint']
                         )
                     )
-                    # TODO: Define zone linearization temperature and humidity in database.
-                    linearization_zone_air_temperature = (
-                        0.5
-                        * (
-                            building_data.scenarios['linearization_zone_air_temperature_heat']
-                            + building_data.scenarios['linearization_zone_air_temperature_cool']
-                        )
-                    )
-                    linearization_zone_air_absolute_humidity = (
-                        0.5
-                        * (
-                            building_data.scenarios['linearization_ambient_air_absolute_humidity']
-                            + ahu_supply_air_absolute_humidity_setpoint
-                        )
-                    )
                     delta_enthalpy_ahu_recovery = (
                         cobmo.utils.calculate_enthalpy_humid_air(
-                            linearization_zone_air_temperature,
-                            linearization_zone_air_absolute_humidity
+                            building_data.scenarios['linearization_zone_air_temperature'],
+                            building_data.scenarios['linearization_zone_air_absolute_humidity']
                         )
                         - cobmo.utils.calculate_enthalpy_humid_air(
                             building_data.scenarios['linearization_ambient_air_temperature'],
-                            linearization_zone_air_absolute_humidity
+                            building_data.scenarios['linearization_zone_air_absolute_humidity']
                         )
                     )
 
@@ -3084,14 +3098,16 @@ class BuildingModel(object):
                         f'{zone_name}_total_fresh_air_flow',
                         f'{zone_name}_vent_air_flow'
                     ] = 1.0
-                if pd.notnull(zone_data['hvac_ahu_type']):
-                    disturbance_output_matrix[
-                        f'{zone_name}_total_fresh_air_flow',
-                        'constant'
-                    ] += (
-                        zone_data['infiltration_rate']
-                        * zone_data['zone_height']
-                    )  # TODO: Revise infiltration.
+                disturbance_output_matrix[
+                    f'{zone_name}_total_fresh_air_flow',
+                    'constant'
+                ] += (
+                    zone_data['infiltration_rate']
+                    / 3600  # 1/h in 1/s.
+                    * zone_data['zone_volume']
+                    * 1000  # m³ in l.
+                    / zone_data['zone_area']
+                )
 
         def define_output_storage_state_of_charge():
 
@@ -3494,13 +3510,7 @@ class BuildingModel(object):
                         'irradiation_north'
                     ]],
                     building_data.internal_gain_timeseries,
-                    (
-                        pd.DataFrame(
-                            1.0,
-                            self.timesteps,
-                            ['constant']
-                        ) if self.define_constant else pd.DataFrame([])  # Append constant only when needed.
-                    )
+                    pd.DataFrame(1.0, index=self.timesteps, columns=['constant'])
                 ],
                 axis='columns',
             ).rename_axis('disturbance_name', axis='columns')
@@ -3535,31 +3545,44 @@ class BuildingModel(object):
 
             # Instantiate constraint timeseries.
             self.output_maximum_timeseries = pd.DataFrame(
-                +1.0 * np.infty,
+                + 1.0 * np.infty,
                 self.timesteps,
                 self.outputs
             )
             self.output_minimum_timeseries = pd.DataFrame(
-                -1.0 * np.infty,
+                - 1.0 * np.infty,
                 self.timesteps,
                 self.outputs
             )
 
             # Obtain indexing shorthands.
+            # - Indoor air quality constraints are only enforced if there is a fresh air supply device, e.g. AHU / vent.
             zones_fixed_fresh_air_flow_index = (
-                pd.notnull(building_data.zones['hvac_ahu_type'])
+                (
+                    pd.notnull(building_data.zones['hvac_ahu_type'])
+                    | pd.notnull(building_data.zones['hvac_vent_type'])
+                )
                 & pd.isnull(building_data.zones['fresh_air_flow_control_type'])
             )
             zones_occupancy_based_index = (
-                pd.notnull(building_data.zones['hvac_ahu_type'])
+                (
+                    pd.notnull(building_data.zones['hvac_ahu_type'])
+                    | pd.notnull(building_data.zones['hvac_vent_type'])
+                )
                 & (building_data.zones['fresh_air_flow_control_type'] == 'occupancy_based')
             )
             zones_co2_based_index = (
-                pd.notnull(building_data.zones['hvac_ahu_type'])
+                (
+                    pd.notnull(building_data.zones['hvac_ahu_type'])
+                    | pd.notnull(building_data.zones['hvac_vent_type'])
+                )
                 & (building_data.zones['fresh_air_flow_control_type'] == 'co2_based')
             )
             zones_humidity_based_index = (
-                pd.notnull(building_data.zones['hvac_ahu_type'])
+                (
+                    pd.notnull(building_data.zones['hvac_ahu_type'])
+                    | pd.notnull(building_data.zones['hvac_vent_type'])
+                )
                 & (building_data.zones['humidity_control_type'] == 'humidity_based')
             )
 
@@ -3655,7 +3678,7 @@ class BuildingModel(object):
                     :, building_data.zones.loc[zones_humidity_based_index, 'zone_name'] + '_absolute_humidity'
                 ] = (
                     np.vectorize(cobmo.utils.calculate_absolute_humidity_humid_air)(
-                        building_data.scenarios['linearization_zone_air_temperature_cool'],
+                        building_data.scenarios['linearization_zone_air_temperature'],
                         building_data.constraint_timeseries.loc[
                             :, (
                                 building_data.zones.loc[zones_humidity_based_index, 'constraint_type']
@@ -3668,7 +3691,7 @@ class BuildingModel(object):
                     :, building_data.zones.loc[zones_humidity_based_index, 'zone_name'] + '_absolute_humidity'
                 ] = (
                     np.vectorize(cobmo.utils.calculate_absolute_humidity_humid_air)(
-                        building_data.scenarios['linearization_zone_air_temperature_cool'],
+                        building_data.scenarios['linearization_zone_air_temperature'],
                         building_data.constraint_timeseries.loc[
                             :, (
                                 building_data.zones.loc[zones_humidity_based_index, 'constraint_type']

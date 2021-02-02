@@ -389,7 +389,7 @@ def calculate_sky_temperature(
     """ Calculates sky temperatures from ambient air temperature for tropical weather.
 
     - Ambient air temperature is decreased by 11K to get the sky temperature.
-    - TODO: According to ISO ???
+    - According to ISO 52016-1, Table B.19.
     """
     # Load weather data.
     weather_types = pd.read_sql(

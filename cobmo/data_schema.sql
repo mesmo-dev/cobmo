@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS internal_gain_types (
 );
 CREATE TABLE IF NOT EXISTS linearization_types (
     linearization_type TEXT,
+    linearization_zone_air_temperature TEXT,
     linearization_zone_air_temperature_heat TEXT,
     linearization_zone_air_temperature_cool TEXT,
     linearization_surface_temperature TEXT,

@@ -176,7 +176,7 @@ Zone type characteristics.
 | --- |:---:| --- |
 | `zone_type` | | Unique type identifier.|
 | `heat_capacity` | J/(m³K) | Specific heat capacity. |
-| `infiltration_rate` | 1/h | Infiltration rate. |
+| `infiltration_rate` | 1/h | Infiltration rate, which is interpreted as ambient air entering the zone. |
 | `internal_gain_type` | | Type identifier as defined in `internal_gain_types`. |
 | `hvac_generic_type` | | Type identifier as defined in `hvac_generic_types`. |
 | `hvac_radiator_type` | | Type identifier as defined in `hvac_radiator_types`. |
@@ -198,7 +198,7 @@ Internal gain type definitions.
 | `occupancy_density` | person/m² | Peak occupancy density. |
 | `occupancy_heat_gain` | W/person | Sensible heat gain due to occupants. |
 | `occupancy_co2_gain` | ml/s/person | CO₂ gain due to occupants. *Only required when using `iaq_based` fresh air flow control in `zone_types`.*  |
-| `occupancy_humidity_gain` | g/h/person | Moisture gain due to occupants. *Only required when using `humidity_based` humidity control in `zone_types`.* |
+| `occupancy_humidity_gain` | g/s/person | Moisture gain due to occupants. *Only required when using `humidity_based` humidity control in `zone_types`.* |
 | `appliances_heat_gain` | W/m² | Peak sensible heat gain due to appliances. |
 
 ### `internal_gain_schedules`
@@ -300,9 +300,11 @@ The constraint timeseries is constructed by obtaining the appropriate value for 
 | `minimum_fresh_air_flow` | l/s/m² | Minimum fresh air supply based on floor area (includes ventilation requirements due to occupancy). *Not required when using `occupancy_based` or `iaq_based` fresh air flow control in `zone_types`.* |
 | `minimum_fresh_air_flow_building` | l/s/m² | Minimum fresh air supply for removing building emissions. *Only required when using `occupancy_based` fresh air flow control in `zone_types`.*|
 | `minimum_fresh_air_flow_occupants` | l/s/person | Minimum fresh air supply for removing occupant emissions. *Only required when using `occupancy_based` fresh air flow control in `zone_types`.* |
-| `maximum_co2_concentration` | ppm | Maximum indoor air CO₂ concentration. *Only required when using `iaq_based` fresh air flow control in `zone_types`.* |
+| `maximum_co2_concentration` | ppm | Maximum indoor air CO₂ concentration, assuming ppm by volume¹. *Only required when using `iaq_based` fresh air flow control in `zone_types`.* |
 | `minimum_relative_humidity` | % | Minimum indoor air relative humidity. *Only required when using `humidity_based` humidity control in `zone_types`.* |
 | `maximum_relative_humidity` | % | Maximum indoor air relative humidity. *Only required when using `humidity_based` humidity control in `zone_types`.* |
+
+¹ The units ppm by volume and ppm by mole are identical when assuming ideal gas behavior of CO₂ and air.
 
 ## Surface data
 
