@@ -25,12 +25,6 @@ CREATE TABLE IF NOT EXISTS electricity_price_timeseries (
     price REAL,
     PRIMARY KEY(price_type,time)
 );
-CREATE TABLE IF NOT EXISTS electricity_price_range (
-    time_period TEXT,
-    price_mean REAL,
-    delta_upper REAL,
-    delta_lower REAL
-);
 CREATE TABLE IF NOT EXISTS hvac_ahu_types (
     hvac_ahu_type TEXT,
     ahu_supply_air_temperature_setpoint TEXT,
