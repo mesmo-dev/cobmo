@@ -128,8 +128,6 @@ class BuildingData(object):
         timesteps (pd.Index): Index set of the timesteps.
         weather_timeseries (pd.DataFrame): Weather timeseries for the given scenario.
         electricity_price_timeseries (pd.DataFrame): Electricity price timeseries for the given scenario.
-        electricity_price_distribution_timeseries (pd.DataFrame): Electricity price distribution timeseries for
-            the given scenario.
         internal_gain_timeseries (pd.DataFrame): Internal gain timeseries for the given scenario.
         constraint_timeseries (pd.DataFrame): Constraint timeseries for the given scenario.
     """
@@ -147,7 +145,6 @@ class BuildingData(object):
     timesteps: pd.Index
     weather_timeseries: pd.DataFrame
     electricity_price_timeseries: pd.DataFrame
-    electricity_price_distribution_timeseries: pd.DataFrame = None  # Defaults to None if not defined.
     internal_gain_timeseries: pd.DataFrame = None  # Defaults to None if not defined.
     constraint_timeseries: pd.DataFrame
 
@@ -365,67 +362,6 @@ class BuildingData(object):
                 limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
             )
         )
-
-        # Obtain electricity price distribution timeseries.
-        electricity_price_range = pd.read_sql(
-            """
-            SELECT * FROM electricity_price_range
-            """,
-            con=database_connection,
-            index_col='time_period'
-        )
-        if len(electricity_price_range) > 0:
-            # Parse time period index.
-            electricity_price_range.index = np.vectorize(pd.Period)(electricity_price_range.index)
-            # Obtain complete schedule for all weekdays.
-            electricity_price_range_complete = []
-            for day in range(1, 8):
-                if day in electricity_price_range.index.day.unique():
-                    electricity_price_range_complete.append(
-                        electricity_price_range.loc[
-                                                    (electricity_price_range.index.day == day)
-                                                    , :]
-                    )
-                else:
-                    electricity_price_range_previous = electricity_price_range_complete[-1].copy()
-                    electricity_price_range_previous.index += pd.Timedelta('1 day')
-                    electricity_price_range_complete.append(electricity_price_range_previous)
-            electricity_price_range_complete = pd.concat(electricity_price_range_complete)
-
-            # Obtain complete schedule for each minute of the week.
-            electricity_price_range_complete = (
-                electricity_price_range_complete.reindex(
-                    pd.period_range(start='01T00:00', end='08T00:00', freq='T')
-                ).fillna(method='ffill')
-            )
-
-            # Reindex / fill internal gain schedule for given timesteps.
-            electricity_price_range_complete.index = (
-                pd.MultiIndex.from_arrays([
-                    electricity_price_range_complete.index.day - 1,
-                    electricity_price_range_complete.index.hour,
-                    electricity_price_range_complete.index.minute
-                ])
-            )
-            electricity_price_range = (
-                pd.DataFrame(
-                    index=pd.MultiIndex.from_arrays([
-                        self.timesteps.weekday,
-                        self.timesteps.hour,
-                        self.timesteps.minute
-                    ]),
-                    columns=electricity_price_range_complete.columns
-                )
-            )
-            for column in electricity_price_range.columns:
-                electricity_price_range[column] = (
-                    electricity_price_range[column].fillna(electricity_price_range_complete[column])
-                )
-            electricity_price_range.index = self.timesteps
-        else:
-            electricity_price_range = None
-
-        self.electricity_price_distribution_timeseries = electricity_price_range
 
         # Obtain internal gain timeseries based on schedules.
         internal_gain_schedule = pd.read_sql(

@@ -73,7 +73,6 @@ class BuildingModel(object):
             the first timestep.
         disturbance_timeseries (pd.DataFrame): Disturbance timeseries.
         electricity_price_timeseries (pd.DataFrame): Electricity price timeseries.
-        electricity_price_distribution_timeseries (pd.DataFrame): Electricity price value distribution timeseries.
         output_minimum_timeseries (pd.DataFrame): Minimum output constraint timeseries.
         output_maximum_timeseries (pd.DataFrame): Maximum output constraint timeseries.
     """
@@ -94,7 +93,6 @@ class BuildingModel(object):
     state_vector_initial: pd.Series
     disturbance_timeseries: pd.DataFrame
     electricity_price_timeseries: pd.DataFrame
-    electricity_price_distribution_timeseries: pd.DataFrame
     output_minimum_timeseries: pd.DataFrame
     output_maximum_timeseries: pd.DataFrame
 
@@ -3547,12 +3545,6 @@ class BuildingModel(object):
             else:
                 self.electricity_price_timeseries = building_data.electricity_price_timeseries
 
-        def define_electricity_price_distribution_timeseries():
-
-            self.electricity_price_distribution_timeseries = (
-                building_data.electricity_price_distribution_timeseries
-            )
-
         def define_output_constraint_timeseries():
 
             # Do not define constraints, if `constraint_type` not defined for any zones.
@@ -3828,7 +3820,6 @@ class BuildingModel(object):
         # Define timeseries.
         define_disturbance_timeseries()
         define_electricity_price_timeseries()
-        define_electricity_price_distribution_timeseries()
         define_output_constraint_timeseries()
 
         # Convert matrix constructors to dataframes.
