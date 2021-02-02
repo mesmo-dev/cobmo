@@ -200,6 +200,7 @@ Internal gain type definitions.
 | `occupancy_co2_gain` | ml/s/person | CO₂ gain due to occupants. *Only required when using `iaq_based` fresh air flow control in `zone_types`.*  |
 | `occupancy_humidity_gain` | g/s/person | Moisture gain due to occupants. *Only required when using `humidity_based` humidity control in `zone_types`.* |
 | `appliances_heat_gain` | W/m² | Peak sensible heat gain due to appliances. |
+| `warm_water_demand_thermal_power` | W/m² | Peak thermal heating power demand due to warm water demand. |
 
 ### `internal_gain_schedules`
 
@@ -209,8 +210,9 @@ The internal gain timeseries is constructed by obtaining the appropriate value f
 | --- |:---:| --- |
 | `internal_gain_type` | | Type identifier as defined in `internal_gain_types`. |
 | `time_period` | | Time period in `ddTHH:MM` format. `dd` is the weekday (`01` - Monday ... `07` - Sunday). `T` is the divider for date and time information according to ISO 8601. `HH:MM` is the daytime. |
-| `internal_gain_occupancy` | - | Occupancy rate between 0 and 1, where 1 represents peak occupancy. |
-| `internal_gain_appliances` | - | Appliance activity rate between 0 and 1, where 1 represents peak appliance activity. |
+| `internal_gain_occupancy` | - | Occupancy rate between 0 and 1, where 1 represents peak occupancy. *Defaults to 0, if column is not defined.* |
+| `internal_gain_appliances` | - | Appliance activity rate between 0 and 1, where 1 represents peak appliance activity. *Defaults to 0, if column is not defined.* |
+| `warm_water_demand` | - | Warm water demand rate between 0 and 1, where 1 represents peak demand. *Defaults to 0, if column is not defined.* |
 
 ### `internal_gain_timeseries`
 
@@ -220,8 +222,9 @@ Time series of internal gains. Higher resolution time steps are interpolated lin
 | --- |:---:| --- |
 | `internal_gain_type` | | Type identifier as defined in `internal_gain_types`. |
 | `time` | | Timestamp according to ISO 8601. |
-| `internal_gain_occupancy` | - | Occupancy rate between 0 and 1, where 1 represents peak occupancy. |
-| `internal_gain_appliances` | - | Appliance activity rate between 0 and 1, where 1 represents peak appliance activity. |
+| `internal_gain_occupancy` | - | Occupancy rate between 0 and 1, where 1 represents peak occupancy. *Defaults to 0, if column is not defined.* |
+| `internal_gain_appliances` | - | Appliance activity rate between 0 and 1, where 1 represents peak appliance activity. *Defaults to 0, if column is not defined.* |
+| `warm_water_demand` | - | Warm water demand rate between 0 and 1, where 1 represents peak demand. *Defaults to 0, if column is not defined.* |
 
 ### `hvac_generic_types`
 

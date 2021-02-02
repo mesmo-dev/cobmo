@@ -472,7 +472,7 @@ class BuildingData(object):
             # Pivot complete schedule.
             internal_gain_schedule_complete = internal_gain_schedule_complete.pivot(
                 columns='internal_gain_type',
-                values=['internal_gain_occupancy', 'internal_gain_appliances']
+                values=['internal_gain_occupancy', 'internal_gain_appliances', 'warm_water_demand']
             )
             internal_gain_schedule_complete.columns = (
                 internal_gain_schedule_complete.columns.map(lambda x: '_'.join(x[::-1]))
@@ -538,7 +538,7 @@ class BuildingData(object):
             # Pivot timeseries.
             internal_gain_timeseries = internal_gain_timeseries.pivot(
                 columns='internal_gain_type',
-                values=['internal_gain_occupancy', 'internal_gain_appliances']
+                values=['internal_gain_occupancy', 'internal_gain_appliances', 'warm_water_demand']
             )
             internal_gain_timeseries.columns = (
                 internal_gain_timeseries.columns.map(lambda x: '_'.join(x[::-1]))

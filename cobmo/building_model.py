@@ -280,6 +280,9 @@ class BuildingModel(object):
                 pd.Series(
                     building_data.zones['internal_gain_type'].dropna().unique() + '_internal_gain_appliances'
                 ),
+                pd.Series(
+                    building_data.zones['internal_gain_type'].dropna().unique() + '_warm_water_demand'
+                ),
 
                 # Constant, series of ones (workaround for constant model terms).
                 pd.Series(['constant'])
@@ -2707,6 +2710,8 @@ class BuildingModel(object):
 
             for zone_name, zone_data in building_data.zones.iterrows():
                 if pd.notnull(zone_data.at['internal_gain_type']):
+
+                    # Electric power due to appliances.
                     disturbance_output_matrix[
                         'electric_power_balance',
                         zone_data.at['internal_gain_type'] + '_internal_gain_appliances'
@@ -2716,6 +2721,18 @@ class BuildingModel(object):
                         * zone_data.at['zone_area']
                         / self.zone_area_total
                     )
+
+                    # Thermal power heating due to warm water demand.
+                    if pd.notnull(zone_data.at['warm_water_demand_thermal_power']):
+                        disturbance_output_matrix[
+                            'thermal_power_heating_balance',
+                            zone_data.at['internal_gain_type'] + '_warm_water_demand'
+                        ] += (
+                            1.0
+                            * zone_data.at['warm_water_demand_thermal_power']
+                            * zone_data.at['zone_area']
+                            / self.zone_area_total
+                        )
 
         def define_output_hvac_generic():
 

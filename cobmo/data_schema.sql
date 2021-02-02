@@ -80,14 +80,16 @@ CREATE TABLE IF NOT EXISTS initial_state_types (
 CREATE TABLE IF NOT EXISTS internal_gain_schedules (
     internal_gain_type TEXT,
     time_period TEXT,
-    internal_gain_occupancy REAL,
-    internal_gain_appliances REAL
+    internal_gain_occupancy REAL DEFAULT 0,
+    internal_gain_appliances REAL DEFAULT 0,
+    warm_water_demand REAL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS internal_gain_timeseries (
     internal_gain_type TEXT,
     time TEXT,
-    internal_gain_occupancy REAL,
-    internal_gain_appliances REAL
+    internal_gain_occupancy REAL DEFAULT 0,
+    internal_gain_appliances REAL DEFAULT 0,
+    warm_water_demand REAL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS internal_gain_types (
     internal_gain_type TEXT,
@@ -96,7 +98,8 @@ CREATE TABLE IF NOT EXISTS internal_gain_types (
     occupancy_heat_gain TEXT,
     occupancy_co2_gain TEXT,
     occupancy_humidity_gain TEXT,
-    appliances_heat_gain TEXT
+    appliances_heat_gain TEXT,
+    warm_water_demand_thermal_power TEXT
 );
 CREATE TABLE IF NOT EXISTS linearization_types (
     linearization_type TEXT,
