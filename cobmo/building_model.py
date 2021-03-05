@@ -461,16 +461,9 @@ class BuildingModel(object):
                 building_data.scenarios.at['initial_absolute_humidity']
             )
 
-            # Sensible storage state of charge.
+            # Storage state of charge.
             self.state_vector_initial.loc[
-                self.state_vector_initial.index.str.contains('_storage_state_of_charge')
-            ] = (
-                building_data.scenarios.at['initial_storage_state_of_charge']
-            )
-
-            # Battery storage state of charge.
-            self.state_vector_initial.loc[
-                self.state_vector_initial.index.str.contains('_storage_state_of_charge')
+                self.state_vector_initial.index.str.contains('storage_state_of_charge')
             ] = (
                 building_data.scenarios.at['initial_storage_state_of_charge']
             )
@@ -3156,7 +3149,7 @@ class BuildingModel(object):
             # Sensible storage heating.
             if building_data.scenarios.at['storage_commodity_type'] == 'sensible_heating':
                 control_output_matrix[
-                    'thermal_power_cooling_balance',
+                    'thermal_power_heating_balance',
                     'storage_charge_thermal_power_heating'
                 ] = 1.0
                 control_output_matrix[
@@ -3164,7 +3157,7 @@ class BuildingModel(object):
                     'storage_charge_thermal_power_heating'
                 ] = 1.0
                 control_output_matrix[
-                    'thermal_power_cooling_balance',
+                    'thermal_power_heating_balance',
                     'storage_discharge_thermal_power_heating'
                 ] = - 1.0
                 control_output_matrix[
@@ -3203,7 +3196,7 @@ class BuildingModel(object):
                 'plant_thermal_power_cooling'
             ] = 1.0
             control_output_matrix[
-                'grid_electric_power',
+                'electric_power_balance',
                 'plant_thermal_power_cooling'
             ] = (
                 1.0
@@ -3220,7 +3213,7 @@ class BuildingModel(object):
                 'plant_thermal_power_heating'
             ] = 1.0
             control_output_matrix[
-                'grid_electric_power',
+                'electric_power_balance',
                 'plant_thermal_power_heating'
             ] = (
                 1.0
