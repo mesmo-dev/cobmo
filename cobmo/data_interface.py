@@ -68,7 +68,7 @@ def recreate_database(
 
                 # Load table and write to database.
                 try:
-                    table = pd.read_csv(csv_file, dtype=np.str)
+                    table = pd.read_csv(csv_file, dtype=str)
                     table.to_sql(
                         table_name,
                         con=database_connection,
@@ -563,7 +563,7 @@ class BuildingData(object):
             constraint_schedule_complete = (
                 constraint_schedule_complete.reindex(
                     pd.period_range(start='01T00:00', end='08T00:00', freq='T')
-                ).astype(np.float).interpolate(method='linear').fillna(method='ffill')
+                ).astype(float).interpolate(method='linear').fillna(method='ffill')
             )
 
             # Reindex / fill schedule for given timesteps.
@@ -620,7 +620,7 @@ class BuildingData(object):
                 column = pd.to_numeric(column)
 
         # Explicitly parse to float, for consistent behavior independent of specific values.
-        column = column.astype(np.float)
+        column = column.astype(float)
 
         return column
 
