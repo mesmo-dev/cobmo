@@ -38,6 +38,7 @@ autodoc_mock_imports = [
     'numpy',
     'pandas',
     'plotly',
+    'psychrolib',
     'pvlib',
     'pyomo',
     'scipy',
