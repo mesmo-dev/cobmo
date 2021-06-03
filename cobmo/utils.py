@@ -1,7 +1,6 @@
 """Utility functions module."""
 
 import cvxpy as cp
-from CoolProp.HumidAirProp import HAPropsSI as humid_air_properties
 import datetime
 import logging
 import numpy as np
@@ -9,6 +8,7 @@ import os
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.io as pio
+import psychrolib
 import pvlib
 import re
 import scipy.sparse
@@ -210,11 +210,10 @@ def calculate_absolute_humidity_humid_air(
         relative_humidity  # In percent.
 ):
     absolute_humidity = (
-        humid_air_properties(
-            'W',
-            'T', temperature + 273.15,  # In K.
-            'R', relative_humidity / 100.0,  # In percent/100.
-            'P', 101325.0  # In Pa.
+        psychrolib.GetHumRatioFromRelHum(
+            TDryBulb=temperature,  # In °C.
+            RelHum=relative_humidity / 100.0,  # In [0,1].
+            Pressure=101325.0  # In Pa.
         )
     )
     return absolute_humidity  # In kg(water)/kg(air).
@@ -225,11 +224,9 @@ def calculate_enthalpy_humid_air(
         absolute_humidity  # In kg(water)/kg(air).
 ):
     enthalpy = (
-        humid_air_properties(
-            'H',
-            'T', temperature + 273.15,  # In K.
-            'W', absolute_humidity,  # In kg(water)/kg(air).
-            'P', 101325.0  # In Pa.
+        psychrolib.GetMoistAirEnthalpy(
+            TDryBulb=temperature,  # In °C.
+            HumRatio=absolute_humidity  # In kg(water)/kg(air).
         )
     )
     return enthalpy  # In J/kg.
@@ -240,21 +237,15 @@ def calculate_dew_point_enthalpy_humid_air(
         relative_humidity  # In percent.
 ):
     enthalpy = (
-        humid_air_properties(
-            'H',
-            'T',
-            humid_air_properties(
-                'D',
-                'T', temperature + 273.15,  # In K.
-                'R', relative_humidity / 100.0,  # In percent/100.
-                'P', 101325.0  # In Pa.
+        psychrolib.GetMoistAirEnthalpy(
+            TDryBulb=psychrolib.GetTDewPointFromRelHum(
+                TDryBulb=temperature,  # In °C.
+                RelHum=relative_humidity / 100.0  # In [0,1].
             ),
-            'W',
-            calculate_absolute_humidity_humid_air(
+            HumRatio=calculate_absolute_humidity_humid_air(
                 temperature,  # In °C.
                 relative_humidity  # In percent.
-            ),
-            'P', 101325.0  # In Pa.
+            )
         )
     )
     return enthalpy  # In J/kg.
@@ -326,12 +317,11 @@ def calculate_irradiation_surfaces(
             ghi=irradiation_ghi,
             solar_zenith=solarposition['zenith'],
             times=weather_timeseries.index,
-            temp_dew=humid_air_properties(
-                'D',
-                'T', weather_timeseries['ambient_air_temperature'].values + 273.15,
-                'W', weather_timeseries['ambient_air_absolute_humidity'].values,
-                'P', 101325
-            ) - 273.15  # Use CoolProps toolbox to calculate dew point temperature.
+            temp_dew=np.vectorize(psychrolib.GetTDewPointFromHumRatio)(  # In °C.
+                TDryBulb=weather_timeseries['ambient_air_temperature'].values,  # In °C.
+                HumRatio=weather_timeseries['ambient_air_absolute_humidity'].values,  # In kg(water)/kg(air).
+                Pressure=101325  # In Pa.
+            )
         )
         irradiation_dni = irradiation_dirint
 

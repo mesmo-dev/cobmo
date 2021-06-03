@@ -15,7 +15,7 @@ The preliminary documentation is located at [tumcreate-estl.github.io/cobmo](htt
 ## Installation
 
 1. Check requirements:
-    - Python 3.7
+    - Python 3.9
     - [Gurobi Optimizer](http://www.gurobi.com/)
 2. Clone or download repository.
 3. In your Python environment, run:

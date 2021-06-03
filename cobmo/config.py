@@ -6,6 +6,7 @@ import os
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.io as pio
+import psychrolib
 import yaml
 
 
@@ -141,3 +142,6 @@ if config['optimization']['solver_name'] == 'osqp':
     solver_parameters = dict(max_iter=1000000)
 else:
     solver_parameters = dict()
+
+# Modify psychrolib settings.
+psychrolib.SetUnitSystem(psychrolib.SI)
