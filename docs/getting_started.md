@@ -5,7 +5,7 @@
 ### Quick installation
 
 1. Check requirements:
-    - Python 3.7
+    - Python 3.9
     - [Gurobi Optimizer](http://www.gurobi.com/)
 2. Clone or download repository.
 3. In your Python environment, run:
@@ -20,7 +20,7 @@ The following installation procedure requires additional steps, but can improve 
     - [Gurobi Optimizer](http://www.gurobi.com/) or [CPLEX Optimizer](https://www.ibm.com/analytics/cplex-optimizer)
 2. Clone or download repository.
 3. In Anaconda Prompt, run:
-    1. `conda create -n cobmo python=3.7`
+    1. `conda create -n cobmo python=3.9`
     2. `conda activate cobmo`
     3. `conda install -c conda-forge cvxpy numpy pandas`
     4. `pip install -v -e path_to_repository`
