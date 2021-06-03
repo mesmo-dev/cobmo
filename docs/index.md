@@ -18,6 +18,7 @@ Please note that the repository is under active development and the interface ma
     api_reference
     Technical documentation <./_static/technical_documentation.pdf#http://>
     contributing
+    change_log
     publications
 ```
 
