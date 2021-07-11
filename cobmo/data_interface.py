@@ -321,7 +321,7 @@ class BuildingData(object):
                 parse_dates=['time']
             )
         )
-        self.weather_timeseries.index = self.weather_timeseries['time']
+        self.weather_timeseries.set_index('time', inplace=True)
         self.weather_timeseries = (
             self.weather_timeseries.reindex(
                 self.timesteps
@@ -350,18 +350,19 @@ class BuildingData(object):
                 parse_dates=['time']
             )
         )
-        self.electricity_price_timeseries.index = self.electricity_price_timeseries['time']
-        self.electricity_price_timeseries = (
-            self.electricity_price_timeseries.reindex(
-                self.timesteps
-            ).interpolate(
-                'linear'
-            ).bfill(
-                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
-            ).ffill(
-                limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
+        self.electricity_price_timeseries.set_index('time', inplace=True)
+        if len(self.electricity_price_timeseries) > 0:
+            self.electricity_price_timeseries = (
+                self.electricity_price_timeseries.reindex(
+                    self.timesteps
+                ).interpolate(
+                    'linear'
+                ).bfill(
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
+                ).ffill(
+                    limit=int(pd.to_timedelta('1h') / pd.to_timedelta(self.timestep_interval))
+                )
             )
-        )
 
         # Obtain internal gain timeseries based on schedules.
         internal_gain_schedule = pd.read_sql(
