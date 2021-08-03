@@ -20,6 +20,7 @@ def main():
     validation_data_path = os.path.join(cobmo.config.config['paths']['data'], 'supplementary_data', 'validation')
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
+    # TODO: Check heat capacity units.
     cobmo.data_interface.recreate_database()
 
     # Obtain building model.
