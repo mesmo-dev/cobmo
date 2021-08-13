@@ -64,7 +64,7 @@ Before pushing a new commit / release to the `master` branch, please go through 
   - `docs/publications.md` (at example citation)
   - `docs/conf.py` (at `copyright =`)
   - `LICENSE`
-5. After pushing a new commit / release, create a tag and publish a new release on Github: <https://github.com/TUMCREATE-ESTL/cobmo/releases>
+5. After pushing a new commit / release, create a tag and publish a new release on Github: <https://github.com/mesmo-dev/cobmo/releases>
 6. After publishing a new release, edit the latest Zenodo entry: <https://doi.org/10.5281/zenodo.3523539>
   - Set title to "CoBMo - Control-oriented Building Model".
   - Set correct author names.
@@ -74,9 +74,9 @@ Before pushing a new commit / release to the `master` branch, please go through 
 
 The `environment.yml` file in the repository base directory provides a snapshot of an Anaconda environment with specific package versions which has been tested and is confirmed to work. The `environment.yml` file should be updated before releases, i.e. commits to the `master` branch. To update `environment.yml`, follow these steps:
 
-1. Uninstall CoBMo / delete the existing `fledge` Anaconda environment: `conda env remove -n fledge`
-2. Reinstall CoBMo / recreate the `fledge` Anaconda environment based on the recommended installation steps in [Getting started](getting_started.md).
+1. Uninstall CoBMo / delete the existing `cobmo` Anaconda environment: `conda env remove -n cobmo`
+2. Reinstall CoBMo / recreate the `cobmo` Anaconda environment based on the recommended installation steps in [Getting started](getting_started.md).
 3. Run **all test** and **all examples scripts** and fix any incompatibilities / bugs.
-4. Update `environment.yml`: `conda env export -n fledge > path_to_repository/environment.yml`
+4. Update `environment.yml`: `conda env export -n cobmo > path_to_repository/environment.yml`
 5. Remove `prefix: ...` line from `environment.yml`.
 6. Add line at the top of file: `# Last updated: DD Month YYYY (CoBMo vX.X.X)`

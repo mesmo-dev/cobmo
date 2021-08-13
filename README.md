@@ -6,11 +6,11 @@ The Control-oriented Building Model (CoBMo) is a building modelling framework ca
 
 ## Work in Progress
 
-Please note that the repository is under active development and the interface may change without notice. Create an [issue](https://github.com/TUMCREATE-ESTL/cobmo/issues) if you have ideas / comments / criticism that may help to make the tool more useful.
+Please note that the repository is under active development and the interface may change without notice. Create an [issue](https://github.com/mesmo-dev/cobmo/issues) if you have ideas / comments / criticism that may help to make the tool more useful.
 
 ## Documentation
 
-The preliminary documentation is located at [tumcreate-estl.github.io/cobmo](https://tumcreate-estl.github.io/cobmo).
+The preliminary documentation is located at [mesmo-dev.github.io/cobmo](https://mesmo-dev.github.io/cobmo).
 
 ## Installation
 
