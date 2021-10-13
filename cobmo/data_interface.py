@@ -151,11 +151,15 @@ class BuildingData(object):
     def __init__(
             self,
             scenario_name: str,
-            database_connection=connect_database(),
+            database_connection=None,
             timestep_start=None,
             timestep_end=None,
             timestep_interval=None
     ) -> None:
+
+        # Obtain database connection.
+        if database_connection is None:
+            database_connection = connect_database()
 
         # Store scenario name.
         self.scenario_name = scenario_name
