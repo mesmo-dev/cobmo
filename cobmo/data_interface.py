@@ -5,6 +5,7 @@ import numpy as np
 import os
 import pandas as pd
 import sqlite3
+import tqdm
 import typing
 
 import cobmo.config
@@ -12,10 +13,32 @@ import cobmo.config
 logger = cobmo.config.get_logger(__name__)
 
 
-def recreate_database(
-        additional_data_paths: typing.List[str] = cobmo.config.config['paths']['additional_data']
-) -> None:
+def recreate_database():
     """Recreate SQLITE database from SQL schema file and CSV files in the data path / additional data paths."""
+
+    # Log message.
+    cobmo.utils.log_time("recreate CoBMo SQLITE database")
+
+    # Find CSV files.
+    data_paths = (
+        [cobmo.config.config['paths']['data']] + cobmo.config.config['paths']['additional_data']
+        if cobmo.config.config['paths']['additional_data'] is not None
+        else [cobmo.config.config['paths']['data']]
+    )
+    logger.debug("CoBMo data paths:\n" + '\n'.join(data_paths))
+    csv_files = [
+        csv_file
+        for data_path in data_paths
+        for csv_file in glob.glob(os.path.join(data_path, '**', '*.csv'), recursive=True)
+        if all(
+            os.path.join(folder, '') not in csv_file
+            for folder in [
+                cobmo.config.config['paths']['supplementary_data'],
+                *cobmo.config.config['paths']['ignore_data_folders']
+            ]
+        )
+    ]
+    logger.debug("Found CoBMo CSV files:\n" + '\n'.join(csv_files))
 
     # Connect SQLITE database (creates file, if none).
     database_connection = sqlite3.connect(cobmo.config.config['paths']['database'])
@@ -36,51 +59,62 @@ def recreate_database(
         cursor.executescript(database_schema_file.read())
     database_connection.commit()
 
-    # Import CSV files into SQLITE database.
-    # - Import only from data path, if no additional data paths are specified.
-    data_paths = (
-        [cobmo.config.config['paths']['data']] + additional_data_paths
-        if additional_data_paths is not None
-        else [cobmo.config.config['paths']['data']]
-    )
+    # Obtain valid table names.
     valid_table_names = (
         pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", database_connection).iloc[:, 0].tolist()
     )
-    for data_path in data_paths:
-        for csv_file in glob.glob(os.path.join(data_path, '**', '*.csv'), recursive=True):
 
-            # Exclude CSV files from supplementary data folders.
-            if os.path.join('data', 'supplementary_data') not in csv_file:
+    # Import CSV files into SQLITE database.
+    cobmo.utils.log_time("import CSV files into SQLITE database")
+    for csv_file in tqdm.tqdm(
+            csv_files,
+            total=len(csv_files),
+            disable=(cobmo.config.config['logs']['level'] != 'debug')
+    ):
+        import_csv_file(
+            csv_file,
+            valid_table_names=valid_table_names,
+            database_connection=database_connection
+        )
+    cobmo.utils.log_time("import CSV files into SQLITE database")
 
-                # Debug message.
-                logger.debug(f"Loading {csv_file} into database.")
-
-                # Obtain table name.
-                table_name = os.path.splitext(os.path.basename(csv_file))[0]
-                # Raise exception, if table doesn't exist.
-                try:
-                    assert table_name in valid_table_names
-                except AssertionError:
-                    logger.exception(
-                        f"Error loading '{csv_file}' into database, because there is no table named '{table_name}'."
-                    )
-                    raise
-
-                # Load table and write to database.
-                try:
-                    table = pd.read_csv(csv_file, dtype=str)
-                    table.to_sql(
-                        table_name,
-                        con=database_connection,
-                        if_exists='append',
-                        index=False
-                    )
-                except Exception:
-                    logger.error(f"Error loading {csv_file} into database.")
-                    raise
-
+    # Close SQLITE connection.
     cursor.close()
     database_connection.close()
+
+    # Log message.
+    cobmo.utils.log_time("recreate CoBMo SQLITE database")
+
+
+def import_csv_file(
+        csv_file,
+        valid_table_names,
+        database_connection=None
+):
+
+    # Obtain database connection.
+    if database_connection is None:
+        database_connection = connect_database()
+
+    # Obtain table name.
+    table_name = os.path.splitext(os.path.basename(csv_file))[0]
+    # Raise exception, if table doesn't exist.
+    if not (table_name in valid_table_names):
+        raise NameError(
+            f"Error loading '{csv_file}' into database, because there is no table named '{table_name}'."
+        )
+
+    # Load table and write to database.
+    try:
+        table = pd.read_csv(csv_file, dtype=str)
+        table.to_sql(
+            table_name,
+            con=database_connection,
+            if_exists='append',
+            index=False
+        )
+    except Exception as exception:
+        raise ImportError(f"Error loading {csv_file} into database.") from exception
 
 
 def connect_database() -> sqlite3.Connection:

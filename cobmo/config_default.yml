@@ -3,6 +3,7 @@
 # - In the path settings, `./` denotes the repository base directory and is replaced upon loading.
 paths:
   additional_data: []
+  ignore_data_folders: []
   data: ./data
   supplementary_data: ./data/supplementary_data
   database: ./data/database.sqlite
@@ -15,7 +16,7 @@ tests:
   show_plots: true  # If True, tests may produce plots.
 logs:
   level: info  # Choices: `debug`, `info`, `warn`, `error`.
-  format: '%(asctime)s | %(levelname)s | %(name)s | %(message)s'
+  format: '%(asctime)s | %(levelname)s | %(message)s'
 plots:
   matplotlib_style: seaborn-colorblind
   plotly_font_family: Arial
