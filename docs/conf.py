@@ -42,7 +42,8 @@ autodoc_mock_imports = [
     'pvlib',
     'pyomo',
     'scipy',
-    'seaborn'
+    'seaborn',
+    'tqdm',
 ]
 napoleon_use_ivar = True
 

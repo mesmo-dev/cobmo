@@ -24,5 +24,6 @@ setuptools.setup(
         'plotly',
         'psychrolib',
         'pvlib',
-        'scipy'
+        'scipy',
+        'tqdm',
     ])
