@@ -176,6 +176,7 @@ class MatrixConstructor(object):
 
 def log_time(
         label: str,
+        log_level: str = 'debug',
         logger_object: logging.Logger = logger
 ):
     """Log start / end message and time duration for given label.
@@ -183,26 +184,36 @@ def log_time(
     - When called with given label for the first time, will log start message.
     - When called subsequently with the same / previously used label, will log end message and time duration since
       logging the start message.
-    - Start / end messages are logged as debug messages. The logger object can be given as keyword argument.
-      By default, uses ``utils.logger`` as logger.
-    - Start message: "Starting `label`."
-    - End message: "Completed `label` in `duration` seconds."
+    - The log level for start / end messages can be given as keyword argument, By default, messages are logged as
+      debug messages.
+    - The logger object can be given as keyword argument. By default, uses ``utils.logger`` as logger.
+    - Start message: "Starting ``label``."
+    - End message: "Completed ``label`` in ``duration`` seconds."
 
     Arguments:
         label (str): Label for the start / end message.
 
     Keyword Arguments:
+        log_level (str): Log level to which the start / end messages are output. Choices: 'debug', 'info'.
+            Default: 'debug'.
         logger_object (logging.logger.Logger): Logger object to which the start / end messages are output. Default:
             ``utils.logger``.
     """
 
     time_now = time.time()
 
+    if log_level == 'debug':
+        logger_handle = lambda message: logger_object.debug(message)
+    elif log_level == 'info':
+        logger_handle = lambda message: logger_object.info(message)
+    else:
+        raise ValueError(f"Invalid log level: '{log_level}'")
+
     if label in log_times.keys():
-        logger_object.debug(f"Completed {label} in {(time_now - log_times[label]):.6f} seconds.")
+        logger_handle(f"Completed {label} in {(time_now - log_times.pop(label)):.6f} seconds.")
     else:
         log_times[label] = time_now
-        logger_object.debug(f"Starting {label}.")
+        logger_handle(f"Starting {label}.")
 
 
 def calculate_absolute_humidity_humid_air(
