@@ -20,13 +20,13 @@ def recreate_database():
     cobmo.utils.log_time("recreate CoBMo SQLITE database")
 
     # Find CSV files.
-    data_paths = (
-        [cobmo.config.config['paths']['data']] + cobmo.config.config['paths']['additional_data']
-        if cobmo.config.config['paths']['additional_data'] is not None
-        else [cobmo.config.config['paths']['data']]
-    )
+    # - Using set instead of list to avoid duplicate entries.
+    data_paths = {
+        cobmo.config.config['paths']['data'],
+        *cobmo.config.config['paths']['additional_data']
+    }
     logger.debug("CoBMo data paths:\n" + '\n'.join(data_paths))
-    csv_files = [
+    csv_files = {
         csv_file
         for data_path in data_paths
         for csv_file in glob.glob(os.path.join(data_path, '**', '*.csv'), recursive=True)
@@ -37,7 +37,7 @@ def recreate_database():
                 *cobmo.config.config['paths']['ignore_data_folders']
             ]
         )
-    ]
+    }
     logger.debug("Found CoBMo CSV files:\n" + '\n'.join(csv_files))
 
     # Connect SQLITE database (creates file, if none).
