@@ -1,19 +1,15 @@
 """Setup script."""
 
 import setuptools
-import subprocess
-import sys
-
-# Install Gurobi interface. Use `pip -v` to see subprocess outputs.
-subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-i', 'https://pypi.gurobi.com', 'gurobipy'])
 
 setuptools.setup(
     name='cobmo',
     version='0.3.0',
-    py_modules=setuptools.find_packages(),
+    packages=setuptools.find_packages(),
     install_requires=[
         # Please note: Dependencies must also be added in `docs/conf.py` to `autodoc_mock_imports`.
         'cvxpy',
+        'gurobipy',
         'hvplot',
         'kaleido',  # For static plot output with plotly.
         'matplotlib',
@@ -26,4 +22,5 @@ setuptools.setup(
         'pvlib',
         'scipy',
         'tqdm',
-    ])
+    ]
+)
