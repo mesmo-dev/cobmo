@@ -6,6 +6,7 @@ import logging
 import numpy as np
 import os
 import pandas as pd
+import pathlib
 import plotly.graph_objects as go
 import plotly.io as pio
 import psychrolib
@@ -528,17 +529,6 @@ def calculate_discounted_payback_time(
     )
 
 
-def get_timestamp(
-        time: datetime.datetime = None
-) -> str:
-    """Generate formatted timestamp string, e.g., for saving results with timestamp."""
-
-    if time is None:
-        time = datetime.datetime.now()
-
-    return time.strftime('%Y-%m-%d_%H-%M-%S')
-
-
 def get_results_path(
         base_name: str,
         scenario_name: str = None
@@ -553,12 +543,12 @@ def get_results_path(
     """
 
     # Preprocess results path name components, including removing non-alphanumeric characters.
-    base_name = re.sub(r'\W+', '', os.path.basename(os.path.splitext(base_name)[0])) + '_'
+    base_name = re.sub(r"\W-+", "", pathlib.Path(base_name).stem) + "_"
     scenario_name = '' if scenario_name is None else re.sub(r'\W+', '', scenario_name) + '_'
-    timestamp = cobmo.utils.get_timestamp()
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S_%f")
 
     # Obtain results path.
-    results_path = os.path.join(cobmo.config.config['paths']['results'], f'{base_name}{scenario_name}{timestamp}')
+    results_path = cobmo.config.config['paths']['results'] / f'{base_name}{scenario_name}{timestamp}'
 
     # Instantiate results directory.
     # TODO: Catch error if dir exists.
@@ -575,13 +565,11 @@ def get_alphanumeric_string(
     return re.sub(r'\W+', '_', string).strip('_').lower()
 
 
-def launch(path):
+def launch(path: pathlib.Path):
     """Launch the file at given path with its associated application. If path is a directory, open in file explorer."""
 
-    try:
-        assert os.path.exists(path)
-    except AssertionError:
-        logger.error(f'Cannot launch file or directory that does not exist: {path}')
+    if not path.exists():
+        raise FileNotFoundError(f"Cannot launch file or directory that does not exist: {path}")
 
     if sys.platform == 'win32':
         os.startfile(path)
@@ -593,7 +581,7 @@ def launch(path):
 
 def write_figure_plotly(
         figure: go.Figure,
-        results_path: str,
+        results_path: pathlib.Path,
         file_format=cobmo.config.config['plots']['file_format']
 ):
     """Utility function for writing / storing plotly figure to output file. File format can be given with

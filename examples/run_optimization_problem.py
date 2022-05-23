@@ -31,13 +31,13 @@ def main():
     print(f"disturbance_timeseries = \n{building_model.disturbance_timeseries}")
 
     # Store building model matrices and disturbance timeseries as CSV.
-    building_model.state_matrix.to_csv(os.path.join(results_path, 'building_state_matrix.csv'))
-    building_model.control_matrix.to_csv(os.path.join(results_path, 'building_control_matrix.csv'))
-    building_model.disturbance_matrix.to_csv(os.path.join(results_path, 'building_disturbance_matrix.csv'))
-    building_model.state_output_matrix.to_csv(os.path.join(results_path, 'building_state_output_matrix.csv'))
-    building_model.control_output_matrix.to_csv(os.path.join(results_path, 'building_control_output_matrix.csv'))
-    building_model.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_disturbance_output_matrix.csv'))
-    building_model.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
+    building_model.state_matrix.to_csv(results_path / 'building_state_matrix.csv')
+    building_model.control_matrix.to_csv(results_path / 'building_control_matrix.csv')
+    building_model.disturbance_matrix.to_csv(results_path / 'building_disturbance_matrix.csv')
+    building_model.state_output_matrix.to_csv(results_path / 'building_state_output_matrix.csv')
+    building_model.control_output_matrix.to_csv(results_path / 'building_control_output_matrix.csv')
+    building_model.disturbance_output_matrix.to_csv(results_path / 'building_disturbance_output_matrix.csv')
+    building_model.disturbance_timeseries.to_csv(results_path / 'building_disturbance_timeseries.csv')
 
     # Solve optimization problem and obtain results.
     results = building_model.optimize()
@@ -49,9 +49,9 @@ def main():
     print(f"operation_cost = {results['operation_cost']}")
 
     # Store results to CSV.
-    results['control_vector'].to_csv(os.path.join(results_path, 'control_vector.csv'))
-    results['state_vector'].to_csv(os.path.join(results_path, 'state_vector.csv'))
-    results['output_vector'].to_csv(os.path.join(results_path, 'output_vector.csv'))
+    results['control_vector'].to_csv(results_path / 'control_vector.csv')
+    results['state_vector'].to_csv(results_path / 'state_vector.csv')
+    results['output_vector'].to_csv(results_path / 'output_vector.csv')
 
     # Plot results.
     for output in building_model.outputs:
@@ -81,7 +81,7 @@ def main():
             legend=go.layout.Legend(x=0.99, xanchor='auto', y=0.99, yanchor='auto')
         )
         # figure.show()
-        cobmo.utils.write_figure_plotly(figure, os.path.join(results_path, output))
+        cobmo.utils.write_figure_plotly(figure, results_path / output)
 
     # Print results path.
     cobmo.utils.launch(results_path)

@@ -26,13 +26,13 @@ def main():
     building = cobmo.building_model.BuildingModel(scenario_name)
 
     # Save building model matrices to CSV for debugging.
-    building.state_matrix.to_csv(os.path.join(results_path, 'building_state_matrix.csv'))
-    building.control_matrix.to_csv(os.path.join(results_path, 'building_control_matrix.csv'))
-    building.disturbance_matrix.to_csv(os.path.join(results_path, 'building_disturbance_matrix.csv'))
-    building.state_output_matrix.to_csv(os.path.join(results_path, 'building_state_output_matrix.csv'))
-    building.control_output_matrix.to_csv(os.path.join(results_path, 'building_control_output_matrix.csv'))
-    building.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_disturbance_output_matrix.csv'))
-    building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
+    building.state_matrix.to_csv(results_path / 'building_state_matrix.csv')
+    building.control_matrix.to_csv(results_path / 'building_control_matrix.csv')
+    building.disturbance_matrix.to_csv(results_path / 'building_disturbance_matrix.csv')
+    building.state_output_matrix.to_csv(results_path / 'building_state_output_matrix.csv')
+    building.control_output_matrix.to_csv(results_path / 'building_control_output_matrix.csv')
+    building.disturbance_output_matrix.to_csv(results_path / 'building_disturbance_output_matrix.csv')
+    building.disturbance_timeseries.to_csv(results_path / 'building_disturbance_timeseries.csv')
 
     # Run controller.
     controller = cobmo.optimization_problem.OptimizationProblem(
@@ -48,9 +48,9 @@ def main():
     ) = controller.solve()
 
     # Save controller timeseries to CSV for debugging.
-    control_vector_controller.to_csv(os.path.join(results_path, 'control_vector_controller.csv'))
-    state_vector_controller.to_csv(os.path.join(results_path, 'state_vector_controller.csv'))
-    output_vector_controller.to_csv(os.path.join(results_path, 'output_vector_controller.csv'))
+    control_vector_controller.to_csv(results_path / 'control_vector_controller.csv')
+    state_vector_controller.to_csv(results_path / 'state_vector_controller.csv')
+    output_vector_controller.to_csv(results_path / 'output_vector_controller.csv')
 
     # Hvplot has no default options.
     # Workaround: Pass this dict to every new plot.
@@ -143,7 +143,7 @@ def main():
             radiator_hull_temperature="Radiator hull temperature [°C]",
         ).cols(1),
         # Plots open in browser and are also stored in results directory.
-        filename=os.path.join(results_path, 'example_plots.html')
+        filename=results_path / 'example_plots.html'
     )
 
     # Print operation cost for debugging.

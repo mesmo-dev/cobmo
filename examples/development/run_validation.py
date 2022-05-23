@@ -17,7 +17,7 @@ def main():
     # Settings.
     scenario_name = 'validation_1zone_no_window'
     results_path = cobmo.utils.get_results_path(__file__, scenario_name)
-    validation_data_path = os.path.join(cobmo.config.config['paths']['data'], 'supplementary_data', 'validation')
+    validation_data_path = cobmo.config.config['paths']['data'] / 'supplementary_data' / 'validation'
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
     # TODO: Check heat capacity units.
@@ -41,18 +41,18 @@ def main():
     print(f"disturbance_timeseries = \n{building.disturbance_timeseries}")
 
     # Store building model matrices and disturbance timeseries as CSV.
-    building.state_matrix.to_csv(os.path.join(results_path, 'building_state_matrix.csv'))
-    building.control_matrix.to_csv(os.path.join(results_path, 'building_control_matrix.csv'))
-    building.disturbance_matrix.to_csv(os.path.join(results_path, 'building_disturbance_matrix.csv'))
-    building.state_output_matrix.to_csv(os.path.join(results_path, 'building_state_output_matrix.csv'))
-    building.control_output_matrix.to_csv(os.path.join(results_path, 'building_control_output_matrix.csv'))
-    building.disturbance_output_matrix.to_csv(os.path.join(results_path, 'building_disturbance_output_matrix.csv'))
-    building.disturbance_timeseries.to_csv(os.path.join(results_path, 'building_disturbance_timeseries.csv'))
+    building.state_matrix.to_csv(results_path / 'building_state_matrix.csv')
+    building.control_matrix.to_csv(results_path / 'building_control_matrix.csv')
+    building.disturbance_matrix.to_csv(results_path / 'building_disturbance_matrix.csv')
+    building.state_output_matrix.to_csv(results_path / 'building_state_output_matrix.csv')
+    building.control_output_matrix.to_csv(results_path / 'building_control_output_matrix.csv')
+    building.disturbance_output_matrix.to_csv(results_path / 'building_disturbance_output_matrix.csv')
+    building.disturbance_timeseries.to_csv(results_path / 'building_disturbance_timeseries.csv')
 
     # Load validation data.
     output_vector_validation = (
         pd.read_csv(
-            os.path.join(validation_data_path, scenario_name + '.csv'),
+            validation_data_path / f'{scenario_name}.csv',
             index_col='time',
             parse_dates=True,
         ).reindex(
@@ -96,9 +96,9 @@ def main():
     print(f"output_vector_simulation = \n{output_vector_simulation}")
 
     # Store simulation results as CSV.
-    control_vector_simulation.to_csv(os.path.join(results_path, 'control_vector_simulation.csv'))
-    state_vector_simulation.to_csv(os.path.join(results_path, 'state_vector_simulation.csv'))
-    output_vector_simulation.to_csv(os.path.join(results_path, 'output_vector_simulation.csv'))
+    control_vector_simulation.to_csv(results_path / 'control_vector_simulation.csv')
+    state_vector_simulation.to_csv(results_path / 'state_vector_simulation.csv')
+    output_vector_simulation.to_csv(results_path / 'output_vector_simulation.csv')
 
     # Run error calculation function.
     (
@@ -116,8 +116,8 @@ def main():
     print(error_summary)
 
     # Store error summary as CSV.
-    error_summary.to_csv(os.path.join(results_path, 'error_summary.csv'))
-    error_timeseries.to_csv(os.path.join(results_path, 'error_timeseries.csv'))
+    error_summary.to_csv(results_path / 'error_summary.csv')
+    error_timeseries.to_csv(results_path / 'error_timeseries.csv')
 
     # Combine data for plotting.
     zone_temperature_comparison = (
@@ -293,7 +293,7 @@ def main():
             zone_temperature_error="Zone temp. error [K]",
         ).cols(1),
         # Plots open in browser and are also stored in results directory.
-        filename=os.path.join(results_path, 'validation_plots.html')
+        filename=results_path / 'validation_plots.html'
     )
 
     # Print results path.
