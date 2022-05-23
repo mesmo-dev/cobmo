@@ -3,7 +3,7 @@
 
 # Project information.
 project = 'CoBMo'
-copyright = '2018-2021, TUMCREATE'
+copyright = '2018-2022, TUMCREATE'
 author = 'TUMCREATE'
 
 # Extensions.
