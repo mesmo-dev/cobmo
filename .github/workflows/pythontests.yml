@@ -1,39 +1,40 @@
 name: Python tests
-
 on: [push]
 
 jobs:
   run-tests:
-
     runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 8
+      fail-fast: false
       matrix:
         os: [
-            windows-latest,
-            # macos-latest,
-            ubuntu-latest
+          windows-latest,
+          macos-latest,
+          ubuntu-latest
         ]
         python-version: [3.7, 3.8, 3.9]
+    defaults:
+      run:
+        shell: bash -l {0}  # Required for conda commands.
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: s-weigand/setup-conda@v1
       with:
-        python-version: ${{ matrix.python-version }}
+        submodules: recursive
+    - name: Set up Python
+      uses: conda-incubator/setup-miniconda@v2
     - name: Install dependencies
       run: |
-        pip install -v -e .
+        conda create -n cobmo -c conda-forge python=${{ matrix.python-version }} cvxpy numpy pandas scipy
+        conda activate cobmo
+        pip install -e .[tests]
     - name: Lint with flake8
       run: |
-        pip install flake8
+        conda activate cobmo
         # Stop the build if there are Python syntax errors or undefined names.
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Exit-zero treats all errors as warnings. Line lengths should not exceed 120 characters.
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
-    - name: Test with pytest
+    - name: Run tests
       run: |
-        pip install pytest
-        pytest tests
+        conda activate cobmo
+        pytest tests --cov=./ --cov-report=xml
