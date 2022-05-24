@@ -32,7 +32,7 @@ jobs:
       run: |
         conda create -n cobmo -c conda-forge python=3.8 contextily cvxpy numpy pandas scipy
         conda activate cobmo
-        python development_setup.py
+        pip install -e .[tests]
     - name: Get new environment-${{ matrix.os }}.yml
       run: |
         rm -f environment-*
