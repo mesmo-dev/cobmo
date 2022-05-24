@@ -1,5 +1,6 @@
-recommonmark
+furo
+myst-parser[linkify]
+recommonmark  # Deprecated, but kept here for backwards compatibility with docs.
 sphinx
-sphinx_markdown_tables
+sphinx-copybutton
 sphinx-multiversion
-sphinx-rtd-theme
