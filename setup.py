@@ -16,11 +16,17 @@ setuptools.setup(
         'multimethod',
         'numpy',
         'pandas',
-        'parameterized',  # for tests.
         'plotly',
         'psychrolib',
         'pvlib',
         'scipy',
         'tqdm',
-    ]
+    ],
+    extras_require={"tests": [
+        "flake8",
+        "parameterized",
+        "pytest",
+        "pytest-cov",
+        "pytest-subtests",
+    ]}
 )
