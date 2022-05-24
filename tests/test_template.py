@@ -9,7 +9,6 @@ logger = cobmo.config.get_logger(__name__)
 
 
 class TestTemplate(unittest.TestCase):
-
     def test_equal(self):
         # Define expected result.
         expected = 4
@@ -37,5 +36,5 @@ class TestTemplate(unittest.TestCase):
         self.assertNotEqual(actual, expected)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

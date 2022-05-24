@@ -8,9 +8,9 @@ import sys
 sys.path.insert(0, os.path.abspath(".."))
 
 # Project information.
-project = 'CoBMo'
-copyright = '2018-2022, TUMCREATE'
-author = 'MESMO authors'
+project = "CoBMo"
+copyright = "2018-2022, TUMCREATE"
+author = "MESMO authors"
 
 # Extensions.
 # - Add any Sphinx extension module names here, as strings. They can be
@@ -30,36 +30,36 @@ autodoc_default_options = {"members": None, "show-inheritance": None, "member-or
 autodoc_typehints = "description"
 autodoc_mock_imports = [
     # Please note: Do not remove deprecated dependencies, because these are still needed for docs of previous versions.
-    'cvxpy',
-    'CoolProp',
-    'hvplot',
-    'kaleido',
-    'matplotlib',
-    'multimethod',
-    'numpy',
-    'pandas',
-    'plotly',
-    'psychrolib',
-    'pvlib',
-    'pyomo',
-    'scipy',
-    'seaborn',
-    'tqdm',
+    "cvxpy",
+    "CoolProp",
+    "hvplot",
+    "kaleido",
+    "matplotlib",
+    "multimethod",
+    "numpy",
+    "pandas",
+    "plotly",
+    "psychrolib",
+    "pvlib",
+    "pyomo",
+    "scipy",
+    "seaborn",
+    "tqdm",
 ]
 napoleon_use_ivar = True
 
 # Source settings.
 source_suffix = {
-    '.rst': 'restructuredtext',
-    '.md': 'markdown',
+    ".rst": "restructuredtext",
+    ".md": "markdown",
 }
-master_doc = 'index'
+master_doc = "index"
 
 # Exclude settings.
 # - List of patterns, relative to source directory, that match files and
 #   directories to ignore when looking for source files.
 #   This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'README.md']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md"]
 
 # HTML theme settings.
 # - The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -108,5 +108,7 @@ myst_enable_extensions = [
 # Recommonmark settings.
 # - Deprecated, but kept here for backwards compatibility with docs.
 from recommonmark.transform import AutoStructify
+
+
 def setup(app):
     app.add_transform(AutoStructify)

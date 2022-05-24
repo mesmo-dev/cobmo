@@ -12,7 +12,7 @@ import cobmo
 def main():
 
     # Settings.
-    scenario_name = 'create_level8_4zones_a'
+    scenario_name = "create_level8_4zones_a"
     results_path = cobmo.utils.get_results_path(__file__, scenario_name)
 
     # Recreate / overwrite database, to incorporate changes in the CSV files.
@@ -31,13 +31,13 @@ def main():
     print(f"disturbance_timeseries = \n{building_model.disturbance_timeseries}")
 
     # Store building model matrices and disturbance timeseries as CSV.
-    building_model.state_matrix.to_csv(results_path / 'building_state_matrix.csv')
-    building_model.control_matrix.to_csv(results_path / 'building_control_matrix.csv')
-    building_model.disturbance_matrix.to_csv(results_path / 'building_disturbance_matrix.csv')
-    building_model.state_output_matrix.to_csv(results_path / 'building_state_output_matrix.csv')
-    building_model.control_output_matrix.to_csv(results_path / 'building_control_output_matrix.csv')
-    building_model.disturbance_output_matrix.to_csv(results_path / 'building_disturbance_output_matrix.csv')
-    building_model.disturbance_timeseries.to_csv(results_path / 'building_disturbance_timeseries.csv')
+    building_model.state_matrix.to_csv(results_path / "building_state_matrix.csv")
+    building_model.control_matrix.to_csv(results_path / "building_control_matrix.csv")
+    building_model.disturbance_matrix.to_csv(results_path / "building_disturbance_matrix.csv")
+    building_model.state_output_matrix.to_csv(results_path / "building_state_output_matrix.csv")
+    building_model.control_output_matrix.to_csv(results_path / "building_control_output_matrix.csv")
+    building_model.disturbance_output_matrix.to_csv(results_path / "building_disturbance_output_matrix.csv")
+    building_model.disturbance_timeseries.to_csv(results_path / "building_disturbance_timeseries.csv")
 
     # Solve optimization problem and obtain results.
     results = building_model.optimize()
@@ -49,36 +49,42 @@ def main():
     print(f"operation_cost = {results['operation_cost']}")
 
     # Store results to CSV.
-    results['control_vector'].to_csv(results_path / 'control_vector.csv')
-    results['state_vector'].to_csv(results_path / 'state_vector.csv')
-    results['output_vector'].to_csv(results_path / 'output_vector.csv')
+    results["control_vector"].to_csv(results_path / "control_vector.csv")
+    results["state_vector"].to_csv(results_path / "state_vector.csv")
+    results["output_vector"].to_csv(results_path / "output_vector.csv")
 
     # Plot results.
     for output in building_model.outputs:
 
         figure = go.Figure()
-        figure.add_trace(go.Scatter(
-            x=building_model.output_maximum_timeseries.index,
-            y=building_model.output_maximum_timeseries.loc[:, output].values,
-            name='Maximum',
-            line=go.scatter.Line(shape='hv')
-        ))
-        figure.add_trace(go.Scatter(
-            x=building_model.output_minimum_timeseries.index,
-            y=building_model.output_minimum_timeseries.loc[:, output].values,
-            name='Minimum',
-            line=go.scatter.Line(shape='hv')
-        ))
-        figure.add_trace(go.Scatter(
-            x=results['output_vector'].index,
-            y=results['output_vector'].loc[:, output].values,
-            name='Optimal',
-            line=go.scatter.Line(shape='hv')
-        ))
+        figure.add_trace(
+            go.Scatter(
+                x=building_model.output_maximum_timeseries.index,
+                y=building_model.output_maximum_timeseries.loc[:, output].values,
+                name="Maximum",
+                line=go.scatter.Line(shape="hv"),
+            )
+        )
+        figure.add_trace(
+            go.Scatter(
+                x=building_model.output_minimum_timeseries.index,
+                y=building_model.output_minimum_timeseries.loc[:, output].values,
+                name="Minimum",
+                line=go.scatter.Line(shape="hv"),
+            )
+        )
+        figure.add_trace(
+            go.Scatter(
+                x=results["output_vector"].index,
+                y=results["output_vector"].loc[:, output].values,
+                name="Optimal",
+                line=go.scatter.Line(shape="hv"),
+            )
+        )
         figure.update_layout(
-            title=f'Output: {output}',
-            xaxis=go.layout.XAxis(tickformat='%H:%M'),
-            legend=go.layout.Legend(x=0.99, xanchor='auto', y=0.99, yanchor='auto')
+            title=f"Output: {output}",
+            xaxis=go.layout.XAxis(tickformat="%H:%M"),
+            legend=go.layout.Legend(x=0.99, xanchor="auto", y=0.99, yanchor="auto"),
         )
         # figure.show()
         cobmo.utils.write_figure_plotly(figure, results_path / output)
@@ -88,5 +94,5 @@ def main():
     print(f"Results are stored in: {results_path}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

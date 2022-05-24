@@ -40,13 +40,11 @@ def get_config() -> dynaconf.Dynaconf:
     )
 
     # Obtain full paths.
-    config_object['paths']['data'] = parse_path(config_object['paths']['data'])
-    config_object['paths']['additional_data'] = (
-        [parse_path(path) for path in config_object['paths']['additional_data']]
-    )
-    config_object['paths']['database'] = parse_path(config_object['paths']['database'])
-    config_object['paths']['results'] = parse_path(config_object['paths']['results'])
-    config_object['paths']['supplementary_data'] = parse_path(config_object['paths']['supplementary_data'])
+    config_object["paths"]["data"] = parse_path(config_object["paths"]["data"])
+    config_object["paths"]["additional_data"] = [parse_path(path) for path in config_object["paths"]["additional_data"]]
+    config_object["paths"]["database"] = parse_path(config_object["paths"]["database"])
+    config_object["paths"]["results"] = parse_path(config_object["paths"]["results"])
+    config_object["paths"]["supplementary_data"] = parse_path(config_object["paths"]["supplementary_data"])
 
     return config_object
 
@@ -61,24 +59,22 @@ def parse_path(path: str) -> pathlib.Path:
         return pathlib.Path(path)
 
 
-def get_logger(
-        name: str
-) -> logging.Logger:
+def get_logger(name: str) -> logging.Logger:
     """Generate logger with given name."""
 
     logger = logging.getLogger(name)
 
     logging_handler = logging.StreamHandler()
-    logging_handler.setFormatter(logging.Formatter(config['logs']['format']))
+    logging_handler.setFormatter(logging.Formatter(config["logs"]["format"]))
     logger.addHandler(logging_handler)
 
-    if config['logs']['level'] == 'debug':
+    if config["logs"]["level"] == "debug":
         logger.setLevel(logging.DEBUG)
-    elif config['logs']['level'] == 'info':
+    elif config["logs"]["level"] == "info":
         logger.setLevel(logging.INFO)
-    elif config['logs']['level'] == 'warn':
+    elif config["logs"]["level"] == "warn":
         logger.setLevel(logging.WARN)
-    elif config['logs']['level'] == 'error':
+    elif config["logs"]["level"] == "error":
         logger.setLevel(logging.ERROR)
     else:
         raise ValueError(f"Unknown logging level: {config['logs']['level']}")
@@ -93,39 +89,36 @@ base_path = pathlib.Path(__file__).parent.parent
 config = get_config()
 
 # Modify matplotlib default settings.
-plt.style.use(config['plots']['matplotlib_style'])
+plt.style.use(config["plots"]["matplotlib_style"])
 pd.plotting.register_matplotlib_converters()  # Remove warning when plotting with pandas.
 
 # Modify pandas default settings.
 # - These settings ensure that that data frames are always printed in full, rather than cropped.
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_columns', None)
-pd.set_option('display.width', None)
+pd.set_option("display.max_rows", None)
+pd.set_option("display.max_columns", None)
+pd.set_option("display.width", None)
 try:
-    pd.set_option('display.max_colwidth', None)
+    pd.set_option("display.max_colwidth", None)
 except ValueError:
     # For compatibility with older versions of pandas.
-    pd.set_option('display.max_colwidth', 0)
+    pd.set_option("display.max_colwidth", 0)
 
 # Modify plotly default settings.
-pio.templates.default = go.layout.Template(pio.templates['simple_white'])
+pio.templates.default = go.layout.Template(pio.templates["simple_white"])
 pio.templates.default.layout.update(
-    font=go.layout.Font(
-        family=config['plots']['plotly_font_family'],
-        size=config['plots']['plotly_font_size']
-    ),
+    font=go.layout.Font(family=config["plots"]["plotly_font_family"], size=config["plots"]["plotly_font_size"]),
     legend=go.layout.Legend(borderwidth=1),
     xaxis=go.layout.XAxis(showgrid=True),
-    yaxis=go.layout.YAxis(showgrid=True)
+    yaxis=go.layout.YAxis(showgrid=True),
 )
 if pio.kaleido.scope is not None:
-    pio.kaleido.scope.default_width = config['plots']['plotly_figure_width']
-    pio.kaleido.scope.default_height = config['plots']['plotly_figure_height']
-pio.orca.config.default_width = config['plots']['plotly_figure_width']
-pio.orca.config.default_height = config['plots']['plotly_figure_height']
+    pio.kaleido.scope.default_width = config["plots"]["plotly_figure_width"]
+    pio.kaleido.scope.default_height = config["plots"]["plotly_figure_height"]
+pio.orca.config.default_width = config["plots"]["plotly_figure_width"]
+pio.orca.config.default_height = config["plots"]["plotly_figure_height"]
 
 # Modify optimization solver settings.
-if config['optimization']['solver_name'] == 'osqp':
+if config["optimization"]["solver_name"] == "osqp":
     solver_parameters = dict(max_iter=1000000)
 else:
     solver_parameters = dict()

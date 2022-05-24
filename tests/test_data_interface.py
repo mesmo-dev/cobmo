@@ -12,7 +12,6 @@ logger = cobmo.config.get_logger(__name__)
 
 
 class TestDatabaseInterface(unittest.TestCase):
-
     def test_recreate_database(self):
         # Get result.
         time_start = time.time()
@@ -36,10 +35,10 @@ class TestDatabaseInterface(unittest.TestCase):
     def test_building_data(self):
         # Get result.
         time_start = time.time()
-        cobmo.data_interface.BuildingData(cobmo.config.config['tests']['scenario_name'])
+        cobmo.data_interface.BuildingData(cobmo.config.config["tests"]["scenario_name"])
         time_duration = time.time() - time_start
         logger.info(f"Test BuildingData: Completed in {time_duration:.6f} seconds.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
