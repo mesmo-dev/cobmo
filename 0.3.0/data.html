@@ -1,0 +1,1308 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Contributing" href="contributing.html" /><link rel="prev" title="API reference" href="api.html" />
+
+    <link rel="shortcut icon" href="_static/favicon.ico"/><!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
+        <title>Data reference - CoBMo</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=362ab14a" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=ecafd8be" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">CoBMo</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><div class="sidebar-scroll"><a class="sidebar-brand" href="index.html">
+  
+  
+  <span class="sidebar-brand-text">CoBMo</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API reference</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Data reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+</ul>
+
+</div>
+    <div class="sidebar-tree">
+        <ul>
+            <li class="toctree-l1 has-children" data-children-count="1">
+                <a style="font-size: var(--sidebar-caption-font-size); font-weight: 700; text-transform: uppercase;color: var(--color-sidebar-caption-text); pointer-events: none" class="reference">Versions</a>
+                <input class="toctree-checkbox" id="toctree-checkbox-tags" name="toctree-checkbox-tags" type="checkbox"><label for="toctree-checkbox-tags"><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label>
+                <ul style="font-size: var(--font-size--small--2);">
+                    <li class="toctree-l1 current current-page"><a class="current reference internal" href="data.html">0.3.0</a></li>
+                        
+                            <li class="toctree-l1"><a class="reference internal" href="../0.2.0/data.html">0.2.0</a></li>
+                        
+                        
+                            
+                        
+                        
+                            <li class="toctree-l1"><a class="reference internal" href="../develop/index.html">develop</a></li>
+                        
+                        
+                            <li class="toctree-l1"><a class="reference internal" href="../feature/create_tower_revision/data.html">feature/create_tower_revision</a></li>
+                        
+                        
+                            <li class="toctree-l1"><a class="reference internal" href="../feature/districtcooling/data.html">feature/districtcooling</a></li>
+                        
+                        
+                            <li class="toctree-l1"><a class="reference internal" href="../feature/general_improvements/index.html">feature/general_improvements</a></li>
+                        
+                        
+                            <li class="toctree-l1"><a class="reference internal" href="../feature/mesmo_migration/index.html">feature/mesmo_migration</a></li>
+                        
+                        
+                            <li class="toctree-l1"><a class="reference internal" href="../feature/primo/data.html">feature/primo</a></li>
+                        
+                        
+                            <li class="toctree-l1"><a class="reference internal" href="../feature/validation/data.html">feature/validation</a></li>
+                        
+                        
+                            <li class="toctree-l1"><a class="reference internal" href="../master/data.html">master</a></li>
+                        
+                </ul>
+            </li>
+        </ul>
+    </div>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="data-reference">
+<h1>Data reference<a class="headerlink" href="#data-reference" title="Link to this heading">#</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This reference is work in progress.</p>
+</div>
+<section id="building-blind-types">
+<h2><code class="docutils literal notranslate"><span class="pre">building_blind_types</span></code><a class="headerlink" href="#building-blind-types" title="Link to this heading">#</a></h2>
+<p>Window blind characteristics. <em>Currently not used.</em></p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">blind_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique type identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">blind_efficiency</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Blind efficiency (absorbed irradiation / incident irradiation).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-hvac-ahu-types">
+<h2><code class="docutils literal notranslate"><span class="pre">building_hvac_ahu_types</span></code><a class="headerlink" href="#building-hvac-ahu-types" title="Link to this heading">#</a></h2>
+<p>Air handling unit (AHU) set points and characteristics.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hvac_ahu_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique type identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ahu_cooling_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p><em>Currently not used.</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ahu_heating_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p><em>Currently not used.</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ahu_dehumidification_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p><em>Currently not used.</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ahu_return_air_heat_recovery_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p><em>Currently not used.</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ahu_supply_air_temperature_setpoint</span></code></p></td>
+<td class="text-center"><p>°C</p></td>
+<td><p>Supply air temperature at outlet of AHU towards zone.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ahu_supply_air_relative_humidity_setpoint</span></code></p></td>
+<td class="text-center"><p>%</p></td>
+<td><p>Supply air relative humidity at outlet of AHU towards zone.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ahu_fan_efficiency</span></code></p></td>
+<td class="text-center"><p>J/kg</p></td>
+<td><p>Fan efficiency (electric power / air mass flow rate).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ahu_cooling_efficiency</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Chiller plant efficiency (thermal power / electrical power).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ahu_heating_efficiency</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Heating plant efficiency (thermal power / electrical power).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ahu_return_air_heat_recovery_efficiency</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Recovery efficiency (recovered power / available power).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-hvac-generic-types">
+<h2><code class="docutils literal notranslate"><span class="pre">building_hvac_generic_types</span></code><a class="headerlink" href="#building-hvac-generic-types" title="Link to this heading">#</a></h2>
+<p>Generic HVAC system characteristics.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hvac_generic_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique type identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">generic_heating_efficiency</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Heating efficiency (thermal power / electric power).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">generic_cooling_efficiency</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Cooling efficiency (thermal power / electric power).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-hvac-tu-types">
+<h2><code class="docutils literal notranslate"><span class="pre">building_hvac_tu_types</span></code><a class="headerlink" href="#building-hvac-tu-types" title="Link to this heading">#</a></h2>
+<p>Terminal unit (TU) set points and characteristics.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hvac_tu_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique type identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tu_cooling_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p><em>Currently not used.</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tu_heating_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p><em>Currently not used.</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tu_air_intake_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p><em>Currently not used.</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tu_supply_air_temperature_setpoint</span></code></p></td>
+<td class="text-center"><p>°C</p></td>
+<td><p>Supply air temperature at outlet of TU towards zone.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tu_fan_efficiency</span></code></p></td>
+<td class="text-center"><p>J/kg</p></td>
+<td><p>Fan efficiency (electric power / air mass flow rate).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tu_cooling_efficiency</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Chiller plant efficiency (thermal power / electrical power).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tu_heating_efficiency</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Heating plant efficiency (thermal power / electrical power).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-internal-gain-timeseries">
+<h2><code class="docutils literal notranslate"><span class="pre">building_internal_gain_timeseries</span></code><a class="headerlink" href="#building-internal-gain-timeseries" title="Link to this heading">#</a></h2>
+<p>Time series of internal gains.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">internal_gain_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_internal_gain_types</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">time</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Timestamp according to ISO 8601.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">internal_gain_occupancy</span></code></p></td>
+<td class="text-center"><p>W/m²</p></td>
+<td><p>Internal gains related to occupants.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">internal_gain_appliances</span></code></p></td>
+<td class="text-center"><p>W/m²</p></td>
+<td><p>Internal gains related to appliances.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-internal-gain-types">
+<h2><code class="docutils literal notranslate"><span class="pre">building_internal_gain_types</span></code><a class="headerlink" href="#building-internal-gain-types" title="Link to this heading">#</a></h2>
+<p>Internal gain type definitions.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">internal_gain_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique type identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">internal_gain_occupancy_factor</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Occupancy gains scaling factor.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">internal_gain_appliances_factor</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Appliance gains scaling factor.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-linearization-types">
+<h2><code class="docutils literal notranslate"><span class="pre">building_linearization_types</span></code><a class="headerlink" href="#building-linearization-types" title="Link to this heading">#</a></h2>
+<p>Linearization point definitions.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique type identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_zone_air_temperature_heat</span></code></p></td>
+<td class="text-center"><p>°C</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_zone_air_temperature_cool</span></code></p></td>
+<td class="text-center"><p>°C</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_surface_temperature</span></code></p></td>
+<td class="text-center"><p>°C</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_exterior_surface_temperature</span></code></p></td>
+<td class="text-center"><p>°C</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_internal_gain_occupancy</span></code></p></td>
+<td class="text-center"><p>W/m²</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_internal_gain_appliances</span></code></p></td>
+<td class="text-center"><p>W/m²</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_ambient_air_temperature</span></code></p></td>
+<td class="text-center"><p>°C</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_sky_temperature</span></code></p></td>
+<td class="text-center"><p>°C</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_ambient_air_humidity_ratio</span></code></p></td>
+<td class="text-center"><p>kg/kg</p></td>
+<td><p>Absolute humidity (mass of water / mass of air).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_zone_air_humidity_ratio</span></code></p></td>
+<td class="text-center"><p>kg/kg</p></td>
+<td><p>Absolute humidity (mass of water / mass of air).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_irradiation</span></code></p></td>
+<td class="text-center"><p>W/m²</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_co2_concentration</span></code></p></td>
+<td class="text-center"><p>ppm</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_ventilation_rate_per_square_meter</span></code></p></td>
+<td class="text-center"><p>m/s</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-parameter-sets">
+<h2><code class="docutils literal notranslate"><span class="pre">building_parameter_sets</span></code><a class="headerlink" href="#building-parameter-sets" title="Link to this heading">#</a></h2>
+<p>Parameter definitions, which includes constants and user-defined parameters.</p>
+<p>In all tables, a <code class="docutils literal notranslate"><span class="pre">parameter_name</span></code> string can be used to define numerical parameters in place of numerical values. During building model setup, those strings will be parsed from the <code class="docutils literal notranslate"><span class="pre">building_parameter_sets</span></code> table to obtain the corresponding numerical values.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">parameter_set</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Parameter set identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">parameter_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Parameter name string.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">parameter_value</span></code></p></td>
+<td class="text-center"><p>various</p></td>
+<td><p>Numerical value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">parameter_unit</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Comment field for the parameter unit.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">parameter_comment</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Comment field for further explanations.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-scenarios">
+<h2><code class="docutils literal notranslate"><span class="pre">building_scenarios</span></code><a class="headerlink" href="#building-scenarios" title="Link to this heading">#</a></h2>
+<p>Building scenario definitions.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">scenario_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique scenario identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">building_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Building identifier as defined in <code class="docutils literal notranslate"><span class="pre">buildings</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">parameter_set</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Parameter set identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_parameter_sets</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">linearization_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_linearization_types</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">demand_controlled_ventilation_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p><em>Currently not used.</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">co2_model_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p><em>Currently not used.</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">humidity_model_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p><em>Currently not used.</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">heating_cooling_session</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p><em>Currently not used.</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">price_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">electricity_price_timeseries</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">time_start</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Timestamp according to ISO 8601.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">time_end</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Timestamp according to ISO 8601.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">time_step</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Time step length in seconds.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-storage-types">
+<h2><code class="docutils literal notranslate"><span class="pre">building_storage_types</span></code><a class="headerlink" href="#building-storage-types" title="Link to this heading">#</a></h2>
+<p>Storage characteristics.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">building_storage_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique type identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">storage_size</span></code></p></td>
+<td class="text-center"><p>m³ or kWh</p></td>
+<td><p>Volume of sensible thermal storage or electric energy capacity of battery storage.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">storage_round_trip_efficiency</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Round trip efficiency (discharged energy / charged energy).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">storage_battery_depth_of_discharge</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Maximum utilizable battery storage capacity (utilized capacity / total capacity).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">storage_sensible_temperature_delta</span></code></p></td>
+<td class="text-center"><p>K</p></td>
+<td><p>Temperature difference between the supply and return water temperature of sensible thermal storage.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">storage_lifetime</span></code></p></td>
+<td class="text-center"><p>years</p></td>
+<td><p>Storage lifetime. <em>Only used for storage planning problems.</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">storage_planning_energy_installation_cost</span></code></p></td>
+<td class="text-center"><p>SGD/m³ or SGD/kWh</p></td>
+<td><p>Investment cost per installed energy capacity. <em>Only used for storage planning problems.</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">storage_planning_power_installation_cost</span></code></p></td>
+<td class="text-center"><p>SGD/kW</p></td>
+<td><p>Investment cost per installed power capacity. <em>Only used for storage planning problems.</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">storage_planning_fixed_installation_cost</span></code></p></td>
+<td class="text-center"><p>SGD</p></td>
+<td><p>Investment cost per installed storage unit. <em>Only used for storage planning problems.</em></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-surface-types">
+<h2><code class="docutils literal notranslate"><span class="pre">building_surface_types</span></code><a class="headerlink" href="#building-surface-types" title="Link to this heading">#</a></h2>
+<p>Surface type characteristics.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">surface_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique type identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">heat_capacity</span></code></p></td>
+<td class="text-center"><p>J/(m³K)</p></td>
+<td><p>Specific heat capacity.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">thermal_resistance_surface</span></code></p></td>
+<td class="text-center"><p>m²K/W</p></td>
+<td><p>Specific thermal resistance.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">irradiation_gain_coefficient</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Irradiation gain coefficient (absorbed irradiation / incident irradiation).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">emissivity</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Emissivity factor.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">window_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_window_types</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">window_wall_ratio</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Window surface area / total surface area.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sky_view_factor</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Sky view factor.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-surfaces-adiabatic">
+<h2><code class="docutils literal notranslate"><span class="pre">building_surfaces_adiabatic</span></code><a class="headerlink" href="#building-surfaces-adiabatic" title="Link to this heading">#</a></h2>
+<p>Adiabatic surfaces geometry.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">building_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Building identifier as defined in <code class="docutils literal notranslate"><span class="pre">buildings</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zone_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Zone identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_zones</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">surface_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique surface identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">surface_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_surface_types</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">surface_area</span></code></p></td>
+<td class="text-center"><p>m²</p></td>
+<td><p>Surface area.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">surface_comment</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Explanatory comment, e.g., description of the geometry.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-surfaces-exterior">
+<h2><code class="docutils literal notranslate"><span class="pre">building_surfaces_exterior</span></code><a class="headerlink" href="#building-surfaces-exterior" title="Link to this heading">#</a></h2>
+<p>Exterior surfaces geometry.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">building_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Building identifier as defined in <code class="docutils literal notranslate"><span class="pre">buildings</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zone_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Zone identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_zones</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">direction_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Direction name (<code class="docutils literal notranslate"><span class="pre">horizontal</span></code>, <code class="docutils literal notranslate"><span class="pre">east</span></code>, <code class="docutils literal notranslate"><span class="pre">south</span></code>, <code class="docutils literal notranslate"><span class="pre">west</span></code>, <code class="docutils literal notranslate"><span class="pre">north</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">surface_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique surface identifier.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">surface_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_surface_types</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">surface_area</span></code></p></td>
+<td class="text-center"><p>m²</p></td>
+<td><p>Surface area.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">surface_comment</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Explanatory comment, e.g., description of the geometry.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-surfaces-interior">
+<h2><code class="docutils literal notranslate"><span class="pre">building_surfaces_interior</span></code><a class="headerlink" href="#building-surfaces-interior" title="Link to this heading">#</a></h2>
+<p>Interior surfaces geometry.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">building_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Building identifier as defined in <code class="docutils literal notranslate"><span class="pre">buildings</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zone_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Zone on primary side identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_zones</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zone_adjacent_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Zone on secondary side identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_zones</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">surface_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique surface identifier.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">surface_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_surface_types</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">surface_area</span></code></p></td>
+<td class="text-center"><p>m²</p></td>
+<td><p>Surface area.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">surface_comment</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Explanatory comment, e.g., description of the geometry.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-window-types">
+<h2><code class="docutils literal notranslate"><span class="pre">building_window_types</span></code><a class="headerlink" href="#building-window-types" title="Link to this heading">#</a></h2>
+<p>Window characteristics.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">window_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique type identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">thermal_resistance_window</span></code></p></td>
+<td class="text-center"><p>m²K/W</p></td>
+<td><p>Specific thermal resistance.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">irradiation_gain_coefficient_window</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Irradiation gain coefficient (absorbed irradiation / incident irradiation).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">emissivity_window</span></code></p></td>
+<td class="text-center"><p>-</p></td>
+<td><p>Emissivity factor.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-zone-constraint-profiles">
+<h2><code class="docutils literal notranslate"><span class="pre">building_zone_constraint_profiles</span></code><a class="headerlink" href="#building-zone-constraint-profiles" title="Link to this heading">#</a></h2>
+<p>Constraint profile definitions.</p>
+<p>The constraint profile time series is constructed by obtaining the appropriate value for each <code class="docutils literal notranslate"><span class="pre">minimum_air_temperature</span></code>, <code class="docutils literal notranslate"><span class="pre">maximum_air_temperature</span></code>, etc. based on <code class="docutils literal notranslate"><span class="pre">from_time</span></code> and <code class="docutils literal notranslate"><span class="pre">from_weekday</span></code>. Each constraint is kept constant at the given value for any daytime greater than or equal to <code class="docutils literal notranslate"><span class="pre">from_time</span></code> and any weekday greater than or equal to <code class="docutils literal notranslate"><span class="pre">from_weekday</span></code> until the next defined <code class="docutils literal notranslate"><span class="pre">from_time</span></code> or <code class="docutils literal notranslate"><span class="pre">from_weekday</span></code>. Note that the daily profile time series is repeated for any weekday greater than or equal to <code class="docutils literal notranslate"><span class="pre">from_weekday</span></code> until the next defined <code class="docutils literal notranslate"><span class="pre">from_weekday</span></code>. The initial value for each <code class="docutils literal notranslate"><span class="pre">zone_constraint_profile</span></code> must start at <code class="docutils literal notranslate"><span class="pre">from_time</span> <span class="pre">=</span> <span class="pre">00:00:00</span></code> and <code class="docutils literal notranslate"><span class="pre">from_weekday</span> <span class="pre">=</span> <span class="pre">0</span></code>.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zone_constraint_profile</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Constraint profile identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">from_weekday</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Start weekday number (0 - Monday … 6 - Sunday).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">from_time</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Start time in HH:MM:SS format.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">minimum_air_temperature</span></code></p></td>
+<td class="text-center"><p>°C</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">maximum_air_temperature</span></code></p></td>
+<td class="text-center"><p>°C</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">minimum_fresh_air_flow_per_area</span></code></p></td>
+<td class="text-center"><p>m/s</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">minimum_fresh_air_flow_per_person</span></code></p></td>
+<td class="text-center"><p>m³/s/person</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">maximum_co2_concentration</span></code></p></td>
+<td class="text-center"><p>ppm</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">minimum_fresh_air_flow_per_area_no_dcv</span></code></p></td>
+<td class="text-center"><p>m/s</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">minimum_relative_humidity</span></code></p></td>
+<td class="text-center"><p>%</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">maximum_relative_humidity</span></code></p></td>
+<td class="text-center"><p>%</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-zone-types">
+<h2><code class="docutils literal notranslate"><span class="pre">building_zone_types</span></code><a class="headerlink" href="#building-zone-types" title="Link to this heading">#</a></h2>
+<p>Zone type characteristics.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zone_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique type identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">heat_capacity</span></code></p></td>
+<td class="text-center"><p>J/(m³K)</p></td>
+<td><p>Specific heat capacity.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">base_surface_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier of the base surface as defined in <code class="docutils literal notranslate"><span class="pre">building_surface_types</span></code>. The base surface is automatically generated based on the <code class="docutils literal notranslate"><span class="pre">zone_area</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ceiling_surface_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier of the ceiling surface as defined in <code class="docutils literal notranslate"><span class="pre">building_surface_types</span></code>. The ceiling surface is automatically generated based on the <code class="docutils literal notranslate"><span class="pre">zone_area</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">infiltration_rate</span></code></p></td>
+<td class="text-center"><p>1/h</p></td>
+<td><p>Infiltration rate.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">internal_gain_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_internal_gain_types</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">window_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_window_types</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">blind_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_blind_types</span></code>. <em>Currently not used.</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hvac_generic_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_hvac_generic_types</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hvac_ahu_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_hvac_ahu_types</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hvac_tu_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_hvac_tu_types</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zone_constraint_profile</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Constraint profile identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_zone_constraint_profiles</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="building-zones">
+<h2><code class="docutils literal notranslate"><span class="pre">building_zones</span></code><a class="headerlink" href="#building-zones" title="Link to this heading">#</a></h2>
+<p>Zone geometry.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">building_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Building identifier as defined in <code class="docutils literal notranslate"><span class="pre">buildings</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zone_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique zone identifier.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zone_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_zone_types</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zone_height</span></code></p></td>
+<td class="text-center"><p>m</p></td>
+<td><p>Zone height (clear interior height from base to ceiling).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zone_area</span></code></p></td>
+<td class="text-center"><p>m²</p></td>
+<td><p>Zone area (interior area excluding surfaces).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zone_comment</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Explanatory comment, e.g., description of the geometry.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="buildings">
+<h2><code class="docutils literal notranslate"><span class="pre">buildings</span></code><a class="headerlink" href="#buildings" title="Link to this heading">#</a></h2>
+<p>Building definition.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">building_name</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique building identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">weather_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">weather_types</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">building_storage_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">building_storage_types</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="electricity-price-timeseries">
+<h2><code class="docutils literal notranslate"><span class="pre">electricity_price_timeseries</span></code><a class="headerlink" href="#electricity-price-timeseries" title="Link to this heading">#</a></h2>
+<p>Electricity price time series definition.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">price_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Price type identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">time</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Timestamp according to ISO 8601.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">price</span></code></p></td>
+<td class="text-center"><p>SGD</p></td>
+<td><p><em>Currently only in SGD</em></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="weather-timeseries">
+<h2><code class="docutils literal notranslate"><span class="pre">weather_timeseries</span></code><a class="headerlink" href="#weather-timeseries" title="Link to this heading">#</a></h2>
+<p>Weather time series definition.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">weather_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Type identifier as defined in <code class="docutils literal notranslate"><span class="pre">weather_types</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">time</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Timestamp according to ISO 8601.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ambient_air_temperature</span></code></p></td>
+<td class="text-center"><p>°C</p></td>
+<td><p>Ambient air dry-bulb temperature.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sky_temperature</span></code></p></td>
+<td class="text-center"><p>°C</p></td>
+<td><p>Equivalent sky temperature.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ambient_air_humidity_ratio</span></code></p></td>
+<td class="text-center"><p>kg/kg</p></td>
+<td><p>Ambient air absolute humidity (mass of water / mass of air).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">irradiation_horizontal</span></code></p></td>
+<td class="text-center"><p>W/m²</p></td>
+<td><p>Irradiation onto a horizontal surface.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">irradiation_east</span></code></p></td>
+<td class="text-center"><p>W/m²</p></td>
+<td><p>Irradiation onto a vertical surface oriented towards East.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">irradiation_south</span></code></p></td>
+<td class="text-center"><p>W/m²</p></td>
+<td><p>Irradiation onto a vertical surface oriented towards South.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">irradiation_west</span></code></p></td>
+<td class="text-center"><p>W/m²</p></td>
+<td><p>Irradiation onto a vertical surface oriented towards West.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">irradiation_north</span></code></p></td>
+<td class="text-center"><p>W/m²</p></td>
+<td><p>Irradiation onto a vertical surface oriented towards North.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="weather-types">
+<h2><code class="docutils literal notranslate"><span class="pre">weather_types</span></code><a class="headerlink" href="#weather-types" title="Link to this heading">#</a></h2>
+<p>Additional weather and site information.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head text-center"><p>Unit</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">weather_type</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Unique type identifier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">time_zone</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Time zone indicator according to ISO 8601.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">latitude</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Latitude of the weather station.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">longitude</span></code></p></td>
+<td class="text-center"><p></p></td>
+<td><p>Longitude of the weather station.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">temperature_difference_sky_ambient</span></code></p></td>
+<td class="text-center"><p>K</p></td>
+<td><p><em>To be revised.</em></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="contributing.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Contributing</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="api.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">API reference</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2018-2022, TUMCREATE
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Data reference</a><ul>
+<li><a class="reference internal" href="#building-blind-types"><code class="docutils literal notranslate"><span class="pre">building_blind_types</span></code></a></li>
+<li><a class="reference internal" href="#building-hvac-ahu-types"><code class="docutils literal notranslate"><span class="pre">building_hvac_ahu_types</span></code></a></li>
+<li><a class="reference internal" href="#building-hvac-generic-types"><code class="docutils literal notranslate"><span class="pre">building_hvac_generic_types</span></code></a></li>
+<li><a class="reference internal" href="#building-hvac-tu-types"><code class="docutils literal notranslate"><span class="pre">building_hvac_tu_types</span></code></a></li>
+<li><a class="reference internal" href="#building-internal-gain-timeseries"><code class="docutils literal notranslate"><span class="pre">building_internal_gain_timeseries</span></code></a></li>
+<li><a class="reference internal" href="#building-internal-gain-types"><code class="docutils literal notranslate"><span class="pre">building_internal_gain_types</span></code></a></li>
+<li><a class="reference internal" href="#building-linearization-types"><code class="docutils literal notranslate"><span class="pre">building_linearization_types</span></code></a></li>
+<li><a class="reference internal" href="#building-parameter-sets"><code class="docutils literal notranslate"><span class="pre">building_parameter_sets</span></code></a></li>
+<li><a class="reference internal" href="#building-scenarios"><code class="docutils literal notranslate"><span class="pre">building_scenarios</span></code></a></li>
+<li><a class="reference internal" href="#building-storage-types"><code class="docutils literal notranslate"><span class="pre">building_storage_types</span></code></a></li>
+<li><a class="reference internal" href="#building-surface-types"><code class="docutils literal notranslate"><span class="pre">building_surface_types</span></code></a></li>
+<li><a class="reference internal" href="#building-surfaces-adiabatic"><code class="docutils literal notranslate"><span class="pre">building_surfaces_adiabatic</span></code></a></li>
+<li><a class="reference internal" href="#building-surfaces-exterior"><code class="docutils literal notranslate"><span class="pre">building_surfaces_exterior</span></code></a></li>
+<li><a class="reference internal" href="#building-surfaces-interior"><code class="docutils literal notranslate"><span class="pre">building_surfaces_interior</span></code></a></li>
+<li><a class="reference internal" href="#building-window-types"><code class="docutils literal notranslate"><span class="pre">building_window_types</span></code></a></li>
+<li><a class="reference internal" href="#building-zone-constraint-profiles"><code class="docutils literal notranslate"><span class="pre">building_zone_constraint_profiles</span></code></a></li>
+<li><a class="reference internal" href="#building-zone-types"><code class="docutils literal notranslate"><span class="pre">building_zone_types</span></code></a></li>
+<li><a class="reference internal" href="#building-zones"><code class="docutils literal notranslate"><span class="pre">building_zones</span></code></a></li>
+<li><a class="reference internal" href="#buildings"><code class="docutils literal notranslate"><span class="pre">buildings</span></code></a></li>
+<li><a class="reference internal" href="#electricity-price-timeseries"><code class="docutils literal notranslate"><span class="pre">electricity_price_timeseries</span></code></a></li>
+<li><a class="reference internal" href="#weather-timeseries"><code class="docutils literal notranslate"><span class="pre">weather_timeseries</span></code></a></li>
+<li><a class="reference internal" href="#weather-types"><code class="docutils literal notranslate"><span class="pre">weather_types</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    </body>
+</html>
