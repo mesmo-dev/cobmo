@@ -9,16 +9,16 @@ paths:
   database: ./data/database.sqlite
   results: ./results
 optimization:
-  solver_name: gurobi  # Must be valid solver name for CVXPY.
-  show_solver_output: true  # If True, activate verbose solver output.
+  solver_name: gurobi # Must be valid solver name for CVXPY.
+  show_solver_output: true # If True, activate verbose solver output.
 tests:
-  scenario_name: create_level8_4zones_a  # Defines scenario which is considered in tests.
-  show_plots: true  # If True, tests may produce plots.
+  scenario_name: create_level8_4zones_a # Defines scenario which is considered in tests.
+  show_plots: true # If True, tests may produce plots.
 logs:
-  level: info  # Choices: `debug`, `info`, `warn`, `error`.
-  format: '%(asctime)s | %(levelname)s | %(message)s'
+  level: info # Choices: `debug`, `info`, `warn`, `error`.
+  format: "%(asctime)s | %(levelname)s | %(message)s"
 plots:
-  matplotlib_style: seaborn-colorblind
+  matplotlib_style: seaborn-v0_8-colorblind
   plotly_font_family: Arial
   plotly_font_size: 15
   plotly_figure_width: 1000
